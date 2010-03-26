@@ -4,8 +4,8 @@
 typedef struct {
 	Vector size;		//Subband size
 	uint32 loc;			//Subband location in the buffer
-	uint32 *distrib;	//Distribution probabilities array
-	uint32 bits;		//Bits per pixels
+	uint32 *dist;	//Distribution probabilities array
+	uint32 bits;		//Real bits per pixels
 	uint32 q_bits;		//Quantization bits
 	int *q;				//Quatntization value array
 } Subband;

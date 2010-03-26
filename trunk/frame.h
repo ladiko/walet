@@ -9,8 +9,8 @@ typedef struct{
 extern "C" {
 #endif /* __cplusplus */
 
-void 	frames_init			(Frame *frame, Vector *sz, ColorSpace color);
-void 	frame_copy			(Frame *frame, ColorSpace color, uchar *y, uchar *u, uchar *v);
+void 	frames_init			(Frame *frame, Vector *sz, ColorSpace color, uint32 bits);
+void 	frame_copy			(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u, uchar *v);
 void 	frame_dwt_53 		(Frame *frame, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	frame_idwt_53		(Frame *frame, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	frame_fill_prob		(Frame *frame, Subband **sub, uint32 bits, ColorSpace color, uint32 steps);

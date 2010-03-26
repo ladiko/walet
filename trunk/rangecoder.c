@@ -37,14 +37,28 @@ static inline uint32 get_freq(imgtype img, uint32 *d, uint32 bits)
 
 }
 
-static inline uint32 get_freq_cum(uint32 cum, uint32 *d, uint32 bits, uint32 *f, uint32 *cf)
+static inline uint32 get_freq1(imgtype img, uint32 *d, uint32 bits)
 /*! \fn void update_friq(imgtype img, uint32 *d, uint32 *c, const uit32 num)
 	\brief Update cummulative frequency.
-	\param cum	 	The next cummulitive frequency.
+	\param img	 	The next data.
+	\param d		The pointer to array of distribution probabilities of the message.
+	\param bits		The numbers of bits per  symbols.
+*/
+{
+	uint32 i, c=0, bit = bits-1, ind = (1<<(bits+1))-4;
+	//for(i=0; i<bits; i++) if((img>>(bit-i))%2) c+=d[bit-i][(img>>(bit-i))-1];
+	for(i=0; i<bits; i++, ind-=(1<<(i+1))) if((img>>(bit-i))%2) c+=d[ind +(img>>(bit-i))-1];
+	return c;
+}
+
+static inline uint32 get_freq_cum(uint32 cum, uint32 *d, uint32 bits, uint32 *f, uint32 *cf)
+/*! \fn void update_friq(imgtype img, uint32 *d, uint32 *c, const uit32 num)
+	\brief Update cumulative frequency.
+	\param cum	 	The next cumulitive frequency.
 	\param d		The pointer to array of distribution probabilities of the message.
 	\param bits		The numbers of bits per  symbols.
 	\param f		The return frequency.
-	\param cf		The return cummulative frequency
+	\param cf		The return cumulative frequency
 */
 {
 	uint32 i, ind = (1<<(bits+1))-4, j=0, cu=cum;

@@ -3,31 +3,31 @@
 #include <stdio.h>
 #include <string.h>
 
-void frames_init(Frame *frame, Vector *sz, ColorSpace color)
+void frames_init(Frame *frame, Vector *sz, ColorSpace color, uint32 bits)
 {
-	image_init(&frame->img[0], sz->x, sz->y);
+	image_init(&frame->img[0], sz->x, sz->y, bits);
 	if(color == CS444 || color == RGB) {
-		image_init(&frame->img[1], sz->x, sz->y);
-		image_init(&frame->img[2], sz->x, sz->y);
+		image_init(&frame->img[1], sz->x, sz->y, bits);
+		image_init(&frame->img[2], sz->x, sz->y, bits);
 	}
 	if(color == CS422){
-		image_init(&frame->img[1], sz->x>>1 , sz->y);
-		image_init(&frame->img[2], sz->x>>1 , sz->y);
+		image_init(&frame->img[1], sz->x>>1 , sz->y, bits);
+		image_init(&frame->img[2], sz->x>>1 , sz->y, bits);
 	}
 	if(color == CS420){
-		image_init(&frame->img[1], sz->x>>1 , sz->y>>1);
-		image_init(&frame->img[2], sz->x>>1 , sz->y>>1);
+		image_init(&frame->img[1], sz->x>>1 , sz->y>>1, bits);
+		image_init(&frame->img[2], sz->x>>1 , sz->y>>1, bits);
 	}
 }
 
 
-void frame_copy(Frame *frame, ColorSpace color, uchar *y, uchar *u, uchar *v)
+void frame_copy(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u, uchar *v)
 {
 	printf("Start frame copy \n");
-	image_copy(&frame->img[0], y);
+	image_copy(&frame->img[0], bits, y);
 	if(color != GREY  && color != BAYER) {
-		image_copy(&frame->img[1], u);
-		image_copy(&frame->img[2], v);
+		image_copy(&frame->img[1], bits, u);
+		image_copy(&frame->img[2], bits, v);
 	}
 }
 

@@ -18,7 +18,7 @@ void subband_init_bayer(Subband **sub, uint32 x, uint32 y, uint32 steps, uint32 
 
 		for(k=0; k<4; k++) {
 			sub[k] = (Subband *)calloc(1, sizeof(Subband));
-			sub[k][0].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+			sub[k][0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 			sub[k][0].q = (int *)calloc(1<<(bits+2), sizeof(int));
 		}
 
@@ -44,21 +44,21 @@ void subband_init_bayer(Subband **sub, uint32 x, uint32 y, uint32 steps, uint32 
 				sub[k][3*i  ].size.x = w[1]; sub[k][3*i  ].size.y = h[1]; sub[k][3*i  ].loc = sh[k]+s[3];
 				sub[k][3*i-1].size.x = w[0]; sub[k][3*i-1].size.y = h[1]; sub[k][3*i-1].loc = sh[k]+s[2];
 				sub[k][3*i-2].size.x = w[1]; sub[k][3*i-2].size.y = h[0]; sub[k][3*i-2].loc = sh[k]+s[1];
-				sub[k][3*i  ].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-				sub[k][3*i-1].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-				sub[k][3*i-2].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+				sub[k][3*i  ].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+				sub[k][3*i-1].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+				sub[k][3*i-2].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 				sub[k][3*i  ].q = (int *)calloc(1<<(bits+2), sizeof(int));
 				sub[k][3*i-1].q = (int *)calloc(1<<(bits+2), sizeof(int));
 				sub[k][3*i-2].q = (int *)calloc(1<<(bits+2), sizeof(int));
 							}
 			sub[k][0].size.x = w[0]; sub[k][0].size.y = h[0]; sub[k][0].loc = sh[k];
-			sub[k][0].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+			sub[k][0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 			sub[k][0].q = (int *)calloc(1<<(bits+2), sizeof(int));
 		}
 	}
 	//int j;
 	//for(i=0; i < 4; i++) for(j=0; j < (steps-1)*3+1; j++)
-	//	printf("i = %d j = %d loc = %d size.x = %d  size.y = %d distrib = %p\n", i, j, sub[i][j].loc, sub[i][j].size.x, sub[i][j].size.y, sub[i][j].distrib);
+	//	printf("i = %d j = %d loc = %d size.x = %d  size.y = %d dist = %p\n", i, j, sub[i][j].loc, sub[i][j].size.x, sub[i][j].size.y, sub[i][j].dist);
 
 }
 
@@ -80,9 +80,9 @@ void subband_init(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 bits)
 		sub[3*i  ].size.x = w[1]; sub[3*i  ].size.y = h[1]; sub[3*i  ].loc = s[3];
 		sub[3*i-1].size.x = w[0]; sub[3*i-1].size.y = h[1]; sub[3*i-1].loc = s[2];
 		sub[3*i-2].size.x = w[1]; sub[3*i-2].size.y = h[0]; sub[3*i-2].loc = s[1];
-		sub[3*i  ].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-		sub[3*i-1].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-		sub[3*i-2].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+		sub[3*i  ].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+		sub[3*i-1].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+		sub[3*i-2].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 		//sub[0][3*i  ] = new Subband(&img[s[3]], h[1], w[1], 3*i  , (uchar *)dwt_buf);
 		//sub[0][3*i-1] = new Subband(&img[s[2]], h[1], w[0], 3*i-1, (uchar *)dwt_buf);
 		//sub[0][3*i-2] = new Subband(&img[s[1]], h[0], w[1], 3*i-2, (uchar *)dwt_buf);
@@ -91,7 +91,7 @@ void subband_init(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 bits)
 		//printf("sub %d h %d w %d s %d p %p\n",sub[0][3*i-2]->subb, sub[0][3*i-2]->size.y, sub[0][3*i-2]->size.x, s[3], sub[0][3*i-2]);
 	}
 	sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = 0;
-	sub[0].distrib = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+	sub[0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 	sub[0].q = (int *)calloc(1<<(bits+2), sizeof(int));
 	//sub[0][0] = new Subband(img, h[0], w[0], 0, (uchar *)dwt_buf);
 	//printf("sub %d h %d w %d s %d p %p\n",sub[0][0]->subb, sub[0][0]->size.y, sub[0][0]->size.x, s[0], sub[0][0]);
@@ -107,32 +107,32 @@ uint32  subband_range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bit
 	return range_decoder(img, d, size, a_bits , q_bits, buff);
 }
 
-uint32 subband_fill_prob(imgtype *img, uint32 size, uint32 *distrib, uint32 d_bits)
-/*! \fn void fill_distrib()
-	\brief 		Fill subband distribution array.
+uint32 subband_fill_prob(imgtype *img, uint32 size, uint32 *dist, uint32 d_bits)
+/*! \fn void fill_dist()
+	\brief 		Fill subband distution array.
 */
 {
 	uint32 i, half = (1<<(d_bits-1));
 	int min = img[0], max = img[0], diff;
-	memset(distrib, 0, sizeof(uint32)*(1<<d_bits));
+	memset(dist, 0, sizeof(uint32)*(1<<d_bits));
 	for(i=0; i < size; i++) {
-		distrib[img[i] + half]++;
+		dist[img[i] + half]++;
 		if(img[i] > max) max = img[i];
 		if(img[i] < min) min = img[i];
 	}
-	//for(i=0; i< (1<<bits); i++) if(distrib[i]) printf("distrib[%d] = %d\n", i, distrib[i]);
+	//for(i=0; i< (1<<bits); i++) if(dist[i]) printf("dist[%d] = %d\n", i, dist[i]);
 	diff = (max+min) > 0 ? max : -min;
 	for(i=0; diff; i++) diff>>=1;
 	printf("min = %d max = %d  tot = %d bits = %i\n", min, max, max-min, i+1);
 	return i+1;
-	//for(int i = 0; i<DIM; i++) if(distrib[i]) printf("dist[%4d] = %8d\n",i - HALF, distrib[i]);
+	//for(int i = 0; i<DIM; i++) if(dist[i]) printf("dist[%4d] = %8d\n",i - HALF, dist[i]);
 }
 /*
-void subband_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 size, double *dis, double *e)
-///! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
+void subband_dist_entr(uint32 *dist, uint32 dist_size, uint32 step, uint32 size, double *dis, double *e)
+///! \fn static inline int dist_unifom_8(uint32 *dist, const uint32 bit)
 //	\brief Calculate distortion for the given uniform quantizer.
-//    \param distrib	 	The pointer to array of distribution probabilities.
-//    \param dist_size 	The size of distribution probabilities array.
+//    \param dist	 	The pointer to array of distution probabilities.
+//    \param dist_size 	The size of distution probabilities array.
 //	\param step			The step of quantization.
 //	\param size			The number of pixels in subband
 //	\param q			The quntization array
@@ -145,8 +145,8 @@ void subband_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 si
 	uint32  hstep = step>>1, num = (dist_size>>1), st;  // The half size of interval
 	*e=0.;
 	for(j= (1-step); j< (int)step; j++) {
-		sum += distrib[num+j]*j*j;
-		en += distrib[num+j];
+		sum += dist[num+j]*j*j;
+		en += dist[num+j];
 		//q[num+i+j] = 0;
 		//printf("sum = %d en = %d\n", sum, en);
 	}
@@ -158,9 +158,9 @@ void subband_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 si
 		en = 0;
 		st = (rest<step) ? rest : step;
 		for(j= 0; j< st; j++) {
-			//printf("distrib[%d] = %d\n", num+i+j, distrib[num+i+j]);
-			sum += distrib[num+i+j]*(j-hstep)*(j-hstep);
-			en += distrib[num+i+j];
+			//printf("dist[%d] = %d\n", num+i+j, dist[num+i+j]);
+			sum += dist[num+i+j]*(j-hstep)*(j-hstep);
+			en += dist[num+i+j];
 			//q[num +i+j] = i+(st>>1);
 		}
 		if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
@@ -173,9 +173,9 @@ void subband_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 si
 		en=0;
 		st = (rest<step) ? rest : step;
 		for(j= 0; j< st; j++) {
-			//printf("distrib[%d] = %d\n", num-i-j, distrib[num-i-j]);
-			sum += distrib[num-i-j]*(hstep-j)*(hstep-j);
-			en += distrib[num-i-j];
+			//printf("dist[%d] = %d\n", num-i-j, dist[num-i-j]);
+			sum += dist[num-i-j]*(hstep-j)*(hstep-j);
+			en += dist[num-i-j];
 			//q[num -i-j] = -i-(st>>1);
 		}
 		if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
@@ -192,11 +192,11 @@ void subband_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 si
 
 */
 double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
-/*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
+/*! \fn static inline int dist_unifom_8(uint32 *dist, const uint32 bit)
 	\brief Calculate distortion for the given uniform quantizer.
-    \param d	 		The pointer to distribution probabilities arrey.
-    \param d_bits 		The 1<<d_bits size of distribution probabilities array.
-	\param a_bits		The 1<<a_bits actual size of distribution probabilities.
+    \param d	 		The pointer to distution probabilities arrey.
+    \param d_bits 		The 1<<d_bits size of distution probabilities array.
+	\param a_bits		The 1<<a_bits actual size of distution probabilities.
 	\param q_bits		Bits for quantization.
 	\param size			The subband size.
 	\param e			The subband entropy.
@@ -247,12 +247,12 @@ double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, u
 		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
 		//rest -= step;
 	}
-	printf("tot = %d ", tot);
+	//printf("tot = %d ", tot);
 	return e;
 }
 
 void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
-/*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
+/*! \fn static inline int dist_unifom_8(uint32 *dist, const uint32 bit)
 	\brief Calculate distortion for the given uniform quantizer.
 	\param img			The pointer to subband
 	\param size			The number of pixels in subband
@@ -261,7 +261,7 @@ void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
  */
 {
 	int i, half = (1<<(d_bits-1));
-	//Quantization and finding range of distribution
+	//Quantization and finding range of distution
 	for(i=0; i < size; i++ ) {
 		img[i] = q[img[i] + half];
 	}

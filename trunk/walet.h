@@ -97,7 +97,8 @@ typedef struct {
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define rc(x)	((x) < -127 ? -127 : ( (x) > 127 ? 127 : (x) ))
-#define oe(a,x)	(a ? x%2 : (x+1)%2)
+//#define oe(a,x)	(a ? x%2 : (x+1)%2)
+#define oe(a,x)	(a ? x&1 : (x+1)&1)
 
 
 #include <subband.h>

@@ -25,7 +25,6 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint3
 			rgb[3*((y+h0)*size+w0+x)+2] = rnd(shift+im[y*w+x]);
 		}
 	}
-
 }
 
 uchar* utils_subband_draw(uchar *rgb, Image *img, Subband **sub, ColorSpace color, uint32 steps)
@@ -129,7 +128,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 		case(GBRG):{ a = 1; b = 0; break;}
 		case(RGGB):{ a = 0; b = 0; break;}
 	}
-	printf("a = %d b = %d\n",a,b);
+	//printf("a = %d b = %d\n",a,b);
 
 	for(y=0; y < h1; y++){
 		for(x=0; x < w1; x++){
@@ -142,10 +141,10 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 			//rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
 			//					 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
 			//rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
-			rgb[xwy3    ] = y2 ? (x2 ?  rnd(img[xwy    ]) : rnd(img[xwy+1])) : (x2 ? rnd(img[xwy+w]) : rnd(img[xwy+w+1]));
-			rgb[xwy3 + 1] = y2 ? (x2 ? rnd((img[xwy+w  ] + img[xwy+1])>>1) :   rnd((img[xwy  ] + img[xwy+w+1])>>1)) :
-								 (x2 ? rnd((img[xwy+w+1] + img[xwy  ])>>1) :   rnd((img[xwy+1] + img[xwy+w  ])>>1));
-			rgb[xwy3 + 2] = y2 ? (x2 ?  rnd(img[xwy+w+1]) : rnd(img[xwy+w])) : (x2 ? rnd(img[xwy+1]) : rnd(img[xwy    ]));
+			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
+			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
+								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
+			rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
 		}
 	}
 	return rgb;
@@ -154,14 +153,29 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 height, uint32 width)
 {
 	int i, j, dim = height*width*3;
-
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = rnd(img[i]);
-		rgb[j + 1] = rnd(img[i]);
-		rgb[j + 2] = rnd(img[i]);
-		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
+		rgb[j]     = img[i];
+		rgb[j + 1] = img[i];
+		rgb[j + 2] = img[i];
+			//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
 	}
 	return rgb;
+}
+
+imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits)
+{
+	int i, dim = height*width, sh = bits-8;
+	for(i = 0; i < dim; i++) img1[i] = img[i]<0 ? 0 : rnd(img[i]>>sh);
+	return img1;
+}
+
+void utils_fill_rgb(imgtype *img, uint32 **rgb, uint32 h, uint32 w,  BayerGrid bay)
+{
+	uint32 x, y;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+		}
+	}
 }
 
 

@@ -172,18 +172,23 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 }
 
 
-void image_init(Image *img, uint32 x, uint32 y)
+void image_init(Image *img, uint32 x, uint32 y, uint32 bits)
 {
+	int i;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
+	for(i=0; i<4; i++) img->rgb[i] = (uint32 *)calloc(1<<bits, sizeof(uint32));
 	img->size.x = x; img->size.y = y;
-	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y ,  img->img);
+	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
 }
 
-void image_copy(Image *img, uchar *v)
+void image_copy(Image *img, uint32 bits, uchar *v)
 {
-	int i, size = img->size.x*img->size.y;
-	printf("Start copy  x = %d y = %d p = %p\n", img->size.x, img->size.y ,  img->img);
-	for(i=0; i<size; i++) img->img[i] = v[i];
+	int i, size = img->size.x*img->size.y, sz = (1<<bits)-1;
+	printf("Start copy  x = %d y = %d p = %p size = %d\n", img->size.x, img->size.y, img->img, 1<<bits);
+	//for(i=0; i<1000; i++) printf("img[%d] = %d  v[%d] = %d v[%d] = %d \n",i, v[(i<<1)+1]<<8 | v[(i<<1)], i<<1, v[i<<1], (i<<1)+1, v[(i<<1)+1]);
+	if(bits > 8) for(i=0; i<size; i++) img->img[i] = v[(i<<1)+1]<<8 | v[(i<<1)];
+	else 	for(i=0; i<size; i++) img->img[i] = v[i];
+	for(i=0; i<size; i++) img->rgb[0][img->img[i] > sz ? sz : img->img[i]]++;
 }
 
 void image_dwt_53(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps)
@@ -313,12 +318,12 @@ void image_fill_prob(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 		for(j=0; j < (steps-1)*3+1; j++)
 			for(i=0; i < 4; i++) {
 				printf("%2d %2d ", j, i);
-				sub[i][j].bits = subband_fill_prob(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].distrib, bits+2);
+				sub[i][j].bits = subband_fill_prob(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist, bits+2);
 				sub[i][j].q_bits = sub[i][j].bits;
 			}
 	} else {
 		for(j=0; j < steps*3 + 1; j++)
-			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].distrib, bits+2);
+			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist, bits+2);
 			sub[0][j].q_bits = sub[0][j].bits;
 	}
 }
@@ -331,36 +336,38 @@ double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 	if(color == BAYER){
 		for(i=0; i < 4; i++){
 			sub[i][0].q_bits = sub[i][0].bits;
-			e = subband_entropy(sub[i][0].distrib, bits+2, sub[i][0].bits, sub[i][0].q_bits,
+			e = subband_entropy(sub[i][0].dist, bits+2, sub[i][0].bits, sub[i][0].q_bits,
 					sub[i][0].size.x*sub[i][0].size.y, sub[i][0].q);
-			//subband_dist_entr(sub[i][0].distrib, 1<<(bits+2), 1, sub[i][0].size.x*sub[i][0].size.y, &dis, &e);
+			//subband_dist_entr(sub[i][0].dist, 1<<(bits+2), 1, sub[i][0].size.x*sub[i][0].size.y, &dis, &e);
 			en += sub[i][0].size.x*sub[i][0].size.y*e;
-			printf("size = %d %d %d e = %f q_bits = %d\n",sub[i][0].size.x*sub[i][0].size.y, j, i, e, sub[i][0].q_bits);
+			//printf("size = %d %d %d e = %f q_bits = %d\n",sub[i][0].size.x*sub[i][0].size.y, j, i, e, sub[i][0].q_bits);
 		}
 		for(j=1; j < (steps-1)*3+1; j++) {
 			for(i=0; i < 4; i++){
-				sub[i][j].q_bits = lim((int)sub[i][j].bits, 1, (int)(sub[i][j].bits-sb[i]-del[steps-2][j]+st));
-				e = subband_entropy(sub[i][j].distrib, bits+2, sub[i][j].bits, sub[i][j].q_bits,
+				sub[i][j].q_bits = lim((int)sub[i][j].bits, 1, (int)(sub[i][j].bits-sb[i]-qu[st][j+3]));
+
+				e = subband_entropy(sub[i][j].dist, bits+2, sub[i][j].bits, sub[i][j].q_bits,
 						sub[i][j].size.x*sub[i][j].size.y, sub[i][j].q);
-				//subband_dist_entr(sub[i][j].distrib, 1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st), sub[i][j].size.x*sub[i][j].size.y, &dis, &e);
+				//subband_dist_entr(sub[i][j].dist, 1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st), sub[i][j].size.x*sub[i][j].size.y, &dis, &e);
 				en += sub[i][j].size.x*sub[i][j].size.y*e;
-				printf("size = %d %d %d e = %f q_bits = %d  bits = %d\n",
-						sub[i][j].size.x*sub[i][j].size.y, j, i, e, sub[i][j].q_bits, sub[i][j].bits-sb[i]-del[steps-2][j]+st);
+				//printf("size = %d %d %d e = %f q_bits = %d  bits = %d\n",
+				//		sub[i][j].size.x*sub[i][j].size.y, j, i, e, sub[i][j].q_bits, sub[i][j].bits-sb[i]-qu[st][j+3]);
 			}
 		}
 		//printf("entropy = %f\n", en /= (im->size.x*im->size.y));
 		return en /= (im->size.x*im->size.y);
 
 	} else {
-		//subband_dist_entr(sub[0][0].distrib, 1<<(bits+2), 1, sub[0][0].size.x*sub[0][0].size.y, &dis, &e);
+		//subband_dist_entr(sub[0][0].dist, 1<<(bits+2), 1, sub[0][0].size.x*sub[0][0].size.y, &dis, &e);
 		sub[0][0].q_bits = sub[0][0].bits;
-		e = subband_entropy(sub[0][0].distrib, bits+2, sub[0][0].bits, sub[0][0].q_bits,
+		e = subband_entropy(sub[0][0].dist, bits+2, sub[0][0].bits, sub[0][0].q_bits,
 				sub[0][0].size.x*sub[0][0].size.y, sub[0][0].q);
 		en += sub[0][0].size.x*sub[0][0].size.y*e;
 		for(j=1; j < steps*3 + 1; j++){
-			//subband_dist_entr(sub[0][j].distrib, 1<<(bits+2), 1<<(del[steps-1][j]+st), sub[0][j].size.x*sub[0][j].size.y, &dis, &e);
-			sub[0][j].q_bits = lim(sub[0][j].bits, 1, sub[0][j].bits-del[steps-1][j]+st);
-			e = subband_entropy(sub[0][j].distrib, bits+2, sub[0][j].bits, sub[0][j].q_bits,
+			//subband_dist_entr(sub[0][j].dist, 1<<(bits+2), 1<<(del[steps-1][j]+st), sub[0][j].size.x*sub[0][j].size.y, &dis, &e);
+			sub[0][j].q_bits = lim(sub[0][j].bits, 1, (int)(sub[0][j].bits-qu[st][j]));
+
+			e = subband_entropy(sub[0][j].dist, bits+2, sub[0][j].bits, sub[0][j].q_bits,
 					sub[0][j].size.x*sub[0][j].size.y, sub[0][j].q);
 			en += sub[0][j].size.x*sub[0][j].size.y*e;
 		}
@@ -374,22 +381,22 @@ void image_quantization(Image *im, Subband **sub, uint32 bits, ColorSpace color,
 	imgtype *img = im->img;
 	if(color == BAYER){
 		//for(i=0; i < 4; i++)
-			//subband_quantization(&img[sub[i][0].loc], sub[i][0].size.x*sub[i][0].size.y, sub[i][0].distrib, bits+2, 1);
+			//subband_quantization(&img[sub[i][0].loc], sub[i][0].size.x*sub[i][0].size.y, sub[i][0].dist, bits+2, 1);
 		for(j=1; j < (steps-1)*3+1; j++)
 			for(i=0; i < 4; i++){
 				printf("%2d %2d bits = %d \n", j, i, sub[i][j].q_bits);
 				if(sub[i][j].q_bits != sub[i][j].bits)
 					subband_quantization(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].q, bits+2);
-				//subband_quantization(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].distrib, 1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st));
-				//sub[i][j].bits = subband_quantization(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].distrib,
+				//subband_quantization(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist, 1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st));
+				//sub[i][j].bits = subband_quantization(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist,
 				//		1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st), 1<<sub[i][j].bits);
 			}
 	} else {
-		//subband_quantization(&img[sub[0][0].loc], sub[0][0].size.x*sub[0][0].size.y, sub[0][0].distrib, bits+2, 1);
+		//subband_quantization(&img[sub[0][0].loc], sub[0][0].size.x*sub[0][0].size.y, sub[0][0].dist, bits+2, 1);
 		for(j=1; j < steps*3 + 1; j++)
 			if(sub[0][j].q_bits != sub[0][j].bits)
 				subband_quantization(&img[sub[0][j].loc],  sub[0][j].size.x*sub[0][j].size.y, sub[0][j].q, bits+2);
-			//sub[0][j].bits = subband_quantization(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].distrib,
+			//sub[0][j].bits = subband_quantization(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist,
 			//		1<<(bits+2), 1<<(del[steps-1][j]+st), 1<<sub[0][j].bits);
 	}
 }
@@ -402,13 +409,13 @@ uint32 image_compress(Image *im, Subband **sub, uint32 bits, ColorSpace color, u
 	if(color == BAYER){
 		for(j=0; j < (steps-1)*3+1; j++)
 			for(i=0; i < 4; i++)
-				//size += subband_range_encoder(&img[sub[i][j].loc], &sub[i][j].distrib[1<<(bits+2)], sub[i][j].size.x*sub[i][j].size.y, bits+2, &buf[size]);
-				if(sub[i][j].q_bits >1) size += subband_range_encoder(&img[sub[i][j].loc], &sub[i][j].distrib[1<<(bits+2)],
+				//size += subband_range_encoder(&img[sub[i][j].loc], &sub[i][j].dist[1<<(bits+2)], sub[i][j].size.x*sub[i][j].size.y, bits+2, &buf[size]);
+				if(sub[i][j].q_bits >1) size += subband_range_encoder(&img[sub[i][j].loc], &sub[i][j].dist[1<<(bits+2)],
 						sub[i][j].size.x*sub[i][j].size.y, sub[i][j].bits, sub[i][j].q_bits, &buf[size]);
 	} else {
 		for(j=0; j < steps*3 + 1; j++)
-			//size += subband_range_encoder(&img[sub[0][j].loc], &sub[i][j].distrib[1<<(bits+2)], sub[0][j].size.x*sub[0][j].size.y, bits+2, &buf[size]);
-			if(sub[0][j].q_bits >1) size += subband_range_encoder(&img[sub[0][j].loc], &sub[i][j].distrib[1<<(bits+2)],
+			//size += subband_range_encoder(&img[sub[0][j].loc], &sub[i][j].dist[1<<(bits+2)], sub[0][j].size.x*sub[0][j].size.y, bits+2, &buf[size]);
+			if(sub[0][j].q_bits >1) size += subband_range_encoder(&img[sub[0][j].loc], &sub[i][j].dist[1<<(bits+2)],
 					sub[0][j].size.x*sub[0][j].size.y, sub[0][j].bits, sub[0][j].q_bits, &buf[size]);
 	}
 	return size;
@@ -422,15 +429,14 @@ uint32 image_decompress(Image *im, Subband **sub, uint32 bits, ColorSpace color,
 	if(color == BAYER){
 		for(j=0; j < (steps-1)*3+1; j++)
 			for(i=0; i < 4; i++)
-				//size += subband_range_decoder(&img[sub[i][j].loc], &sub[i][j].distrib[1<<(bits+2)],sub[i][j].size.x*sub[i][j].size.y, bits+2, &buf[size]);
-				if(sub[i][j].q_bits >1) size += subband_range_decoder(&img[sub[i][j].loc], &sub[i][j].distrib[1<<(bits+2)],
+				//size += subband_range_decoder(&img[sub[i][j].loc], &sub[i][j].dist[1<<(bits+2)],sub[i][j].size.x*sub[i][j].size.y, bits+2, &buf[size]);
+				if(sub[i][j].q_bits >1) size += subband_range_decoder(&img[sub[i][j].loc], &sub[i][j].dist[1<<(bits+2)],
 						sub[i][j].size.x*sub[i][j].size.y, sub[i][j].bits, sub[i][j].q_bits, &buf[size]);
 	} else {
 		for(j=0; j < steps*3 + 1; j++)
-			//size += subband_range_decoder(&img[sub[0][j].loc], &sub[i][j].distrib[1<<(bits+2)], sub[0][j].size.x*sub[0][j].size.y, bits+2, &buf[size]);
-			if(sub[0][j].q_bits >1) size += subband_range_decoder(&img[sub[0][j].loc], &sub[i][j].distrib[1<<(bits+2)],
+			//size += subband_range_decoder(&img[sub[0][j].loc], &sub[i][j].dist[1<<(bits+2)], sub[0][j].size.x*sub[0][j].size.y, bits+2, &buf[size]);
+			if(sub[0][j].q_bits >1) size += subband_range_decoder(&img[sub[0][j].loc], &sub[i][j].dist[1<<(bits+2)],
 					sub[0][j].size.x*sub[0][j].size.y, sub[0][j].bits, sub[0][j].q_bits, &buf[size]);
 	}
 	return size;
 }
-
