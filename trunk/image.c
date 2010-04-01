@@ -176,19 +176,20 @@ void image_init(Image *img, uint32 x, uint32 y, uint32 bits)
 {
 	int i;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
-	for(i=0; i<4; i++) img->rgb[i] = (uint32 *)calloc(1<<bits, sizeof(uint32));
+	img->hist = (uint32 *)calloc((1<<bits)*3, sizeof(uint32));
 	img->size.x = x; img->size.y = y;
 	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
 }
 
 void image_copy(Image *img, uint32 bits, uchar *v)
 {
-	int i, size = img->size.x*img->size.y, sz = (1<<bits)-1;
+	int i, size = img->size.x*img->size.y, sz = (1<<bits);
 	printf("Start copy  x = %d y = %d p = %p size = %d\n", img->size.x, img->size.y, img->img, 1<<bits);
 	//for(i=0; i<1000; i++) printf("img[%d] = %d  v[%d] = %d v[%d] = %d \n",i, v[(i<<1)+1]<<8 | v[(i<<1)], i<<1, v[i<<1], (i<<1)+1, v[(i<<1)+1]);
-	if(bits > 8) for(i=0; i<size; i++) img->img[i] = v[(i<<1)+1]<<8 | v[(i<<1)];
+	if(bits > 8) for(i=0; i<size; i++) { img->img[i] = v[(i<<1)+1]<<8 | v[(i<<1)]; img->img[i] = img->img[i]>=sz ? sz : img->img[i];}
 	else 	for(i=0; i<size; i++) img->img[i] = v[i];
-	for(i=0; i<size; i++) img->rgb[0][img->img[i] > sz ? sz : img->img[i]]++;
+	//for(i=0; i<size; i++) img->rgb[0][img->img[i] > sz ? sz : img->img[i]]++;
+	//for(i=0; i<3; i++) utils_fill_rgb(img->img, img->rgb, img->size.y, img->size.x, bay);
 }
 
 void image_dwt_53(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps)
@@ -310,7 +311,7 @@ void image_idwt_531(Image *im, imgtype *buf, Subband **sub, ColorSpace color, ui
 	}
 }
 
-void image_fill_prob(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
+void image_fill_subb(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
 {
 	uint32 i, j;
 	imgtype *img = im->img;
@@ -326,6 +327,22 @@ void image_fill_prob(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist, bits+2);
 			sub[0][j].q_bits = sub[0][j].bits;
 	}
+}
+
+void image_fill_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)
+{
+	uint32 i, j, size = im->size.y*im->size.x, sz = 1<<bits, sum;
+	if(color == BAYER) {
+		utils_fill_rgb(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, bay, bits);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i];
+		printf("size = %d r = %d ", im->size.y*im->size.x, sum);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i];
+		printf("g = %d ", sum);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[(sz<<1)+i];
+		printf("b = %d\n", sum);
+	}
+	else  for(i=0; i < size; i++) im->hist[im->img[i]]++;
+
 }
 
 double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)

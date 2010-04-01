@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <string.h>
 #include <math.h>
 
 #define ll(step, x, y) img[x*step + y*step*width];
@@ -169,15 +170,145 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 	return img1;
 }
 
-void utils_fill_rgb(imgtype *img, uint32 **rgb, uint32 h, uint32 w,  BayerGrid bay)
+void utils_fill_rgb(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits)
 {
-	uint32 x, y;
-	for(y=0; y < h; y++){
-		for(x=0; x < w; x++){
-		}
+//
+//   All RGB cameras use one of these Bayer grids:
+//
+//	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+//	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+//	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+//	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+//	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+//	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+//
+	uint32 x, y, i, size = h*w, sz = 1<<bits;
+	memset(r, 0, sizeof r);
+	memset(g, 0, sizeof g);
+	memset(b, 0, sizeof b);
+	switch(bay){
+		case(BGGR):{
+			for(y=0; y < h; y++)
+				for(x=0; x < w; x++){
+					if(x&1 && y&1) r[img[y*h+x]]++;
+					else if(x&1^1 && y&1^1) b[img[y*h+x]]++;
+					else g[img[y*h+x]]++;
+				}
+			break;}
+		case(GRBG):{
+			//for(i=0; i < size; i++) {
+			//	r[img[i] >= sz ? sz : img[i]]++;
+			//	if(img[i] >= sz) printf("img[%d] = %d",i,img[i]);
+			//}
+
+			for(i=0, x=0, y=0; i < size; i++, x++){
+				if(x == w) { x=0; y++;}
+				if(y&1)
+					if(x&1) g[img[i]]++;
+					else 	b[img[i]]++;
+				else
+					if(x&1)	r[img[i]]++;
+					else 	g[img[i]]++;
+			}
+			break;}
+		case(GBRG):{
+			for(i=0, x=0, y=0; i < size; i++, x++){
+				if(x == w) { x=0; y++;}
+				if(x&1^1 && y&1) r[img[i]]++;
+				else if(x&1 && y&1^1) b[img[i]]++;
+				else g[img[i]]++;
+			}
+			//for(y=0; y < h; y++)
+			//	for(x=0; x < w; x++){
+			//		if(x&1^1 && y&1) r[img[y*h+x]]++;
+			//		else if(x&1 && y&1^1) b[img[y*h+x]]++;
+			//		else g[img[y*h+x]]++;
+			//	}
+			break;}
+		case(RGGB):{
+			for(y=0; y < h; y++)
+				for(x=0; x < w; x++){
+					if(x&1^1 && y&1^1) r[img[y*h+x]]++;
+					else if(x&1 && y&1) b[img[y*h+x]]++;
+					else g[img[y*h+x]]++;
+				}
+			break;}
 	}
 }
 
+#define line(x, l, h, a, c) ((x) < (l)) ? 0 :(((x) > (h)) ? 255 : ((a*x) + c)/(h-l))
+
+void utils_white_balance(imgtype *in, imgtype *out, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits, uint32 thresh)
+{
+	uint32 i, j, x, y, th = thresh*h*w/1000, sz = (1<<in_bits), szn = (1<<out_bits), size = h*w;
+	uint32  ar, ab, ag, cr, cb, cg, lr, lb, lg, hr, hb, hg;
+	uint64 sum = 0, avr, avb, avg;
+
+	printf("h = %d w = %d\n",h,w);
+	for(i=0; i<sz; i++) sum +=(r[i]*i); avr = sum/(size>>2); sum = 0;
+	for(i=0; i<sz; i++) sum +=(g[i]*i); avg = sum/(size>>1); sum = 0;
+	for(i=0; i<sz; i++) sum +=(b[i]*i); avb = sum/(size>>2); sum = 0;
+	for(i=0; i<sz; i++) if(r[i]>0) break; sum = 0;
+	for(j=sz-1; j; j--) if(r[j]>0) break; sum = 0;
+	lr = i; hr = j; ar = (szn-1); cr = -ar*lr;
+	printf("lr = %d hr = %d ar = %d cr = %d avr = %Ld size = %d\n", lr, hr, ar, cr, avr, size>>2);
+
+	//for(i=0; i<sz; i++) sum +=(g[i]*i); avg = sum/(size>>1); sum = 0;
+	for(i=0; i<sz; i++) if(g[i]>0) break; sum = 0;
+	for(j=sz-1; j; j--) if(g[j]>0) break; sum = 0;
+	lg = i; hg = j; ag = (szn-1); cg = -ag*lg;
+	printf("lg = %d hg = %d ag = %d cg = %d avg = %Ld size = %d\n", lg, hg, ag, cg, avg, size>>1);
+
+	//for(i=0; i<sz; i++) sum +=(b[i]*i); avb = sum/(size>>2); sum = 0;
+	for(i=0; i<sz; i++) if(b[i]>0) break; sum = 0;
+	for(j=sz-1; j; j--) if(b[j]>0) break; sum = 0;
+	lb = i; hb = j; ab = (szn-1); cb = -ab*lb;
+	printf("lb = %d hb = %d ab = %d cb = %d avb = %Ld size = %d\n", lb, hb, ab, cb, avb, size>>2);
+
+	switch(bay){
+		case(BGGR):{
+			for(y=0; y < h; y++)
+				for(x=0; x < w; x++){
+					if(x&1 && y&1) out[y*h+x] = line(in[y*h+x], lr, hr, ar, cr);
+					else if(x&1^1 && y&1^1) out[y*h+x] = line(in[y*h+x], lb, hb, ab, cb);
+					else out[y*h+x] = line(in[y*h+x], lg, hg, ag, cg);
+				}
+			break;}
+		case(GRBG):{
+			for(i=0, x=0, y=0; i < size; i++, x++){
+				if(x == w) { x=0; y++;}
+				if(y&1){
+					if(x&1) out[i] = line(in[i], lg, hg, ag, cg);
+					else 	out[i] = line(in[i], lb, hb, ab, cb);
+				} else {
+					if(x&1)	out[i] = line(in[i], lr, hr, ar, cr);
+					else 	out[i] = line(in[i], lg, hg, ag, cg);
+				}
+				//if(x&1 && y&1^1) out[i] = line(in[i], lr, hr, ar, cr); //printf("R");}
+				//else if(x&1^1 && y&1) out[i] = line(in[i], lb, hb, ab, cb); //printf("B");}
+				//else out[i] = line(in[i], lg, hg, ag, cg); //printf("G");}
+			}
+			break;}
+		case(GBRG):{
+			for(y=0; y < h; y++)
+				for(x=0; x < w; x++){
+					if(x&1^1 && y&1) out[y*h+x] = line(in[y*h+x], lr, hr, ar, cr);
+					else if(x&1 && y&1^1) out[y*h+x] = line(in[y*h+x], lb, hb, ab, cb);
+					else out[y*h+x] = line(in[y*h+x], lg, hg, ag, cg);
+				}
+			break;}
+		case(RGGB):{
+			for(y=0; y < h; y++)
+				for(x=0; x < w; x++){
+					if(x&1^1 && y&1^1) out[y*h+x] = line(in[y*h+x], lr, hr, ar, cr);
+					else if(x&1 && y&1) out[y*h+x] = line(in[y*h+x], lb, hb, ab, cb);
+					else out[y*h+x] = line(in[y*h+x], lg, hg, ag, cg);
+				}
+			break;}
+	}
+
+
+}
 
 void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uchar sub, uint32 size, uint32 *q, double *dis, double *e)
 /*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)

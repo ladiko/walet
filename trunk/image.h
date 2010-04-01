@@ -4,7 +4,7 @@
 typedef struct {
 	Vector size;
 	imgtype *img;
-	uint32 *rgb[4];	//Distribution probabilities array
+	uint32 *hist;	//Distribution probabilities array
 }	Image;
 
 static uint16 eng[5][16] = {
@@ -101,7 +101,8 @@ void	image_init			(Image *img, uint32 x, uint32 y, uint32 bits);
 void 	image_copy			(Image *img, uint32 bits, uchar *v);
 void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
-void 	image_fill_prob		(Image *im, Subband **sub, uint32 bits, uint32 color, uint32 steps);
+void 	image_fill_subb		(Image *im, Subband **sub, uint32 bits, uint32 color, uint32 steps);
+void 	image_fill_hist		(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
 double 	image_entropy		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st);
 void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st);
 uint32 	image_compress		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);

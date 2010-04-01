@@ -20,7 +20,6 @@ void frames_init(Frame *frame, Vector *sz, ColorSpace color, uint32 bits)
 	}
 }
 
-
 void frame_copy(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u, uchar *v)
 {
 	printf("Start frame copy \n");
@@ -49,12 +48,21 @@ void frame_idwt_53(Frame *frame, imgtype *buf, Subband **sub, ColorSpace color, 
 	}
 }
 
-void frame_fill_prob(Frame *frame, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
+void frame_fill_subb(Frame *frame, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
 {
-	image_fill_prob(&frame->img[0], sub, bits, color, steps);
+	image_fill_subb(&frame->img[0], sub, bits, color, steps);
 	if(color != GREY  && color != BAYER) {
-		image_fill_prob(&frame->img[1], sub, bits, color, steps);
-		image_fill_prob(&frame->img[2], sub, bits, color, steps);
+		image_fill_subb(&frame->img[1], sub, bits, color, steps);
+		image_fill_subb(&frame->img[2], sub, bits, color, steps);
+	}
+}
+
+void frame_fill_hist(Frame *frame, ColorSpace color, uint32 bits, BayerGrid bay)
+{
+	image_fill_hist(&frame->img[0], bits, color, bay);
+	if(color != GREY  && color != BAYER) {
+		image_fill_hist(&frame->img[1], bits, color, bay);
+		image_fill_hist(&frame->img[2], bits, color, bay);
 	}
 }
 
