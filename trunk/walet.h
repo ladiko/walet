@@ -88,6 +88,7 @@ typedef struct {
 	Vector 				size;			// Image size
 	ColorSpace		 	color;			// Color space
 	Compression			comp;			// Type of compression
+	BayerGrid			bg;				// Bayer grid pattern
 	uint32				bits;			// Bits per pixel
 	uint32				rates;			// Frame rates
 	uint32 				steps;  		// Steps of DWT
