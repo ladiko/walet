@@ -51,6 +51,12 @@ typedef enum {
 } ColorSpace;
 
 typedef enum {
+	LINEAR,
+	BT709,
+  	sRGB,
+} Gamma;
+
+typedef enum {
   	MS1_1 = 0,	
   	MS1_2 = 1,	
   	MS1_4 = 2,

@@ -207,19 +207,23 @@ void utils_fill_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, ui
 
 //#define line(x, l, h, a, c) ((x) < (l)) ? 0 :(((x) > (h)) ? 255 : ((a*x) + c)/(h-l))
 
-void utils_color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits)
+#define line(a,x)  (a*x)
+#define bt709(maxx,maxy,x)	(((x) < (0.018*maxx)) ? 4.5*maxy*(x)/maxx : (1.099*pow(x/maxx,0.45)-0.099)*maxy)
+#define srgb(maxx,maxy,x)	(((x) < (0.00313*maxx)) ? 12.92*maxy*(x)/maxx : (1.055*pow(x/maxx,0.417)-0.055)*maxy)
+
+void utils_color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, j, sz = (1<<in_bits), sz1 = (1<<out_bits)-1, ind;
 	uint32 *h[3] = {hist, &hist[1<<in_bits], &hist[1<<(in_bits+1)]};
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
-	double avr[3], min[3], max[3], a[3], c[3], p[3], sum, sum1;
+	double avr[3], max[3], a[3], p[3], sum, sum1;  //min[3],c[3],
 
 	for(j=0; j<3; j++) {
 		sum = 0.; sum1 = 0.;
 		for(i=0; i<sz; i++) sum += h[j][i]*i;
 		for(i=0; i<sz; i++) sum1 += h[j][i];
 		avr[j] = (double)sum/(double)sum1;
-		for(i=0; i<sz; i++) if(h[j][i]>0) break; min[j] = i;
+		//for(i=0; i<sz; i++) if(h[j][i]>0) break; min[j] = i;
 		for(i=sz-1; i; i--) if(h[j][i]>0) break; max[j] = i;
 	}
 	//Find maximum of average
@@ -227,21 +231,29 @@ void utils_color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bi
 	ind = (avr[ind] < avr[2]) ? 2 : ind;
 
 	for(j=0; j<3; j++) {
-		p[j] = (avr[j]-min[j])*(max[ind]-min[ind])/(avr[ind]-min[ind]) + min[j];
-		a[j] = (double)sz1/(p[j]-min[j]); c[j] = - a[j]*min[j];
-		printf("min = %f max = %f avr = %f a = %f c = %f p = %f\n", min[j], max[j], avr[j], a[j], c[j], p[j]);
+		//p[j] = (avr[j]-min[j])*(max[ind]-min[ind])/(avr[ind]-min[ind]) + min[j];
+		//a[j] = (double)sz1/(p[j]-min[j]); c[j] = - a[j]*min[j];
+		//printf("min = %f max = %f avr = %f a = %f c = %f p = %f\n", min[j], max[j], avr[j], a[j], c[j], p[j]);
+		p[j] = avr[j]*max[ind]/avr[ind];
+		a[j] = (double)sz1/p[j];
+		printf("max = %f avr = %f a = %f p = %f\n", max[j], avr[j], a[j], p[j]);
 
-		for(i=0; i<sz; i++) l[j][i] = (i<min[j]) ? 0 : ((i>p[j]) ? sz1 : (uint32)(a[j]*(double)i + c[j]));
+		//for(i=0; i<sz; i++) l[j][i] = (i<min[j]) ? 0 : ((i>p[j]) ? sz1 : (uint32)(a[j]*(double)i + c[j]));
+		switch(gamma){
+		case(LINEAR) : { for(i=0; i<sz; i++) l[j][i] = (i>p[j]) ? sz1 : (uint32)line(a[j],(double)i); break;}
+		case(BT709)  : { for(i=0; i<sz; i++) l[j][i] = (i>p[j]) ? sz1 : (uint32)bt709(max[j],(double)sz1,(double)i); break;}
+		case(sRGB)   : { for(i=0; i<sz; i++) l[j][i] = (i>p[j]) ? sz1 : (uint32)srgb(max[j],(double)sz1,(double)i); break;}
+		}
 	}
 }
 
-void utils_white_balance(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits)
+void utils_white_balance(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, x, y, size = h*w;
 	uint16 *c[4];
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
 
-	utils_color_table(hist, look, in_bits, out_bits);
+	utils_color_table(hist, look, in_bits, out_bits, gamma);
 
 	switch(bay){
 		case(BGGR):{ c[0] = l[0]; c[1] = l[1]; c[2] = l[1]; c[3] = l[2]; break;}

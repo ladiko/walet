@@ -11,7 +11,7 @@ uchar* 		utils_bayer_to_rgb	(imgtype *img, uchar *rgb, uint32 height, uint32 wid
 uchar* 		utils_grey_to_rgb	(imgtype *img, uchar *rgb, uint32 height, uint32 width);
 imgtype* 	utils_cat			(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
 void 		utils_fill_hist		(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits);
-void 		utils_white_balance	(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits);
+void 		utils_white_balance	(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits,Gamma gamma);
 
 void utils_unifom_dist_entr(uint32 *distrib, uint32 dist_size, uint32 step, uint32 size, uint32 *q, double *dis, double *e);
 uchar* wavelet_to_rgb(imgtype *img, uchar *rgb, int height, int width, int step);
