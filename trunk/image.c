@@ -172,12 +172,19 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 }
 
 
-void image_init(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color)
+void image_init(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, uint32 steps)
 {
 	int i;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
 	img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bits)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bits, sizeof(uint32));
 	img->look = (color == BAYER) ? (uint16 *)calloc((1<<bits)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bits, sizeof(uint16));
+	img->qfl  = (uint32 *)calloc(steps+1, sizeof(uint32));
+	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
+	if(color == BAYER) {
+		img->qfl[0] = 1; for(i=1; i< steps-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[steps-1] = img->qfl[steps-2]+2;
+		for(i=0; i<steps; i++) printf("fl[%d] = %d\n", i, img->qfl[i]);
+	}
+
 	img->size.x = x; img->size.y = y;
 	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
 }
@@ -318,12 +325,14 @@ void image_fill_subb(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 			for(i=0; i < 4; i++) {
 				printf("%2d %2d ", j, i);
 				sub[i][j].bits = subband_fill_prob(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist, bits+2);
-				sub[i][j].q_bits = sub[i][j].bits;
+				//sub[i][j].q_bits = sub[i][j].bits;
+				sub[i][j].q_bits = 0;
 			}
 	} else {
 		for(j=0; j < steps*3 + 1; j++)
 			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist, bits+2);
-			sub[0][j].q_bits = sub[0][j].bits;
+			//sub[0][j].q_bits = sub[0][j].bits;
+			sub[0][j].q_bits = 0;
 	}
 }
 
@@ -345,16 +354,41 @@ void image_fill_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)
 }
 
 double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
+/// \fn double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
+///	\brief Calculate image entropy.
+/// \param im	 		The pointer to image.
+/// \param sub 			The pointer to subband array.
+///	\param bits			The bits per pixel.
+///	\param color		Image color space.
+///	\param steps		The DWT steps.
+///	\param st			The step of quantization.
+///	\retval 			The image entropy.
 {
-	uint32 i,j=0;
+	uint32 i,j=0, num, tmp;
 	double en=0., dis, e;
 	imgtype *img = im->img;
 	if(color == BAYER){
+		num = (steps-1)*3;
+		//num = steps*3;
+		for(i=0; i < num+1; i++) sub[0][i].q_bits = 0;
+
+		for(i=0;;i++)
+			if(st > 0) st -= im->qfl[i];//im->qfl[(i>steps) ? steps : i];
+			else break;
+		tmp = i;
+		for(i=0; i < tmp; i++)
+			for(j=0; j < im->qfl[i]; j++)
+				sub[0][num-j].q_bits++;
+		if(st) for(j=0; j < -st; j++) sub[0][num-im->qfl[tmp-1]+1+j].q_bits--;
+
+		printf("%3d tmp = %3d qfl = %2d ", st, tmp, im->qfl[tmp-1]);
+		for(i=0; i < num+1; i++) printf("%2d ", sub[0][i].q_bits);
+		printf("\n");
+		/*
 		for(i=0; i < 4; i++){
 			sub[i][0].q_bits = sub[i][0].bits;
 			e = subband_entropy(sub[i][0].dist, bits+2, sub[i][0].bits, sub[i][0].q_bits,
 					sub[i][0].size.x*sub[i][0].size.y, sub[i][0].q);
-			//subband_dist_entr(sub[i][0].dist, 1<<(bits+2), 1, sub[i][0].size.x*sub[i][0].size.y, &dis, &e);
 			en += sub[i][0].size.x*sub[i][0].size.y*e;
 			//printf("size = %d %d %d e = %f q_bits = %d\n",sub[i][0].size.x*sub[i][0].size.y, j, i, e, sub[i][0].q_bits);
 		}
@@ -364,17 +398,21 @@ double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 
 				e = subband_entropy(sub[i][j].dist, bits+2, sub[i][j].bits, sub[i][j].q_bits,
 						sub[i][j].size.x*sub[i][j].size.y, sub[i][j].q);
-				//subband_dist_entr(sub[i][j].dist, 1<<(bits+2), 1<<(del[steps-2][j]+sb[i]+st), sub[i][j].size.x*sub[i][j].size.y, &dis, &e);
 				en += sub[i][j].size.x*sub[i][j].size.y*e;
 				//printf("size = %d %d %d e = %f q_bits = %d  bits = %d\n",
 				//		sub[i][j].size.x*sub[i][j].size.y, j, i, e, sub[i][j].q_bits, sub[i][j].bits-sb[i]-qu[st][j+3]);
 			}
 		}
-		//printf("entropy = %f\n", en /= (im->size.x*im->size.y));
 		return en /= (im->size.x*im->size.y);
-
+		*/
 	} else {
-		//subband_dist_entr(sub[0][0].dist, 1<<(bits+2), 1, sub[0][0].size.x*sub[0][0].size.y, &dis, &e);
+		//num = steps*3;
+
+		im->qfl[steps] = 1;
+		for(i=steps-1; i; i--) im->qfl[i] += im->qfl[i+1]+3;
+		im->qfl[0] = im->qfl[1]+2;
+		for(i=0; i<steps+1; i++) printf("fl[%d] = %d\n", i, im->qfl[i]);
+
 		sub[0][0].q_bits = sub[0][0].bits;
 		e = subband_entropy(sub[0][0].dist, bits+2, sub[0][0].bits, sub[0][0].q_bits,
 				sub[0][0].size.x*sub[0][0].size.y, sub[0][0].q);

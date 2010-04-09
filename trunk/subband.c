@@ -192,15 +192,16 @@ void subband_dist_entr(uint32 *dist, uint32 dist_size, uint32 step, uint32 size,
 
 */
 double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
-/*! \fn static inline int dist_unifom_8(uint32 *dist, const uint32 bit)
-	\brief Calculate distortion for the given uniform quantizer.
-    \param d	 		The pointer to distution probabilities arrey.
-    \param d_bits 		The 1<<d_bits size of distution probabilities array.
-	\param a_bits		The 1<<a_bits actual size of distution probabilities.
-	\param q_bits		Bits for quantization.
-	\param size			The subband size.
-	\param e			The subband entropy.
- */
+/// \fn double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
+///	\brief Calculate subband entropy.
+/// \param d	 		The pointer to distution probabilities arrey.
+/// \param d_bits 		The 1<<d_bits size of distution probabilities array.
+///	\param a_bits		The 1<<a_bits actual size of distution probabilities.
+///	\param q_bits		Bits for quantization.
+///	\param size			The subband size.
+///	\param e			The subband entropy.
+///	\retval 			The subband entropy.
+
 {
 	// |--------|--------0--------|--------|
 	// |           1<< dist_bits           |
@@ -252,13 +253,13 @@ double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, u
 }
 
 void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
-/*! \fn static inline int dist_unifom_8(uint32 *dist, const uint32 bit)
-	\brief Calculate distortion for the given uniform quantizer.
-	\param img			The pointer to subband
-	\param size			The number of pixels in subband
-    \param q	 		The pointer to quantization array.
-    \param d_bits 		The 1<<d_bits size of quantization array.
- */
+/// \fn void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
+///	\brief Calculate distortion for the given uniform quantizer.
+///	\param img			The pointer to subband
+///	\param size			The number of pixels in subband
+/// \param q	 		The pointer to quantization array.
+/// \param d_bits 		The 1<<d_bits size of quantization array.
+///
 {
 	int i, half = (1<<(d_bits-1));
 	//Quantization and finding range of distution

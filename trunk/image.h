@@ -6,6 +6,7 @@ typedef struct {
 	imgtype *img;
 	uint32 *hist;	//Distribution probabilities array
 	uint16 *look;	//Look up table
+	uint32 *qfl;	//The quantization floor
 }	Image;
 
 static uint16 eng[5][16] = {
@@ -98,7 +99,7 @@ static uint16 sb[4] = {0, 1, 1, 2};
 extern "C" {
 #endif /* __cplusplus */
 
-void	image_init			(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color);
+void	image_init			(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, uint32 steps);
 void 	image_copy			(Image *img, uint32 bits, uchar *v);
 void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);

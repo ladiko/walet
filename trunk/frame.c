@@ -3,20 +3,20 @@
 #include <stdio.h>
 #include <string.h>
 
-void frames_init(Frame *frame, Vector *sz, ColorSpace color, uint32 bits)
+void frames_init(Frame *frame, Vector *sz, ColorSpace color, uint32 bits, uint32 steps)
 {
-	image_init(&frame->img[0], sz->x, sz->y, bits, color);
+	image_init(&frame->img[0], sz->x, sz->y, bits, color, steps);
 	if(color == CS444 || color == RGB) {
-		image_init(&frame->img[1], sz->x, sz->y, bits, color);
-		image_init(&frame->img[2], sz->x, sz->y, bits, color);
+		image_init(&frame->img[1], sz->x, sz->y, bits, color, steps);
+		image_init(&frame->img[2], sz->x, sz->y, bits, color, steps);
 	}
 	if(color == CS422){
-		image_init(&frame->img[1], sz->x>>1 , sz->y, bits, color);
-		image_init(&frame->img[2], sz->x>>1 , sz->y, bits, color);
+		image_init(&frame->img[1], sz->x>>1 , sz->y, bits, color, steps);
+		image_init(&frame->img[2], sz->x>>1 , sz->y, bits, color, steps);
 	}
 	if(color == CS420){
-		image_init(&frame->img[1], sz->x>>1 , sz->y>>1, bits, color);
-		image_init(&frame->img[2], sz->x>>1 , sz->y>>1, bits, color);
+		image_init(&frame->img[1], sz->x>>1 , sz->y>>1, bits, color, steps);
+		image_init(&frame->img[2], sz->x>>1 , sz->y>>1, bits, color, steps);
 	}
 }
 
