@@ -6,7 +6,7 @@ typedef struct {
 	imgtype *img;
 	uint32 *hist;	//Distribution probabilities array
 	uint16 *look;	//Look up table
-	uint32 *qfl;	//The quantization floor
+	uint32 *qfl[2];	//The quantization floor
 }	Image;
 
 static uint16 eng[5][16] = {

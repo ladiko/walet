@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define lim(max,min,x)  ((x)>max ? max :((x)<min ? min : (x)))
+#define lim(max,min, x)  ((x)>max ? max :((x)<min ? min : (x)))
 
 static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 {
@@ -174,16 +174,18 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 
 void image_init(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, uint32 steps)
 {
-	int i;
+	int i, num;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
 	img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bits)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bits, sizeof(uint32));
 	img->look = (color == BAYER) ? (uint16 *)calloc((1<<bits)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bits, sizeof(uint16));
-	img->qfl  = (uint32 *)calloc(steps+1, sizeof(uint32));
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
-	if(color == BAYER) {
-		img->qfl[0] = 1; for(i=1; i< steps-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[steps-1] = img->qfl[steps-2]+2;
-		for(i=0; i<steps; i++) printf("fl[%d] = %d\n", i, img->qfl[i]);
-	}
+	if(color == BAYER) num = steps;
+	else num = steps+1;
+	img->qfl[0]  = (uint32 *)calloc(num, sizeof(uint32));
+	img->qfl[1]  = (uint32 *)calloc(num, sizeof(uint32));
+	img->qfl[0][0] = 1; for(i=1; i< num-1; i++) img->qfl[0][i] += img->qfl[0][i-1]+3; img->qfl[0][num-1] = img->qfl[0][num-2]+2;
+	img->qfl[1][0] = 1; for(i=1; i< num-1; i++) img->qfl[1][i] = 3; img->qfl[1][num-1] = 2;
+	for(i=0; i<steps; i++) printf("fl[0][%d] = %d fl[0][%d] = %d\n", i, img->qfl[0][i], i, img->qfl[1][i]);
 
 	img->size.x = x; img->size.y = y;
 	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
@@ -353,6 +355,35 @@ void image_fill_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)
 
 }
 
+#define max(x, m) ((x>m) ? (m) : (x))
+
+static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, int st)
+{
+	uint32 i,j=0, num, tmp;
+	if(color == BAYER) num = steps;
+	else num = steps+1;
+
+	for(i=0; i < num; i++) sub[0][i].q_bits = 0;
+
+	for(i=0;;i++)
+		if(st > 0) st -= im->qfl[0][max(i,steps-1)];
+		else break;
+	tmp = i;
+
+	for(i=0; i<(tmp<num ? tmp : num ); i++)
+		for(j=0; j < im->qfl[1][i]; j++)
+			sub[0][(num-1)*3 - j - (i ? im->qfl[0][i-1] : 0) ].q_bits = tmp-i;
+	//for(i=0; i < tmp; i++)
+	//	for(j=0; j < im->qfl[0][i]; j++)
+	//		sub[0][(num-1)*3-j].q_bits++;
+	if(st) for(j=0; j < -st; j++) sub[0][(num-1)*3+1 - im->qfl[0][max(tmp-1,num-1)] + j].q_bits--;
+
+	printf("%3d tmp = %3d  ", st, tmp);
+	for(i=0; i < (num-1)*3+1; i++) printf("%2d ", sub[0][i].q_bits);
+	printf("\n");
+
+}
+
 double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
 /// \fn double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
 ///	\brief Calculate image entropy.
@@ -368,22 +399,7 @@ double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 	double en=0., dis, e;
 	imgtype *img = im->img;
 	if(color == BAYER){
-		num = (steps-1)*3;
-		//num = steps*3;
-		for(i=0; i < num+1; i++) sub[0][i].q_bits = 0;
-
-		for(i=0;;i++)
-			if(st > 0) st -= im->qfl[i];//im->qfl[(i>steps) ? steps : i];
-			else break;
-		tmp = i;
-		for(i=0; i < tmp; i++)
-			for(j=0; j < im->qfl[i]; j++)
-				sub[0][num-j].q_bits++;
-		if(st) for(j=0; j < -st; j++) sub[0][num-im->qfl[tmp-1]+1+j].q_bits--;
-
-		printf("%3d tmp = %3d qfl = %2d ", st, tmp, im->qfl[tmp-1]);
-		for(i=0; i < num+1; i++) printf("%2d ", sub[0][i].q_bits);
-		printf("\n");
+		bits_allocation(im, sub, color, steps, st);
 		/*
 		for(i=0; i < 4; i++){
 			sub[i][0].q_bits = sub[i][0].bits;
@@ -407,11 +423,6 @@ double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 		*/
 	} else {
 		//num = steps*3;
-
-		im->qfl[steps] = 1;
-		for(i=steps-1; i; i--) im->qfl[i] += im->qfl[i+1]+3;
-		im->qfl[0] = im->qfl[1]+2;
-		for(i=0; i<steps+1; i++) printf("fl[%d] = %d\n", i, im->qfl[i]);
 
 		sub[0][0].q_bits = sub[0][0].bits;
 		e = subband_entropy(sub[0][0].dist, bits+2, sub[0][0].bits, sub[0][0].q_bits,
