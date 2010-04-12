@@ -181,11 +181,9 @@ void image_init(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, u
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
 	if(color == BAYER) num = steps;
 	else num = steps+1;
-	img->qfl[0]  = (uint32 *)calloc(num, sizeof(uint32));
-	img->qfl[1]  = (uint32 *)calloc(num, sizeof(uint32));
-	img->qfl[0][0] = 1; for(i=1; i< num-1; i++) img->qfl[0][i] += img->qfl[0][i-1]+3; img->qfl[0][num-1] = img->qfl[0][num-2]+2;
-	img->qfl[1][0] = 1; for(i=1; i< num-1; i++) img->qfl[1][i] = 3; img->qfl[1][num-1] = 2;
-	for(i=0; i<steps; i++) printf("fl[0][%d] = %d fl[0][%d] = %d\n", i, img->qfl[0][i], i, img->qfl[1][i]);
+	img->qfl  = (uint32 *)calloc(num, sizeof(uint32));
+	img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
+	for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
 
 	img->size.x = x; img->size.y = y;
 	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
@@ -327,14 +325,14 @@ void image_fill_subb(Image *im, Subband **sub, uint32 bits, ColorSpace color, ui
 			for(i=0; i < 4; i++) {
 				printf("%2d %2d ", j, i);
 				sub[i][j].bits = subband_fill_prob(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist, bits+2);
-				//sub[i][j].q_bits = sub[i][j].bits;
-				sub[i][j].q_bits = 0;
+				sub[i][j].q_bits = sub[i][j].bits;
+				//sub[i][j].q_bits = 0;
 			}
 	} else {
 		for(j=0; j < steps*3 + 1; j++)
 			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist, bits+2);
-			//sub[0][j].q_bits = sub[0][j].bits;
-			sub[0][j].q_bits = 0;
+			sub[0][j].q_bits = sub[0][j].bits;
+			//sub[0][j].q_bits = 0;
 	}
 }
 
@@ -357,30 +355,59 @@ void image_fill_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)
 
 #define max(x, m) ((x>m) ? (m) : (x))
 
-static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, int st)
+static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
 {
-	uint32 i,j=0, num, tmp;
-	if(color == BAYER) num = steps;
-	else num = steps+1;
+	uint32 i, j, k, num, stmax = 0, df;
 
-	for(i=0; i < num; i++) sub[0][i].q_bits = 0;
+	if(color == BAYER) {
+		num = (steps-1)*3;
+		for(k=0; k<4; k++) {
+			for(i=0; i < num+1; i++) sub[k][i].q_bits = sub[k][i].bits;
+			for(i=1; i < num+1; i++) stmax += sub[k][i].bits-1;
+		}
+		//printf("stmax = %d\n", stmax);
+		st = max(st, stmax);
+		for(i=0; ; i++){
+			for(k=0; k<4; k++){
+				switch(k){
+					case(0):{ df = im->qfl[max(i,steps-1)]; break;}
+					case(1):{ df = i>0 ?  im->qfl[max(i-1,steps-1)] : 0; break;}
+					case(2):{ df = i>0 ?  im->qfl[max(i-1,steps-1)] : 0; break;}
+					case(3):{ df = i>1 ?  im->qfl[max(i-2,steps-1)] : 0; break;}
+				}
+				for(j=0; j < df; j++){
+					if(sub[3-k][num-j].q_bits > 1) { sub[3-k][num-j].q_bits--; st--;}
+					//printf("st = %d sub[%d] = %d\n ", st, (num-1)*3-j, sub[0][(num-1)*3-j].q_bits);
+					if(!st) break;
+				}
+				if(!st) break;
+			}
+			if(!st) break;
+		}
+		for(k=0; k<4; k++) {
+			for(i=0; i < num+1; i++) printf("%2d ", sub[3-k][i].q_bits);
+			printf("   ");
+		}
+		printf("\n");
+	} else {
+		num = steps*3;
+		for(i=0; i < num+1; i++) sub[0][i].q_bits = sub[0][i].bits;
+		for(i=1; i < num+1; i++) stmax += sub[0][i].bits-1;
 
-	for(i=0;;i++)
-		if(st > 0) st -= im->qfl[0][max(i,steps-1)];
-		else break;
-	tmp = i;
+		//printf("stmax = %d\n", stmax);
+		st = max(st, stmax);
+		for(i=0; ; i++){
+			for(j=0; j < im->qfl[max(i,steps-1)]; j++){
+				if(sub[0][num-j].q_bits > 1) { sub[0][num-j].q_bits--; st--;}
+				//printf("st = %d sub[%d] = %d\n ", st, (num-1)*3-j, sub[0][(num-1)*3-j].q_bits);
+				if(!st) break;
+			}
+			if(!st) break;
+		}
 
-	for(i=0; i<(tmp<num ? tmp : num ); i++)
-		for(j=0; j < im->qfl[1][i]; j++)
-			sub[0][(num-1)*3 - j - (i ? im->qfl[0][i-1] : 0) ].q_bits = tmp-i;
-	//for(i=0; i < tmp; i++)
-	//	for(j=0; j < im->qfl[0][i]; j++)
-	//		sub[0][(num-1)*3-j].q_bits++;
-	if(st) for(j=0; j < -st; j++) sub[0][(num-1)*3+1 - im->qfl[0][max(tmp-1,num-1)] + j].q_bits--;
-
-	printf("%3d tmp = %3d  ", st, tmp);
-	for(i=0; i < (num-1)*3+1; i++) printf("%2d ", sub[0][i].q_bits);
-	printf("\n");
+		for(i=0; i < num+1; i++) printf("%2d ", sub[0][i].q_bits);
+		printf("\n");
+	}
 
 }
 

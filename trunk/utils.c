@@ -136,10 +136,6 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 			wy = w*y;
 			xwy = x + wy;
 			xwy3 = (x + w1*y)*3;
-			//rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
-			//rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
-			//					 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
-			//rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
 			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
 			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
 								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
@@ -204,8 +200,6 @@ void utils_fill_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, ui
 			else 	c[3][img[i]]++;
 	}
 }
-
-//#define line(x, l, h, a, c) ((x) < (l)) ? 0 :(((x) > (h)) ? 255 : ((a*x) + c)/(h-l))
 
 #define line(a,x)  (a*x)
 #define bt709(maxx,maxy,x)	(((x) < (0.018*maxx)) ? 4.5*maxy*(x)/maxx : (1.099*pow(x/maxx,0.45)-0.099)*maxy)
