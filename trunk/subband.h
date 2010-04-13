@@ -22,8 +22,8 @@ uint32  subband_range_decoder	(imgtype *img, uint32 *d, uint32 size, uint32 a_bi
 //uint32	subband_range_decoder	(imgtype *img, uint32 *d, uint32 size, uint32 bits , uchar *buff);
 uint32 	subband_fill_prob		(imgtype *img, uint32 size, uint32 *distrib, uint32 bits);
 //void 	subband_dist_entr		(uint32 *distrib, uint32 dist_size, uint32 step, uint32 size, double *dis, double *e);
-double 	subband_entropy			(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q);
-void  	subband_quantization	(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits);
+double 	subband_entropy			(uint32 *d,    uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits);
+void  	subband_quantization	(imgtype *img, uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 *q);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

@@ -7,6 +7,7 @@ typedef struct {
 	uint32 *hist;	//Distribution probabilities array
 	uint16 *look;	//Look up table
 	uint32 *qfl;	//The quantization floor
+	uint32 qst;		//Total steps of quantization
 }	Image;
 
 static uint16 eng[5][16] = {
@@ -105,8 +106,8 @@ void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, 
 void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	image_fill_subb		(Image *im, Subband **sub, uint32 bits, uint32 color, uint32 steps);
 void 	image_fill_hist		(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
-double 	image_entropy		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st);
-void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st);
+double 	image_entropy		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
+void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
 uint32 	image_compress		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 uint32 	image_decompress	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 

@@ -40,11 +40,16 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, Subband **sub, ColorSpace colo
 			//k=1;{
 			for(k=0; k<4; k++) {
 				switch(k){
-					case 0 : {h1 = 0; w1 = 0; break;}
-					case 1 : {h1 = 0; w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
-					case 2 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y; w1 = 0; break;}
-					case 3 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y;
-							  w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
+				//case 0 : {h1 = 0; w1 = 0; break;}
+				//case 1 : {h1 = 0; w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
+				//case 2 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y; w1 = 0; break;}
+				//case 3 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y;
+				//		  w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
+				case 0 : {h1 = 0; w1 = 0; break;}
+				case 1 : {h1 = 0; w1 = sub[0][3*(steps-1)-1].size.x + sub[0][3*(steps-1)-2].size.x; break;}
+				case 2 : {h1 = sub[0][3*(steps-1)-2].size.y + sub[0][3*(steps-1)-1].size.y; w1 = 0; break;}
+				case 3 : {h1 = sub[0][3*(steps-1)-2].size.y + sub[0][3*(steps-1)-1].size.y;
+						  w1 = sub[0][3*(steps-1)-1].size.x + sub[0][3*(steps-1)-2].size.x; break;}
 				}
 				for(i=(steps-1); i>0; i--){
 					h0 = sub[k][3*i-2].size.y; w0 = sub[k][3*i-1].size.x;
@@ -65,13 +70,15 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, Subband **sub, ColorSpace colo
 				drawrect(rgb, im, h1, w1, h, w, img->size.x, 128);
 			}
 		} else {
-			h0 = sub[1][0].size.y; w0 = sub[2][0].size.x;
+			//h0 = sub[1][0].size.y; w0 = sub[2][0].size.x;
+			//h  = sub[1][0].size.y; w  = sub[1][0].size.x;
+			h0 = sub[0][0].size.y; w0 = sub[0][0].size.x;
 			h  = sub[1][0].size.y; w  = sub[1][0].size.x;
 			im = &img->img[sub[1][0].loc];
 			drawrect(rgb, im, 0, w0, h, w, img->size.x, 128);
 
 			h = sub[2][0].size.y; w = sub[2][0].size.x;
-			im = &img->img[sub[2][0].loc];;
+			im = &img->img[sub[2][0].loc];
 			drawrect(rgb, im, h0, 0, h, w, img->size.x, 128);
 
 			h = sub[3][0].size.y; w = sub[3][0].size.x;

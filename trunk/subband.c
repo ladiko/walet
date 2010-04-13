@@ -191,16 +191,15 @@ void subband_dist_entr(uint32 *dist, uint32 dist_size, uint32 step, uint32 size,
 }
 
 */
-double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
+double subband_entropy(uint32 *d, uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits)
 /// \fn double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
-///	\brief Calculate subband entropy.
+/// \brief Calculate subband entropy.
 /// \param d	 		The pointer to distution probabilities arrey.
 /// \param d_bits 		The 1<<d_bits size of distution probabilities array.
-///	\param a_bits		The 1<<a_bits actual size of distution probabilities.
-///	\param q_bits		Bits for quantization.
-///	\param size			The subband size.
-///	\param e			The subband entropy.
-///	\retval 			The subband entropy.
+/// \param a_bits		The 1<<a_bits actual size of distution probabilities.
+/// \param q_bits		Bits for quantization.
+/// \param size			The subband size.
+/// \retval 			The subband entropy.
 
 {
 	// |--------|--------0--------|--------|
@@ -208,51 +207,46 @@ double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, u
 	//          |   1<<act_bits   |
 	//          |  |  |  |  |  |  |
 	//     step  =  1<<(a_bits-q_bits)
+
 	double e =0;
 	uint32  en=0, tot=0;
-	int i, j, step = 1<<(a_bits-q_bits), rest = 1<<(a_bits-1);
-	int half = (1<<(d_bits-1)), val = step>>1;
+	int i, j;
+	int step = 1<<(a_bits-q_bits), rest = 1<<(a_bits-1), half = (1<<(d_bits-1));
 
 	if(q_bits == 0){
 		printf("q_bits should be more than 0\n");
 		return 0;
 	}
 
-	for(j=(1-step); j< (int)step; j++) {
-		en += d[half+j];
-		q[half+j] = 0;
-	}
-	if(q_bits == 1) en += d[half-j];
+	for(j=(1-step); j< step; j++) en += d[half+j];
+	//if(q_bits == 1) { en += d[half-j]; q[half-j] = 0; }
 	if(en) e -= ((double)en/(double)size)*log2((double)en/(double)size);
 	tot += en;
 
 	for(i=step; i < rest; i+=step){
 		en = 0;
-		for(j= 0; j< step; j++) {
-			en += d[half+i+j];
-			q[half +i+j] = i+val;
-		}
+		for(j= 0; j< step; j++) en += d[half+i+j];
 		if(en) e -= ((double)en/(double)size)*log2((double)en/(double)size);
 		tot += en;
 		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
 	}
 	for(i=step; i < rest; i+=step){
 		en=0;
-		for(j= 0; j< step; j++) {
-			en += d[half-i-j];
-			q[half-i-j] = -i-val;
-		}
-		if(i == rest-step) en += d[half-i-j];
+		for(j= 0; j< step; j++) en += d[half-i-j];
+		//if(i == rest-step) en += d[half-i-j];
 		if(en) e -= ((double)en/(double)size)*log2((double)en/(double)size);
 		tot += en;
 		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
 		//rest -= step;
 	}
+	//en += d[half-i-j]; //q[half-i-j] = -i-val;
+	//if(en) e -= ((double)en/(double)size)*log2((double)en/(double)size);
+	tot += d[half-i-j];
 	//printf("tot = %d ", tot);
 	return e;
 }
 
-void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
+void  subband_quantization(imgtype *img,  uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 *q)
 /// \fn void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
 ///	\brief Calculate distortion for the given uniform quantizer.
 ///	\param img			The pointer to subband
@@ -261,11 +255,16 @@ void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
 /// \param d_bits 		The 1<<d_bits size of quantization array.
 ///
 {
-	int i, half = (1<<(d_bits-1));
-	//Quantization and finding range of distution
-	for(i=0; i < size; i++ ) {
-		img[i] = q[img[i] + half];
-	}
+	int i, j;
+	int step = 1<<(a_bits-q_bits), rest = 1<<(a_bits-1), half = (1<<(d_bits-1)), val = step>>1;
+	uint32 tmp;
+
+	for(j=(1-step); j< step; j++) q[half+j] = 0;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half+i+j] =  i+val;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half-i-j] = -i-val;
+	q[half-i-j] = -i-val;
+
+	for(i=0; i < size; i++ ) img[i] = q[img[i] + half];
 	//printf("min = %d max = %d  tot = %d bits = %d step = %d range = %d\n", min, max, max-min, i+1, step, range);
 	//return i+1;
 }
