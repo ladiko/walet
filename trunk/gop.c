@@ -12,7 +12,7 @@ void walet_init(StreamData *sd, GOP *gop)
 	//Frames init
 	gop->frames = (Frame *)calloc(sd->gop_size, sizeof(Frame));
 	printf("Frames  create\n");
-	for(i=0; i<sd->gop_size; i++) frames_init(&gop->frames[i], &sd->size, sd->color, sd->bits, sd->steps);
+	for(i=0; i<sd->gop_size; i++) frames_init(&gop->frames[i], &sd->size, sd->color, sd->bits, sd->steps, gop->buf);
 	printf("Frames  init\n");
 	//Subband init
 	if(sd->color == BAYER) 	subband_init_bayer(gop->sub   , sd->size.x, sd->size.y, sd->steps, sd->bits);

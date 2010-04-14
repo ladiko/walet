@@ -2,8 +2,9 @@
 #define IMAGE_H_
 
 typedef struct {
-	Vector size;
-	imgtype *img;
+	Vector size;	//Image size
+	Vector idwts;	//Image size after IDWT, if DWT steps is not equal IDWT steps
+	imgtype *img;	//Pointer to
 	uint32 *hist;	//Distribution probabilities array
 	uint16 *look;	//Look up table
 	uint32 *qfl;	//The quantization floor
@@ -26,76 +27,6 @@ static uint16 del[5][16] = {
 	{   0,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
 };
 
-static uint16 quant[6][16] = {
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-};
-
-static uint16 qu[50][16] = {
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1, },//
-
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  2, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2, },//
-
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  2,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  2,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  2,  2,  2,  3, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3, },//
-
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  2,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  2,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  0,  1,  1,  2,  2,  2,  3,  3,  3,  4, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4, },//
-
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  2,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  2,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  2,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  1,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  1,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  1,  2,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  0,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  0,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  0,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5, },//
-
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  2,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  2,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  2,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  1,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  1,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  1,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  0,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  0,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },
-	{   0,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6, },//
-};
-
-
-static uint16 sb[4] = {0, 1, 1, 2};
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -103,13 +34,14 @@ extern "C" {
 void	image_init			(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, uint32 steps);
 void 	image_copy			(Image *img, uint32 bits, uchar *v);
 void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
-void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
+void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st);
 void 	image_fill_subb		(Image *im, Subband **sub, uint32 bits, uint32 color, uint32 steps);
 void 	image_fill_hist		(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
 double 	image_entropy		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
-void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
-uint32 	image_compress		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
-uint32 	image_decompress	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
+void 	image_bits_alloc	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, double per);
+void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps);
+uint32 	image_range_encode	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
+uint32 	image_range_decode	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 
 void image_idwt_531(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st, Vector *size);
 
