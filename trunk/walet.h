@@ -29,12 +29,8 @@ typedef unsigned int       	uint32;
 typedef unsigned short int 	uint16;
 typedef unsigned long long 	uint64;
 typedef short int           int16;
-//typedef uint32				sadtype;
 typedef short int			imgtype;
 #endif
-
-//#define DIM 	1024			/**< Dimension of array of distribution probabilities */
-//#define	HALF 	512	 			/**< Half of dimension of array of distribution probabilities */
 
 typedef enum {
 	LESS,
@@ -100,6 +96,26 @@ typedef struct {
 	uint32 				steps;  		// Steps of DWT
 	uint32				gop_size;		// GOP size
 } StreamData;
+
+//File header
+// -----------------------------------------------------------------------------------------
+// |offset | size | description
+// ------------------------------------------------------------------------------------------
+// |  0    |  2   | Walet marker 0x776C
+// ------------------------------------------------------------------------------------------
+// |  2    |  2   | Image width in pixels
+// -------------------------------------------------------------------------------------------
+// |  4    |  2   | Image height in pixels
+// -------------------------------------------------------------------------------------------
+// |  6    |  1   | Color space 0 - CS420, 1 - CS422, 2 - CS444, 3 - RGB, 4 - GREY, 5 - BAYER
+// --------------------------------------------------------------------------------------------
+// |  7    |  1   | Bayer grid pattern 0 - BGGR, 1 - GRBG, 2 - GBRG, 3 - RGGB
+// --------------------------------------------------------------------------------------------
+// |  8    |  1   | Bits per pixel
+// --------------------------------------------------------------------------------------------
+// |  9    |  1   | Steps of DWT
+// --------------------------------------------------------------------------------------------
+// |  10   | 4 -
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))

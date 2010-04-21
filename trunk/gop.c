@@ -8,6 +8,7 @@ void walet_init(StreamData *sd, GOP *gop)
 	int i;
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(sd->size.x*sd->size.y, sizeof(imgtype));
+	gop->q = (int *)calloc(1<<(sd->bits+2), sizeof(int));
 	printf("Buffer init\n");
 	//Frames init
 	gop->frames = (Frame *)calloc(sd->gop_size, sizeof(Frame));
@@ -15,8 +16,15 @@ void walet_init(StreamData *sd, GOP *gop)
 	for(i=0; i<sd->gop_size; i++) frames_init(&gop->frames[i], &sd->size, sd->color, sd->bits, sd->steps, gop->buf);
 	printf("Frames  init\n");
 	//Subband init
-	if(sd->color == BAYER) 	subband_init_bayer(gop->sub   , sd->size.x, sd->size.y, sd->steps, sd->bits);
-	else 					subband_init	  (gop->sub[0], sd->size.x, sd->size.y, sd->steps, sd->bits);
-	if(sd->color == CS444 || sd->color == RGB) 	subband_init(gop->sub[1], sd->size.x   , sd->size.y, sd->steps, sd->bits);
-	if(sd->color == CS422) 						subband_init(gop->sub[1], sd->size.x>>1, sd->size.y, sd->steps, sd->bits);
+	if(sd->color == BAYER) 	subband_init_bayer(gop->sub, sd->size.x, sd->size.y, sd->steps, sd->bits, gop->q);
+	else 					subband_init	  (gop->sub, 0, sd->size.x, sd->size.y, sd->steps, sd->bits, gop->q);
+
+	if(sd->color == CS444 || sd->color == RGB) 	{
+		subband_init(gop->sub, 1, sd->size.x   , sd->size.y, sd->steps, sd->bits, gop->q);
+		subband_init(gop->sub, 2, sd->size.x   , sd->size.y, sd->steps, sd->bits, gop->q);
+	}
+	if(sd->color == CS422){
+		subband_init(gop->sub, 1, sd->size.x>>1, sd->size.y, sd->steps, sd->bits, gop->q);
+		subband_init(gop->sub, 2, sd->size.x>>1, sd->size.y, sd->steps, sd->bits, gop->q);
+	}
 }

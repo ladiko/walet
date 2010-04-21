@@ -72,7 +72,7 @@ static inline uint32 get_freq_cum(uint32 cum, uint32 *d, uint32 bits, uint32 *f,
 	else { (*cf) = cum-cu; (*f) = d[j];  return j; }
 }
 
-uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff)
+uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -126,7 +126,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	return j;
 }
 
-uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff)
+uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
@@ -181,9 +181,114 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 			printf("low = %16LX range = %16LX out = %3d sim = %3d img = %3d fin = %3d dif = %d f = %4d cf = %7d diff = %d\n",
 					low, range, out, out1, img[i], fin, dif, f, cf, img[i]- out1+half);
 
-
 	}
 	//printf("Decoder fineshed!\n");
 	return j;
+}
+uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
+/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+	\brief Range encoder.
+    \param img	 	The pointer to encoding message data.
+    \param d		The pointer to array of distribution probabilities of the mesage.
+	\param size		The size of the  message
+	\param a_bits	Bits per symbols befor quantization.
+	\param q_bits	Bits per symbols after quantization.
+	\param buff		The encoded output  buffer
+	\retval			The encoded message size in byts .
+*/
+{
+	uint32 shift = 16, num = (1<<q_bits), sz = num, sum = 0, out;
+	uint64 top = 0xFFFFFFFFFFFFFFFF, bot = (top>>16), low=0, low1=0, range;
+	uint32 i, j, k=0 , cu;
+	uint32 half = num>>1;
+	uint16 *buff = (uint16*) buf;
+	int im;
+
+	memset(d, 0, sizeof(uint32)*num*2);
+	for(i=0; i<num; i++) set_freq(i, d, q_bits);
+
+	//Ecoder setup
+	range = top; low = 0; j=0;
+
+	//printf(" top = %16LX bot = %16LX\n", top, bot);
+	for(i=0; i<size; i++) {
+		im = q[img[i] + half];
+		range = range/sz;
+		low1 = low;
+		cu = get_freq(im, d, q_bits);
+		low += range*cu;
+		//if(low < low1) { if(buff[j-1] == 0X0000) printf("buff = %4X %4X", buff[j-1], buff[j-2]); for(k=1; !(++buff[j-k]); k++); if(k>1) printf("k = %d j = %d buff = %4X %4X\n", k, j, buff[j-1], buff[j-2]);}
+		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
+		range = range*d[im];
+		//printf(" %2d  img = %3d f = %4u cu = %4u low = %16LX range = %16LX\n", i, im, d[im], cu, low, range);
+		while(range <= bot) {
+			buff[j++]  = (low>>48);
+			range <<= 16;
+			low <<= 16;
+			//printf("                                  low = %16LX range = %16LX\n", low, range);
+		}
+		set_freq(im, d, q_bits);
+		sz++;
+	}
+
+	buff[j++] = (low>>48);
+	buff[j++] = (low>>32) & 0xFFFF;
+	buff[j++] = (low>>16) & 0xFFFF;
+	if(low & 0xFFFF) buff[j++] = low & 0xFFFF;
+	//printf("size = %d Encoder size  = %d first = %4X end = %4X img = %d %d %d %d \n", size, j<<1, buff[0], buff[j-1], img[0], img[1], img[2], img[3]);
+	return (j<<1);
+}
+
+uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
+/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+	\brief Range decoder.
+    \param img	 	The pointer to encoding message data.
+    \param d		The pointer to array of distribution probabilities of the mesage.
+	\param size		The size of the  message
+	\param a_bits	Bits per symbols befor quantization.
+	\param q_bits	Bits per symbols after quantization.
+	\param buff		The encoded output  buffer
+	\retval			The encoded message size in byts .
+*/
+{
+	uint32 shift = 48, num = (1<<q_bits), sz = num, sum = 0, out, out1, f, cf;
+	uint64 top = 0xFFFFFFFFFFFFFFFF, bot = (top>>16), low = 0, range;
+	uint32 i, j, del = a_bits-q_bits, sub = (1<<del)>>1;;
+	uint32 half = num>>1;
+	int dif, fin;
+	uint16 *buff = (uint16*) buf;
+
+	//Initial setup
+	memset(d, 0, sizeof(uint32)*num*2);
+	for(i=0; i<num; i++) set_freq(i, d, q_bits);
+
+	//Ecoder setup
+	range = top;
+	low =  ((uint64)buff[0]<<48) | ((uint64)buff[1]<<32) | ((uint64)buff[2]<<16) | (uint64)buff[3];
+	j=4;
+	//printf("range = %16LX low = %16LX\n", range, low);
+	for(i=0; i<size; i++) {
+		while(range <= bot) {
+			range <<=16;
+			low = (low<<16) | (uint64)buff[j++];
+		}
+		range = range/sz;
+		out = low/range;
+		out1 =  get_freq_cum(out, d, q_bits, &f, &cf);
+		low -= cf*range;
+		range = range*f;
+		set_freq(out1, d, q_bits);
+		sz++;
+		if(img[i]- (q[out]-half)) printf("i=%d ", i);
+		//img[i] = q[out];
+		//dif = out1 - half;
+		//fin = dif > 0 ? (dif<<del)+sub : (dif < 0 ? -((-dif)<<del)-sub : 0);
+		//if(img[i]- fin) printf("i=%d ", i);
+		//	printf("low = %16LX range = %16LX out = %3d sim = %3d img = %3d fin = %3d dif = %d f = %4d cf = %7d diff = %d\n",
+		//			low, range, out, out1, img[i], fin, dif, f, cf, img[i]- out1+half);
+
+	}
+	//printf("size = %d Decoder size  = %d first = %4X end = %4X img = %d %d %d %d\n", size, j<<1, buff[0], buff[j-1], img[0], img[1], img[2], img[3]);
+	return (j<<1);
 }
 

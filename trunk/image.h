@@ -36,12 +36,13 @@ void 	image_copy			(Image *img, uint32 bits, uchar *v);
 void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
 void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st);
 void 	image_fill_subb		(Image *im, Subband **sub, uint32 bits, uint32 color, uint32 steps);
-void 	image_fill_hist		(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
+void 	image_fill_bayer_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
 double 	image_entropy		(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
 void 	image_bits_alloc	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, double per);
-void 	image_quantization	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps);
-uint32 	image_range_encode	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
-uint32 	image_range_decode	(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
+void 	image_quantization	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps);
+uint32 	image_range_encode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
+uint32 	image_range_decode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
+void 	image_make_tables	(Subband **sub, uint32 bits, ColorSpace color, uint32 steps);
 
 void image_idwt_531(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st, Vector *size);
 
