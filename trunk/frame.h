@@ -14,8 +14,8 @@ extern "C" {
 
 void 	frames_init			(Frame *frame, Vector *sz, ColorSpace color, uint32 bits, uint32 steps, imgtype *buf);
 void 	frame_copy			(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u, uchar *v);
-void 	frame_dwt_53 		(Frame *frame, Subband **sub, ColorSpace color, uint32 steps);
-void 	frame_idwt_53		(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 st);
+void 	frame_dwt_53 		(Frame *frame, ColorSpace color, uint32 steps);
+void 	frame_idwt_53		(Frame *frame, ColorSpace color, uint32 steps, uint32 st);
 void 	frame_fill_subb		(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits);
 void	frame_bits_alloc	(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, double per);
 void 	frame_quantization	(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits);

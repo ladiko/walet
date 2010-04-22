@@ -6,92 +6,58 @@
 #include <math.h>
 #include <utils.h>
 
-void subband_init_bayer(Subband **sub, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q)
+static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 bits, uint32 ofset, int *q)
 {
-	uint32  i, k;
-	uint32  s[4], sh[4], h[2], w[2], h0, w0, h1, w1, s0;
-	w[0] = x; h[0] = y;
-
-	if(steps == 1){
-		h[1] = (h[0]>>1), h[0] = (h[0]>>1) + h[0]%2, w[1] = (w[0]>>1), w[0] = (w[0]>>1) + w[0]%2;
-		s[0] = 0; s[1] = w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
-
-		for(k=0; k<4; k++) {
-			sub[k] = (Subband *)calloc(1, sizeof(Subband));
-			sub[k][0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-			sub[k][0].q = q;
-		}
-
-		sub[0][0].size.x = w[0]; sub[0][0].size.y = h[0]; sub[0][0].loc = s[0];
-		sub[1][0].size.x = w[1]; sub[1][0].size.y = h[0]; sub[1][0].loc = s[1];
-		sub[2][0].size.x = w[0]; sub[2][0].size.y = h[1]; sub[2][0].loc = s[2];
-		sub[3][0].size.x = w[1]; sub[3][0].size.y = h[1]; sub[3][0].loc = s[3];
-	} else {
-		h1 = (h[0]>>1), h0 = (h[0]>>1) + h[0]%2, w1 = (w[0]>>1), w0 = (w[0]>>1) + w[0]%2;
-		sh[0] = 0; sh[1] = w0*h0; sh[2] = sh[1] + w1*h0; sh[3] = sh[2] + w0*h1;
-		for(k=0; k<4; k++) {
-			sub[k] = (Subband *)calloc((steps-1)*3+1, sizeof(Subband));
-			switch(k){
-				case 0 : {h[0] = h0; w[0] = w0; break;}
-				case 1 : {h[0] = h0; w[0] = w1; break;}
-				case 2 : {h[0] = h1; w[0] = w0; break;}
-				case 3 : {h[0] = h1; w[0] = w1; break;}
-			}
-			for(i=(steps-1); i>0; i--){
-				h[1] = (h[0]>>1), h[0] = (h[0]>>1) + h[0]%2, w[1] = (w[0]>>1), w[0] = (w[0]>>1) + w[0]%2;
-				s[0] = 0; s[1] = w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
-
-				sub[k][3*i  ].size.x = w[1]; sub[k][3*i  ].size.y = h[1]; sub[k][3*i  ].loc = sh[k]+s[3];
-				sub[k][3*i-1].size.x = w[0]; sub[k][3*i-1].size.y = h[1]; sub[k][3*i-1].loc = sh[k]+s[2];
-				sub[k][3*i-2].size.x = w[1]; sub[k][3*i-2].size.y = h[0]; sub[k][3*i-2].loc = sh[k]+s[1];
-				sub[k][3*i  ].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-				sub[k][3*i-1].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-				sub[k][3*i-2].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-				sub[k][3*i  ].q = q;
-				sub[k][3*i-1].q = q;
-				sub[k][3*i-2].q = q;
-							}
-			sub[k][0].size.x = w[0]; sub[k][0].size.y = h[0]; sub[k][0].loc = sh[k];
-			sub[k][0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-			sub[k][0].q = q;
-		}
-	}
-	//int j;
-	//for(i=0; i < 4; i++) for(j=0; j < (steps-1)*3+1; j++)
-	//	printf("i = %d j = %d loc = %d size.x = %d  size.y = %d dist = %p\n", i, j, sub[i][j].loc, sub[i][j].size.x, sub[i][j].size.y, sub[i][j].dist);
-
-}
-
-
-void subband_init(Subband **subb, uint32 num, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q)
-{
-	uint32  i;
+	uint32  i, st = steps*3+1;
 	uint32  s[4], sh[4], h[2], w[2];
 	w[0] = x; h[0] = y;
-	Subband *sub = subb[num];
-	sub = (Subband *)calloc((steps-1)*3+1, sizeof(Subband));
-	//printf("x = %d y = %d steps = %d\n", x, y, steps);
+
 	for(i=steps; i>0; i--){
-		h[1] = (h[0]>>1), h[0] = (h[0]>>1) + h[0]%2, w[1] = (w[0]>>1), w[0] = (w[0]>>1) + w[0]%2;
-		s[0] = 0; s[1] = w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
+		h[1] = (h[0]>>1), h[0] = (h[0]>>1) + (h[0]&1), w[1] = (w[0]>>1), w[0] = (w[0]>>1) + (w[0]&1);
+		s[0] = ofset; s[1] = s[0] + w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
 
 		sub[3*i  ].size.x = w[1]; sub[3*i  ].size.y = h[1]; sub[3*i  ].loc = s[3];
 		sub[3*i-1].size.x = w[0]; sub[3*i-1].size.y = h[1]; sub[3*i-1].loc = s[2];
 		sub[3*i-2].size.x = w[1]; sub[3*i-2].size.y = h[0]; sub[3*i-2].loc = s[1];
-		sub[3*i  ].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-		sub[3*i-1].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-		sub[3*i-2].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-		sub[3*i  ].q = q;
-		sub[3*i-1].q = q;
-		sub[3*i-2].q = q;
-		//printf("sub %d h %d w %d s %d p %p\n",sub[0][3*i  ]->subb, sub[0][3*i  ]->size.y, sub[0][3*i  ]->size.x, s[1], sub[0][3*i  ]);
-		//printf("sub %d h %d w %d s %d p %p\n",sub[0][3*i-1]->subb, sub[0][3*i-1]->size.y, sub[0][3*i-1]->size.x, s[2], sub[0][3*i-1]);
-		//printf("sub %d h %d w %d s %d p %p\n",sub[0][3*i-2]->subb, sub[0][3*i-2]->size.y, sub[0][3*i-2]->size.x, s[3], sub[0][3*i-2]);
 	}
-	sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = 0;
-	sub[0].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
-	sub[0].q = q;
+	sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = ofset;
+	for(i=0; i<st; i++){
+		sub[i].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+		sub[i].q = q;
+	}
 	//printf("sub %d h %d w %d s %d p %p\n",sub[0][0]->subb, sub[0][0]->size.y, sub[0][0]->size.x, s[0], sub[0][0]);
+}
+
+void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q)
+{
+	uint32  j, k,st;
+	uint32  s[4], h[2], w[2];
+
+	if(color == BAYER){
+		if(steps == 1){
+			sub[num] = (Subband *)calloc(4, sizeof(Subband));
+			subband_ini(sub[num], x, y, steps, bits, 0, q);
+		} else {
+			h[0] = (y>>1) + (y&1), h[1] = (y>>1), w[0] = (x>>1) + (x&1), w[1] = (x>>1);
+			//printf("x = %d y = %d h[0] = %d h[1] = %d w[0] = %d w[1] = %d\n", x, y, h[0], h[1], w[0], w[1]);
+			s[0] = 0; s[1] = s[0] + w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
+
+			st = ((steps-1)*3+1);
+			sub[num] = (Subband *)calloc(st<<2, sizeof(Subband));
+			subband_ini(&sub[num][0   ], w[0], h[0], steps-1, bits, s[0], q);
+			subband_ini(&sub[num][st  ], w[1], h[0], steps-1, bits, s[1], q);
+			subband_ini(&sub[num][st*2], w[0], h[1], steps-1, bits, s[2], q);
+			subband_ini(&sub[num][st*3], w[1], h[1], steps-1, bits, s[3], q);
+			//printf("sub = %p\n", sub[num]);
+		}
+	} else {
+		sub[num] = (Subband *)calloc(steps*3+1, sizeof(Subband));
+		subband_ini(sub[num], x, y, steps, bits, 0, q);
+	}
+
+	//for(k=0; k < 4; k++) for(j=0; j < (steps-1)*3+1; j++)
+	//	printf("i = %2d j = %2d loc = %8d size.x = %4d  size.y = %4d dist = %p\n",
+	//			k, j, sub[num][j+((steps-1)*3+1)*k].loc, sub[num][j+((steps-1)*3+1)*k].size.x, sub[num][j+((steps-1)*3+1)*k].size.y, &sub[num][j+((steps-1)*3+1)*k]);
 }
 
 uint32 subband_range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)

@@ -37,7 +37,7 @@ void frame_copy(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u,
 	}
 }
 
-void frame_dwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps)
+void frame_dwt_53(Frame *frame, ColorSpace color, uint32 steps)
 ///	\fn	void frame_dwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps)
 ///	\brief	Discrete wavelets frame transform.
 ///	\param	frame		The pointer to the frame.
@@ -45,14 +45,14 @@ void frame_dwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps)
 ///	\param	color		Color space.
 ///	\param	steps		DWT steps.
 {
-	image_dwt_53(&frame->img[0], frame->buf, sub, color, steps);
+	image_dwt_53(&frame->img[0], frame->buf, frame->img[0].sub, color, steps);
 	if(color != GREY  && color != BAYER) {
-		image_dwt_53(&frame->img[1], frame->buf, sub, color, steps);
-		image_dwt_53(&frame->img[2], frame->buf, sub, color, steps);
+		image_dwt_53(&frame->img[1], frame->buf, frame->img[1].sub, color, steps);
+		image_dwt_53(&frame->img[2], frame->buf, frame->img[2].sub, color, steps);
 	}
 }
 
-void frame_idwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
+void frame_idwt_53(Frame *frame, ColorSpace color, uint32 steps, uint32 st)
 ///	\fn	void frame_idwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
 ///	\brief	Invert discrete wavelets frame transform.
 ///	\param	frame		The pointer to the frame.
@@ -61,10 +61,10 @@ void frame_idwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, 
 ///	\param 	steps		DWT steps.
 ///	\param	st			IDWT steps.
 {
-	image_idwt_53(&frame->img[0], frame->buf, sub, color, steps, st);
+	image_idwt_53(&frame->img[0], frame->buf, frame->img[0].sub, color, steps, st);
 	if(color != GREY  && color != BAYER) {
-		image_idwt_53(&frame->img[1], frame->buf, sub, color, steps, st);
-		image_idwt_53(&frame->img[2], frame->buf, sub, color, steps, st);
+		image_idwt_53(&frame->img[1], frame->buf, frame->img[1].sub, color, steps, st);
+		image_idwt_53(&frame->img[2], frame->buf, frame->img[2].sub, color, steps, st);
 	}
 }
 
@@ -103,10 +103,10 @@ void frame_white_balance(Frame *frame, ColorSpace color, uint32 bits, uint32 out
 
 void frame_bits_alloc(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, double per)
 {
-	image_bits_alloc(&frame->img[0], sub, bits, color, steps, per);
+	image_bits_alloc(&frame->img[0], sub, 0, bits, color, steps, per);
 	if(color != GREY  && color != BAYER) {
-		image_bits_alloc(&frame->img[1], sub, bits, color, steps, per);
-		image_bits_alloc(&frame->img[2], sub, bits, color, steps, per);
+		image_bits_alloc(&frame->img[1], sub, 1, bits, color, steps, per);
+		image_bits_alloc(&frame->img[2], sub, 2, bits, color, steps, per);
 	}
 }
 
@@ -147,7 +147,7 @@ void frame_compress(Frame *frame, Subband **sub,  ColorSpace color, uint32 steps
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt_53		(frame, sub, color, steps);
+	frame_dwt_53		(frame, color, steps);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("DWT time             = %f\n", (double)(end-start)/1000000.);
 
