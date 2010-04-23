@@ -3,8 +3,9 @@
 
 typedef struct {
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
+	StreamData		*sd;		//Pointer to stream data.
 	Frame			*frames;	//Pointer to frames array
-	Subband			*sub[4];	//Subband location and size structure
+	Subband			*sub[3];	//Subband location and size structure
 	int 			*q;			//Quatntization value array
 }	GOP;
 

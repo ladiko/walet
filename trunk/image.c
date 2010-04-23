@@ -173,45 +173,60 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 }
 
 
-void image_init(Image *img, uint32 x, uint32 y, uint32 bits, ColorSpace color, uint32 steps)
+void image_init(Image *img, StreamData *sd, uint32 x, uint32 y)
+///	\fn void image_init(Image *img, StreamData *sd)
+///	\brief Create image
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
 {
 	int i, num;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
-	img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bits)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bits, sizeof(uint32));
-	img->look = (color == BAYER) ? (uint16 *)calloc((1<<bits)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bits, sizeof(uint16));
+	img->hist = (sd->color == BAYER) ? (uint32 *)calloc((1<<sd->bits)*3, sizeof(uint32)) : (uint32 *)calloc(1<<sd->bits, sizeof(uint32));
+	img->look = (sd->color == BAYER) ? (uint16 *)calloc((1<<sd->bits)*3, sizeof(uint16)) : (uint16 *)calloc(1<<sd->bits, sizeof(uint16));
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
-	num = (color == BAYER) ? steps : steps+1;
+	num = (sd->color == BAYER) ? sd->steps : sd->steps+1;
 	img->qfl  = (uint32 *)calloc(num, sizeof(uint32));
 	img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
-	for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
+	for(i=0; i<sd->steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
 
 	img->size.x = x; img->size.y = y;
 	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
 }
 
-void image_copy(Image *img, uint32 bits, uchar *v)
+void image_copy(Image *img, StreamData *sd, uchar *v)
+///	\fn void image_copy(Image *img, StreamData *sd, uchar *v)
+///	\brief Copy image.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
+///	\param v 			Input image buffer.
 {
-	uint32 i, size = img->size.x*img->size.y, sz = 1<<bits;
-	printf("Start copy  x = %d y = %d p = %p size = %d\n", img->size.x, img->size.y, img->img, sz);
-	if(bits > 8) for(i=0; i<size; i++) img->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
+	uint32 i, size = img->size.x*img->size.y;
+	printf("Start copy  x = %d y = %d p = %p \n", img->size.x, img->size.y, img->img);
+	if(sd->bits > 8) for(i=0; i<size; i++) img->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
 	else 		 for(i=0; i<size; i++) img->img[i] = v[i];
 }
 
-void image_dwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint32 steps)
+void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
+///	\fn void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
+///	\brief Discrete wavelets transform of the image.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
+///	\param buf 			Pointer to temporary buffer.
 {
 	imgtype *s1 = buf, *img = im->img;
 	uint32 j, k, h, w, st;
 	int i, nsub;
 	h =  im->size.y; w = im->size.x;
+	Subband *sub = im->sub;
 
-	if(color == BAYER){
+	if(sd->color == BAYER){
 		for(j=0; j < h; j++) dwt53_1d_1h(&img[j*w], &s1[j*w], w);
 		dwt53_2d_v(s1, img, w, h);
 		//dwt53_2d_v_8bit(s1, img, w, h);
-		if(steps > 1){
+		if(sd->steps > 1){
 			for(k=0; k<4; k++) {
-				st = ((steps-1)*3+1)*k;
-				for(i=(steps-1); i>0; i--){
+				st = ((sd->steps-1)*3+1)*k;
+				for(i=(sd->steps-1); i>0; i--){
 					w = sub[3*i-1+st].size.x + sub[3*i-2+st].size.x;
 					h = sub[3*i-1+st].size.y + sub[3*i-2+st].size.y;
 					for(j=0; j < h; j++) dwt53_1d_1h(&img[sub[st].loc+j*w], &s1[j*w], w);
@@ -220,7 +235,7 @@ void image_dwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint3
 			}
 		}
 	} else {
-		for(i=steps; i>0; i--){
+		for(i=sd->steps; i>0; i--){
 			for(j=0; j < h; j++) dwt53_1d_1h(&img[j*w], &s1[j*w], w);
 			dwt53_2d_v(s1, img, w, h);
 			w = sub[3*i-1].size.x;
@@ -229,20 +244,20 @@ void image_dwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint3
 	}
 }
 
-void image_idwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint32 steps, uint32 s_idwt)
-///	\fn void image_idwt_53(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st, Vector *size)
+void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
+///	\fn void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
 ///	\brief Invert discrete wavelets transform of the image.
 ///	\param im	 		The pointer to image.
-///	\param but 			Pointer to temporary buffer.
-///	\param sub 			Pointer to subband arrey.
-///	\param color		Color space.
-///	\param steps		DWT steps.
-///	\param s_idwt	IDWT steps.
+///	\param sd 			Pointer to StreamData.
+///	\param buf 			Pointer to temporary buffer.
+///	\param steps		IDWT steps.
 {
 	imgtype *s1 = buf, *img = im->img;
 	uint32 k, i, j, h, w, st;
-	if(color == BAYER){
-		if(steps == 1){
+	Subband *sub = im->sub;
+
+	if(sd->color == BAYER){
+		if(sd->steps == 1){
 			h = im->size.y;
 			w = im->size.x;
 			idwt53_2d_v(img, s1, w, h);
@@ -250,18 +265,18 @@ void image_idwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint
 			im->idwts.x = w; im->idwts.y = h;
 		} else {
 			for(k=0; k<4; k++) {
-				for(i=0; i<(s_idwt-1); i++){
-					st = ((steps-1)*3+1)*k;
+				for(i=0; i<(steps-1); i++){
+					st = ((sd->steps-1)*3+1)*k;
 					h = sub[3*i+1+st].size.y + sub[3*i+2+st].size.y;
 					w = sub[3*i+1+st].size.x + sub[3*i+2+st].size.x;
 					idwt53_2d_v(&img[sub[st].loc], s1, w, h);
 					for(j=0; j < h; j++) idwt53_1d_1h(&s1[j*w], &img[sub[st].loc+j*w], w);
 				}
 			}
-			if(steps == s_idwt) { h = im->size.y; w = im->size.x;}
+			if(sd->steps == steps) { h = im->size.y; w = im->size.x;}
 			else {
-				h = sub[3*i+1].size.y + sub[3*i+1 + ((steps-1)*3+1)*2].size.y;
-				w = sub[3*i+2].size.x + sub[3*i+2 + ((steps-1)*3+1)  ].size.x;
+				h = sub[3*i+1].size.y + sub[3*i+1 + ((sd->steps-1)*3+1)*2].size.y;
+				w = sub[3*i+2].size.x + sub[3*i+2 + ((sd->steps-1)*3+1)  ].size.x;
 			}
 
 			idwt53_2d_v(img, s1, w, h);
@@ -269,7 +284,7 @@ void image_idwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint
 			im->idwts.x = w; im->idwts.y = h;
 		}
 	} else {
-		for(i=0; i<s_idwt; i++){
+		for(i=0; i<steps; i++){
 			h = sub[3*i+1].size.y + sub[3*i+2].size.y;
 			w = sub[3*i+1].size.x + sub[3*i+2].size.x;
 			//printf("1.y = %d 2.y = %d 2.x = %d 1.x = %d\n",sub[0][3*i+1]->size.y, sub[0][3*i+2]->size.y, sub[0][3*i+2]->size.x, sub[0][3*i+1]->size.x);
@@ -280,27 +295,26 @@ void image_idwt_53(Image *im, imgtype *buf, Subband *sub, ColorSpace color, uint
 	}
 }
 
-void image_fill_subb(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
+void image_fill_subb(Image *im, StreamData *sd)
+///	\fn void image_fill_subb(Image *im, StreamData *sd)
+///	\brief Fill distribution probability array.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
 {
-	uint32 i, j;
+	uint32 i, sz, st = ((sd->steps-1)*3+1);
 	imgtype *img = im->img;
 	im->qst = 0;
-	if(color == BAYER){
-		for(j=0; j < (steps-1)*3+1; j++)
-			for(i=0; i < 4; i++) {
-				printf("%2d %2d ", j, i);
-				sub[i][j].bits = subband_fill_prob(&img[sub[i][j].loc], sub[i][j].size.x*sub[i][j].size.y, sub[i][j].dist, bits+2);
-				sub[i][j].q_bits = sub[i][j].bits;
-				im->qst += j ? sub[i][j].bits-1 : 0;
-				//sub[i][j].q_bits = 0;
-			}
-	} else {
-		for(j=0; j < steps*3 + 1; j++)
-			sub[0][j].bits = subband_fill_prob(&img[sub[0][j].loc], sub[0][j].size.x*sub[0][j].size.y, sub[0][j].dist, bits+2);
-			sub[0][j].q_bits = sub[0][j].bits;
-			im->qst += j ? sub[0][j].bits-1 : 0;
-			//sub[0][j].q_bits = 0;
+	Subband *sub = im->sub;
+
+	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	for(i=0; i < sz; i++) {
+		printf("%2d  ", i);
+		sub[i].bits = subband_fill_prob(&img[sub[i].loc], sub[i].size.x*sub[i].size.y, sub[i].dist, sd->bits+2);
+		sub[i].q_bits = sub[i].bits;
+		im->qst += sub[i].bits-1;
 	}
+	sz = (sd->color == BAYER) ? 4 : 1;
+	for(i=0; i <sz; i++) im->qst -= sub[i*st].bits-1; //Remove all ll subbands from quantization
 }
 
 void image_fill_bayer_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)

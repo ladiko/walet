@@ -28,84 +28,78 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint3
 	}
 }
 
-uchar* utils_subband_draw(uchar *rgb, Image *img, Subband **sub, ColorSpace color, uint32 steps)
+uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps)
 //For vizualisation only
 {
-	uint32 k, h, w, h0, w0, h1, w1;
+	uint32 k, h, w, h0, w0, h1, w1, st;
 	int i;
 	imgtype* im;
+	Subband *sub = img->sub;
 	//for(i=0; i<=steps*3; i++) printf("sub %d h %d w %d p %p\n",sub[0][i]->subb, sub[0][i]->size.y, sub[0][i]->size.x,  sub[0][i ]);
 	if(color == BAYER ){
 		if(steps > 1){
-			//k=1;{
 			for(k=0; k<4; k++) {
+				st = ((steps-1)*3+1);
 				switch(k){
-				//case 0 : {h1 = 0; w1 = 0; break;}
-				//case 1 : {h1 = 0; w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
-				//case 2 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y; w1 = 0; break;}
-				//case 3 : {h1 = sub[k][3*(steps-1)-2].size.y + sub[k][3*(steps-1)-1].size.y;
-				//		  w1 = sub[k][3*(steps-1)-1].size.x + sub[k][3*(steps-1)-2].size.x; break;}
 				case 0 : {h1 = 0; w1 = 0; break;}
-				case 1 : {h1 = 0; w1 = sub[0][3*(steps-1)-1].size.x + sub[0][3*(steps-1)-2].size.x; break;}
-				case 2 : {h1 = sub[0][3*(steps-1)-2].size.y + sub[0][3*(steps-1)-1].size.y; w1 = 0; break;}
-				case 3 : {h1 = sub[0][3*(steps-1)-2].size.y + sub[0][3*(steps-1)-1].size.y;
-						  w1 = sub[0][3*(steps-1)-1].size.x + sub[0][3*(steps-1)-2].size.x; break;}
+				case 1 : {h1 = 0; w1 = sub[3*(steps-1)-1].size.x + sub[3*(steps-1)-2].size.x; break;}
+				case 2 : {h1 = sub[3*(steps-1)-2].size.y + sub[3*(steps-1)-1].size.y; w1 = 0; break;}
+				case 3 : {h1 = sub[3*(steps-1)-2].size.y + sub[3*(steps-1)-1].size.y;
+						  w1 = sub[3*(steps-1)-1].size.x + sub[3*(steps-1)-2].size.x; break;}
 				}
 				for(i=(steps-1); i>0; i--){
-					h0 = sub[k][3*i-2].size.y; w0 = sub[k][3*i-1].size.x;
-					h = sub[k][3*i-2].size.y; w = sub[k][3*i-2].size.x;
-					im = &img->img[sub[k][3*i-2].loc];
+					h0 = sub[k*st + 3*i-2].size.y; w0 = sub[k*st + 3*i-1].size.x;
+					h  = sub[k*st + 3*i-2].size.y;  w = sub[k*st + 3*i-2].size.x;
+					im = &img->img[sub[k*st + 3*i-2].loc];
 					drawrect(rgb, im, h1, w1+w0, h, w, img->size.x, 128);
 
-					h = sub[k][3*i-1].size.y; w = sub[k][3*i-1].size.x;
-					im = &img->img[sub[k][3*i-1].loc];
+					h = sub[k*st + 3*i-1].size.y; w = sub[k*st + 3*i-1].size.x;
+					im = &img->img[sub[k*st + 3*i-1].loc];
 					drawrect(rgb, im, h1+h0, w1, h, w, img->size.x, 128);
 
-					h = sub[k][3*i].size.y; w = sub[k][3*i].size.x;
-					im = &img->img[sub[k][3*i].loc];
+					h = sub[k*st + 3*i].size.y; w = sub[k*st + 3*i].size.x;
+					im = &img->img[sub[k*st + 3*i].loc];
 					drawrect(rgb, im, h1+h0, w1+w0, h, w, img->size.x, 128);
 				}
-				h = sub[k][0].size.y; w = sub[k][0].size.x;
-				im = &img->img[sub[k][0].loc];
+				h = sub[k*st ].size.y; w = sub[k*st].size.x;
+				im = &img->img[sub[k*st].loc];
 				drawrect(rgb, im, h1, w1, h, w, img->size.x, 128);
 			}
 		} else {
-			//h0 = sub[1][0].size.y; w0 = sub[2][0].size.x;
-			//h  = sub[1][0].size.y; w  = sub[1][0].size.x;
-			h0 = sub[0][0].size.y; w0 = sub[0][0].size.x;
-			h  = sub[1][0].size.y; w  = sub[1][0].size.x;
-			im = &img->img[sub[1][0].loc];
+			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
+			h  = sub[st].size.y; w  = sub[st].size.x;
+			im = &img->img[sub[st].loc];
 			drawrect(rgb, im, 0, w0, h, w, img->size.x, 128);
 
-			h = sub[2][0].size.y; w = sub[2][0].size.x;
-			im = &img->img[sub[2][0].loc];
+			h = sub[2*st].size.y; w = sub[2*st].size.x;
+			im = &img->img[sub[2*st].loc];
 			drawrect(rgb, im, h0, 0, h, w, img->size.x, 128);
 
-			h = sub[3][0].size.y; w = sub[3][0].size.x;
-			im = &img->img[sub[3][0].loc];
+			h = sub[3*st].size.y; w = sub[3*st].size.x;
+			im = &img->img[sub[3*st].loc];
 			drawrect(rgb, im, h0, w0, h, w, img->size.x, 128);
 
-			h = sub[0][0].size.y; w = sub[0][0].size.x;
-			im = &img->img[sub[0][0].loc];
+			h = sub[0].size.y; w = sub[0].size.x;
+			im = &img->img[sub[0].loc];
 			drawrect(rgb, im, 0, 0, h, w, img->size.x, 0);
 		}
 	} else {
 		for(i=steps; i>0; i--){
-			h0 = sub[0][3*i-2].size.y; w0 = sub[0][3*i-1].size.x;
-			h  = sub[0][3*i-2].size.y; w  = sub[0][3*i-2].size.x;
-			im = &img->img[sub[0][3*i-2].loc];
+			h0 = sub[3*i-2].size.y; w0 = sub[3*i-1].size.x;
+			h  = sub[3*i-2].size.y; w  = sub[3*i-2].size.x;
+			im = &img->img[sub[3*i-2].loc];
 			drawrect(rgb, im, 0, w0, h, w, img->size.x, 128);
 
-			h = sub[0][3*i-1].size.y; w = sub[0][3*i-1].size.x;
-			im = &img->img[sub[0][3*i-1].loc];
+			h = sub[3*i-1].size.y; w = sub[3*i-1].size.x;
+			im = &img->img[sub[3*i-1].loc];
 			drawrect(rgb, im, h0, 0, h, w, img->size.x, 128);
 
-			h = sub[0][3*i].size.y; w = sub[0][3*i].size.x;
-			im = &img->img[sub[0][3*i].loc];
+			h = sub[3*i].size.y; w = sub[3*i].size.x;
+			im = &img->img[sub[3*i].loc];
 			drawrect(rgb, im, h0, w0, h, w, img->size.x, 128);
 		}
-		h = sub[0][0].size.y; w = sub[0][0].size.x;
-		im = &img->img[sub[0][0].loc];
+		h = sub[0].size.y; w = sub[0].size.x;
+		im = &img->img[sub[0].loc];
 		drawrect(rgb, im, 0, 0, h, w, img->size.x, 0);
 	}
 	return rgb;

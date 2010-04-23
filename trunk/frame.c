@@ -5,70 +5,91 @@
 #include <sys/time.h>
 #include <time.h>
 
-void frames_init(Frame *frame, Vector *sz, ColorSpace color, uint32 bits, uint32 steps, imgtype *buf)
+void frames_init(GOP *gop, uint32 fr)
+///	\fn	void frames_init(GOP *gop, uint32 fr)
+///	\brief	Frame initialization
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
 {
-	frame->buf = buf;
-	image_init(&frame->img[0], sz->x, sz->y, bits, color, steps);
-	frame->size = sz->x*sz->y;
-	if(color == CS444 || color == RGB) {
-		image_init(&frame->img[1], sz->x, sz->y, bits, color, steps);
-		image_init(&frame->img[2], sz->x, sz->y, bits, color, steps);
+	Frame *frame = &gop->frames[fr];
+	uint32 x = gop->sd->size.x, y = gop->sd->size.y;
+
+	image_init(&frame->img[0], gop->sd, x, y);
+	frame->size = x*y;
+	if(gop->sd->color == CS444 || gop->sd->color == RGB) {
+		image_init(&frame->img[1], gop->sd, x, y);
+		image_init(&frame->img[2], gop->sd, x, y);
 		frame->size = frame->size*3;
 	}
-	if(color == CS422){
-		image_init(&frame->img[1], sz->x>>1 , sz->y, bits, color, steps);
-		image_init(&frame->img[2], sz->x>>1 , sz->y, bits, color, steps);
+	if(gop->sd->color == CS422){
+		image_init(&frame->img[1], gop->sd, x>>1 , y);
+		image_init(&frame->img[2], gop->sd, x>>1 , y);
 		frame->size = frame->size*2;
 	}
-	if(color == CS420){
-		image_init(&frame->img[1], sz->x>>1 , sz->y>>1, bits, color, steps);
-		image_init(&frame->img[2], sz->x>>1 , sz->y>>1, bits, color, steps);
+	if(gop->sd->color == CS420){
+		image_init(&frame->img[1], gop->sd, x>>1 , y>>1);
+		image_init(&frame->img[2], gop->sd, x>>1 , y>>1);
 		frame->size = (frame->size*3)>>1;
 	}
 }
 
-void frame_copy(Frame *frame, ColorSpace color, uint32 bits, uchar *y, uchar *u, uchar *v)
+void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
+///	\fn	void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
+///	\brief	Write images to frame
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
+///	\param	y			The pointer to Bayer, gray, red or Y  image data
+///	\param	u			The pointer to green or U  image data
+///	\param	v			The pointer to blue or V  image data
 {
+	Frame *frame = &gop->frames[fr];
+
 	printf("Start frame copy \n");
-	image_copy(&frame->img[0], bits, y);
-	if(color != GREY  && color != BAYER) {
-		image_copy(&frame->img[1], bits, u);
-		image_copy(&frame->img[2], bits, v);
+	image_copy(&frame->img[0], gop->sd, y);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		image_copy(&frame->img[1], gop->sd, u);
+		image_copy(&frame->img[2], gop->sd, v);
 	}
 }
 
-void frame_dwt_53(Frame *frame, ColorSpace color, uint32 steps)
-///	\fn	void frame_dwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps)
+void frame_dwt_53(GOP *gop, uint32 fr)
+///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\brief	Discrete wavelets frame transform.
-///	\param	frame		The pointer to the frame.
-///	\param	sub			The pointer to subband array.
-///	\param	color		Color space.
-///	\param	steps		DWT steps.
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
 {
-	image_dwt_53(&frame->img[0], frame->buf, frame->img[0].sub, color, steps);
-	if(color != GREY  && color != BAYER) {
-		image_dwt_53(&frame->img[1], frame->buf, frame->img[1].sub, color, steps);
-		image_dwt_53(&frame->img[2], frame->buf, frame->img[2].sub, color, steps);
+	Frame *frame = &gop->frames[fr];
+
+	frame->img[0].sub = gop->sub[0];
+	image_dwt_53(&frame->img[0], gop->sd, gop->buf);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		frame->img[1].sub = gop->sub[1];
+		frame->img[2].sub = gop->sub[2];
+		image_dwt_53(&frame->img[1], gop->sd, gop->buf);
+		image_dwt_53(&frame->img[2], gop->sd, gop->buf);
 	}
 }
 
-void frame_idwt_53(Frame *frame, ColorSpace color, uint32 steps, uint32 st)
-///	\fn	void frame_idwt_53(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
+void frame_idwt_53(GOP *gop, uint32 fr, uint32 steps)
+///	\fn	void frame_idwt_53(GOP *gop, uint32 fr, uint32 step)
 ///	\brief	Invert discrete wavelets frame transform.
-///	\param	frame		The pointer to the frame.
-///	\param	sub			The pointer to subband array.
-///	\param	color		Color space.
-///	\param 	steps		DWT steps.
-///	\param	st			IDWT steps.
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
+/// \param	steps		The steps of IDWT should be lees or equal DWT steps
 {
-	image_idwt_53(&frame->img[0], frame->buf, frame->img[0].sub, color, steps, st);
-	if(color != GREY  && color != BAYER) {
-		image_idwt_53(&frame->img[1], frame->buf, frame->img[1].sub, color, steps, st);
-		image_idwt_53(&frame->img[2], frame->buf, frame->img[2].sub, color, steps, st);
+	Frame *frame = &gop->frames[fr];
+
+	frame->img[0].sub = gop->sub[0];
+	image_idwt_53(&frame->img[0], gop->sd, gop->buf, steps);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		frame->img[1].sub = gop->sub[1];
+		frame->img[2].sub = gop->sub[2];
+		image_idwt_53(&frame->img[1], gop->sd, gop->buf, steps);
+		image_idwt_53(&frame->img[2], gop->sd, gop->buf, steps);
 	}
 }
 
-void frame_fill_subb(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits)
+void frame_fill_subb(GOP *gop, uint32 fr)
 ///	\fn	frame_fill_subb(Frame *frame, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
 ///	\brief	Fill distribution probability array for each subband in the frame.
 ///	\param	frame		The pointer to the frame.
@@ -77,10 +98,11 @@ void frame_fill_subb(Frame *frame, Subband **sub, ColorSpace color, uint32 steps
 ///	\param	steps		DWT steps.
 ///	\param	bits		The bits per pixel input frame.
 {
-	image_fill_subb(&frame->img[0], sub, bits, color, steps);
-	if(color != GREY  && color != BAYER) {
-		image_fill_subb(&frame->img[1], sub, bits, color, steps);
-		image_fill_subb(&frame->img[2], sub, bits, color, steps);
+
+	image_fill_subb(&gop->frames[fr].img[0], gop->sd);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		image_fill_subb(&gop->frames[fr].img[1], gop->sd);
+		image_fill_subb(&gop->frames[fr].img[2], gop->sd);
 	}
 }
 
@@ -141,18 +163,21 @@ uint32 frame_range_decode(Frame *frame, Subband **sub, ColorSpace color, uint32 
 	return size;
 }
 
-void frame_compress(Frame *frame, Subband **sub,  ColorSpace color, uint32 steps, uint32 bits, double per)
+void frame_compress(GOP *gop, uint32 fr, double per)
 {
+	Frame *frame = &gop->frames[fr];
+	uint32 bits = gop->sd->bits, color =  gop->sd->color, steps = gop->sd->steps;
+	Subband **sub;
 	clock_t start, end;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt_53		(frame, color, steps);
+	frame_dwt_53		(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("DWT time             = %f\n", (double)(end-start)/1000000.);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_fill_subb		(frame, sub, color, steps, bits);
+	frame_fill_subb		(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Fill subband time    = %f\n", (double)(end-start)/1000000.);
 
