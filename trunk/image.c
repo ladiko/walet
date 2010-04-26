@@ -297,7 +297,7 @@ void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
 
 void image_fill_subb(Image *im, StreamData *sd)
 ///	\fn void image_fill_subb(Image *im, StreamData *sd)
-///	\brief Fill distribution probability array.
+///	\brief Fill distribution probability arrays.
 ///	\param im	 		The pointer to image.
 ///	\param sd 			Pointer to StreamData.
 {
@@ -306,23 +306,28 @@ void image_fill_subb(Image *im, StreamData *sd)
 	im->qst = 0;
 	Subband *sub = im->sub;
 
+
 	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	printf("sz = %d\n  ", sz);
 	for(i=0; i < sz; i++) {
 		printf("%2d  ", i);
-		sub[i].bits = subband_fill_prob(&img[sub[i].loc], sub[i].size.x*sub[i].size.y, sub[i].dist, sd->bits+2);
-		sub[i].q_bits = sub[i].bits;
-		im->qst += sub[i].bits-1;
+		subband_fill_prob(&img[sub[i].loc], &sub[i]);
+		im->qst += sub[i].a_bits-1;
 	}
 	sz = (sd->color == BAYER) ? 4 : 1;
-	for(i=0; i <sz; i++) im->qst -= sub[i*st].bits-1; //Remove all ll subbands from quantization
+	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all ll subbands from quantization
 }
 
-void image_fill_bayer_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay)
+void image_fill_bayer_hist(Image *im, StreamData *sd)
+///	\fn void image_fill_bayer_hist(Image *im, StreamData *sd)
+///	\brief Fill color histogram for white balancing.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
 {
-	uint32 i, j, size = im->size.y*im->size.x, sz = 1<<bits, sum;
+	uint32 i, j, size = im->size.y*im->size.x, sz = 1<<sd->bits, sum;
 	uint32	tmp = size;
-	if(color == BAYER) {
-		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, bay, bits);
+	if(sd->color == BAYER) {
+		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, sd->bg, sd->bits);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
 		printf("size = %d r = %d ", im->size.y*im->size.x, sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
@@ -336,7 +341,7 @@ void image_fill_bayer_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid b
 
 #define max(x, m) ((x>m) ? (m) : (x))
 
-static void bits_per_subband(Image *im, Subband **sub, uint32 num, ColorSpace color, uint32 steps, uint32 qst, uint32 st)
+static void bits_per_subband1(Image *im, Subband **sub, uint32 num, ColorSpace color, uint32 steps, uint32 qst, uint32 st)
 ///	\fn static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The pointer to image.
@@ -350,8 +355,7 @@ static void bits_per_subband(Image *im, Subband **sub, uint32 num, ColorSpace co
 	if(color == BAYER) {
 		sz = (steps-1)*3;
 		for(k=0; k<4; k++) {
-			for(i=0; i < sz+1; i++) sub[k][i].q_bits = sub[k][i].bits;
-			//for(i=1; i < sz+1; i++) qst += sub[k][i].bits-1;
+			for(i=0; i < sz+1; i++) sub[k][i].q_bits = sub[k][i].a_bits;
 		}
 		//printf("qst = %d\n", qst);
 		st = max(st, qst);
@@ -373,7 +377,7 @@ static void bits_per_subband(Image *im, Subband **sub, uint32 num, ColorSpace co
 		}
 	} else {
 		sz = steps*3;
-		for(i=0; i < sz+1; i++) sub[num][i].q_bits = sub[num][i].bits;
+		//for(i=0; i < sz+1; i++) sub[num][i].q_bits = sub[num][i].bits;
 
 		//printf("stmax = %d\n", stmax);
 		st = max(st, qst);
@@ -389,99 +393,137 @@ static void bits_per_subband(Image *im, Subband **sub, uint32 num, ColorSpace co
 	}
 }
 
+static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
+///	\fn static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
+///	\brief Bits allocation for quantization algorithm.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
+///	\param qstep		Quantization steps (if 0-no quantization).
+{
+	uint32 i, j, k, sz, df;
+	//im->qst = 0;
+	Subband *sub = im->sub;
+	//qst = 0;
+	if(sd->color == BAYER) {
+		sz = (sd->steps-1)*3;
+
+		for(i=0; i < ((sz+1)<<2); i++) sub[i].q_bits = sub[i].a_bits;
+		//printf("qstep = %d\n", qstep);
+		qstep = max(qstep, im->qst);
+		for(i=0; i<50; i++){
+			for(k=0; k<4; k++){
+				switch(k){
+					case(0):{ df = im->qfl[max(i,sd->steps-1)]; break;}
+					case(1):{ df = i>0 ? im->qfl[max(i-1,sd->steps-1)] : 0; break;}
+					case(2):{ df = i>0 ? im->qfl[max(i-1,sd->steps-1)] : 0; break;}
+					case(3):{ df = i>1 ? im->qfl[max(i-2,sd->steps-1)] : 0; break;}
+				}
+				for(j=0; j < df; j++){
+					//if(sub[3-k][sz-j].q_bits > 1) { sub[3-k][sz-j].q_bits--; qstep--;}
+					if(sub[(3-k)*(sz+1)+sz-j].q_bits > 1) { sub[(3-k)*(sz+1)+sz-j].q_bits--; qstep--;}
+					if(!qstep) break;
+				}
+				//printf("qstep = %d df = %d q_bits[%d] = %d\n", qstep, df, (3-k)*(sz+1)+sz-j, sub[(3-k)*(sz+1)+sz-j].q_bits);
+				if(!qstep) break;
+			}
+			if(!qstep) break;
+		}
+		//for(i=0; i < (sz+1)*4; i++) printf("a_bits = %d q_bits = %2d\n", sub[i].a_bits, sub[i].q_bits);
+	} else {
+		sz = sd->steps*3;
+		for(i=0; i < (sz+1); i++) sub[i].q_bits = sub[i].a_bits;
+		//printf("stmax = %d\n", stmax);
+		qstep = max(qstep, im->qst);
+		for(i=0; ; i++){
+			for(j=0; j < im->qfl[max(i,sd->steps)]; j++){
+				if(sub[sz-j].q_bits > 1) { sub[sz-j].q_bits--; qstep--;}
+				if(!qstep) break;
+			}
+			if(!qstep) break;
+		}
+		//for(i=0; i < sz+1; i++) printf("%2d ", sub[0][i].q_bits);
+		//printf("\n");
+	}
+}
+/*
 double image_entropy(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st)
 /// \fn double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
-///	\brief Calculate image entropy.
-/// \param im	 		The pointer to image.
-/// \param sub 			The pointer to subband array.
-///	\param bits			The bits per pixel.
-///	\param color		Image color space.
-///	\param steps		The DWT steps.
-///	\param st			The step of quantization.
-///	\retval 			The image entropy.
+///     \brief Calculate image entropy.
+/// \param im                   The pointer to image.
+/// \param sub                  The pointer to subband array.
+///     \param bits                     The bits per pixel.
+///     \param color            Image color space.
+///     \param steps            The DWT steps.
+///     \param st                       The step of quantization.
+///     \retval                         The image entropy.
 {
-	uint32 i, j, k, sq, sz;
-	uint32 size = 0;
-	Subband *s;
-	imgtype *img = im->img;
-	double en=0.;
+        uint32 i, j, k, sq, sz;
+        uint32 size = 0;
+        Subband *s;
+        imgtype *img = im->img;
+        double en=0.;
 
-	if(st) bits_per_subband(im, sub, num, color, steps, im->qst, st);
+        //if(st) bits_per_subband(im, sub, num, color, steps, im->qst, st);
 
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+        sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+        for(i=0; i < sz; i++) {
+                s = (color == BAYER) ? sub[i & 0x3] : sub[num];
+                j = (color == BAYER) ? i>>2 : i;
+                sq = s[j].size.x*s[j].size.y;
+                if(s[j].q_bits > 1) en += sq*subband_entropy(s[j].dist, sq, bits+2, s[j].a_bits, s[j].q_bits);
+        }
+        return en /= (im->size.x*im->size.y);
+}
+*/
+uint32 image_size(Image *im, StreamData *sd, uint32 qstep)
+///	\fn uint32 image_size(Image *im, StreamData *sd, uint32 qstep)
+///	\brief Calculate the size off subband after quantization.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
+///	\param qstep		Quantization steps (if 0-no quantization).
+{
+	uint32 i, sz, s=0;
+	Subband *sub = im->sub;
+
+	if(qstep) bits_per_subband(im, sd, qstep);
+
+	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
 	for(i=0; i < sz; i++) {
-		s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-		j = (color == BAYER) ? i>>2 : i;
-		sq = s[j].size.x*s[j].size.y;
-		if(s[j].q_bits > 1) en += sq*subband_entropy(s[j].dist, sq, bits+2, s[j].bits, s[j].q_bits);
+		if(sub[i].q_bits > 1) s += subband_size(&sub[i]);
 	}
-	return en /= (im->size.x*im->size.y);
+	return s;
 }
 
-uint32 image_size(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st)
-/// \fn double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
-///	\brief Calculate image entropy.
-/// \param im	 		The pointer to image.
-/// \param sub 			The pointer to subband array.
-///	\param bits			The bits per pixel.
-///	\param color		Image color space.
-///	\param steps		The DWT steps.
-///	\param st			The step of quantization.
-///	\retval 			The image entropy.
+void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
+///	\fn void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
+///	\brief Bits allocation for subbands.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
+///	\param times		Compression in times in relation to the original image.
 {
-	uint32 i, j, k, sq, sz;
-	uint32 size = 0;
-	Subband *s;
-	imgtype *img = im->img;
-	double en=0.;
+	uint32 i, s, qstep, size;
 
-	if(st) bits_per_subband(im, sub, num, color, steps, im->qst, st);
-
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	for(i=0; i < sz; i++) {
-		s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-		j = (color == BAYER) ? i>>2 : i;
-		sq = s[j].size.x*s[j].size.y;
-		if(s[j].q_bits > 1) en += sq*subband_entropy(s[j].dist, sq, bits+2, s[j].bits, s[j].q_bits);
-	}
-	return en /= (im->size.x*im->size.y);
-}
-
-void image_bits_alloc(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, double per)
-{
-	double en, e;
-	uint32 i, j, st, nsz, nsz1;
-	//imgtype *img = im->img;
-
-	en = (double)bits*per;
-	st = (im->qst>>1);
+	size = (im->size.x*im->size.y*sd->bits)/times;
+	qstep = (im->qst>>1);
 
 	for(i=2;;i++){
-		e = image_entropy(im, sub, num, bits, color, steps, st);
-		printf("qst = %d en = %f st = %d e = %f\n", im->qst, en, st, e);
-		st = (e < en) ? st - (im->qst>>i) : st + (im->qst>>i);
+		s = image_size(im, sd, qstep);
+		printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size, qstep, s);
+		qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
 		if(!(im->qst>>i)) break;
 	}
 }
 
-void image_quantization(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps)
+void image_quantization(Image *im, StreamData *sd)
 {
-	uint32 i, j, k, sq, sz, st;
-	uint32 size = 0;
-	Subband *s;
+	uint32 i, sz;
+	Subband *sub = im->sub;
 	imgtype *img = im->img;
 
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	st = (color == BAYER) ? 4 : 1 ;
-	for(i=st; i < sz; i++) {
-		s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-		j = (color == BAYER) ? i>>2 : i;
-		sq = s[j].size.x*s[j].size.y;
-		printf("%2d %2d bits = %d q_bits = %d \n", j, i, s[j].bits, s[j].q_bits);
-		if(s[j].q_bits != s[j].bits){
-			subband_encode_table(bits+2, s[j].bits, s[j].q_bits, s[j].q);
-			subband_quantization(&img[s[j].loc], sq, bits+2, s[j].bits, s[j].q_bits, s[j].q);
-		} else for(k=0; k<sq; k++) img[s[j].loc+k] = 0;
+	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	for(i=0; i < sz; i++) {
+		printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
+		subband_quantization(&img[sub[i].loc], &sub[i]);
 	}
 }
 
@@ -498,8 +540,8 @@ uint32 image_range_encode(Image *im, Subband **sub, uint32 num, uint32 bits, Col
 		j = (color == BAYER) ? i>>2 : i;
 		sq = s[j].size.x*s[j].size.y;
 		if(s[j].q_bits >1){
-			subband_encode_table(bits+2, s[j].bits, s[j].q_bits, s[j].q);
-			size += subband_range_encoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].bits, s[j].q_bits, &buf[size], s[j].q);
+			//subband_encode_table(bits+2, s[j].a_bits, s[j].q_bits, s[j].q);
+			size += subband_range_encoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].a_bits, s[j].q_bits, &buf[size], s[j].q);
 		}
 	}
 	return size;
@@ -518,8 +560,8 @@ uint32 image_range_decode(Image *im, Subband **sub, uint32 num, uint32 bits, Col
 		j = (color == BAYER) ? i>>2 : i;
 		sq = s[j].size.x*s[j].size.y;
 		if(s[j].q_bits >1){
-			subband_decode_table(bits+2, s[j].bits, s[j].q_bits, s[j].q);
-			size += subband_range_decoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].bits, s[j].q_bits, &buf[size], s[j].q);
+			//subband_decode_table(bits+2, s[j].a_bits, s[j].q_bits, s[j].q);
+			size += subband_range_decoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].a_bits, s[j].q_bits, &buf[size], s[j].q);
 			} else for(k=0; k<sq; k++) img[s[j].loc+k] = 0;
 	}
 	return size;

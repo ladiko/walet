@@ -226,9 +226,6 @@ void utils_color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bi
 	ind = (avr[ind] < avr[2]) ? 2 : ind;
 
 	for(j=0; j<3; j++) {
-		//p[j] = (avr[j]-min[j])*(max[ind]-min[ind])/(avr[ind]-min[ind]) + min[j];
-		//a[j] = (double)sz1/(p[j]-min[j]); c[j] = - a[j]*min[j];
-		//printf("min = %f max = %f avr = %f a = %f c = %f p = %f\n", min[j], max[j], avr[j], a[j], c[j], p[j]);
 		p[j] = avr[j]*max[ind]/avr[ind];
 		a[j] = (double)sz1/p[j];
 		printf("max = %f avr = %f a = %f p = %f\n", max[j], avr[j], a[j], p[j]);

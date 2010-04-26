@@ -60,11 +60,11 @@ void frame_dwt_53(GOP *gop, uint32 fr)
 {
 	Frame *frame = &gop->frames[fr];
 
-	frame->img[0].sub = gop->sub[0];
+	frame->img[0].sub = gop->sub[0]; //Set current image for DWT transform
 	image_dwt_53(&frame->img[0], gop->sd, gop->buf);
 	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		frame->img[1].sub = gop->sub[1];
-		frame->img[2].sub = gop->sub[2];
+		frame->img[1].sub = gop->sub[1]; //Set current image for DWT transform
+		frame->img[2].sub = gop->sub[2]; //Set current image for DWT transform
 		image_dwt_53(&frame->img[1], gop->sd, gop->buf);
 		image_dwt_53(&frame->img[2], gop->sd, gop->buf);
 	}
@@ -79,24 +79,21 @@ void frame_idwt_53(GOP *gop, uint32 fr, uint32 steps)
 {
 	Frame *frame = &gop->frames[fr];
 
-	frame->img[0].sub = gop->sub[0];
+	frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
 	image_idwt_53(&frame->img[0], gop->sd, gop->buf, steps);
 	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		frame->img[1].sub = gop->sub[1];
-		frame->img[2].sub = gop->sub[2];
+		frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
+		frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
 		image_idwt_53(&frame->img[1], gop->sd, gop->buf, steps);
 		image_idwt_53(&frame->img[2], gop->sd, gop->buf, steps);
 	}
 }
 
 void frame_fill_subb(GOP *gop, uint32 fr)
-///	\fn	frame_fill_subb(Frame *frame, Subband **sub, uint32 bits, ColorSpace color, uint32 steps)
-///	\brief	Fill distribution probability array for each subband in the frame.
-///	\param	frame		The pointer to the frame.
-///	\param	sub			the pointer to subband array.
-///	\param	color		Color space.
-///	\param	steps		DWT steps.
-///	\param	bits		The bits per pixel input frame.
+///	\fn	void frame_fill_subb(GOP *gop, uint32 fr)
+///	\brief	Fill distribution probability array.
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
 {
 
 	image_fill_subb(&gop->frames[fr].img[0], gop->sd);
@@ -106,38 +103,45 @@ void frame_fill_subb(GOP *gop, uint32 fr)
 	}
 }
 
-void frame_white_balance(Frame *frame, ColorSpace color, uint32 bits, uint32 out_bits, BayerGrid bay, Gamma gamma)
-///	\fn	void frame_white_balance(Frame *frame, ColorSpace color, uint32 bits, uint32 out_bits, BayerGrid bay, Gamma gamma)
-///	\brief	Make white balance and gamma correction of the frame.
-///	\param	frame		The pointer to the frame.
-///	\param	color		Color space.
-///	\param	bits		The bits per pixel input frame.
-///	\param	out_bits	The bits per pixel output frame.
-///	\param	bay			The bayer grid pattern.
+void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
+///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
+///	\brief	Make white balance and gamma correction of the frame (for bayer frames only).
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
+///	\param	out_bits	The bits per pixel for output frame.
 ///	\param	gamma		The type of gamma correction.
 {
-	Image *im = &frame->img[0];
-	if(color == BAYER){
-		image_fill_bayer_hist(im, bits, color, bay);
-		utils_white_balance(im->img, im->img, im->hist, im->look, im->size.y, im->size.x, bay, bits, out_bits, gamma);
+	Image *im = &gop->frames[fr].img[0];
+	if(gop->sd->color == BAYER){
+		image_fill_bayer_hist(im, gop->sd);
+		utils_white_balance(im->img, im->img, im->hist, im->look, im->size.y, im->size.x, gop->sd->bg, gop->sd->bits, out_bits, gamma);
 	}
 }
 
-void frame_bits_alloc(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, double per)
+void frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
+///	\fn	void frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
+///	\brief	Bits allocation for frame.
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
+///	\param	times		Compression in times in relation to the original image.
 {
-	image_bits_alloc(&frame->img[0], sub, 0, bits, color, steps, per);
-	if(color != GREY  && color != BAYER) {
-		image_bits_alloc(&frame->img[1], sub, 1, bits, color, steps, per);
-		image_bits_alloc(&frame->img[2], sub, 2, bits, color, steps, per);
+	image_bits_alloc(&gop->frames[fr].img[0], gop->sd, times);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		image_bits_alloc(&gop->frames[fr].img[1], gop->sd, times);
+		image_bits_alloc(&gop->frames[fr].img[2], gop->sd, times);
 	}
 }
 
-void frame_quantization(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits)
+void frame_quantization(GOP *gop, uint32 fr)
+///	\fn	void frame_quantization(GOP *gop, uint32 fr)
+///	\brief	Frame quantization.
+///	\param	gop			The pointer to the GOP structure.
+///	\param	fr			The frame number.
 {
-	image_quantization(&frame->img[0], sub, 0, bits, color, steps);
-	if(color != GREY  && color != BAYER) {
-		image_quantization(&frame->img[1], sub, 1, bits, color, steps);
-		image_quantization(&frame->img[2], sub, 2, bits, color, steps);
+	image_quantization(&gop->frames[fr].img[0], gop->sd);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		image_quantization(&gop->frames[fr].img[1], gop->sd);
+		image_quantization(&gop->frames[fr].img[2], gop->sd);
 	}
 }
 
@@ -163,7 +167,7 @@ uint32 frame_range_decode(Frame *frame, Subband **sub, ColorSpace color, uint32 
 	return size;
 }
 
-void frame_compress(GOP *gop, uint32 fr, double per)
+void frame_compress(GOP *gop, uint32 fr, uint32 times)
 {
 	Frame *frame = &gop->frames[fr];
 	uint32 bits = gop->sd->bits, color =  gop->sd->color, steps = gop->sd->steps;
@@ -182,19 +186,19 @@ void frame_compress(GOP *gop, uint32 fr, double per)
 	printf("Fill subband time    = %f\n", (double)(end-start)/1000000.);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_bits_alloc	(frame, sub, color, steps, bits, per);
+	frame_bits_alloc	(gop, fr, times);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Bits allocation time = %f\n", (double)(end-start)/1000000.);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_quantization	(frame, sub, color, steps, bits);
+	frame_quantization	(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Quantization time    = %f\n", (double)(end-start)/1000000.);
 
-	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_encode	(frame, sub, color, steps, bits);
-	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
+	//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	//frame_range_encode	(frame, sub, color, steps, bits);
+	//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	//printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
 	//frame_write
 }
 

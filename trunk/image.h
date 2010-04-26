@@ -33,20 +33,19 @@ static uint16 del[5][16] = {
 extern "C" {
 #endif /* __cplusplus */
 
-void	image_init			(Image *img, StreamData *sd, uint32 x, uint32 y);
-void 	image_copy			(Image *img, StreamData *sd, uchar *v);
-//void 	image_dwt_53 		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps);
-//void 	image_idwt_53		(Image *im, imgtype *buf, Subband **sub, ColorSpace color, uint32 steps, uint32 st);
+void	image_init				(Image *im, StreamData *sd, uint32 x, uint32 y);
+void 	image_copy				(Image *im, StreamData *sd, uchar *v);
+void 	image_dwt_53 			(Image *im, StreamData *sd, imgtype *buf);
+void 	image_idwt_53			(Image *im, StreamData *sd, imgtype *buf, uint32 steps);
+void 	image_fill_subb			(Image *im, StreamData *sd);
+void 	image_fill_bayer_hist	(Image *im, StreamData *sd);
+uint32 	image_size				(Image *im, StreamData *sd, uint32 qstep);
+void 	image_bits_alloc		(Image *im, StreamData *sd, uint32 times);
+void 	image_quantization		(Image *im, StreamData *sd);
 
-void 	image_dwt_53 		(Image *im, StreamData *sd, imgtype *buf);
-void 	image_idwt_53		(Image *im, StreamData *sd, imgtype *buf, uint32 steps);
+//double 	image_entropy		(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
 
-void 	image_fill_subb		(Image *im, StreamData *sd);
-
-void 	image_fill_bayer_hist(Image *im, uint32 bits, ColorSpace color, BayerGrid bay);
-double 	image_entropy		(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
-void 	image_bits_alloc	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, double per);
-void 	image_quantization	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps);
+//void 	image_bits_alloc	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, double per);
 uint32 	image_range_encode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 uint32 	image_range_decode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 void 	image_make_tables	(Subband **sub, uint32 bits, ColorSpace color, uint32 steps);

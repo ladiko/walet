@@ -24,6 +24,7 @@ static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 b
 	for(i=0; i<st; i++){
 		sub[i].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
 		sub[i].q = q;
+		sub[i].d_bits = bits+2;
 	}
 	//printf("sub %d h %d w %d s %d p %p\n",sub[0][0]->subb, sub[0][0]->size.y, sub[0][0]->size.x, s[0], sub[0][0]);
 }
@@ -70,27 +71,32 @@ uint32  subband_range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bit
 	return range_decoder(img, d, size, a_bits , q_bits, buff, q);
 }
 
-uint32 subband_fill_prob(imgtype *img, uint32 size, uint32 *dist, uint32 d_bits)
-/*! \fn void fill_dist()
-	\brief 		Fill subband distution array.
-*/
+void subband_fill_prob(imgtype *img, Subband *sub)
+///	\fn void subband_fill_prob(imgtype *img, Subband *sub)
+///	\brief Fill distribution probability arrays.
+///	\param img	 		The pointer to image.
+///	\param sub 			Pointer to filling subband.
 {
-	int i,  ds = 1<<d_bits, half = ds>>1;
-	int min, max, diff;
-	memset(dist, 0, sizeof(uint32)*ds);
+	int i,  ds = 1<<sub->d_bits, half = ds>>1;
+	int min, max, diff, size = sub->size.x*sub->size.y;
+
+	memset(sub->dist, 0, sizeof(uint32)*ds);
+
 	for(i=0; i < size; i++) {
-		dist[img[i] + half]++;
+		sub->dist[img[i] + half]++;
 	}
-	for(i=0   ; ; i++) if(dist[i] != 0) {min = i - half; break; }
-	for(i=ds-1; ; i--) if(dist[i] != 0) {max = i - half; break; }
+	for(i=0   ; ; i++) if(sub->dist[i] != 0) {min = i - half; break; }
+	for(i=ds-1; ; i--) if(sub->dist[i] != 0) {max = i - half; break; }
 	//for(i=0; i< (1<<bits); i++) if(dist[i]) printf("dist[%d] = %d\n", i, dist[i]);
 	diff = (max+min) > 0 ? max : -min;
 	for(i=0; diff; i++) diff>>=1;
 	printf("min = %d max = %d  tot = %d bits = %i\n", min, max, max-min, i+1);
-	return i+1;
+	sub->a_bits = i+1;
+	sub->q_bits = sub->a_bits;
+	//return i+1;
 	//for(int i = 0; i<DIM; i++) if(dist[i]) printf("dist[%4d] = %8d\n",i - HALF, dist[i]);
 }
-
+/*
 double subband_entropy(uint32 *d, uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits)
 /// \fn double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
 /// \brief Calculate subband entropy.
@@ -148,57 +154,99 @@ double subband_entropy(uint32 *d, uint32 size, uint32 d_bits, uint32 a_bits, uin
 	}
 	return e;
 }
+*/
 
-void  subband_encode_table(uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 *q)
-/// \fn void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
-///	\brief Calculate distortion for the given uniform quantizer.
-///	\param img			The pointer to subband
-///	\param size			The number of pixels in subband
-/// \param q	 		The pointer to quantization array.
-/// \param d_bits 		The 1<<d_bits size of quantization array.
-///
+uint32 subband_size(Subband *sub)
+/// \fn uint32 subband_size(Subband *sub)
+/// \brief Calculate subband size after quantization.
+///	\param sub 			Pointer to subband.
+/// \retval 			The subband size after quantization.
+{
+	// |--------|--------0--------|--------|
+	// |           1<< dist_bits           |
+	//          |   1<<act_bits   |
+	//          |  |  |  |  |  |  |
+	//     step  =  1<<(a_bits-q_bits)
+
+	double s = 0, s0 = log2(sub->size.x*sub->size.y);
+	uint32  en=0;
+	int i, j;
+	int step = 1<<(sub->a_bits-sub->q_bits), rest = 1<<(sub->a_bits-1), half = (1<<(sub->d_bits-1));
+
+	if(sub->q_bits == 0){
+		printf("q_bits should be more than 0\n");
+		return 0;
+	}
+
+	for(j=(1-step); j< step; j++) en += sub->dist[half+j];
+	if(en) s -= en*(log2(en) - s0);
+
+	for(i=step; i < rest; i+=step){
+		en = 0;
+		for(j= 0; j< step; j++) en += sub->dist[half+i+j];
+		if(en) s -= en*(log2(en) - s0);
+		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
+	}
+	for(i=step; i < rest; i+=step){
+		en=0;
+		for(j= 0; j< step; j++) en += sub->dist[half-i-j];
+		//if(i == rest-step) en += d[half-i-j];
+		if(en) s -= en*(log2(en) - s0);
+		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
+	}
+	return s;
+}
+
+void  subband_encode_table(Subband *sub)
+/// \fn void  subband_encode_table(Subband *sub, int *q)
+///	\brief Make quantization array for encoder.
+///	\param sub 			Pointer to subband.
+/// \param q			The quantization array.
 {
 	int i, j;
-	int del = a_bits-q_bits, step = 1<<del, rest = 1<<(a_bits-1), half = 1<<(d_bits-1);
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1);
 
-	for(j=(1-step); j< step; j++) q[half+j] = 0;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half+i+j] =  i>>del;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half-i-j] = -(i>>del);
-	q[half-i-j] = -(i>>del);
+	for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i>>del;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -(i>>del);
+	sub->q[half-i-j] = -(i>>del);
 
 }
 
-void  subband_decode_table(uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 *q)
-/// \fn void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
-///	\brief Calculate distortion for the given uniform quantizer.
-///	\param img			The pointer to subband
-///	\param size			The number of pixels in subband
-/// \param q	 		The pointer to quantization array.
-/// \param d_bits 		The 1<<d_bits size of quantization array.
-///
+void  subband_decode_table(Subband *sub)
+/// \fn void  subband_decode_table(Subband *sub, int *q)
+///	\brief Make quantization array for decoder.
+///	\param sub 			Pointer to subband.
+/// \param q			The quantization array.
 {
 	int i, j;
-	int del = a_bits-q_bits, step = 1<<del, rest = 1<<(a_bits-1), half = 1<<(d_bits-1), val = step>>1;;
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1), val = step>>1;;
 
-	for(j=(1-step); j< step; j++) q[half+j] = 0;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half+i+j] =  i+val;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) q[half-i-j] = -i-val;
-	q[half-i-j] = -i-val;
-
+	for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
+	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
+	sub->q[half-i-j] = -i-val;
 }
 
-void  subband_quantization(imgtype *img,  uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits, int *q)
-/// \fn void  subband_quantization(imgtype *img,  uint32 size, uint32 *q, uint32 d_bits)
-///	\brief Calculate distortion for the given uniform quantizer.
+void  subband_quantization(imgtype *img, Subband *sub)
+/// \fn void  subband_quantization(imgtype *img, Subband *sub)
+///	\brief Subband quantization.
 ///	\param img			The pointer to subband
-///	\param size			The number of pixels in subband
-/// \param q	 		The pointer to quantization array.
-/// \param d_bits 		The 1<<d_bits size of quantization array.
-///
+///	\param sub 			Pointer to subband.
+
 {
-	int i, half = 1<<(d_bits-1);
-	//subband_decode_table(d_bits, a_bits, q_bits, q);
-	for(i=0; i < size; i++ ) img[i] = q[img[i] + half];
+	int i, j, size = sub->size.x*sub->size.y;
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1), val = step>>1;;
+
+	if(sub->a_bits != sub->q_bits){
+		if(sub->q_bits > 1) {
+			for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
+			for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
+			for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
+			sub->q[half-i-j] = -i-val;
+			for(i=0; i < size; i++ ) img[i] = sub->q[img[i] + half];
+		} else for(i=0; i < size; i++ ) img[i] = 0;
+	}
 	//printf("min = %d max = %d  tot = %d bits = %d step = %d range = %d\n", min, max, max-min, i+1, step, range);
 	//return i+1;
 }
