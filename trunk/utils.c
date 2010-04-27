@@ -105,6 +105,9 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 	return rgb;
 }
 
+#define oe(a,x)	(a ? x&1 : (x+1)&1)
+
+
 uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
 	\brief DWT picture transform.
@@ -121,7 +124,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1;
+	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, size1 = h1*w, yw, yw1;
 
 	switch(bay){
 		case(BGGR):{ a = 1; b = 1; break;}
@@ -129,7 +132,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 		case(GBRG):{ a = 1; b = 0; break;}
 		case(RGGB):{ a = 0; b = 0; break;}
 	}
-
+	/*
 	for(y=0; y < h1; y++){
 		for(x=0; x < w1; x++){
 			y2 = oe(a,y);
@@ -137,6 +140,20 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 			wy = w*y;
 			xwy = x + wy;
 			xwy3 = (x + w1*y)*3;
+			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
+			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
+								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
+			rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
+		}
+	}*/
+
+	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+		for(x=0; x < w1; x++){
+			y2 = oe(a,y);
+			x2 = oe(b,x);
+			xwy = x + yw;
+			wy = (x + yw1);
+			xwy3 = wy + wy + wy;
 			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
 			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
 								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
@@ -165,6 +182,10 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 	return img1;
 }
 
+void utils_bayer_median_filter(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+{
+	//for(x=2; x < sx; x++)
+}
 
 void utils_fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits)
 {
