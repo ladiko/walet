@@ -6,6 +6,20 @@
 #include <string.h>
 #include <math.h>
 
+// Red and blue pattern for bayer median filter
+int rb[9][2] = {
+		{-2,-2,},{ 0,-2,},{ 2,-2,},
+		{-2, 0,},{ 0, 0,},{ 2, 0,},
+		{-2, 2,},{ 0, 2,},{ 2, 2,},
+};
+// Green pattern for bayer median filter
+int g[9][2] = {
+		{ 0,-2,},{ 1,-1,},{ 2, 0,},
+		{-1,-1,},{ 0, 0,},{ 1, 1,},
+		{-2, 0,},{-1, 1,},{ 0,-2,},
+};
+
+
 #define ll(step, x, y) img[x*step + y*step*width];
 #define hl(step, x, y) img[x*step + (step>>1)  + y*step*width];
 #define lh(step, x, y) img[x*step + (step>>1)*width  + y*step*width];
@@ -182,9 +196,40 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 	return img1;
 }
 
-void utils_bayer_median_filter(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+static inline int median_filter_3x3(imgtype *s)
 {
-	//for(x=2; x < sx; x++)
+	uint32 i, j, in, tmp, sz = 8;
+	for(j=0; j<sz; j++){
+		for(i=j&1; i<sz; i+=2){
+			if(s[i] > s[i+1]) { tmp = s[i]; s[i] = s[i+1]; s[i+1] = tmp; }
+		}
+	}
+	return s[5];
+}
+
+void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+{
+	uint32 i, x, y, sx = w-2, sy = h-2;
+	imgtype s[9];
+
+	printf("Start median filter bay = %d\n",bay);
+	if(bay == BGGR || bay == RGGB){
+		for(y=2; y < sy; y++){
+			for(x=2; x < sx; x++){
+				if(((y+1)&1 && x&1) || (y&1 && (x+1)&1)) 	for(i=0; i<9; i++) s[i] = img[x+ g[i][0] + w*(y+ g[i][1])];
+				else  										for(i=0; i<9; i++) s[i] = img[x+rb[i][0] + w*(y+rb[i][1])];
+				img1[x + y*w] = median_filter_3x3(s);
+			}
+		}
+	} else {
+		for(y=2; y < sy; y++){
+			for(x=2; x < sx; x++){
+				if(((y+1)&1 && (x+1)&1) || (y&1 && x&1))	for(i=0; i<9; i++) s[i] = img[x+ g[i][0] + w*(y+ g[i][1])];
+				else 										for(i=0; i<9; i++) s[i] = img[x+rb[i][0] + w*(y+rb[i][1])];
+				img1[x + y*w] = median_filter_3x3(s);
+			}
+		}
+	}
 }
 
 void utils_fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits)

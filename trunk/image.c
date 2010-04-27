@@ -515,6 +515,10 @@ void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
 }
 
 void image_quantization(Image *im, StreamData *sd)
+///	\fn void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
+///	\brief Image quantization.
+///	\param im	 		The pointer to image.
+///	\param sd 			Pointer to StreamData.
 {
 	uint32 i, sz;
 	Subband *sub = im->sub;
