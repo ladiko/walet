@@ -85,7 +85,7 @@ typedef enum {
 typedef struct {
 	int x,y;
 }	Vector;
-
+/*
 typedef struct {
 	Vector 				size;			// Image size
 	ColorSpace		 	color;			// Color space
@@ -94,6 +94,19 @@ typedef struct {
 	uint32				bits;			// Bits per pixel
 	uint32				rates;			// Frame rates
 	uint32 				steps;  		// Steps of DWT
+	uint32				gop_size;		// GOP size
+} StreamData;
+*/
+
+typedef struct {
+	uint16 				width;			// Image width
+	uint16 				height;			// Image width
+	ColorSpace		 	color;			// Color space
+	BayerGrid			bg;				// Bayer grid pattern
+	uchar				bits;			// Bits per pixel
+	uchar 				steps;  		// Steps of DWT
+	//Compression			comp;			// Type of compression
+	//uint32				rates;			// Frame rates
 	uint32				gop_size;		// GOP size
 } StreamData;
 
@@ -116,6 +129,23 @@ typedef struct {
 // |  9    |  1   | Steps of DWT
 // --------------------------------------------------------------------------------------------
 // |  10   | 4 -
+
+
+typedef struct {
+	uint16		marker;			// The walet codec marker
+	uint16 		width;			// Image width
+	uint16 		height;			// Image width
+	uchar		color;			// Color space
+	uchar		bg;				// Bayer grid pattern
+	uchar		bits;			// Bits per pixel
+	uchar 		steps;  		// Steps of DWT
+	//Compression			comp;			// Type of compression
+	//uint32				rates;			// Frame rates
+	//uint32				gop_size;		// GOP size
+} WaletHeader;
+
+
+
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))

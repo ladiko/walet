@@ -12,7 +12,7 @@ void frames_init(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 x = gop->sd->size.x, y = gop->sd->size.y;
+	uint32 x = gop->sd->width, y = gop->sd->height;
 
 	image_init(&frame->img[0], gop->sd, x, y);
 	frame->size = x*y;
@@ -167,10 +167,61 @@ uint32 frame_range_decode(GOP *gop, uint32 fr)
 	return size;
 }
 
+uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
+{
+    FILE *wl;
+    WaletHeader wh;
+    uchar *bits[3];
+    uint32 i, sz;
+    Frame *frm = &gop->frames[fr];
+
+    //Fill header
+    wh.marker	= 0x776C;
+    wh.width	= gop->sd->width;
+    wh.height	= gop->sd->height;
+    wh.color	= gop->sd->color;
+    wh.bg		= gop->sd->bg;
+    wh.bits		= gop->sd->bits;
+    wh.steps	= gop->sd->steps;
+
+    sz = (gop->sd->color == BAYER) ? ((gop->sd->steps-1)*3+1)<<2 : gop->sd->steps*3 + 1;
+    bits[0] = (uchar *)calloc(sz, sizeof(uchar));
+    for(i=0; i<sz; i++)  bits[0][i] = (frm->img[0].sub[i].a_bits<<4) | frm->img[0].sub[i].q_bits;
+
+    if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+    	sz = gop->sd->steps*3 + 1;
+    	bits[1] = (uchar *)calloc(sz, sizeof(uchar));
+    	bits[2] = (uchar *)calloc(sz, sizeof(uchar));
+    	for(i=0; i<sz; i++)  bits[1][i] = (frm->img[1].sub[i].a_bits<<4) | frm->img[1].sub[i].q_bits;
+    	for(i=0; i<sz; i++)  bits[2][i] = (frm->img[2].sub[i].a_bits<<4) | frm->img[2].sub[i].q_bits;
+    }
+
+	wl = fopen(filename, "wb");
+    if(wl == NULL) {
+    	printf("Can't write to file %s\n", filename);
+    	return;
+    }
+    //Write header
+    fwrite (&wh, sizeof(wh), 1, wl);
+    //Write bits array
+    fwrite (&bits[0], sizeof(bits[0]), 1, wl);
+    //Write data
+    fwrite (gop->buf, 1, frm->img[0].c_size, wl);
+
+    if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+    	fwrite (&bits[1], sizeof(bits[1]), 1, wl);
+    	fwrite (&gop->buf[frm->img[0].c_size], 1, frm->img[1].c_size, wl);
+    	fwrite (&bits[2], sizeof(bits[2]), 1, wl);
+    	fwrite (&gop->buf[frm->img[0].c_size+frm->img[1].c_size], 1, frm->img[2].c_size, wl);
+    }
+    fclose(wl);
+}
+
 void frame_compress(GOP *gop, uint32 fr, uint32 times)
 {
 	Frame *frame = &gop->frames[fr];
 	uint32 bits = gop->sd->bits, color =  gop->sd->color, steps = gop->sd->steps;
+	uint32 size;
 	Subband **sub;
 	clock_t start, end;
 	struct timeval tv;
@@ -191,10 +242,10 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times)
 	printf("Bits allocation time = %f\n", (double)(end-start)/1000000.);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_encode	(gop, fr);
+	size = frame_range_encode	(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
-	//printf("Frame size  = %d\n", size);
+	printf("Frame size  = %d\n", size);
 	//frame_write
 }
 

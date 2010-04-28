@@ -10,6 +10,7 @@ typedef struct {
 	uint32 		*qfl;	//The quantization floor
 	uint32 		qst;	//Total steps of quantization
 	Subband 	*sub;	//Pointer to subband arrey
+	uint32 		c_size;	//The size of compression image in the temporary buffer.
 	//uint32 		snum;	//Number of subbands.
 }	Image;
 
