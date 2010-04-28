@@ -42,12 +42,12 @@ void 	image_fill_bayer_hist	(Image *im, StreamData *sd);
 uint32 	image_size				(Image *im, StreamData *sd, uint32 qstep);
 void 	image_bits_alloc		(Image *im, StreamData *sd, uint32 times);
 void 	image_quantization		(Image *im, StreamData *sd);
+uint32 	image_range_encode		(Image *im, StreamData *sd, uchar *buf);
+uint32 	image_range_decode		(Image *im, StreamData *sd, uchar *buf);
 
 //double 	image_entropy		(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st);
 
 //void 	image_bits_alloc	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, double per);
-uint32 	image_range_encode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
-uint32 	image_range_decode	(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf);
 void 	image_make_tables	(Subband **sub, uint32 bits, ColorSpace color, uint32 steps);
 
 #ifdef __cplusplus

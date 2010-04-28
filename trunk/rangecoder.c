@@ -72,7 +72,7 @@ static inline uint32 get_freq_cum(uint32 cum, uint32 *d, uint32 bits, uint32 *f,
 	else { (*cf) = cum-cu; (*f) = d[j];  return j; }
 }
 
-uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
+uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -126,7 +126,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	return j;
 }
 
-uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
+uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
@@ -185,7 +185,8 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	//printf("Decoder fineshed!\n");
 	return j;
 }
-uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
+
+uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -200,7 +201,7 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	uint32 shift = 16, num = (1<<q_bits), sz = num, sum = 0, out;
 	uint64 top = 0xFFFFFFFFFFFFFFFF, bot = (top>>16), low=0, low1=0, range;
 	uint32 i, j, k=0 , cu;
-	uint32 half = num>>1;
+	uint32 half = 1<<(a_bits-1);
 	uint16 *buff = (uint16*) buf;
 	int im;
 
@@ -239,7 +240,7 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	return (j<<1);
 }
 
-uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
+uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buf, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
@@ -279,13 +280,13 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 		range = range*f;
 		set_freq(out1, d, q_bits);
 		sz++;
-		if(img[i]- (q[out]-half)) printf("i=%d ", i);
+		//if(img[i]-q[out]) printf("i=%d ", i);
 		//img[i] = q[out];
 		//dif = out1 - half;
 		//fin = dif > 0 ? (dif<<del)+sub : (dif < 0 ? -((-dif)<<del)-sub : 0);
-		//if(img[i]- fin) printf("i=%d ", i);
-		//	printf("low = %16LX range = %16LX out = %3d sim = %3d img = %3d fin = %3d dif = %d f = %4d cf = %7d diff = %d\n",
-		//			low, range, out, out1, img[i], fin, dif, f, cf, img[i]- out1+half);
+		if(img[i]- q[out1]) //printf("i=%d ", i);
+			printf("low = %16LX range = %16LX out = %3d out1 = %3d img = %4d qimg = %4d diff = %d\n",
+					low, range, out, out1, img[i], q[out1], img[i]- q[out1]);
 
 	}
 	//printf("size = %d Decoder size  = %d first = %4X end = %4X img = %d %d %d %d\n", size, j<<1, buff[0], buff[j-1], img[0], img[1], img[2], img[3]);

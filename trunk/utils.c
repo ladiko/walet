@@ -8,16 +8,18 @@
 
 // Red and blue pattern for bayer median filter
 int rb[9][2] = {
-		{-2,-2,},{ 0,-2,},{ 2,-2,},
-		{-2, 0,},{ 0, 0,},{ 2, 0,},
-		{-2, 2,},{ 0, 2,},{ 2, 2,},
-};
+		{-2,-2,},{ 0,-2,},{ 2,-2,},    	// R   R   R
+		{-2, 0,},{ 0, 0,},{ 2, 0,},		//
+		{-2, 2,},{ 0, 2,},{ 2, 2,},		// R   R   R
+};										//
+										// R   R   R
 // Green pattern for bayer median filter
 int g[9][2] = {
-		{ 0,-2,},{ 1,-1,},{ 2, 0,},
-		{-1,-1,},{ 0, 0,},{ 1, 1,},
-		{-2, 0,},{-1, 1,},{ 0,-2,},
-};
+		{ 0,-2,},{ 1,-1,},{ 2, 0,},		//     G
+		{-1,-1,},{ 0, 0,},{ 1, 1,},		//   G   G
+		{-2, 0,},{-1, 1,},{ 0,-2,},		// G   G   G
+};										//   G   G
+										//     G
 
 
 #define ll(step, x, y) img[x*step + y*step*width];
@@ -196,7 +198,10 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 	return img1;
 }
 
-static inline int median_filter_3x3(imgtype *s)
+static inline int median_filter_3x31(imgtype *s)
+///	\fn static inline int median_filter_3x3(imgtype *s)
+///	\brief The not optimal algorithm finding median element.
+///	\param s	 	Input array.
 {
 	uint32 i, j, in, tmp, sz = 8;
 	for(j=0; j<sz; j++){
@@ -204,15 +209,49 @@ static inline int median_filter_3x3(imgtype *s)
 			if(s[i] > s[i+1]) { tmp = s[i]; s[i] = s[i+1]; s[i+1] = tmp; }
 		}
 	}
-	return s[5];
+	return s[4];
+}
+
+static inline int median_filter_3x3(imgtype *s, imgtype *p)
+///	\fn static inline int median_filter_3x3(imgtype *s)
+///	\brief The not optimal algorithm finding median element.
+///	\param s	 	Input array.
+///	\param p	 	Temporary array.
+{
+	uint32 j;//, p[9];
+	for(j=0; j<8; j++){
+		if(j&1) {
+			s[0] = p[0];
+			if(p[1] > p[2]) { s[2] = p[1]; s[1] = p[2];} else { s[1] = p[1]; s[2] = p[2];}
+			if(p[3] > p[4]) { s[4] = p[3]; s[3] = p[4];} else { s[3] = p[3]; s[4] = p[4];}
+			if(p[5] > p[6]) { s[6] = p[5]; s[5] = p[6];} else { s[5] = p[5]; s[6] = p[6];}
+			if(p[7] > p[8]) { s[8] = p[7]; s[7] = p[8];} else { s[7] = p[7]; s[8] = p[8];}
+		}
+		else {
+			if(s[0] > s[1]) { p[1] = s[0]; p[0] = s[1];} else { p[0] = s[0]; p[1] = s[1];}
+			if(s[2] > s[3]) { p[3] = s[2]; p[2] = s[3];} else { p[2] = s[2]; p[3] = s[3];}
+			if(s[4] > s[5]) { p[5] = s[4]; p[4] = s[5];} else { p[4] = s[4]; p[5] = s[5];}
+			if(s[6] > s[7]) { p[7] = s[6]; p[6] = s[7];} else { p[6] = s[6]; p[7] = s[7];}
+			p[8] = s[8];
+		}
+	}
+	return s[4];
 }
 
 void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+///	\fn void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+///	\brief Bayer patrn median 3x3 filter
+///	\param img	 		Input image.
+///	\param img1 		Temporary bufer.
+///	\param h 			Image height.
+///	\param w 			Image width.
+///	\param bay 			Bayer pattern.
 {
-	uint32 i, x, y, sx = w-2, sy = h-2;
-	imgtype s[9];
+	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, tmp;
+	imgtype s[9], p[9];
 
-	printf("Start median filter bay = %d\n",bay);
+	//printf("Start median filter bay = %d\n",bay);
+	/*
 	if(bay == BGGR || bay == RGGB){
 		for(y=2; y < sy; y++){
 			for(x=2; x < sx; x++){
@@ -228,6 +267,34 @@ void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32
 				else 										for(i=0; i<9; i++) s[i] = img[x+rb[i][0] + w*(y+rb[i][1])];
 				img1[x + y*w] = median_filter_3x3(s);
 			}
+		}
+	}*/
+	if(bay == BGGR || bay == RGGB){
+		for(y=2; y < sy; y++){
+			wy = w*y;
+			for(x=2; x < sx; x++){
+				xwy = x + wy;
+				if(((y+1)&1 && x&1) || (y&1 && (x+1)&1)) 	for(i=0; i<9; i++) s[i] = img[xwy+ g[i][0] + w* g[i][1]];
+				else  										for(i=0; i<9; i++) s[i] = img[xwy+rb[i][0] + w*rb[i][1]];
+				img1[xwy] = median_filter_3x3(s, p);
+			}
+		}
+	} else {
+		for(y=2; y < sy; y++){
+			wy = w*y;
+			for(x=2; x < sx; x++){
+				xwy = x + wy;
+				if((!(y&1) && !(x&1)) || (y&1 && x&1))	for(i=0; i<9; i++) s[i] = img[xwy+ g[i][0] + w* g[i][1]];
+				else 									for(i=0; i<9; i++) s[i] = img[xwy+rb[i][0] + w*rb[i][1]];
+				img1[xwy] = median_filter_3x3(s, p);
+			}
+		}
+	}
+	for(y=2; y < sy; y++){
+		wy = w*y;
+		for(x=2; x < sx; x++){
+			xwy = x + wy;
+			img[xwy] = img1[xwy];
 		}
 	}
 }

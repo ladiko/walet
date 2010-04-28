@@ -145,24 +145,24 @@ void frame_quantization(GOP *gop, uint32 fr)
 	}
 }
 
-uint32 frame_range_encode(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits)
+uint32 frame_range_encode(GOP *gop, uint32 fr)
 {
 	uint32 size = 0;
-	size += image_range_encode(&frame->img[0], sub, 0, bits, color, steps, (uchar*)frame->buf);
-	if(color != GREY  && color != BAYER) {
-		size += image_range_encode(&frame->img[1], sub, 1, bits, color, steps, (uchar*)&frame->buf[size]);
-		size += image_range_encode(&frame->img[2], sub, 2, bits, color, steps, (uchar*)&frame->buf[size]);
+	size += image_range_encode(&gop->frames[fr].img[0], gop->sd, (uchar*)gop->buf);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		size += image_range_encode(&gop->frames[fr].img[1], gop->sd, (uchar*)gop->buf);
+		size += image_range_encode(&gop->frames[fr].img[2], gop->sd, (uchar*)gop->buf);
 	}
 	return size;
 }
 
-uint32 frame_range_decode(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits)
+uint32 frame_range_decode(GOP *gop, uint32 fr)
 {
 	uint32 size = 0;
-	size += image_range_decode(&frame->img[0], sub, 0, bits, color, steps, (uchar*)frame->buf);
-	if(color != GREY  && color != BAYER) {
-		size += image_range_decode(&frame->img[1], sub, 1, bits, color, steps, (uchar*)&frame->buf[size]);
-		size += image_range_decode(&frame->img[2], sub, 2, bits, color, steps, (uchar*)&frame->buf[size]);
+	size += image_range_decode(&gop->frames[fr].img[0], gop->sd, (uchar*)gop->buf);
+	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+		size += image_range_decode(&gop->frames[fr].img[1], gop->sd, (uchar*)gop->buf);
+		size += image_range_decode(&gop->frames[fr].img[2], gop->sd, (uchar*)gop->buf);
 	}
 	return size;
 }
@@ -191,20 +191,16 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times)
 	printf("Bits allocation time = %f\n", (double)(end-start)/1000000.);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_quantization	(gop, fr);
+	frame_range_encode	(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Quantization time    = %f\n", (double)(end-start)/1000000.);
-
-	//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	//frame_range_encode	(frame, sub, color, steps, bits);
-	//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	//printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
+	printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
+	//printf("Frame size  = %d\n", size);
 	//frame_write
 }
 
 void frame_decompress(Frame *frame, Subband **sub,  ColorSpace color, uint32 steps, uint32 bits, uint32 st)
 {
 	//frame_read
-	frame_range_decode	(frame, sub, color, steps, bits);
+	//frame_range_decode	(frame, sub, color, steps, bits);
 	//frame_idwt_53		(frame, sub, color, steps, st);
 }

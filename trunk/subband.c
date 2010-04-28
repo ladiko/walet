@@ -61,15 +61,15 @@ void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 
 	//			k, j, sub[num][j+((steps-1)*3+1)*k].loc, sub[num][j+((steps-1)*3+1)*k].size.x, sub[num][j+((steps-1)*3+1)*k].size.y, &sub[num][j+((steps-1)*3+1)*k]);
 }
 
-uint32 subband_range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
-{
-	return range_encoder(img, d, size, a_bits , q_bits, buff, q);
-}
-
-uint32  subband_range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
-{
-	return range_decoder(img, d, size, a_bits , q_bits, buff, q);
-}
+//uint32 subband_range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
+//{
+//	return range_encoder(img, d, size, a_bits , q_bits, buff, q);
+//}
+//
+//uint32  subband_range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
+//{
+//	return range_decoder(img, d, size, a_bits , q_bits, buff, q);
+//}
 
 void subband_fill_prob(imgtype *img, Subband *sub)
 ///	\fn void subband_fill_prob(imgtype *img, Subband *sub)
@@ -204,13 +204,16 @@ void  subband_encode_table(Subband *sub)
 /// \param q			The quantization array.
 {
 	int i, j;
-	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1);
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);
 
-	for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i>>del;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -(i>>del);
-	sub->q[half-i-j] = -(i>>del);
+	for(j=(1-step); j< step; j++) sub->q[range+j] = half;
+	for(i=step; i < range; i+=step) for(j= 0; j< step; j++) sub->q[range+i+j] = half + (i>>del);
+	for(i=step; i < range; i+=step) for(j= 0; j< step; j++) sub->q[range-i-j] = half - (i>>del);
+	sub->q[range-i+step-j] = sub->q[range-i+step-j+1];
 
+	//printf("a_bits = %d q_bits = %d\n",sub->a_bits, sub->q_bits);
+	//for(i=0; i< range*2; i++) printf("q[%d] = %4d ", i, sub->q[i]);
+	//printf("\n");
 }
 
 void  subband_decode_table(Subband *sub)
@@ -220,12 +223,15 @@ void  subband_decode_table(Subband *sub)
 /// \param q			The quantization array.
 {
 	int i, j;
-	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1), val = step>>1;;
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1), val = step>>1;
 
-	for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
-	for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
-	sub->q[half-i-j] = -i-val;
+	sub->q[half] = 0;
+	for(i=step, j=1; i < rest; i+=step, j++) sub->q[half+j] =  i+val;
+	for(i=step, j=1; i < rest; i+=step, j++) sub->q[half-j] = -i-val;
+	sub->q[half-j] = sub->q[half-j+1];
+
+	//for(i=0; i< half*2; i++) printf("q[%d] = %4d ", i, sub->q[i]);
+	//printf("\n");
 }
 
 void  subband_quantization(imgtype *img, Subband *sub)
@@ -236,15 +242,17 @@ void  subband_quantization(imgtype *img, Subband *sub)
 
 {
 	int i, j, size = sub->size.x*sub->size.y;
-	int del = sub->a_bits - sub->q_bits, step = 1<<del, rest = 1<<(sub->a_bits-1), half = 1<<(sub->d_bits-1), val = step>>1;;
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, half = 1<<(sub->a_bits-1), val = step>>1;;
 
 	if(sub->a_bits != sub->q_bits){
 		if(sub->q_bits > 1) {
 			for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
-			for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
-			for(i=step; i < rest; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
-			sub->q[half-i-j] = -i-val;
+			for(i=step; i < half; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
+			for(i=step; i < half; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
+			sub->q[half-i+step-j] = sub->q[half-i+step-j+1];
 			for(i=0; i < size; i++ ) img[i] = sub->q[img[i] + half];
+			//for(i=0; i< half*2; i++) printf("q[%d] = %4d ", i, sub->q[i]);
+			//printf("Quantization\n");
 		} else for(i=0; i < size; i++ ) img[i] = 0;
 	}
 	//printf("min = %d max = %d  tot = %d bits = %d step = %d range = %d\n", min, max, max-min, i+1, step, range);

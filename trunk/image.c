@@ -526,47 +526,45 @@ void image_quantization(Image *im, StreamData *sd)
 
 	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
 	for(i=0; i < sz; i++) {
-		printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
+		//printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
 		subband_quantization(&img[sub[i].loc], &sub[i]);
 	}
 }
 
-uint32 image_range_encode(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf)
+uint32 image_range_encode(Image *im, StreamData *sd, uchar *buf)
 {
-	uint32 i, j, k, sq, sz;
+	uint32 i, sq, sz;
 	uint32 size = 0;
-	Subband *s;
 	imgtype *img = im->img;
+	Subband *sub = im->sub;
 
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
 	for(i=0; i < sz; i++) {
-		s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-		j = (color == BAYER) ? i>>2 : i;
-		sq = s[j].size.x*s[j].size.y;
-		if(s[j].q_bits >1){
-			//subband_encode_table(bits+2, s[j].a_bits, s[j].q_bits, s[j].q);
-			size += subband_range_encoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].a_bits, s[j].q_bits, &buf[size], s[j].q);
+		sq = sub[i].size.x*sub[i].size.y;
+		if(sub[i].q_bits >1){
+			subband_encode_table(&sub[i]);
+			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bits+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 		}
 	}
+	printf("Finish range_encoder\n");
 	return size;
 }
 
-uint32 image_range_decode(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uchar *buf)
+uint32 image_range_decode(Image *im, StreamData *sd, uchar *buf)
 {
-	uint32 i, j, k, sq, sz;
+	uint32 i, j, sq, sz;
 	uint32 size = 0;
-	Subband *s;
 	imgtype *img = im->img;
+	Subband *sub = im->sub;
 
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	//i=0; {
 	for(i=0; i < sz; i++) {
-		s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-		j = (color == BAYER) ? i>>2 : i;
-		sq = s[j].size.x*s[j].size.y;
-		if(s[j].q_bits >1){
-			//subband_decode_table(bits+2, s[j].a_bits, s[j].q_bits, s[j].q);
-			size += subband_range_decoder(&img[s[j].loc], &s[j].dist[1<<(bits+2)],sq, s[j].a_bits, s[j].q_bits, &buf[size], s[j].q);
-			} else for(k=0; k<sq; k++) img[s[j].loc+k] = 0;
+		sq = sub[i].size.x*sub[i].size.y;
+		if(sub[i].q_bits >1){
+			subband_decode_table(&sub[i]);
+			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bits+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+		} else for(j=0; j<sq; j++) img[sub[i].loc+j] = 0;
 	}
 	return size;
 }
