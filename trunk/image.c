@@ -481,6 +481,7 @@ uint32 image_size(Image *im, StreamData *sd, uint32 qstep)
 ///	\param im	 		The pointer to image.
 ///	\param sd 			Pointer to StreamData.
 ///	\param qstep		Quantization steps (if 0-no quantization).
+///	\retval				The size of subband.
 {
 	uint32 i, sz, s=0;
 	Subband *sub = im->sub;
@@ -508,7 +509,7 @@ void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
 
 	for(i=2;;i++){
 		s = image_size(im, sd, qstep);
-		printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size, qstep, s);
+		printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size>>3, qstep, s>>3);
 		qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
 		if(!(im->qst>>i)) break;
 	}

@@ -5,7 +5,7 @@
 typedef struct{
 	Image 	img[3];	//Pointer to image
 	uint32 	size;	//The image size
-	imgtype *buf;	//The pointer to temporary buffer
+	imgtype *buf;	//The pointer to temporary buffer in GOP structure
 }	Frame;
 
 #include <gop.h>
@@ -24,6 +24,7 @@ void	frame_bits_alloc	(GOP *gop, uint32 fr, uint32 times);
 void 	frame_quantization	(GOP *gop, uint32 fr);
 uint32 	frame_range_encode	(GOP *gop, uint32 fr);
 uint32 	frame_range_decode	(GOP *gop, uint32 fr);
+uint32 	frame_write			(GOP *gop, uint32 fr, const char *filename);
 void 	frame_compress		(GOP *gop, uint32 fr, uint32 times);
 void 	frame_decompress	(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, uint32 st);
 

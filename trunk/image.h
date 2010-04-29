@@ -4,7 +4,7 @@
 typedef struct {
 	Vector 		size;	//Image size
 	Vector 		idwts;	//Image size after IDWT, if DWT steps is not equal IDWT steps
-	imgtype 	*img;	//Pointer to
+	imgtype 	*img;	//Pointer to image
 	uint32 		*hist;	//Distribution probabilities array white balancing
 	uint16 		*look;	//Look up table for white balancing and gamma correction.
 	uint32 		*qfl;	//The quantization floor

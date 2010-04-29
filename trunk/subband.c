@@ -61,16 +61,6 @@ void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 
 	//			k, j, sub[num][j+((steps-1)*3+1)*k].loc, sub[num][j+((steps-1)*3+1)*k].size.x, sub[num][j+((steps-1)*3+1)*k].size.y, &sub[num][j+((steps-1)*3+1)*k]);
 }
 
-//uint32 subband_range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
-//{
-//	return range_encoder(img, d, size, a_bits , q_bits, buff, q);
-//}
-//
-//uint32  subband_range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits, uint32 q_bits, uchar *buff, int *q)
-//{
-//	return range_decoder(img, d, size, a_bits , q_bits, buff, q);
-//}
-
 void subband_fill_prob(imgtype *img, Subband *sub)
 ///	\fn void subband_fill_prob(imgtype *img, Subband *sub)
 ///	\brief Fill distribution probability arrays.
@@ -96,65 +86,6 @@ void subband_fill_prob(imgtype *img, Subband *sub)
 	//return i+1;
 	//for(int i = 0; i<DIM; i++) if(dist[i]) printf("dist[%4d] = %8d\n",i - HALF, dist[i]);
 }
-/*
-double subband_entropy(uint32 *d, uint32 size, uint32 d_bits, uint32 a_bits, uint32 q_bits)
-/// \fn double subband_entropy(uint32 *d, uint32 d_bits, uint32 a_bits, uint32 q_bits, uint32 size, uint32 *q)
-/// \brief Calculate subband entropy.
-/// \param d	 		The pointer to distution probabilities arrey.
-/// \param size			The subband size.
-/// \param d_bits 		The 1<<d_bits size of distution probabilities array.
-/// \param a_bits		The 1<<a_bits actual size of distution probabilities.
-/// \param q_bits		Bits for quantization.
-/// \retval 			The subband entropy.
-
-{
-	// |--------|--------0--------|--------|
-	// |           1<< dist_bits           |
-	//          |   1<<act_bits   |
-	//          |  |  |  |  |  |  |
-	//     step  =  1<<(a_bits-q_bits)
-
-	double e =0, tmp, e1;
-	uint32  en=0;
-	int i, j;
-	int step = 1<<(a_bits-q_bits), rest = 1<<(a_bits-1), half = (1<<(d_bits-1));
-
-	if(q_bits == 0){
-		printf("q_bits should be more than 0\n");
-		return 0;
-	}
-
-	for(j=(1-step); j< step; j++) en += d[half+j];
-	if(en) {
-		tmp = (double)en/(double)size;
-		e -= tmp*log2(tmp);
-		//e -= ((double)en/(double)size)*log2((double)en/(double)size);
-	}
-
-	for(i=step; i < rest; i+=step){
-		en = 0;
-		for(j= 0; j< step; j++) en += d[half+i+j];
-		if(en) {
-			tmp = (double)en/(double)size;
-			e -= tmp*log2(tmp);
-			//e -= ((double)en/(double)size)*log2((double)en/(double)size);
-		}
-		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
-	}
-	for(i=step; i < rest; i+=step){
-		en=0;
-		for(j= 0; j< step; j++) en += d[half-i-j];
-		//if(i == rest-step) en += d[half-i-j];
-		if(en) {
-			tmp = (double)en/(double)size;
-			e -= tmp*log2(tmp);
-			//e -= ((double)en/(double)size)*log2((double)en/(double)size);
-		}
-		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
-	}
-	return e;
-}
-*/
 
 uint32 subband_size(Subband *sub)
 /// \fn uint32 subband_size(Subband *sub)
