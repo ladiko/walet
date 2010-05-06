@@ -6,6 +6,8 @@
 #include <string.h>
 #include <math.h>
 
+#define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
+
 // Red and blue pattern for bayer median filter
 int rb[9][2] = {
 		{-2,-2,},{ 0,-2,},{ 2,-2,},    	// R   R   R
@@ -247,28 +249,11 @@ void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32
 ///	\param w 			Image width.
 ///	\param bay 			Bayer pattern.
 {
-	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, tmp;
+	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, tmp, w1;
 	imgtype s[9], p[9];
 
 	//printf("Start median filter bay = %d\n",bay);
 	/*
-	if(bay == BGGR || bay == RGGB){
-		for(y=2; y < sy; y++){
-			for(x=2; x < sx; x++){
-				if(((y+1)&1 && x&1) || (y&1 && (x+1)&1)) 	for(i=0; i<9; i++) s[i] = img[x+ g[i][0] + w*(y+ g[i][1])];
-				else  										for(i=0; i<9; i++) s[i] = img[x+rb[i][0] + w*(y+rb[i][1])];
-				img1[x + y*w] = median_filter_3x3(s);
-			}
-		}
-	} else {
-		for(y=2; y < sy; y++){
-			for(x=2; x < sx; x++){
-				if(((y+1)&1 && (x+1)&1) || (y&1 && x&1))	for(i=0; i<9; i++) s[i] = img[x+ g[i][0] + w*(y+ g[i][1])];
-				else 										for(i=0; i<9; i++) s[i] = img[x+rb[i][0] + w*(y+rb[i][1])];
-				img1[x + y*w] = median_filter_3x3(s);
-			}
-		}
-	}*/
 	if(bay == BGGR || bay == RGGB){
 		for(y=2; y < sy; y++){
 			wy = w*y;
@@ -289,9 +274,51 @@ void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32
 				img1[xwy] = median_filter_3x3(s, p);
 			}
 		}
+	}*/
+
+	if(bay == BGGR || bay == RGGB){
+		for(y=2, wy = w+w; y < sy; y++, wy+=w){
+			//wy = w*y;
+			for(x=2; x < sx; x++){
+				xwy = x + wy;
+				if((!(y&1) && x&1) || (y&1 && !(x&1))) {
+					w1 = w<<1;
+					s[0] = img[xwy - w1];		s[1] = img[xwy + 1 - w]; 	s[2] = img[xwy + 2];
+					s[3] = img[xwy - 1 - w]; 	s[4] = img[xwy ]; 			s[5] = img[xwy + 1 + w];
+					s[6] = img[xwy - 2 ]; 		s[7] = img[xwy -1 + w]; 	s[8] = img[xwy + w1];
+				}
+				else  	{
+					w1 = w<<1;
+					s[0] = img[xwy - 2 - w1]; 	s[1] = img[xwy - w1]; 	s[2] = img[xwy + 2 - w1];
+					s[3] = img[xwy - 2 ]; 		s[4] = img[xwy ]; 		s[5] = img[xwy + 2];
+					s[6] = img[xwy - 2 + w1]; 	s[7] = img[xwy + w1]; 	s[8] = img[xwy + 2 + w1];
+				}
+				img1[xwy] = median_filter_3x3(s, p);
+			}
+		}
+	} else {
+		for(y=2, wy = w+w; y < sy; y++, wy+=w){
+			//wy = w*y;
+			for(x=2; x < sx; x++){
+				xwy = x + wy;
+				if((!(y&1) && !(x&1)) || (y&1 && x&1))	{
+					w1 = w<<1;
+					s[0] = img[xwy - w1];		s[1] = img[xwy + 1 - w]; 	s[2] = img[xwy + 2];
+					s[3] = img[xwy - 1 - w]; 	s[4] = img[xwy ]; 			s[5] = img[xwy + 1 + w];
+					s[6] = img[xwy - 2 ]; 		s[7] = img[xwy -1 + w]; 	s[8] = img[xwy + w1];
+				}
+				else {
+					w1 = w<<1;
+					s[0] = img[xwy - 2 - w1]; 	s[1] = img[xwy - w1]; 	s[2] = img[xwy + 2 - w1];
+					s[3] = img[xwy - 2 ]; 		s[4] = img[xwy ]; 		s[5] = img[xwy + 2];
+					s[6] = img[xwy - 2 + w1]; 	s[7] = img[xwy + w1]; 	s[8] = img[xwy + 2 + w1];
+				}
+				img1[xwy] = median_filter_3x3(s, p);
+			}
+		}
 	}
-	for(y=2; y < sy; y++){
-		wy = w*y;
+	for(y=2, wy = w+w; y < sy; y++, wy+=w){
+		//wy = w*y;
 		for(x=2; x < sx; x++){
 			xwy = x + wy;
 			img[xwy] = img1[xwy];
