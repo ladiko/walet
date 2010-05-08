@@ -124,6 +124,7 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 }
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
+#define lb(x) (x&0xFF)
 
 
 uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGrid bay)
@@ -151,20 +152,6 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 		case(RGGB):{ a = 0; b = 0; break;}
 	}
 	/*
-	for(y=0; y < h1; y++){
-		for(x=0; x < w1; x++){
-			y2 = oe(a,y);
-			x2 = oe(b,x);
-			wy = w*y;
-			xwy = x + wy;
-			xwy3 = (x + w1*y)*3;
-			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
-			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
-								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
-			rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
-		}
-	}*/
-
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
 			y2 = oe(a,y);
@@ -172,10 +159,23 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 			xwy = x + yw;
 			wy = (x + yw1);
 			xwy3 = wy + wy + wy;
-			rgb[xwy3    ] = y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]);
-			rgb[xwy3 + 1] = y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
-								 (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1);
-			rgb[xwy3 + 2] = y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]);
+			rgb[xwy3    ] = (y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]))&0xFF;
+			rgb[xwy3 + 1] = (y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
+								  (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1))&0xFF;
+			rgb[xwy3 + 2] = (y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]))&0xFF;
+		}
+	}*/
+	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+		for(x=0; x < w1; x++){
+			y2 = oe(a,y);
+			x2 = oe(b,x);
+			xwy = x + yw;
+			wy = (x + yw1);
+			xwy3 = wy + wy + wy;
+			rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
+			rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
+								 (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1);
+			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
 		}
 	}
 	return rgb;
@@ -185,10 +185,10 @@ uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 height, uint32 width)
 {
 	int i, j, dim = height*width*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i];
-		rgb[j + 1] = img[i];
-		rgb[j + 2] = img[i];
-			//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
+		rgb[j]     = img[i]&0xFF;
+		rgb[j + 1] = img[i]&0xFF;
+		rgb[j + 2] = img[i]&0xFF;
+		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
 	}
 	return rgb;
 }
@@ -200,27 +200,39 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 	return img1;
 }
 
-static inline int median_filter_3x31(imgtype *s)
-///	\fn static inline int median_filter_3x3(imgtype *s)
-///	\brief The not optimal algorithm finding median element.
-///	\param s	 	Input array.
+void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
 {
-	uint32 i, j, in, tmp, sz = 8;
-	for(j=0; j<sz; j++){
-		for(i=j&1; i<sz; i+=2){
-			if(s[i] > s[i+1]) { tmp = s[i]; s[i] = s[i+1]; s[i+1] = tmp; }
+	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, size1 = h1*w, yw, yw1;
+
+	switch(bay){
+		case(BGGR):{ a = 1; b = 1; break;}
+		case(GRBG):{ a = 0; b = 1; break;}
+		case(GBRG):{ a = 1; b = 0; break;}
+		case(RGGB):{ a = 0; b = 0; break;}
+	}
+
+	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+		for(x=0; x < w1; x++){
+			y2 = oe(a,y);
+			x2 = oe(b,x);
+			xwy = x + yw;
+			wy = (x + yw1);
+			//xwy3 = wy + wy + wy;
+			img1[wy] = 	((y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1])))>>2) +
+						((y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
+							   (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1))>>1) +
+						((y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ])))>>2);
 		}
 	}
-	return s[4];
 }
 
-static inline int median_filter_3x3(imgtype *s, imgtype *p)
+static inline int median(imgtype *s, uint32 thresh)
 ///	\fn static inline int median_filter_3x3(imgtype *s)
 ///	\brief The not optimal algorithm finding median element.
 ///	\param s	 	Input array.
 ///	\param p	 	Temporary array.
 {
-	uint32 j;//, p[9];
+	uint32 j, p[9];
 	for(j=0; j<8; j++){
 		if(j&1) {
 			s[0] = p[0];
@@ -240,90 +252,160 @@ static inline int median_filter_3x3(imgtype *s, imgtype *p)
 	return s[4];
 }
 
-void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
-///	\fn void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
-///	\brief Bayer patrn median 3x3 filter
+static inline int gradient(imgtype *s, uint32 thresh)
+///	\fn static inline int edge_detect(imgtype *s, uint32 thresh)
+///	\brief Color threshold edge detector.
+///	\param s	 	Input array.
+///	\param thresh	The color threshold.
+{
+	uint32 j, diff, tmp = 0;
+	diff = (abs(s[1]-s[5])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 1<<8;
+	diff = (abs(s[2]-s[6])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 2<<8;
+	diff = (abs(s[3]-s[7])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 3<<8;
+	diff = (abs(s[0]-s[4])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 4<<8;
+	//diff = abs(s[1]-s[5]); if(tmp < diff) tmp = diff | 1<<8;
+	//diff = abs(s[1]-s[5]); if(tmp < diff) tmp = diff | 2<<8;
+	//diff = abs(s[1]-s[5]); if(tmp < diff) tmp = diff | 3<<8;
+	//diff = abs(s[1]-s[5]); if(tmp < diff) tmp = diff | 4<<8;
+	return tmp;
+}
+
+static inline int edge(imgtype *s, uint32 thresh)
+///	\fn static inline int edge_filter(imgtype *s)
+///	\brief Color threshold edge detector.
+///	\param s	 	Input array.
+{
+	uint32 tmp = 0;
+	/*if(s[8]){
+		if((s[1]>>8) == 1) if(tmp < s[1]) tmp = s[1];
+		if((s[5]>>8) == 1) if(tmp < s[5]) tmp = s[5];
+		if((s[2]>>8) == 2) if(tmp < s[2]) tmp = s[2];
+		if((s[6]>>8) == 2) if(tmp < s[6]) tmp = s[6];
+		if((s[3]>>8) == 3) if(tmp < s[3]) tmp = s[3];
+		if((s[7]>>8) == 3) if(tmp < s[7]) tmp = s[7];
+		if((s[0]>>8) == 4) if(tmp < s[0]) tmp = s[0];
+		if((s[4]>>8) == 4) if(tmp < s[4]) tmp = s[4];
+		return tmp > s[8] ? 0 : 255;
+	}*/
+	if(s[8]){
+		if((s[8]>>8) == 1){
+			if((s[1]>>8) == 1) if(tmp < s[1]) tmp = s[1];
+			if((s[5]>>8) == 1) if(tmp < s[5]) tmp = s[5];
+		}
+		if((s[8]>>8) == 2){
+			if((s[2]>>8) == 2) if(tmp < s[2]) tmp = s[2];
+			if((s[6]>>8) == 2) if(tmp < s[6]) tmp = s[6];
+		}
+		if((s[8]>>8) == 3){
+			if((s[3]>>8) == 3) if(tmp < s[3]) tmp = s[3];
+			if((s[7]>>8) == 3) if(tmp < s[7]) tmp = s[7];
+		}
+		if((s[8]>>8) == 4){
+			if((s[0]>>8) == 4) if(tmp < s[0]) tmp = s[0];
+			if((s[4]>>8) == 4) if(tmp < s[4]) tmp = s[4];
+		}
+		return tmp > s[8] ? 0 : 255;
+	}
+	return 0;
+}
+
+
+#define bay_switch(i,x,y)  ((i) ? ((!((y)&1) && (x)&1) || ((y)&1 && !((x)&1))) : ((!((y)&1) && !((x)&1)) || ((y)&1 && (x)&1)))
+
+static void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 param, FP func)
+///	\fn tatic void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 param, FP func)
+///	\brief Get 3x3 matrix for each color from bayer pattern.
 ///	\param img	 		Input image.
 ///	\param img1 		Temporary bufer.
 ///	\param h 			Image height.
 ///	\param w 			Image width.
 ///	\param bay 			Bayer pattern.
+/// \param param		Any parameter.
+/// \param fuc			Pointer to function.
 {
-	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, tmp, w1;
-	imgtype s[9], p[9];
+	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, w1;
+	imgtype s[9];
 
 	//printf("Start median filter bay = %d\n",bay);
-	/*
-	if(bay == BGGR || bay == RGGB){
-		for(y=2; y < sy; y++){
-			wy = w*y;
-			for(x=2; x < sx; x++){
-				xwy = x + wy;
-				if(((y+1)&1 && x&1) || (y&1 && (x+1)&1)) 	for(i=0; i<9; i++) s[i] = img[xwy+ g[i][0] + w* g[i][1]];
-				else  										for(i=0; i<9; i++) s[i] = img[xwy+rb[i][0] + w*rb[i][1]];
-				img1[xwy] = median_filter_3x3(s, p);
+	for(y=2, wy = w+w; y < sy; y++, wy+=w){
+		for(x=2; x < sx; x++){
+			xwy = x + wy;
+			if(bay_switch(bay == BGGR || bay == RGGB,x,y)) {
+				w1 = w<<1;
+				//for(i=0; i<9; i++) s[i] = 0;
+				w1 = w<<1;
+				s[0] = img[xwy - w1];		s[1] = img[xwy + 1 - w]; 	s[2] = img[xwy + 2];
+				s[7] = img[xwy - 1 - w]; 	s[8] = img[xwy ]; 			s[3] = img[xwy + 1 + w];
+				s[6] = img[xwy - 2 ]; 		s[5] = img[xwy -1 + w]; 	s[4] = img[xwy + w1];
 			}
-		}
-	} else {
-		for(y=2; y < sy; y++){
-			wy = w*y;
-			for(x=2; x < sx; x++){
-				xwy = x + wy;
-				if((!(y&1) && !(x&1)) || (y&1 && x&1))	for(i=0; i<9; i++) s[i] = img[xwy+ g[i][0] + w* g[i][1]];
-				else 									for(i=0; i<9; i++) s[i] = img[xwy+rb[i][0] + w*rb[i][1]];
-				img1[xwy] = median_filter_3x3(s, p);
+			else  	{
+				w1 = w<<1;
+				s[0] = img[xwy - 2 - w1]; 	s[1] = img[xwy - w1]; 	s[2] = img[xwy + 2 - w1];
+				s[7] = img[xwy - 2 ]; 		s[8] = img[xwy ]; 		s[3] = img[xwy + 2];
+				s[6] = img[xwy - 2 + w1]; 	s[5] = img[xwy + w1]; 	s[4] = img[xwy + 2 + w1];
 			}
-		}
-	}*/
-
-	if(bay == BGGR || bay == RGGB){
-		for(y=2, wy = w+w; y < sy; y++, wy+=w){
-			//wy = w*y;
-			for(x=2; x < sx; x++){
-				xwy = x + wy;
-				if((!(y&1) && x&1) || (y&1 && !(x&1))) {
-					w1 = w<<1;
-					s[0] = img[xwy - w1];		s[1] = img[xwy + 1 - w]; 	s[2] = img[xwy + 2];
-					s[3] = img[xwy - 1 - w]; 	s[4] = img[xwy ]; 			s[5] = img[xwy + 1 + w];
-					s[6] = img[xwy - 2 ]; 		s[7] = img[xwy -1 + w]; 	s[8] = img[xwy + w1];
-				}
-				else  	{
-					w1 = w<<1;
-					s[0] = img[xwy - 2 - w1]; 	s[1] = img[xwy - w1]; 	s[2] = img[xwy + 2 - w1];
-					s[3] = img[xwy - 2 ]; 		s[4] = img[xwy ]; 		s[5] = img[xwy + 2];
-					s[6] = img[xwy - 2 + w1]; 	s[7] = img[xwy + w1]; 	s[8] = img[xwy + 2 + w1];
-				}
-				img1[xwy] = median_filter_3x3(s, p);
-			}
-		}
-	} else {
-		for(y=2, wy = w+w; y < sy; y++, wy+=w){
-			//wy = w*y;
-			for(x=2; x < sx; x++){
-				xwy = x + wy;
-				if((!(y&1) && !(x&1)) || (y&1 && x&1))	{
-					w1 = w<<1;
-					s[0] = img[xwy - w1];		s[1] = img[xwy + 1 - w]; 	s[2] = img[xwy + 2];
-					s[3] = img[xwy - 1 - w]; 	s[4] = img[xwy ]; 			s[5] = img[xwy + 1 + w];
-					s[6] = img[xwy - 2 ]; 		s[7] = img[xwy -1 + w]; 	s[8] = img[xwy + w1];
-				}
-				else {
-					w1 = w<<1;
-					s[0] = img[xwy - 2 - w1]; 	s[1] = img[xwy - w1]; 	s[2] = img[xwy + 2 - w1];
-					s[3] = img[xwy - 2 ]; 		s[4] = img[xwy ]; 		s[5] = img[xwy + 2];
-					s[6] = img[xwy - 2 + w1]; 	s[7] = img[xwy + w1]; 	s[8] = img[xwy + 2 + w1];
-				}
-				img1[xwy] = median_filter_3x3(s, p);
-			}
+			img1[xwy] = (*func)(s,param);
 		}
 	}
+	//Copy image back
 	for(y=2, wy = w+w; y < sy; y++, wy+=w){
-		//wy = w*y;
 		for(x=2; x < sx; x++){
 			xwy = x + wy;
 			img[xwy] = img1[xwy];
 		}
 	}
+}
+
+void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+{
+	get_bayer_3x3(img, img1, h, w, bay, 0, &median);
+}
+
+void utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 thresh)
+{
+	get_bayer_3x3(img, img1, h, w, bay, thresh, &gradient);
+}
+
+static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 param, FP func)
+///	\fn static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 param, FP func)
+///	\brief Get 3x3 matrix of pixels.
+///	\param img	 		Input image.
+///	\param img1 		Temporary bufer.
+///	\param h 			Image height.
+///	\param w 			Image width.
+/// \param param		Any parameter.
+/// \param fuc			Pointer to function.
+{
+	uint32 i, x, y, sx = w-1, sy = h-1, wy, xwy;
+	imgtype s[9];
+
+	//printf("Start median filter bay = %d\n",bay);
+	for(y=1, wy = w; y < sy; y++, wy+=w){
+		for(x=1; x < sx; x++){
+			xwy = x + wy;
+			s[0] = img[xwy - 1 - w]; 	s[1] = img[xwy - w]; 	s[2] = img[xwy + 1 - w];
+			s[7] = img[xwy - 1 ]; 		s[8] = img[xwy ]; 		s[3] = img[xwy + 1];
+			s[6] = img[xwy - 1 + w]; 	s[5] = img[xwy + w]; 	s[4] = img[xwy + 1 + w];
+			img1[xwy ] = (*func)(s, param);
+		}
+	}
+	//Copy image back
+	for(y=1, wy = w; y < sy; y++, wy+=w){
+		for(x=1; x < sx; x++){
+			xwy = x + wy;
+			img[xwy] = img1[xwy];
+		}
+	}
+}
+
+void utils_gradient(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 thresh)
+{
+	get_3x3(img, img1, h, w, thresh, &gradient);
+}
+
+void utils_edge_detector(imgtype *img, imgtype *img1, uint32 h, uint32 w)
+{
+	get_3x3(img, img1, h, w, 0, &edge);
 }
 
 void utils_fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits)
