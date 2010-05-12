@@ -50,7 +50,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_walet_gtk_OBJECTS = walet_gtk-walet_gtk.$(OBJEXT)
 walet_gtk_OBJECTS = $(am_walet_gtk_OBJECTS)
 am__DEPENDENCIES_1 =
-walet_gtk_DEPENDENCIES = $(am__DEPENDENCIES_1) ../lib/libwalet.la
+walet_gtk_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	../lib/libwalet.la
 walet_gtk_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(walet_gtk_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -95,6 +96,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+GLADE_CFLAGS = @GLADE_CFLAGS@
+GLADE_LIBS = @GLADE_LIBS@
 GREP = @GREP@
 GSTCTRL_CFLAGS = @GSTCTRL_CFLAGS@
 GSTCTRL_LIBS = @GSTCTRL_LIBS@
@@ -198,8 +201,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 walet_gtk_SOURCES = walet_gtk.c
-walet_gtk_CFLAGS = $(GTK_CFLAGS)
-walet_gtk_LDADD = $(GTK_LIBS) ../lib/libwalet.la
+walet_gtk_CFLAGS = $(GTK_CFLAGS) $(GLADE_CFLAGS)
+walet_gtk_LDADD = $(GTK_LIBS) $(GLADE_LIBS) ../lib/libwalet.la
 INCLUDES = -I../lib/
 all: all-am
 

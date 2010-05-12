@@ -6,4 +6,5 @@ typedef struct
 	GtkWidget               *statusbar;
 	GtkWidget               *text_view;
 	gchar                   *filename;
+	guint					statusbar_context_id;
 } WaletGTK;
