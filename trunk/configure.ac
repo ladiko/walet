@@ -87,7 +87,7 @@ AC_ARG_ENABLE(debug,[--enable-debug  Enable debug notices],[debug=$enableval], [
 #GCC_FLAGS="-Wall"
 
 if test "x${debug}" = "xyes"; then
-  CFLAGS="-O0 -g -DDEBUG"
+  CFLAGS="-Wall -O0 -g"
 else
   CFLAGS="-O2"
 fi

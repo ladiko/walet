@@ -215,7 +215,7 @@ void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
 {
 	imgtype *s1 = buf, *img = im->img;
 	uint32 j, k, h, w, st;
-	int i, nsub;
+	int i;
 	h =  im->size.y; w = im->size.x;
 	Subband *sub = im->sub;
 
@@ -324,7 +324,7 @@ void image_fill_bayer_hist(Image *im, StreamData *sd)
 ///	\param im	 		The pointer to image.
 ///	\param sd 			Pointer to StreamData.
 {
-	uint32 i, j, size = im->size.y*im->size.x, sz = 1<<sd->bits, sum;
+	uint32 i, size = im->size.y*im->size.x, sz = 1<<sd->bits, sum;
 	uint32	tmp = size;
 	if(sd->color == BAYER) {
 		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, sd->bg, sd->bits);
@@ -340,7 +340,7 @@ void image_fill_bayer_hist(Image *im, StreamData *sd)
 }
 
 #define max(x, m) ((x>m) ? (m) : (x))
-
+/*
 static void bits_per_subband1(Image *im, Subband **sub, uint32 num, ColorSpace color, uint32 steps, uint32 qst, uint32 st)
 ///	\fn static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
 ///	\brief Bits allocation for quantization algorithm.
@@ -392,6 +392,7 @@ static void bits_per_subband1(Image *im, Subband **sub, uint32 num, ColorSpace c
 		//printf("\n");
 	}
 }
+*/
 
 static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
 ///	\fn static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)

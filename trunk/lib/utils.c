@@ -85,16 +85,16 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 			}
 		} else {
 			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
-			h  = sub[st].size.y; w  = sub[st].size.x;
-			im = &img->img[sub[st].loc];
+			h  = sub[1].size.y; w  = sub[1].size.x;
+			im = &img->img[sub[1].loc];
 			drawrect(rgb, im, 0, w0, h, w, img->size.x, 128);
 
-			h = sub[2*st].size.y; w = sub[2*st].size.x;
-			im = &img->img[sub[2*st].loc];
+			h = sub[2].size.y; w = sub[2].size.x;
+			im = &img->img[sub[2].loc];
 			drawrect(rgb, im, h0, 0, h, w, img->size.x, 128);
 
-			h = sub[3*st].size.y; w = sub[3*st].size.x;
-			im = &img->img[sub[3*st].loc];
+			h = sub[3].size.y; w = sub[3].size.x;
+			im = &img->img[sub[3].loc];
 			drawrect(rgb, im, h0, w0, h, w, img->size.x, 128);
 
 			h = sub[0].size.y; w = sub[0].size.x;
@@ -126,7 +126,6 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
 #define lb(x) (x&0xFF)
 
-
 uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
 	\brief DWT picture transform.
@@ -143,7 +142,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, size1 = h1*w, yw, yw1;
+	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
 	switch(bay){
 		case(BGGR):{ a = 1; b = 1; break;}
@@ -202,7 +201,7 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uin
 
 void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
 {
-	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, size1 = h1*w, yw, yw1;
+	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
 	switch(bay){
 		case(BGGR):{ a = 1; b = 1; break;}
@@ -258,7 +257,7 @@ static inline int gradient(imgtype *s, uint32 thresh)
 ///	\param s	 	Input array.
 ///	\param thresh	The color threshold.
 {
-	uint32 j, diff, tmp = 0;
+	uint32 diff, tmp = 0;
 	diff = (abs(s[1]-s[5])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 1<<8;
 	diff = (abs(s[2]-s[6])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 2<<8;
 	diff = (abs(s[3]-s[7])>thresh) ? abs(s[1]-s[5]) : 0; if(tmp < diff) tmp = diff | 3<<8;
@@ -323,7 +322,7 @@ static void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, Bayer
 /// \param param		Any parameter.
 /// \param fuc			Pointer to function.
 {
-	uint32 i, x, y, sx = w-2, sy = h-2, wy, xwy, w1;
+	uint32 x, y, sx = w-2, sy = h-2, wy, xwy, w1;
 	imgtype s[9];
 
 	//printf("Start median filter bay = %d\n",bay);
@@ -376,7 +375,7 @@ static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 para
 /// \param param		Any parameter.
 /// \param fuc			Pointer to function.
 {
-	uint32 i, x, y, sx = w-1, sy = h-1, wy, xwy;
+	uint32 x, y, sx = w-1, sy = h-1, wy, xwy;
 	imgtype s[9];
 
 	//printf("Start median filter bay = %d\n",bay);
@@ -521,7 +520,7 @@ void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uchar sub, uint32 si
 */
 {
 	uint32 sum = 0, en, tot=0, HALF = (1<<(bits-1));
-	int i, j, k, rest, last, lasth, last1, lasth1;
+	int i, j, rest, last, lasth;
 	int hstep = step>>1;  // The half size of interval
 	*e=0.;
 
@@ -629,7 +628,7 @@ void utils_unifom_dist_entr(uint32 *distrib, uint32 bits, uint32 step, uint32 si
 {
 
 	uint32 sum = 0, en=0, tot=0;
-	int i, j, k, rest, last, lasth, last1, lasth1;
+	int i, j, rest;
 	uint32  hstep = step>>1, num = (1<<(bits-1)), st;  // The half size of interval
 	//printf("distrib = %p\n", distrib);
 	//for(i=0; i< (1<<bits); i++)  printf("distrib[%d] = %d\n", i, distrib[i]); //if(distrib[i])
@@ -682,8 +681,8 @@ void utils_unifom_dist_entr(uint32 *distrib, uint32 bits, uint32 step, uint32 si
 
 uchar* wavelet_to_rgb(imgtype *img, uchar *rgb, int height, int width, int step)
 { 
-	int i, j, k, l, n, t, dim = height*width;
-	int dim3 = dim*3, half_h = height/2, half_w = width/2, w3 = width*3, h3 = height*3;
+	int i, j, k, t, dim = height*width;
+	int w3 = width*3;
 	imgtype *p;
 	
 	if((p = (imgtype*)malloc(dim * sizeof(imgtype))) == NULL){
@@ -738,8 +737,8 @@ uchar* wavelet_to_rgb(imgtype *img, uchar *rgb, int height, int width, int step)
 
 uchar* wavelet_to_rgb1(imgtype *img, uchar *rgb, int height, int width, int step)
 { 
-	int i, j, k, l, n, t, dim = height*width;
-	int dim3 = dim*3, half_h = height/2, half_w = width/2, w3 = width*3, h3 = height*3;
+	int i, j, k, t, dim = height*width;
+	int w3 = width*3;
 	imgtype *p;
 	
 	if((p = (imgtype*)malloc(dim*sizeof(imgtype))) == NULL){
@@ -912,7 +911,7 @@ double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
     \retval 		The distortion.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){
@@ -951,7 +950,7 @@ double dist3(uchar *before, uchar *after, uint32 dim, uint32 d)
     \retval 		The distortion.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){
@@ -990,7 +989,7 @@ double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
     \retval 		The APE.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){
@@ -1026,7 +1025,7 @@ double ape3(uchar *before, uchar *after, uint32 dim, uint32 d)
     \retval 		The APE.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){
@@ -1062,7 +1061,7 @@ double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
     \retval 		The PSNR.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double psnr;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){
@@ -1106,7 +1105,7 @@ double psnr3(uchar *before, uchar *after, uint32 dim, uint32 d)
     \retval 		The PSNR.
 */
 {
-	uint32 i, j;
+	uint32 i;
 	double psnr;
 	unsigned long long r = 0, g = 0, b = 0;
 	if(d==3){

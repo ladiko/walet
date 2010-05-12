@@ -34,7 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = walet$(EXEEXT)
+bin_PROGRAMS = walet_gtk$(EXEEXT)
 subdir = gtk
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -47,13 +47,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_walet_OBJECTS = walet-walet.$(OBJEXT)
-walet_OBJECTS = $(am_walet_OBJECTS)
+am_walet_gtk_OBJECTS = walet_gtk-walet_gtk.$(OBJEXT)
+walet_gtk_OBJECTS = $(am_walet_gtk_OBJECTS)
 am__DEPENDENCIES_1 =
-walet_DEPENDENCIES = $(am__DEPENDENCIES_1) ../lib/libwalet.la
-walet_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(walet_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+walet_gtk_DEPENDENCIES = $(am__DEPENDENCIES_1) ../lib/libwalet.la
+walet_gtk_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(walet_gtk_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -67,8 +67,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(walet_SOURCES)
-DIST_SOURCES = $(walet_SOURCES)
+SOURCES = $(walet_gtk_SOURCES)
+DIST_SOURCES = $(walet_gtk_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -197,9 +197,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-walet_SOURCES = walet.c
-walet_CFLAGS = $(GTK_CFLAGS)
-walet_LDADD = $(GTK_LIBS) ../lib/libwalet.la
+walet_gtk_SOURCES = walet_gtk.c
+walet_gtk_CFLAGS = $(GTK_CFLAGS)
+walet_gtk_LDADD = $(GTK_LIBS) ../lib/libwalet.la
 INCLUDES = -I../lib/
 all: all-am
 
@@ -278,9 +278,9 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-walet$(EXEEXT): $(walet_OBJECTS) $(walet_DEPENDENCIES) 
-	@rm -f walet$(EXEEXT)
-	$(walet_LINK) $(walet_OBJECTS) $(walet_LDADD) $(LIBS)
+walet_gtk$(EXEEXT): $(walet_gtk_OBJECTS) $(walet_gtk_DEPENDENCIES) 
+	@rm -f walet_gtk$(EXEEXT)
+	$(walet_gtk_LINK) $(walet_gtk_OBJECTS) $(walet_gtk_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -288,7 +288,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/walet-walet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/walet_gtk-walet_gtk.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -311,19 +311,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-walet-walet.o: walet.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_CFLAGS) $(CFLAGS) -MT walet-walet.o -MD -MP -MF $(DEPDIR)/walet-walet.Tpo -c -o walet-walet.o `test -f 'walet.c' || echo '$(srcdir)/'`walet.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet-walet.Tpo $(DEPDIR)/walet-walet.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='walet.c' object='walet-walet.o' libtool=no @AMDEPBACKSLASH@
+walet_gtk-walet_gtk.o: walet_gtk.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -MT walet_gtk-walet_gtk.o -MD -MP -MF $(DEPDIR)/walet_gtk-walet_gtk.Tpo -c -o walet_gtk-walet_gtk.o `test -f 'walet_gtk.c' || echo '$(srcdir)/'`walet_gtk.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet_gtk-walet_gtk.Tpo $(DEPDIR)/walet_gtk-walet_gtk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='walet_gtk.c' object='walet_gtk-walet_gtk.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_CFLAGS) $(CFLAGS) -c -o walet-walet.o `test -f 'walet.c' || echo '$(srcdir)/'`walet.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -c -o walet_gtk-walet_gtk.o `test -f 'walet_gtk.c' || echo '$(srcdir)/'`walet_gtk.c
 
-walet-walet.obj: walet.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_CFLAGS) $(CFLAGS) -MT walet-walet.obj -MD -MP -MF $(DEPDIR)/walet-walet.Tpo -c -o walet-walet.obj `if test -f 'walet.c'; then $(CYGPATH_W) 'walet.c'; else $(CYGPATH_W) '$(srcdir)/walet.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet-walet.Tpo $(DEPDIR)/walet-walet.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='walet.c' object='walet-walet.obj' libtool=no @AMDEPBACKSLASH@
+walet_gtk-walet_gtk.obj: walet_gtk.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -MT walet_gtk-walet_gtk.obj -MD -MP -MF $(DEPDIR)/walet_gtk-walet_gtk.Tpo -c -o walet_gtk-walet_gtk.obj `if test -f 'walet_gtk.c'; then $(CYGPATH_W) 'walet_gtk.c'; else $(CYGPATH_W) '$(srcdir)/walet_gtk.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet_gtk-walet_gtk.Tpo $(DEPDIR)/walet_gtk-walet_gtk.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='walet_gtk.c' object='walet_gtk-walet_gtk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_CFLAGS) $(CFLAGS) -c -o walet-walet.obj `if test -f 'walet.c'; then $(CYGPATH_W) 'walet.c'; else $(CYGPATH_W) '$(srcdir)/walet.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -c -o walet_gtk-walet_gtk.obj `if test -f 'walet_gtk.c'; then $(CYGPATH_W) 'walet_gtk.c'; else $(CYGPATH_W) '$(srcdir)/walet_gtk.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
