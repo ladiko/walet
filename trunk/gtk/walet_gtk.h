@@ -1,22 +1,26 @@
 #include 	<gtk/gtk.h>
+#include 	<gst/gst.h>
 #include	<walet.h>
+
 typedef struct
 {
-	GtkWidget               *window;
-	GtkWidget               *statusbar;
+	GtkWidget	*window;
+	GtkWidget	*statusbar;
 	//Menu widgets
-	GtkWidget				*menu_new;
-	GtkWidget				*menu_open;
-	GtkWidget				*menu_save;
-	GtkWidget				*menu_save_as;
-	GtkWidget				*menu_quit;
+	GtkWidget	*menu_new;
+	GtkWidget	*menu_open;
+	GtkWidget	*menu_save;
+	GtkWidget	*menu_save_as;
+	GtkWidget	*menu_quit;
+	// Toolbar widgets
+	GtkWidget 	*button_open;
 
-	gchar                   *filename;
-	guint					statusbar_context_id;
-	gchar					*buff; //Buffer for image loading.
+	gchar		*filename;
+	guint		statusbar_context_id;
+	gchar		*buff; //Buffer for image loading.
 
-	StreamData				*sd;
-	GOP						*gop;
+	StreamData	*sd;
+	GOP			*gop;
 } WaletGTK;
 
 // File menu callbacks prototypes
