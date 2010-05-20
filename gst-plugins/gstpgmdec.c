@@ -172,7 +172,7 @@ static void gst_pgmdec_finalize (GObject * object)
 }
 
 /* this function handles the link with other elements */
-/*
+
 static gboolean gst_pgmdec_set_caps (GstPad * pad, GstCaps * caps)
 {
 	Gstpgmdec *filter = GST_PGMDEC (gst_pad_get_parent (pad));
@@ -200,7 +200,7 @@ static gboolean gst_pgmdec_set_caps (GstPad * pad, GstCaps * caps)
   //return gst_pad_set_caps (otherpad, caps);
   return TRUE;
 }
-*/
+
 
 static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 {
@@ -212,67 +212,52 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 	guint byts=0;
 	gchar line[4][20];
 	//const gchar *l;
-	gint src_buff_size, img_size, i;
+	gint  i;
 	//GstStructure *structure = gst_caps_get_structure (caps, 0);
 
-	gint8 *outbuf;
-	gchar *inbuf = (char *) GST_BUFFER_DATA (in);
-	//guint	size = GST_BUFFER_SIZE (in);
-	//guint64 offset = GST_BUFFER_OFFSET(in);
+	gchar *outbuf;
+	gchar *inbuf;
 
+	//Get pgm header
+	if(!GST_BUFFER_OFFSET(in)){
+		inbuf = (char *) GST_BUFFER_DATA (in);
+		byts = sscanf(inbuf, "%s%s%s%s", line[0], line[1], line[2], line[3]);
+		if (strcmp(line[0], "P5") != 0) {
+			GST_WARNING ("It's not PGM file");
+			return FALSE;
+		}
+		filter->width = atoi(line[1]);
+		filter->height = atoi(line[2]);
+		//bpp = atoi(line[3]);
+		filter->bpp = (atoi(line[3]) > 256) ? 16 : 8;
+		for(i=0; i<4; i++) byts += strlen(line[i]);
+		filter->size = (filter->bpp == 8) ? filter->width*filter->height : filter->width*filter->height*2;
 
-	//GstByteReader reader = GST_BYTE_READER_INIT_FROM_BUFFER (in);
+		GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
+				line[0], filter->width, filter->height, filter->bpp);
+		GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
+	}
 
-	  //GST_DEBUG_OBJECT (filter, "buffer size = %d  offset = %d", size, offset);
-	  //GST_DEBUG_OBJECT (filter, "The file type is : %s", gst_structure_get_name (structure));
+	//Check for the buffer size
+	//if(GST_BUFFER_SIZE (in) < filter->size/2) {
+	//	GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
+	//	return GST_FLOW_OK;
+	//}
+	//gst_buffer_make_metadata_writable(in);
+	GST_BUFFER_DATA (in) = &inbuf[byts];
+	GST_BUFFER_SIZE (in) = filter->size;
+	//GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
 
-	  if(!GST_BUFFER_OFFSET(in)){
-		  byts = sscanf(inbuf, "%s%s%s%s", line[0], line[1], line[2], line[3]);
-		  if (strcmp(line[0], "P5") != 0) {
-			  GST_WARNING ("It's not PGM file");
-			  return FALSE;
-		  }
-		  filter->width = atoi(line[1]);
-		  filter->height = atoi(line[2]);
-		  filter->bpp = atoi(line[3]);
-		  for(i=0; i<4; i++) byts += strlen(line[i]);
-
-		  GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
-				  line[0], filter->width, filter->height, filter->bpp);
-		  //gst_buffer_make_metadata_writable(in);
-		  //gst_buffer_make_writable(in);
-		  //img_size = filter->width*filter->height;
-		  //src_buff_size = filter->bpp > 255 ? img_size<<1 : img_size;
-
-		  //printf("buff_size = %d\n", src_buff_size);
-		  //printf("GST_BUFFER_MALLOCDATA() = %p\n", GST_BUFFER_MALLOCDATA(in));
-		  //printf("buff_data = %p\n", GST_BUFFER_DATA(in));
-		  //gst_buffer_set_data(in, GST_BUFFER_DATA(in), src_buff_size);
-		  //GST_BUFFER_DATA(in) = GST_BUFFER_DATA(in)+10;
-		  //printf("byts = %d\n",byts);
-		  //GST_BUFFER_OFFSET(in) = byts;
-		  GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in));
-		  GST_BUFFER_DATA (in) = &inbuf[byts];
-		  GST_BUFFER_SIZE (in) = GST_BUFFER_SIZE (in) - byts;
-		  GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in));
-
-	  }
-	  caps = gst_caps_new_simple ("video/x-raw-bayer",
-	        "width", G_TYPE_INT, filter->width,
-	        "height", G_TYPE_INT, filter->height,
-	        "bpp", G_TYPE_INT, filter->bpp,
-	        "framerate", GST_TYPE_FRACTION, 1, 1,
-	        NULL);
-
-	  //gst_pad_set_caps (filter->srcpad, caps);
-	  if (!gst_pad_set_caps (filter->srcpad, caps)) {
-		  GST_ELEMENT_ERROR (filter, CORE, NEGOTIATION, (NULL), ("Some debug information here"));
-		  return GST_FLOW_ERROR;
-	  }
-	  //gst_buffer_set_caps (in, caps);
-	  //gst_pad_set_caps (filter->srcpad, caps);
-      //gst_pad_use_fixed_caps (filter->srcpad);
-	 gst_caps_unref (caps);
+	caps = gst_caps_new_simple ("video/x-raw-bayer",
+								"width", G_TYPE_INT, filter->width,
+								"height", G_TYPE_INT, filter->height,
+								"bpp", G_TYPE_INT, filter->bpp,
+								"framerate", GST_TYPE_FRACTION, 0, 1,
+								NULL);
+	gst_buffer_set_caps(in, caps);
+	gst_pad_set_caps (filter->srcpad, caps);
+	gst_pad_use_fixed_caps (filter->srcpad);
+	gst_caps_unref (caps);
 
 	  /*
 	  img_size = filter->width*filter->height;
@@ -308,9 +293,53 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
    // g_print ("I'm plugged, therefore I'm in.\n");
 
   /* just push out the incoming buffer without touching it */
-  return gst_pad_push (filter->srcpad, in);
+	ret = gst_pad_push(filter->srcpad, in);
+	GST_DEBUG_OBJECT (filter, "gst_pad_push = %d",  ret);
+	return ret;
 }
 
+static gboolean gst_pgmdec_sink_event (GstPad * pad, GstEvent * event)
+{
+	gboolean ret = TRUE;
+	Gstpgmdec *filter = GST_PGMDEC (GST_OBJECT_PARENT (pad));
+
+	GST_DEBUG_OBJECT (filter, "event : %s", GST_EVENT_TYPE_NAME (event));
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_FLUSH_STOP:
+      GST_DEBUG_OBJECT (filter, "Aborting decompress");
+      //jpeg_abort_decompress (&dec->cinfo);
+      gst_segment_init (&filter->segment, GST_FORMAT_UNDEFINED);
+      //gst_jpeg_dec_reset_qos (dec);
+      break;
+      /*
+    case GST_EVENT_NEWSEGMENT:{
+      gboolean update;
+      gdouble rate, applied_rate;
+      GstFormat format;
+      gint64 start, stop, position;
+
+      gst_event_parse_new_segment_full (event, &update, &rate, &applied_rate,
+          &format, &start, &stop, &position);
+
+      GST_DEBUG_OBJECT (filter, "Got NEWSEGMENT [%" GST_TIME_FORMAT
+          " - %" GST_TIME_FORMAT " / %" GST_TIME_FORMAT "]",
+          GST_TIME_ARGS (start), GST_TIME_ARGS (stop),
+          GST_TIME_ARGS (position));
+
+      gst_segment_set_newsegment_full (&filter->segment, update, rate,
+          applied_rate, format, start, stop, position);
+
+      break;
+    }*/
+    default:
+      break;
+  }
+
+  ret = gst_pad_push_event (filter->srcpad, event);
+
+  return ret;
+}
 /* GObject vmethod implementations */
 
 static void gst_pgmdec_base_init (gpointer gclass)
@@ -382,7 +411,8 @@ static void gst_pgmdec_init (Gstpgmdec * filter, GstpgmdecClass * gclass)
 	filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
 	//gst_pad_set_setcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_set_caps));
 	//gst_pad_set_getcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
-	gst_pad_set_chain_function   (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_chain));
+	gst_pad_set_chain_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_chain));
+	gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
 	gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
 	filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");

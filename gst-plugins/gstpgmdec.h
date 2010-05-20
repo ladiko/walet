@@ -77,6 +77,9 @@ struct _Gstpgmdec
 	gboolean	color_space;	//Mono or Bayer color space
 	gint32		bpp; 			//Bits per pixel
 	gint32		bayer_grid;		//Bayer grids pattern
+	gint32		size; 			//Image size in bytes
+
+	GstSegment segment;
 	//gboolean	ready;
 	//guint64 	offset;
 };
