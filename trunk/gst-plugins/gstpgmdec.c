@@ -232,21 +232,23 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		filter->bpp = (atoi(line[3]) > 256) ? 16 : 8;
 		for(i=0; i<4; i++) byts += strlen(line[i]);
 		filter->size = (filter->bpp == 8) ? filter->width*filter->height : filter->width*filter->height*2;
+		filter->buff = &inbuf[byts];
 
 		GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
 				line[0], filter->width, filter->height, filter->bpp);
-		GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
+		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 	}
 
 	//Check for the buffer size
-	//if(GST_BUFFER_SIZE (in) < filter->size/2) {
-	//	GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
-	//	return GST_FLOW_OK;
-	//}
-	//gst_buffer_make_metadata_writable(in);
-	GST_BUFFER_DATA (in) = &inbuf[byts];
+	if(GST_BUFFER_OFFSET(in)+GST_BUFFER_SIZE (in) < filter->size) {
+		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
+		return GST_FLOW_OK;
+	}
+	gst_buffer_make_metadata_writable(in);
+	GST_BUFFER_DATA (in) = filter->buff;
 	GST_BUFFER_SIZE (in) = filter->size;
-	//GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %p GST_BUFFER_OFFSET = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_OFFSET (in), GST_BUFFER_SIZE (in));
+	GST_BUFFER_OFFSET(in)= 0;
+	GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA(in), GST_BUFFER_SIZE(in), GST_BUFFER_OFFSET(in));
 
 	caps = gst_caps_new_simple ("video/x-raw-bayer",
 								"width", G_TYPE_INT, filter->width,
@@ -294,7 +296,7 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 
   /* just push out the incoming buffer without touching it */
 	ret = gst_pad_push(filter->srcpad, in);
-	GST_DEBUG_OBJECT (filter, "gst_pad_push = %d",  ret);
+	//GST_DEBUG_OBJECT (filter, "gst_pad_push = %d",  ret);
 	return ret;
 }
 
