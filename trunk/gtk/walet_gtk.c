@@ -64,6 +64,10 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 	guint		i, size;
 	gchar		**line;
 
+	GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
+	GstStructure 		*str;
+	GstPadLinkReturn	ret;
+
 	chooser = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (wlgtk->window),
 											GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -84,6 +88,9 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 	//gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	//caps = gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink"));
 	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink")), 0)));
+
+	//g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
+
 
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	g_main_loop_run (loop);
@@ -192,7 +199,6 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 
 	g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
 
-
 	gst_caps_unref (caps);
 
 	gst_object_unref(sinkpad);
@@ -201,13 +207,24 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gpointer user_data)
 {
 	//GstPad 			*sinkpad 	= gst_element_get_static_pad (fakesink, "sink");
-	//GstCaps 		*caps 		= gst_pad_get_caps (pad);
+	GstCaps 		*caps 		= gst_pad_get_caps (pad);
 	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
-	gboolean res;
+	gboolean ret;
+	GstStructure	*str;
 
 	/* this makes the image black/white */
 	//memset (GST_BUFFER_DATA (buffer), 0x0 , GST_BUFFER_SIZE (buffer));
 	g_printf("cb_handoff buffer = %p  size = %d\n", buffer, GST_BUFFER_SIZE (buffer));
+
+	//str = gst_caps_get_structure (caps, 0);
+	//g_print("%s\n", gst_caps_to_string (caps));
+	//ret =  gst_structure_get_int (str, "width", &wlgtk->width);
+	//ret &= gst_structure_get_int (str, "height", &wlgtk->height);
+	//ret &= gst_structure_get_int (str, "bpp", &wlgtk->bpp);
+	//if (!ret) g_critical("Can't get image parameter");
+
+	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
+
  }
 
 static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data)
