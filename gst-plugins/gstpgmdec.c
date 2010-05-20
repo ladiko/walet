@@ -103,7 +103,7 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     		"width = " GST_VIDEO_SIZE_RANGE ", "
     		"height = " GST_VIDEO_SIZE_RANGE ", "
     		"bpp = (int) [8,14], "
-    		 "framerate = " GST_VIDEO_FPS_RANGE "; "
+    		"framerate = " GST_VIDEO_FPS_RANGE "; "
     		//"video/x-raw-gray,"
     		//"endianness = (int) BYTE_ORDER, "
     		//"width = " GST_VIDEO_SIZE_RANGE ", "
@@ -127,15 +127,15 @@ static void gst_pgmdec_set_property (GObject * object, guint prop_id,
 	switch (prop_id)
 	{
 	  case PROP_WIDTH:
-		  filter->width = g_value_get_uint (value); break;
+		  filter->width = g_value_get_int (value); break;
 	  case PROP_HEIGHT:
-		  filter->height = g_value_get_uint (value); break;
+		  filter->height = g_value_get_int (value); break;
 	  case PROP_COLOR_SPACE:
 		  filter->color_space = g_value_get_boolean (value); break;
 	  case PROP_BPP:
-		  filter->bpp = g_value_get_uint (value); break;
+		  filter->bpp = g_value_get_int (value); break;
 	  case PROP_BAYER_GRID:
-		  filter->bayer_grid = g_value_get_uint (value); break;
+		  filter->bayer_grid = g_value_get_int (value); break;
 	  default:
 		  G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec); break;
   }
@@ -148,15 +148,15 @@ static void gst_pgmdec_get_property (GObject * object, guint prop_id,
 	switch (prop_id)
 	{
 	  case PROP_WIDTH:
-		  g_value_set_uint (value, filter->width); break;
+		  g_value_set_int (value, filter->width); break;
 	  case PROP_HEIGHT:
-		  g_value_set_uint (value, filter->height); break;
+		  g_value_set_int (value, filter->height); break;
 	  case PROP_COLOR_SPACE:
 		  g_value_set_boolean (value, filter->color_space); break;
 	  case PROP_BPP:
-		  g_value_set_uint(value, filter->bpp); break;
+		  g_value_set_int(value, filter->bpp); break;
 	  case PROP_BAYER_GRID:
-		  g_value_set_uint (value, filter->bayer_grid); break;
+		  g_value_set_int (value, filter->bayer_grid); break;
 	  default:
 		  G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec); break;
   }
@@ -250,13 +250,19 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		  //gst_buffer_set_data(in, GST_BUFFER_DATA(in), src_buff_size);
 		  //GST_BUFFER_DATA(in) = GST_BUFFER_DATA(in)+10;
 		  //printf("byts = %d\n",byts);
-		  GST_BUFFER_OFFSET(in) = byts;
+		  //GST_BUFFER_OFFSET(in) = byts;
+		  GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in));
+		  GST_BUFFER_DATA (in) = &inbuf[byts];
+		  GST_BUFFER_SIZE (in) = GST_BUFFER_SIZE (in) - byts;
+		  GST_DEBUG_OBJECT (filter, "GST_BUFFER_DATA = %d  GST_BUFFER_SIZE = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in));
 
 	  }
 	  caps = gst_caps_new_simple ("video/x-raw-bayer",
-	        "width", G_TYPE_UINT, filter->width,
-	        "height", G_TYPE_UINT, filter->height,
-	        "bpp", G_TYPE_UINT, filter->bpp, NULL);
+	        "width", G_TYPE_INT, filter->width,
+	        "height", G_TYPE_INT, filter->height,
+	        "bpp", G_TYPE_INT, filter->bpp,
+	        "framerate", GST_TYPE_FRACTION, 1, 1,
+	        NULL);
 
 	  //gst_pad_set_caps (filter->srcpad, caps);
 	  if (!gst_pad_set_caps (filter->srcpad, caps)) {

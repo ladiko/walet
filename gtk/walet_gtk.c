@@ -8,7 +8,7 @@ GOP			*gop;
 //Gstreamet
 GMainLoop *loop;
 GstBus *bus;
-GstElement *pipeline, *src, *dec, *fakesink;
+GstElement *pipeline, *src, *dec, *fakesink, *pgmdec;
 
 
 void  print_status(WaletGTK *wlgtk, const gchar *mesage)
@@ -81,35 +81,18 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 
 	g_object_set (G_OBJECT(src), "location", wlgtk->filename, NULL);
 	// Play
+	//gst_element_set_state (pipeline, GST_STATE_PLAYING);
+	//caps = gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink"));
+	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink")), 0)));
+
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	g_main_loop_run (loop);
+	//if (!gst_element_seek 	(pipeline, 1.0,
+	//					GST_FORMAT_DEFAULT,
+	//					GST_SEEK_FLAG_FLUSH,
+	//					GST_SEEK_TYPE_SET, 0,
+	//					GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) g_print ("Seek failed!\n");
 
-
-	/*
-    // Get the file contents
-    if (g_file_get_contents (wlgtk->filename, &wlgtk->buff, &size, &err) == FALSE) {
-    	error_message (err->message);
-    	g_error_free (err);
-    	//g_free (wlgtk->filename);
-    }
-    //g_message("File size = %d\n", size);
-    line[0] = g_strdup(wlgtk->buff);
-    size = g_strv_length(line);
-    g_message("srt = %s  size = %d\n",line[0], size);
-    size = sscanf(wlgtk->buff, "%s%s%s%s", line[0], line[1], line[2], line[3]);
-    if (strcmp(line[0], "P5") != 0) {
-		  g_warning("It's not PGM file");
-		  g_free(wlgtk->buff);
-		  //return FALSE;
-    }
-    wlgtk->sd->width  	= atoi(line[1]);
-    wlgtk->sd->height 	= atoi(line[2]);
-    wlgtk->sd->bits 	= atoi(line[3]);
-    size = 0;
-    for(i=0; i<4; i++) size += strlen(line[i]);
-
-    print_status(wlgtk, g_strdup_printf ("width = %d  height = %d bpp = %d offset = %d", wlgtk->sd->width, wlgtk->sd->height, wlgtk->sd->bits, size));
-	*/
 }
 
 gboolean  init_wlgtk(WaletGTK *wlgtk)
@@ -168,6 +151,7 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 	GstPad 			*sinkpad 		= gst_element_get_static_pad (linkElement, "sink");
 	GstCaps 		*caps 			= gst_pad_get_caps (pad);
 	GstStructure 	*str;
+	GstPadLinkReturn	ret;
 
 	guint  size = gst_caps_get_size(caps), i;
 	// Check media type
@@ -180,7 +164,9 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 		str = gst_caps_get_structure (caps, i);
 		g_print("Decoded cap %d : %s\n", i , gst_structure_get_name(str));
 	}
-	gst_caps_unref (caps);
+	g_print("%s\n", gst_caps_to_string (caps));
+
+	//gst_caps_unref (caps);
 
 	if (GST_PAD_IS_LINKED(sinkpad))
 	{
@@ -188,13 +174,37 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 	    return;
 	}
 	  // Link pads (decoder --> <link Element>)
-	gst_pad_link (pad, sinkpad);
+
+	if((ret = gst_pad_link(pad, sinkpad))){
+		g_print("Can't link pads erorr : %d\n", ret);
+		g_object_unref(sinkpad);
+		return;
+	} //else  g_print("Link pads OK : %d\n", ret);
+
+	//caps = gst_pad_get_negotiated_caps (sinkpad);
+	//caps = gst_pad_peer_get_caps (sinkpad);
+	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(caps, 0)));
+	str = gst_caps_get_structure (caps, 0);
+	ret =  gst_structure_get_int (str, "width", &wlgtk->width);
+	ret &= gst_structure_get_int (str, "height", &wlgtk->height);
+	ret &= gst_structure_get_int (str, "bpp", &wlgtk->bpp);
+	if (!ret) g_critical("Can't get image parameter");
+
+	g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
+
+
+	gst_caps_unref (caps);
 
 	gst_object_unref(sinkpad);
 }
 
 static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gpointer user_data)
 {
+	//GstPad 			*sinkpad 	= gst_element_get_static_pad (fakesink, "sink");
+	//GstCaps 		*caps 		= gst_pad_get_caps (pad);
+	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
+	gboolean res;
+
 	/* this makes the image black/white */
 	//memset (GST_BUFFER_DATA (buffer), 0x0 , GST_BUFFER_SIZE (buffer));
 	g_printf("cb_handoff buffer = %p  size = %d\n", buffer, GST_BUFFER_SIZE (buffer));
@@ -203,7 +213,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gp
 static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data)
 {
 	GMainLoop *loop = (GMainLoop*) data;
-	//g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
+	g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
 
 	switch (GST_MESSAGE_TYPE (message)) {
 		case GST_MESSAGE_ERROR: {
@@ -257,20 +267,25 @@ int main (int argc, char *argv[])
 	gst_bus_add_watch (bus, my_bus_callback, loop);
 	gst_object_unref  (bus);
 
-	src = gst_element_factory_make ( "filesrc", "source");
-	//g_object_set (G_OBJECT (src), "location", "rbc.ru", NULL);
+	src 		= gst_element_factory_make("filesrc", "source");
+	dec 		= gst_element_factory_make("decodebin", "decoder");
+	pgmdec		= gst_element_factory_make("pgmdec", "decoder");
+	fakesink 	= gst_element_factory_make("fakesink", "sink");
+	//appsink		= gst_element_factory_make(("appsink","appsink");
 
-	dec = gst_element_factory_make ("decodebin2", "decoder");
-	fakesink = gst_element_factory_make ("fakesink", "sink");
-	gst_bin_add_many (GST_BIN (pipeline), src, dec, NULL);
-	gst_element_link_many (src, dec, NULL);
-
-
-	//g_signal_connect (dec, "unknown-type",    G_CALLBACK (cb_error),  NULL);
+	if(!(src && dec && fakesink && pgmdec)){
+		g_critical("Could not create pipeline elements");
+		return FALSE;
+	}
+	//gst_bin_add_many (GST_BIN (pipeline), src, dec, fakesink, NULL);
+	//gst_element_link_many (src, dec, NULL);
+	gst_bin_add_many (GST_BIN (pipeline), src, pgmdec, fakesink, NULL);
+	gst_element_link_many (src, pgmdec, fakesink, NULL);
 
 	g_signal_connect (dec, "new-decoded-pad", G_CALLBACK (cb_newpad), fakesink);
 	//g_signal_connect (dec, "unknown-type",    G_CALLBACK (cb_error),  NULL);
 	g_object_set (G_OBJECT (fakesink), "signal-handoffs", TRUE, NULL);
+	//g_object_set (G_OBJECT (fakesink), "blocksize", 16777216, NULL);
 	g_signal_connect (fakesink, "handoff", G_CALLBACK (cb_handoff), NULL);
 
 
