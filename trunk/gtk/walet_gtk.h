@@ -1,5 +1,6 @@
 #include 	<gtk/gtk.h>
 #include 	<gst/gst.h>
+#include 	<gst/app/gstappsink.h>
 #include	<walet.h>
 
 typedef struct
@@ -21,6 +22,10 @@ typedef struct
 
 	StreamData	*sd;
 	GOP			*gop;
+
+	guint		width;
+	guint		height;
+	guint		bpp;
 } WaletGTK;
 
 // File menu callbacks prototypes
