@@ -181,8 +181,8 @@ void image_init(Image *img, StreamData *sd, uint32 x, uint32 y)
 {
 	int i, num;
 	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
-	img->hist = (sd->color == BAYER) ? (uint32 *)calloc((1<<sd->bits)*3, sizeof(uint32)) : (uint32 *)calloc(1<<sd->bits, sizeof(uint32));
-	img->look = (sd->color == BAYER) ? (uint16 *)calloc((1<<sd->bits)*3, sizeof(uint16)) : (uint16 *)calloc(1<<sd->bits, sizeof(uint16));
+	img->hist = (sd->color == BAYER) ? (uint32 *)calloc((1<<sd->bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<sd->bpp, sizeof(uint32));
+	img->look = (sd->color == BAYER) ? (uint16 *)calloc((1<<sd->bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<sd->bpp, sizeof(uint16));
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
 	num = (sd->color == BAYER) ? sd->steps : sd->steps+1;
 	img->qfl  = (uint32 *)calloc(num, sizeof(uint32));
@@ -202,7 +202,7 @@ void image_copy(Image *img, StreamData *sd, uchar *v)
 {
 	uint32 i, size = img->size.x*img->size.y;
 	printf("Start copy  x = %d y = %d p = %p \n", img->size.x, img->size.y, img->img);
-	if(sd->bits > 8) for(i=0; i<size; i++) img->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
+	if(sd->bpp > 8) for(i=0; i<size; i++) img->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
 	else 		 for(i=0; i<size; i++) img->img[i] = v[i];
 }
 
@@ -324,10 +324,10 @@ void image_fill_bayer_hist(Image *im, StreamData *sd)
 ///	\param im	 		The pointer to image.
 ///	\param sd 			Pointer to StreamData.
 {
-	uint32 i, size = im->size.y*im->size.x, sz = 1<<sd->bits, sum;
+	uint32 i, size = im->size.y*im->size.x, sz = 1<<sd->bpp, sum;
 	uint32	tmp = size;
 	if(sd->color == BAYER) {
-		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, sd->bg, sd->bits);
+		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, sd->bg, sd->bpp);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
 		printf("size = %d r = %d ", im->size.y*im->size.x, sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
@@ -505,7 +505,7 @@ void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
 {
 	uint32 i, s, qstep, size;
 
-	size = (im->size.x*im->size.y*sd->bits)/times;
+	size = (im->size.x*im->size.y*sd->bpp)/times;
 	qstep = (im->qst>>1);
 
 	for(i=2;;i++){
@@ -545,7 +545,7 @@ uint32 image_range_encode(Image *im, StreamData *sd, uchar *buf)
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_encode_table(&sub[i]);
-			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bits+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 		}
 	}
 	printf("Finish range_encoder\n");
@@ -565,7 +565,7 @@ uint32 image_range_decode(Image *im, StreamData *sd, uchar *buf)
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_decode_table(&sub[i]);
-			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bits+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 		} else for(j=0; j<sq; j++) img[sub[i].loc+j] = 0;
 	}
 	return size;

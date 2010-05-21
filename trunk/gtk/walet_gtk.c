@@ -2,6 +2,7 @@
 
 //GTK
 WaletGTK	*wlgtk;
+TwoPixBuff	*twoimg;
 //Walet
 StreamData	*sd;
 GOP			*gop;
@@ -62,11 +63,11 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 	GtkWidget	*chooser;
 	GError  	*err=NULL;
 	guint		i, size;
-	gchar		**line;
+	//gchar		**line;
 
-	GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
-	GstStructure 		*str;
-	GstPadLinkReturn	ret;
+	//GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
+	//GstStructure 		*str;
+	//GstPadLinkReturn	ret;
 
 	chooser = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (wlgtk->window),
@@ -102,6 +103,25 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 
 }
 
+gboolean on_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
+{
+	g_printf("on_expose_event\n");
+	/*
+	if(twoimg->pixbuf){
+		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
+		gdk_draw_pixbuf(	widget->window,
+							widget->style->fg_gc[gtk_widget_get_state (wlgtk->drawingarea1)],
+							twoimg->pixbuf[0],
+							0 ,0 ,0 ,0 ,
+							sd->width,
+							sd->height,
+							GDK_RGB_DITHER_NONE,
+							0, 0);
+	}*/
+	return TRUE;
+}
+
+
 gboolean  init_wlgtk(WaletGTK *wlgtk)
 {
 	GtkBuilder              *builder;
@@ -118,25 +138,28 @@ gboolean  init_wlgtk(WaletGTK *wlgtk)
 	}
 
 	// get the widgets which will be referenced in callbacks
-	wlgtk->window = GTK_WIDGET (gtk_builder_get_object (builder, "window"));
-	wlgtk->statusbar = GTK_WIDGET (gtk_builder_get_object (builder, "statusbar"));
+	wlgtk->window 		= GTK_WIDGET (gtk_builder_get_object (builder, "window"));
+	wlgtk->statusbar 	= GTK_WIDGET (gtk_builder_get_object (builder, "statusbar"));
 	// Menu buttons
-	wlgtk->menu_new		=  GTK_WIDGET (gtk_builder_get_object (builder, "menu_new"));
-	wlgtk->menu_open 	=  GTK_WIDGET (gtk_builder_get_object (builder, "menu_open"));
-	wlgtk->menu_save	=  GTK_WIDGET (gtk_builder_get_object (builder, "menu_save"));
-	wlgtk->menu_save_as =  GTK_WIDGET (gtk_builder_get_object (builder, "menu_save_as"));
-	wlgtk->menu_quit 	=  GTK_WIDGET (gtk_builder_get_object (builder, "menu_quit"));
+	wlgtk->menu_new		= GTK_WIDGET (gtk_builder_get_object (builder, "menu_new"));
+	wlgtk->menu_open 	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_open"));
+	wlgtk->menu_save	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_save"));
+	wlgtk->menu_save_as = GTK_WIDGET (gtk_builder_get_object (builder, "menu_save_as"));
+	wlgtk->menu_quit 	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_quit"));
 	// Toolbar buttons
-	wlgtk->button_open =  GTK_WIDGET (gtk_builder_get_object (builder, "button_open"));
+	wlgtk->button_open 	= GTK_WIDGET (gtk_builder_get_object (builder, "button_open"));
+	// Drawingareas
+	wlgtk->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
 
 	//connect signals, don't work now
 	//gtk_builder_connect_signals(builder, wlgtk);
 
-    g_signal_connect(wlgtk->window, "destroy", G_CALLBACK (on_quit_activate), wlgtk);
-    g_signal_connect(wlgtk->menu_open, "activate", G_CALLBACK (on_open_activate), wlgtk);
-    g_signal_connect(wlgtk->menu_quit, "activate", G_CALLBACK (on_quit_activate), wlgtk);
+    g_signal_connect(G_OBJECT(wlgtk->window)		, "destroy", 		G_CALLBACK (on_quit_activate), NULL);
+    g_signal_connect(G_OBJECT(wlgtk->menu_open)		, "activate", 		G_CALLBACK (on_open_activate), NULL);
+    g_signal_connect(G_OBJECT(wlgtk->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), NULL);
 
-    g_signal_connect(wlgtk->button_open, "clicked", G_CALLBACK (on_open_activate), wlgtk);
+    g_signal_connect(G_OBJECT(wlgtk->button_open)	, "clicked"	, 		G_CALLBACK (on_open_activate), NULL);
+    //g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_expose_event),  NULL);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));
@@ -207,22 +230,33 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gpointer user_data)
 {
 	//GstPad 			*sinkpad 	= gst_element_get_static_pad (fakesink, "sink");
-	GstCaps 		*caps 		= gst_pad_get_caps (pad);
+	//GstCaps 		*caps 		= gst_pad_get_caps (pad);
+	GstCaps 		*caps 		= gst_buffer_get_caps (buffer);
 	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
 	gboolean ret;
 	GstStructure	*str;
 
-	/* this makes the image black/white */
-	//memset (GST_BUFFER_DATA (buffer), 0x0 , GST_BUFFER_SIZE (buffer));
-	g_printf("cb_handoff buffer = %p  size = %d\n", buffer, GST_BUFFER_SIZE (buffer));
+	g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
 
-	//str = gst_caps_get_structure (caps, 0);
-	//g_print("%s\n", gst_caps_to_string (caps));
-	//ret =  gst_structure_get_int (str, "width", &wlgtk->width);
-	//ret &= gst_structure_get_int (str, "height", &wlgtk->height);
-	//ret &= gst_structure_get_int (str, "bpp", &wlgtk->bpp);
-	//if (!ret) g_critical("Can't get image parameter");
+	str = gst_caps_get_structure (caps, 0);
+	g_print("%s\n", gst_caps_to_string (caps));
+	ret  = gst_structure_get_int (str, "width"	, &sd->width);
+	ret &= gst_structure_get_int (str, "height"	, &sd->height);
+	ret &= gst_structure_get_int (str, "bpp"	, &sd->bpp);
+	if (!ret) g_critical("Can't get image parameter");
 
+	//Init Walet decoder only at first call on cb_handoff
+	sd->color 		= 	BAYER;
+	sd->bg 			= 	GRBG;	//Sony Alpha pattern
+	sd->steps		= 	5;
+	sd->gop_size	=	1;
+	walet_decoder_init(sd, gop);
+	//Copy frame 0 to decoder pipeline
+	frame_copy(gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+
+	twoimg->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width, sd->height);
+	utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg->pixbuf[0]), sd->width, sd->height);
+	gtk_widget_set_size_request(wlgtk->drawingarea1, sd->width, sd->height);
 	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
 
  }
@@ -268,6 +302,7 @@ int main (int argc, char *argv[])
 	wlgtk 	= g_slice_new(WaletGTK);
 	sd 		= g_slice_new(StreamData);
 	gop		= g_slice_new(GOP);
+	twoimg	= g_slice_new(TwoPixBuff);
 	wlgtk->sd 	= sd;
 	wlgtk->gop	= gop;
 
@@ -317,6 +352,9 @@ int main (int argc, char *argv[])
 	gtk_main ();
 	// Free memory we allocated for TutorialTextEditor struct
 	g_slice_free (WaletGTK, wlgtk);
+	g_slice_free (StreamData, sd);
+	g_slice_free (GOP, gop);
+	g_slice_free (TwoPixBuff, twoimg);
 
 	// Clean up gstreamer
 	gst_element_set_state (pipeline, GST_STATE_NULL);
