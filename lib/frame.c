@@ -114,7 +114,7 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 	Image *im = &gop->frames[fr].img[0];
 	if(gop->sd->color == BAYER){
 		image_fill_bayer_hist(im, gop->sd);
-		utils_white_balance(im->img, im->img, im->hist, im->look, im->size.y, im->size.x, gop->sd->bg, gop->sd->bits, out_bits, gamma);
+		utils_white_balance(im->img, im->img, im->hist, im->look, im->size.y, im->size.x, gop->sd->bg, gop->sd->bpp, out_bits, gamma);
 	}
 }
 
@@ -199,7 +199,7 @@ uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
     wh.height	= gop->sd->height;
     wh.color	= gop->sd->color;
     wh.bg		= gop->sd->bg;
-    wh.bits		= gop->sd->bits;
+    wh.bpp		= gop->sd->bpp;
     wh.steps	= gop->sd->steps;
 
     sz = (gop->sd->color == BAYER) ? ((gop->sd->steps-1)*3+1)<<2 : gop->sd->steps*3 + 1;
@@ -271,7 +271,7 @@ uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
     gop->sd->height =	wh.height;
     gop->sd->color = 	wh.color;
     gop->sd->bg = 		wh.bg;
-    gop->sd->bits = 	wh.bits;
+    gop->sd->bpp = 	wh.bpp;
     gop->sd->steps = 	wh.steps;
 
     //if(gop->sd->color)
@@ -280,7 +280,7 @@ uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
 void frame_compress(GOP *gop, uint32 fr, uint32 times)
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 bits = gop->sd->bits, color =  gop->sd->color, steps = gop->sd->steps;
+	uint32 bits = gop->sd->bpp, color =  gop->sd->color, steps = gop->sd->steps;
 	uint32 size;
 	Subband **sub;
 	clock_t start, end;

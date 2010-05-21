@@ -13,7 +13,8 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-void walet_init(StreamData *sd, GOP *gop);
+void walet_decoder_init	(StreamData *sd, GOP *gop);
+void walet_encoder_init	(StreamData *sd, GOP *gop);
 
 #ifdef __cplusplus
 }

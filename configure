@@ -12038,6 +12038,14 @@ fi
 
 
 
+#PKG_CHECK_MODULES(GLADE, libglade-2.0, HAVE_GLADE=yes, HAVE_GLADE=no)
+#PKG_CHECK_MODULES(GLADE, gmodule-2.0, HAVE_GLADE=yes, HAVE_GLADE=no)
+#if test "x$HAVE_GLADE" = "xno"; then
+#  AC_MSG_ERROR(you need libglade-2.0 installed !)
+#fi
+#AC_SUBST(GLADE_CFLAGS)
+#AC_SUBST(GLADE_LIBS)
+
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GST" >&5

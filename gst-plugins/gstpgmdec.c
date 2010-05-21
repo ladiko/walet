@@ -172,7 +172,7 @@ static void gst_pgmdec_finalize (GObject * object)
 }
 
 /* this function handles the link with other elements */
-
+/*
 static gboolean gst_pgmdec_set_caps (GstPad * pad, GstCaps * caps)
 {
 	Gstpgmdec *filter = GST_PGMDEC (gst_pad_get_parent (pad));
@@ -200,7 +200,7 @@ static gboolean gst_pgmdec_set_caps (GstPad * pad, GstCaps * caps)
   //return gst_pad_set_caps (otherpad, caps);
   return TRUE;
 }
-
+*/
 
 static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 {
@@ -261,42 +261,8 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 	gst_pad_use_fixed_caps (filter->srcpad);
 	gst_caps_unref (caps);
 
-	  /*
-	  img_size = filter->width*filter->height;
-	  src_buff_size = filter->bpp > 255 ? img_size<<1 : img_size;
-
-	  ret = gst_pad_alloc_buffer (filter->srcpad, GST_BUFFER_OFFSET_NONE,
-			  src_buff_size, GST_PAD_CAPS (filter->srcpad), &out);
-	  if (ret != GST_FLOW_OK) {
-		  GST_DEBUG_OBJECT (filter, "gst_pad_alloc_buffer failed: %s", gst_flow_get_name (ret));
-		      //gst_bz2dec_decompress_init (b);
-	  }
-	 outbuf = (gint8 *) GST_BUFFER_DATA (out);
-
-	 if(filter->bpp > 255) for(i=0; i< img_size; i++);
-	 else for(i=0; i< img_size; i++) gst_byte_reader_get_int8 (&reader, &outbuf[i]); //outbuf[i] = inbuf[i];
-
-	 caps = gst_caps_new_simple ("video/x-raw-bayer",
-	        "width", G_TYPE_UINT, filter->width,
-	        "height", G_TYPE_UINT, filter->height,
-	        "bpp", G_TYPE_UINT, filter->bpp,
-	        "framerate", G_TYPE_UINT, 1,NULL);
-	  if (!gst_pad_set_caps (filter->srcpad, caps)) {
-		  GST_ELEMENT_ERROR (filter, CORE, NEGOTIATION, (NULL), ("Some debug information here"));
-		  return GST_FLOW_ERROR;
-	  }
-	  gst_buffer_set_caps (out, caps);
-	  gst_pad_set_caps (filter->srcpad, caps);
-      gst_pad_use_fixed_caps (filter->srcpad);
-      gst_caps_unref (caps);
-
-	*/
-  //if (filter->silent == FALSE)
-   // g_print ("I'm plugged, therefore I'm in.\n");
-
   /* just push out the incoming buffer without touching it */
 	ret = gst_pad_push(filter->srcpad, in);
-	//GST_DEBUG_OBJECT (filter, "gst_pad_push = %d",  ret);
 	return ret;
 }
 
@@ -414,7 +380,7 @@ static void gst_pgmdec_init (Gstpgmdec * filter, GstpgmdecClass * gclass)
 	//gst_pad_set_setcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_set_caps));
 	//gst_pad_set_getcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 	gst_pad_set_chain_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_chain));
-	gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
+	//gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
 	gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
 	filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");

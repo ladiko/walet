@@ -99,12 +99,12 @@ typedef struct {
 */
 
 typedef struct {
-	uint16 				width;			// Image width
-	uint16 				height;			// Image width
+	uint32 				width;			// Image width
+	uint32 				height;			// Image width
 	ColorSpace		 	color;			// Color space
 	BayerGrid			bg;				// Bayer grid pattern
-	uchar				bits;			// Bits per pixel
-	uchar 				steps;  		// Steps of DWT
+	uint32				bpp;			// Bits per pixel
+	uint32 				steps;  		// Steps of DWT
 	//Compression			comp;			// Type of compression
 	//uint32				rates;			// Frame rates
 	uint32				gop_size;		// GOP size
@@ -137,7 +137,7 @@ typedef struct {
 	uint16 		height;			// Image width
 	uchar		color;			// Color space
 	uchar		bg;				// Bayer grid pattern
-	uchar		bits;			// Bits per pixel
+	uchar		bpp;			// Bits per pixel
 	uchar 		steps;  		// Steps of DWT
 	//Compression			comp;			// Type of compression
 	//uint32				rates;			// Frame rates

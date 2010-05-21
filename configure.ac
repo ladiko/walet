@@ -26,17 +26,14 @@ fi
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
 
-<<<<<<< .mine
 #PKG_CHECK_MODULES(GLADE, libglade-2.0, HAVE_GLADE=yes, HAVE_GLADE=no)
-PKG_CHECK_MODULES(GLADE, gmodule-2.0, HAVE_GLADE=yes, HAVE_GLADE=no)
-if test "x$HAVE_GLADE" = "xno"; then
-  AC_MSG_ERROR(you need libglade-2.0 installed !)
-fi
-AC_SUBST(GLADE_CFLAGS)
-AC_SUBST(GLADE_LIBS)
+#PKG_CHECK_MODULES(GLADE, gmodule-2.0, HAVE_GLADE=yes, HAVE_GLADE=no)
+#if test "x$HAVE_GLADE" = "xno"; then
+#  AC_MSG_ERROR(you need libglade-2.0 installed !)
+#fi
+#AC_SUBST(GLADE_CFLAGS)
+#AC_SUBST(GLADE_LIBS)
 
-=======
->>>>>>> .r26
 PKG_CHECK_MODULES(GST, gstreamer-$GST_MAJORMINOR >= $GST_REQUIRED, HAVE_GST=yes,HAVE_GST=no)
 if test "x$HAVE_GST" = "xno"; then
   AC_MSG_ERROR(you need gstreamer development packages installed !)

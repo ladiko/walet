@@ -34,7 +34,7 @@ int g[9][2] = {
 
 
 
-static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint32 h, uint32 w, uint32 size, uint32 shift)
+static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y;
 	for(y=0; y < h; y++ ){
@@ -126,7 +126,7 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
 #define lb(x) (x&0xFF)
 
-uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGrid bay)
+uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
@@ -180,9 +180,9 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 h, uint32 w,  BayerGr
 	return rgb;
 }
 
-uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 height, uint32 width)
+uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 {
-	int i, j, dim = height*width*3;
+	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
 		rgb[j]     = img[i]&0xFF;
 		rgb[j + 1] = img[i]&0xFF;
@@ -192,14 +192,14 @@ uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 height, uint32 width)
 	return rgb;
 }
 
-imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits)
+imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 bits)
 {
-	int i, dim = height*width, sh = bits-8;
+	int i, dim = h*w, sh = bits-8;
 	for(i = 0; i < dim; i++) img1[i] = img[i]<0 ? 0 : rnd(img[i]>>sh);
 	return img1;
 }
 
-void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
@@ -311,7 +311,7 @@ static inline int edge(imgtype *s, uint32 thresh)
 
 #define bay_switch(i,x,y)  ((i) ? ((!((y)&1) && (x)&1) || ((y)&1 && !((x)&1))) : ((!((y)&1) && !((x)&1)) || ((y)&1 && (x)&1)))
 
-static void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 param, FP func)
+static void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 param, FP func)
 ///	\fn tatic void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 param, FP func)
 ///	\brief Get 3x3 matrix for each color from bayer pattern.
 ///	\param img	 		Input image.
@@ -355,17 +355,17 @@ static void get_bayer_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, Bayer
 	}
 }
 
-void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay)
+void utils_bayer_median_filter_3x3(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay)
 {
-	get_bayer_3x3(img, img1, h, w, bay, 0, &median);
+	get_bayer_3x3(img, img1, w, h, bay, 0, &median);
 }
 
-void utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 h, uint32 w, BayerGrid bay, uint32 thresh)
+void utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
-	get_bayer_3x3(img, img1, h, w, bay, thresh, &gradient);
+	get_bayer_3x3(img, img1, w, h, bay, thresh, &gradient);
 }
 
-static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 param, FP func)
+static void get_3x3(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 param, FP func)
 ///	\fn static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 param, FP func)
 ///	\brief Get 3x3 matrix of pixels.
 ///	\param img	 		Input image.
@@ -397,17 +397,17 @@ static void get_3x3(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 para
 	}
 }
 
-void utils_gradient(imgtype *img, imgtype *img1, uint32 h, uint32 w, uint32 thresh)
+void utils_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 thresh)
 {
-	get_3x3(img, img1, h, w, thresh, &gradient);
+	get_3x3(img, img1, w, h, thresh, &gradient);
 }
 
-void utils_edge_detector(imgtype *img, imgtype *img1, uint32 h, uint32 w)
+void utils_edge_detector(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
-	get_3x3(img, img1, h, w, 0, &edge);
+	get_3x3(img, img1, w, h, 0, &edge);
 }
 
-void utils_fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits)
+void utils_fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits)
 {
 //
 //   All RGB cameras use one of these Bayer grids:
@@ -480,7 +480,7 @@ void utils_color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bi
 	}
 }
 
-void utils_white_balance(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits, Gamma gamma)
+void utils_white_balance(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 w, uint32 h, BayerGrid bay, uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, x, y, size = h*w;
 	uint16 *c[4];
