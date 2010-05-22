@@ -21,7 +21,7 @@ typedef struct  {
 
 	gchar		*filename;
 	guint		statusbar_context_id;
-	gchar		*buff; //Buffer for image loading.
+	guint8		*buff; //Buffer for image loading.
 
 	StreamData	*sd;
 	GOP			*gop;
@@ -37,7 +37,7 @@ typedef struct  {
 
 // File menu callbacks prototypes
 void on_new_activate 		(GtkObject *object, WaletGTK *wlgtk);
-void on_open_activate 		(GtkObject *object, WaletGTK *wlgtk);
+void on_open_activate 		(GtkObject *object);
 void on_save_activate 		(GtkObject *object, WaletGTK *wlgtk);
 void on_save_as_activate 	(GtkObject *object, WaletGTK *wlgtk);
 void on_quit_activate 		(GtkObject *object, WaletGTK *wlgtk);

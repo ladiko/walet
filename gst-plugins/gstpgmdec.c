@@ -215,8 +215,8 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 	gint  i;
 	//GstStructure *structure = gst_caps_get_structure (caps, 0);
 
-	gchar *outbuf;
-	gchar *inbuf;
+	guint8 *outbuf;
+	guint8 *inbuf;
 
 	//Get pgm header
 	if(!GST_BUFFER_OFFSET(in)){
@@ -236,11 +236,14 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 
 		GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
 				line[0], filter->width, filter->height, filter->bpp);
+
+		//for(i=0; i<GST_BUFFER_SIZE(in); i++) g_printf("%2X ", inbuf[i]);
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 	}
 
 	//Check for the buffer size
 	if(GST_BUFFER_OFFSET(in)+GST_BUFFER_SIZE (in) < filter->size) {
+		//g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 		return GST_FLOW_OK;
 	}
