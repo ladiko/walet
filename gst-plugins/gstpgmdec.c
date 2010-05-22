@@ -237,16 +237,23 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
 				line[0], filter->width, filter->height, filter->bpp);
 
+		gst_event_new_seek (1.0,
+		      GST_FORMAT_BYTES,
+		      GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_SEGMENT |GST_SEEK_FLAG_ACCURATE,
+		      GST_SEEK_TYPE_SET, byts,
+		      GST_SEEK_TYPE_SET, filter->size + byts);
+
 		//for(i=0; i<GST_BUFFER_SIZE(in); i++) g_printf("%2X ", inbuf[i]);
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 	}
 
 	//Check for the buffer size
 	if(GST_BUFFER_OFFSET(in)+GST_BUFFER_SIZE (in) < filter->size) {
-		//g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
+		g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 		return GST_FLOW_OK;
 	}
+
 	gst_buffer_make_metadata_writable(in);
 	GST_BUFFER_DATA (in) = filter->buff;
 	GST_BUFFER_SIZE (in) = filter->size;
@@ -277,13 +284,14 @@ static gboolean gst_pgmdec_sink_event (GstPad * pad, GstEvent * event)
 	GST_DEBUG_OBJECT (filter, "event : %s", GST_EVENT_TYPE_NAME (event));
 
   switch (GST_EVENT_TYPE (event)) {
-    case GST_EVENT_FLUSH_STOP:
+    case GST_EVENT_FLUSH_STOP:{
       GST_DEBUG_OBJECT (filter, "Aborting decompress");
       //jpeg_abort_decompress (&dec->cinfo);
       gst_segment_init (&filter->segment, GST_FORMAT_UNDEFINED);
       //gst_jpeg_dec_reset_qos (dec);
       break;
-      /*
+    }
+
     case GST_EVENT_NEWSEGMENT:{
       gboolean update;
       gdouble rate, applied_rate;
@@ -302,7 +310,7 @@ static gboolean gst_pgmdec_sink_event (GstPad * pad, GstEvent * event)
           applied_rate, format, start, stop, position);
 
       break;
-    }*/
+    }
     default:
       break;
   }
@@ -383,7 +391,7 @@ static void gst_pgmdec_init (Gstpgmdec * filter, GstpgmdecClass * gclass)
 	//gst_pad_set_setcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_set_caps));
 	//gst_pad_set_getcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 	gst_pad_set_chain_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_chain));
-	//gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
+	gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
 	gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
 	filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
