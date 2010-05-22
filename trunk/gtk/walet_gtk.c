@@ -58,7 +58,7 @@ void on_quit_activate(GtkObject *object, WaletGTK *wlgtk)
 }
 
 
-void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
+void on_open_activate(GtkObject *object)
 {
 	GtkWidget	*chooser;
 	GError  	*err=NULL;
@@ -68,6 +68,7 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 	//GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
 	//GstStructure 		*str;
 	//GstPadLinkReturn	ret;
+	g_printf("Opent file\n");
 
 	chooser = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (wlgtk->window),
@@ -75,6 +76,7 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
 											NULL);
+	g_printf("Opent file\n");
 
 	if (gtk_dialog_run(GTK_DIALOG (chooser)) == GTK_RESPONSE_OK) {
 		wlgtk->filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
@@ -85,14 +87,14 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 	gtk_widget_destroy (chooser);
 
 	g_object_set (G_OBJECT(src), "location", wlgtk->filename, NULL);
-	// Play
+
 	//gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	//caps = gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink"));
 	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink")), 0)));
 
 	//g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
 
-
+	// Play
 	gst_element_set_state (pipeline, GST_STATE_PLAYING);
 	g_main_loop_run (loop);
 	//if (!gst_element_seek 	(pipeline, 1.0,
@@ -105,19 +107,18 @@ void on_open_activate(GtkObject *object, WaletGTK *wlgtk)
 
 gboolean on_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-	g_printf("on_expose_event\n");
-	/*
+	//g_printf("on_expose_event pixbuff = %p\n", twoimg->pixbuf);
+	//g_printf("on_expose_event width = %d height = %d\n", sd->width, sd->height);
 	if(twoimg->pixbuf){
 		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
 		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (wlgtk->drawingarea1)],
+							widget->style->fg_gc[gtk_widget_get_state (widget)],
 							twoimg->pixbuf[0],
 							0 ,0 ,0 ,0 ,
-							sd->width,
-							sd->height,
+							-1,-1,
 							GDK_RGB_DITHER_NONE,
 							0, 0);
-	}*/
+	}
 	return TRUE;
 }
 
@@ -159,7 +160,7 @@ gboolean  init_wlgtk(WaletGTK *wlgtk)
     g_signal_connect(G_OBJECT(wlgtk->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), NULL);
 
     g_signal_connect(G_OBJECT(wlgtk->button_open)	, "clicked"	, 		G_CALLBACK (on_open_activate), NULL);
-    //g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_expose_event),  NULL);
+    g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_expose_event),  NULL);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));
@@ -235,8 +236,13 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gp
 	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
 	gboolean ret;
 	GstStructure	*str;
+	guint8	*pix = GST_BUFFER_DATA(buffer);
+	gint i;
 
 	g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
+
+	//for(i=0; i<12000; i++) g_printf("%2X ", pix[i]);
+
 
 	str = gst_caps_get_structure (caps, 0);
 	g_print("%s\n", gst_caps_to_string (caps));
@@ -254,9 +260,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gp
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 
+
 	twoimg->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width, sd->height);
 	utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg->pixbuf[0]), sd->width, sd->height);
 	gtk_widget_set_size_request(wlgtk->drawingarea1, sd->width, sd->height);
+
+	//g_printf("width = %d height = %d\n", sd->width, sd->height);
 	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
 
  }
