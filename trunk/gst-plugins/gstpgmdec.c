@@ -220,7 +220,8 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 
 	//Get pgm header
 	if(!GST_BUFFER_OFFSET(in)){
-		inbuf = (char *) GST_BUFFER_DATA (in);
+		filter->buff = in;
+		inbuf = (guint8 *) GST_BUFFER_DATA (in);
 		byts = sscanf(inbuf, "%s%s%s%s", line[0], line[1], line[2], line[3]);
 		if (strcmp(line[0], "P5") != 0) {
 			GST_WARNING ("It's not PGM file");
@@ -232,16 +233,21 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		filter->bpp = (atoi(line[3]) > 256) ? 16 : 8;
 		for(i=0; i<4; i++) byts += strlen(line[i]);
 		filter->size = (filter->bpp == 8) ? filter->width*filter->height : filter->width*filter->height*2;
-		filter->buff = &inbuf[byts];
+
+		gst_buffer_set_data(filter->buff, &inbuf[byts], GST_BUFFER_SIZE(in)-byts);
+		//filter->buff = &inbuf[byts];
 
 		GST_DEBUG_OBJECT (filter, "The file type is : %s width = %d height = %d bpp = %d",
 				line[0], filter->width, filter->height, filter->bpp);
+		GST_DEBUG_OBJECT (filter, "1 DATA = %p SIZE = %d OFFSET = %d",
+				GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff), GST_BUFFER_OFFSET(filter->buff));
+		return GST_FLOW_OK;
 
-		gst_event_new_seek (1.0,
-		      GST_FORMAT_BYTES,
-		      GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_SEGMENT |GST_SEEK_FLAG_ACCURATE,
-		      GST_SEEK_TYPE_SET, byts,
-		      GST_SEEK_TYPE_SET, filter->size + byts);
+		//gst_event_new_seek (1.0,
+		//      GST_FORMAT_BYTES,
+		//      GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_SEGMENT |GST_SEEK_FLAG_ACCURATE,
+		//      GST_SEEK_TYPE_SET, byts,
+		//      GST_SEEK_TYPE_SET, filter->size + byts);
 
 		//for(i=0; i<GST_BUFFER_SIZE(in); i++) g_printf("%2X ", inbuf[i]);
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
@@ -249,16 +255,20 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 
 	//Check for the buffer size
 	if(GST_BUFFER_OFFSET(in)+GST_BUFFER_SIZE (in) < filter->size) {
-		g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
-		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
+		//g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
+		filter->buff = gst_buffer_join(filter->buff, in);
+		//filter->buff = gst_buffer_merge (filter->buff, in);
+		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",
+		//		GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff), GST_BUFFER_OFFSET(filter->buff));
 		return GST_FLOW_OK;
 	}
 
-	gst_buffer_make_metadata_writable(in);
-	GST_BUFFER_DATA (in) = filter->buff;
-	GST_BUFFER_SIZE (in) = filter->size;
-	GST_BUFFER_OFFSET(in)= 0;
-	GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA(in), GST_BUFFER_SIZE(in), GST_BUFFER_OFFSET(in));
+	//gst_buffer_make_metadata_writable(in);
+	//GST_BUFFER_DATA (in) = filter->buff;
+	//GST_BUFFER_SIZE (in) = filter->size;
+	//GST_BUFFER_OFFSET(in)= 0;
+	GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",
+				GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff), GST_BUFFER_OFFSET(filter->buff));
 
 	caps = gst_caps_new_simple ("video/x-raw-bayer",
 								"width", G_TYPE_INT, filter->width,
@@ -266,13 +276,13 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 								"bpp", G_TYPE_INT, filter->bpp,
 								"framerate", GST_TYPE_FRACTION, 0, 1,
 								NULL);
-	gst_buffer_set_caps(in, caps);
+	gst_buffer_set_caps(filter->buff, caps);
 	gst_pad_set_caps (filter->srcpad, caps);
 	gst_pad_use_fixed_caps (filter->srcpad);
 	gst_caps_unref (caps);
 
   /* just push out the incoming buffer without touching it */
-	ret = gst_pad_push(filter->srcpad, in);
+	ret = gst_pad_push(filter->srcpad, filter->buff);
 	return ret;
 }
 
@@ -376,8 +386,7 @@ static void gst_pgmdec_class_init (GstpgmdecClass * klass)
 	//g_object_class_install_property (gobject_class, PROP_SILENT,
 	//    g_param_spec_boolean ("silent", "Silent", "Produce verbose output ?",
 	//        FALSE, G_PARAM_READWRITE));
-	GST_DEBUG_CATEGORY_INIT (gst_pgmdec_debug, "pgmdec", 0,
-  			    "PGM file reader");
+	GST_DEBUG_CATEGORY_INIT (gst_pgmdec_debug, "pgmdec", 0, "PGM file reader");
 }
 
 /* initialize the new element
@@ -391,7 +400,7 @@ static void gst_pgmdec_init (Gstpgmdec * filter, GstpgmdecClass * gclass)
 	//gst_pad_set_setcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_set_caps));
 	//gst_pad_set_getcaps_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
 	gst_pad_set_chain_function (filter->sinkpad, GST_DEBUG_FUNCPTR(gst_pgmdec_chain));
-	gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
+	//gst_pad_set_event_function (filter->sinkpad, GST_DEBUG_FUNCPTR (gst_pgmdec_sink_event));
 	gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
 	filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
