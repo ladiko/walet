@@ -78,7 +78,7 @@ struct _Gstpgmdec
 	gint32		bpp; 			//Bits per pixel
 	gint32		bayer_grid;		//Bayer grids pattern
 	gint32		size; 			//Image size in bytes
-	gchar 		*buff;			//Temporary buffer
+	GstBuffer 	*buff;			//Temporary buffer
 
 	GstSegment segment;
 	//gboolean	ready;
