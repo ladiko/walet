@@ -338,6 +338,32 @@
               </packing>
             </child>
             <child>
+              <object class="GtkScrolledWindow" id="scrolledwindow3">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="hscrollbar_policy">automatic</property>
+                <property name="vscrollbar_policy">automatic</property>
+                <child>
+                  <object class="GtkViewport" id="viewport3">
+                    <property name="visible">True</property>
+                    <child>
+                      <object class="GtkDrawingArea" id="drawingarea3">
+                        <property name="visible">True</property>
+                        <property name="events">GDK_BUTTON_PRESS_MASK</property>
+                        <signal name="expose_event" handler="on_drawingarea3_expose_event"/>
+                        <signal name="button_press_event" handler="on_drawingarea3_button_press_event"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="top_attach">1</property>
+                <property name="bottom_attach">2</property>
+                <property name="x_options">GTK_FILL</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkScrolledWindow" id="scrolledwindow4">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -352,32 +378,6 @@
                         <property name="events">GDK_BUTTON_PRESS_MASK</property>
                         <signal name="expose_event" handler="on_drawingarea4_expose_event"/>
                         <signal name="button_press_event" handler="on_drawingarea4_button_press_event"/>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
-                <property name="x_options">GTK_FILL</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkScrolledWindow" id="scrolledwindow5">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="hscrollbar_policy">automatic</property>
-                <property name="vscrollbar_policy">automatic</property>
-                <child>
-                  <object class="GtkViewport" id="viewport5">
-                    <property name="visible">True</property>
-                    <child>
-                      <object class="GtkDrawingArea" id="drawingarea5">
-                        <property name="visible">True</property>
-                        <property name="events">GDK_BUTTON_PRESS_MASK</property>
-                        <signal name="expose_event" handler="on_drawingarea5_expose_event"/>
-                        <signal name="button_press_event" handler="on_drawingarea5_button_press_event"/>
                       </object>
                     </child>
                   </object>

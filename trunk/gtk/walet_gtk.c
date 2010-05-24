@@ -2,7 +2,7 @@
 
 //GTK
 WaletGTK	*wlgtk;
-TwoPixBuff	*twoimg;
+TwoPixBuff	*twoimg[4];
 //Walet
 StreamData	*sd;
 GOP			*gop;
@@ -68,7 +68,6 @@ void on_open_activate(GtkObject *object)
 	//GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
 	//GstStructure 		*str;
 	//GstPadLinkReturn	ret;
-	g_printf("Opent file\n");
 
 	chooser = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (wlgtk->window),
@@ -76,7 +75,6 @@ void on_open_activate(GtkObject *object)
 											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
 											NULL);
-	g_printf("Opent file\n");
 
 	if (gtk_dialog_run(GTK_DIALOG (chooser)) == GTK_RESPONSE_OK) {
 		wlgtk->filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
@@ -105,15 +103,13 @@ void on_open_activate(GtkObject *object)
 
 }
 
-gboolean on_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
+gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-	//g_printf("on_expose_event pixbuff = %p\n", twoimg->pixbuf);
-	//g_printf("on_expose_event width = %d height = %d\n", sd->width, sd->height);
-	if(twoimg->pixbuf){
+	if(twoimg[0]->pixbuf[0]){
 		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
 		gdk_draw_pixbuf(	widget->window,
 							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							twoimg->pixbuf[0],
+							twoimg[0]->pixbuf[0],
 							0 ,0 ,0 ,0 ,
 							-1,-1,
 							GDK_RGB_DITHER_NONE,
@@ -122,6 +118,20 @@ gboolean on_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer dat
 	return TRUE;
 }
 
+gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
+{
+	if(twoimg[1]->pixbuf[0]){
+		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
+		gdk_draw_pixbuf(	widget->window,
+							widget->style->fg_gc[gtk_widget_get_state (widget)],
+							twoimg[1]->pixbuf[0],
+							0 ,0 ,0 ,0 ,
+							-1, -1,
+							GDK_RGB_DITHER_NONE,
+							0, 0);
+	}
+	return TRUE;
+}
 
 gboolean  init_wlgtk(WaletGTK *wlgtk)
 {
@@ -151,6 +161,9 @@ gboolean  init_wlgtk(WaletGTK *wlgtk)
 	wlgtk->button_open 	= GTK_WIDGET (gtk_builder_get_object (builder, "button_open"));
 	// Drawingareas
 	wlgtk->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
+	wlgtk->drawingarea2	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea2"));
+	wlgtk->drawingarea3	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea3"));
+	wlgtk->drawingarea4	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea4"));
 
 	//connect signals, don't work now
 	//gtk_builder_connect_signals(builder, wlgtk);
@@ -160,7 +173,10 @@ gboolean  init_wlgtk(WaletGTK *wlgtk)
     g_signal_connect(G_OBJECT(wlgtk->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), NULL);
 
     g_signal_connect(G_OBJECT(wlgtk->button_open)	, "clicked"	, 		G_CALLBACK (on_open_activate), NULL);
-    g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_expose_event),  NULL);
+    g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event),  NULL);
+    g_signal_connect(G_OBJECT(wlgtk->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event),  NULL);
+    //g_signal_connect(G_OBJECT(wlgtk->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event),  NULL);
+    //g_signal_connect(G_OBJECT(wlgtk->drawingarea4)	, "expose_event",	G_CALLBACK (on_drawingarea4_expose_event),  NULL);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));
@@ -261,9 +277,16 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gp
 	frame_copy(gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 
-	twoimg->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width, sd->height);
-	utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg->pixbuf[0]), sd->width, sd->height);
+	twoimg[0]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width, sd->height);
+	utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[0]->pixbuf[0]), sd->width, sd->height);
 	gtk_widget_set_size_request(wlgtk->drawingarea1, sd->width, sd->height);
+	g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[0]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[0]->pixbuf[0]));
+
+	twoimg[1]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width-1, sd->height-1);
+	//utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), sd->width, sd->height);
+	utils_bayer_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), sd->width, sd->height, sd->bg);
+	gtk_widget_set_size_request(wlgtk->drawingarea2, sd->width-1, sd->height-1);
+	g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[1]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[1]->pixbuf[0]));
 
 	//g_printf("width = %d height = %d\n", sd->width, sd->height);
 	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
@@ -307,11 +330,14 @@ static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data
 
 int main (int argc, char *argv[])
 {
-	// Allocate the memory needed by our WaletGTK struct
+	// Allocate the memory needed by structs
 	wlgtk 	= g_slice_new(WaletGTK);
 	sd 		= g_slice_new(StreamData);
 	gop		= g_slice_new(GOP);
-	twoimg	= g_slice_new(TwoPixBuff);
+	twoimg[0]	= g_slice_new(TwoPixBuff);
+	twoimg[1]	= g_slice_new(TwoPixBuff);
+	//twoimg[2]	= g_slice_new(TwoPixBuff);
+	//twoimg[3]	= g_slice_new(TwoPixBuff);
 	wlgtk->sd 	= sd;
 	wlgtk->gop	= gop;
 
@@ -363,7 +389,7 @@ int main (int argc, char *argv[])
 	g_slice_free (WaletGTK, wlgtk);
 	g_slice_free (StreamData, sd);
 	g_slice_free (GOP, gop);
-	g_slice_free (TwoPixBuff, twoimg);
+	g_slice_free (TwoPixBuff*, twoimg);
 
 	// Clean up gstreamer
 	gst_element_set_state (pipeline, GST_STATE_NULL);
