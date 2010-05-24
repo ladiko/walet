@@ -18,6 +18,9 @@ typedef struct  {
 	GtkWidget 	*button_open;
 	// Drawingareas
 	GtkWidget	*drawingarea1;
+	GtkWidget	*drawingarea2;
+	GtkWidget	*drawingarea3;
+	GtkWidget	*drawingarea4;
 
 	gchar		*filename;
 	guint		statusbar_context_id;
