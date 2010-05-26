@@ -8,156 +8,157 @@
 void frames_init(GOP *gop, uint32 fr)
 ///	\fn	void frames_init(GOP *gop, uint32 fr)
 ///	\brief	Frame initialization
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 x = gop->sd->width, y = gop->sd->height;
-
-	image_init(&frame->img[0], gop->sd, x, y);
-	frame->size = x*y;
-	if(gop->sd->color == CS444 || gop->sd->color == RGB) {
-		image_init(&frame->img[1], gop->sd, x, y);
-		image_init(&frame->img[2], gop->sd, x, y);
+	uint32 w = gop->width, h = gop->height ;
+	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
+	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
+	frame->size = w*h;
+	if(gop->color == CS444 || gop->color == RGB) {
+		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
+		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
 		frame->size = frame->size*3;
 	}
-	if(gop->sd->color == CS422){
-		image_init(&frame->img[1], gop->sd, x>>1 , y);
-		image_init(&frame->img[2], gop->sd, x>>1 , y);
+	if(gop->color == CS422){
+		image_init(&frame->img[1], w>>1 , h, gop->color, gop->bpp, gop->steps);
+		image_init(&frame->img[2], w>>1 , h, gop->color, gop->bpp, gop->steps);
 		frame->size = frame->size*2;
 	}
-	if(gop->sd->color == CS420){
-		image_init(&frame->img[1], gop->sd, x>>1 , y>>1);
-		image_init(&frame->img[2], gop->sd, x>>1 , y>>1);
+	if(gop->color == CS420){
+		image_init(&frame->img[1], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
+		image_init(&frame->img[2], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
 		frame->size = (frame->size*3)>>1;
 	}
 }
 
 void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
 ///	\fn	void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
-///	\brief	Write images to frame
-///	\param	gop			The pointer to the GOP structure.
+///	\brief	Fill frame from the stream.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\param	y			The pointer to Bayer, gray, red or Y  image data
 ///	\param	u			The pointer to green or U  image data
 ///	\param	v			The pointer to blue or V  image data
 {
+
 	Frame *frame = &gop->frames[fr];
 
 	printf("Start frame copy \n");
-	image_copy(&frame->img[0], gop->sd, y);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		image_copy(&frame->img[1], gop->sd, u);
-		image_copy(&frame->img[2], gop->sd, v);
+	image_copy(&frame->img[0], gop->bpp, y);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		image_copy(&frame->img[1], gop->bpp, u);
+		image_copy(&frame->img[2], gop->bpp, v);
 	}
 }
 
 void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\brief	Discrete wavelets frame transform.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
 
 	frame->img[0].sub = gop->sub[0]; //Set current image for DWT transform
-	image_dwt_53(&frame->img[0], gop->sd, gop->buf);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+	image_dwt_53(&frame->img[0], gop->color, gop->steps, gop->buf);
+	if(gop->color != GREY  && gop->color != BAYER) {
 		frame->img[1].sub = gop->sub[1]; //Set current image for DWT transform
 		frame->img[2].sub = gop->sub[2]; //Set current image for DWT transform
-		image_dwt_53(&frame->img[1], gop->sd, gop->buf);
-		image_dwt_53(&frame->img[2], gop->sd, gop->buf);
+		image_dwt_53(&frame->img[1], gop->color, gop->steps, gop->buf);
+		image_dwt_53(&frame->img[2], gop->color, gop->steps, gop->buf);
 	}
 }
 
-void frame_idwt_53(GOP *gop, uint32 fr, uint32 steps)
+void frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
 ///	\fn	void frame_idwt_53(GOP *gop, uint32 fr, uint32 step)
 ///	\brief	Invert discrete wavelets frame transform.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-/// \param	steps		The steps of IDWT should be lees or equal DWT steps
+/// \param	isteps		The steps of IDWT should be lees or equal DWT steps
 {
 	Frame *frame = &gop->frames[fr];
 
 	frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
-	image_idwt_53(&frame->img[0], gop->sd, gop->buf, steps);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+	image_idwt_53(&frame->img[0], gop->color, gop->steps, gop->buf, isteps);
+	if(gop->color != GREY  && gop->color != BAYER) {
 		frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
 		frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
-		image_idwt_53(&frame->img[1], gop->sd, gop->buf, steps);
-		image_idwt_53(&frame->img[2], gop->sd, gop->buf, steps);
+		image_idwt_53(&frame->img[1], gop->color, gop->steps, gop->buf, isteps);
+		image_idwt_53(&frame->img[2], gop->color, gop->steps, gop->buf, isteps);
 	}
 }
 
 void frame_fill_subb(GOP *gop, uint32 fr)
 ///	\fn	void frame_fill_subb(GOP *gop, uint32 fr)
 ///	\brief	Fill distribution probability array.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
 
-	image_fill_subb(&gop->frames[fr].img[0], gop->sd);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		image_fill_subb(&gop->frames[fr].img[1], gop->sd);
-		image_fill_subb(&gop->frames[fr].img[2], gop->sd);
+	image_fill_subb(&gop->frames[fr].img[0], gop->color, gop->steps);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		image_fill_subb(&gop->frames[fr].img[1], gop->color, gop->steps);
+		image_fill_subb(&gop->frames[fr].img[2], gop->color, gop->steps);
 	}
 }
 
 void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
-///	\brief	Make white balance and gamma correction of the frame (for bayer frames only).
-///	\param	gop			The pointer to the GOP structure.
+///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\param	out_bits	The bits per pixel for output frame.
 ///	\param	gamma		The type of gamma correction.
 {
 	Image *im = &gop->frames[fr].img[0];
-	if(gop->sd->color == BAYER){
-		image_fill_bayer_hist(im, gop->sd);
-		utils_white_balance(im->img, im->img, im->hist, im->look, im->size.y, im->size.x, gop->sd->bg, gop->sd->bpp, out_bits, gamma);
+	if(gop->color == BAYER){
+		image_fill_hist(im, gop->color, gop->bg, gop->bpp);
+		utils_white_balance(im->img, im->img, im->hist, im->look, im->width, im->height, gop->bg, gop->bpp, out_bits, gamma);
 	}
 }
 
 void frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\fn	void frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\brief	Bits allocation for frame.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-///	\param	times		Compression in times in relation to the original image.
+///	\param	times		Compression times.
 {
-	image_bits_alloc(&gop->frames[fr].img[0], gop->sd, times);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		image_bits_alloc(&gop->frames[fr].img[1], gop->sd, times);
-		image_bits_alloc(&gop->frames[fr].img[2], gop->sd, times);
+	image_bits_alloc(&gop->frames[fr].img[0], gop->color, gop->steps, gop->bpp, times);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		image_bits_alloc(&gop->frames[fr].img[1], gop->color, gop->steps, gop->bpp, times);
+		image_bits_alloc(&gop->frames[fr].img[2], gop->color, gop->steps, gop->bpp, times);
 	}
 }
 
 void frame_quantization(GOP *gop, uint32 fr)
 ///	\fn	void frame_quantization(GOP *gop, uint32 fr)
 ///	\brief	Frame quantization.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	image_quantization(&gop->frames[fr].img[0], gop->sd);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		image_quantization(&gop->frames[fr].img[1], gop->sd);
-		image_quantization(&gop->frames[fr].img[2], gop->sd);
+	image_quantization(&gop->frames[fr].img[0], gop->color, gop->steps);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		image_quantization(&gop->frames[fr].img[1], gop->color, gop->steps);
+		image_quantization(&gop->frames[fr].img[2], gop->color, gop->steps);
 	}
 }
 
 uint32 frame_range_encode(GOP *gop, uint32 fr)
 ///	\fn	uint32 frame_range_encode(GOP *gop, uint32 fr)
 ///	\brief	Frame range encoder.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-///	\retval				The numbers of bytes write into buffer.
+///	\retval				The size of encoded frame in bytes.
 {
 	uint32 size = 0;
-	gop->frames[fr].img[0].c_size = image_range_encode(&gop->frames[fr].img[0], gop->sd, (uchar*)gop->buf);
+	gop->frames[fr].img[0].c_size = image_range_encode(&gop->frames[fr].img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 	size += gop->frames[fr].img[0].c_size;
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		gop->frames[fr].img[1].c_size = image_range_encode(&gop->frames[fr].img[1], gop->sd, (uchar*)gop->buf);
-		gop->frames[fr].img[1].c_size = image_range_encode(&gop->frames[fr].img[2], gop->sd, (uchar*)gop->buf);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		gop->frames[fr].img[1].c_size = image_range_encode(&gop->frames[fr].img[1], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+		gop->frames[fr].img[1].c_size = image_range_encode(&gop->frames[fr].img[2], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 		size += gop->frames[fr].img[1].c_size + gop->frames[fr].img[2].c_size;
 	}
 	return size;
@@ -166,15 +167,15 @@ uint32 frame_range_encode(GOP *gop, uint32 fr)
 uint32 frame_range_decode(GOP *gop, uint32 fr)
 ///	\fn	uint32 frame_range_decode(GOP *gop, uint32 fr)
 ///	\brief	Frame range decoder.
-///	\param	gop			The pointer to the GOP structure.
+///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-///	\retval				The numbers of bytes read from buffer.
+///	\retval				The size of decoded frame in bytes.
 {
 	uint32 size = 0;
-	size += image_range_decode(&gop->frames[fr].img[0], gop->sd, (uchar*)gop->buf);
-	if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-		size += image_range_decode(&gop->frames[fr].img[1], gop->sd, (uchar*)gop->buf);
-		size += image_range_decode(&gop->frames[fr].img[2], gop->sd, (uchar*)gop->buf);
+	size += image_range_decode(&gop->frames[fr].img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+	if(gop->color != GREY  && gop->color != BAYER) {
+		size += image_range_decode(&gop->frames[fr].img[1], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+		size += image_range_decode(&gop->frames[fr].img[2], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 	}
 	return size;
 }
@@ -195,19 +196,19 @@ uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 
     //Fill header
     wh.marker	= 0x776C;
-    wh.width	= gop->sd->width;
-    wh.height	= gop->sd->height;
-    wh.color	= gop->sd->color;
-    wh.bg		= gop->sd->bg;
-    wh.bpp		= gop->sd->bpp;
-    wh.steps	= gop->sd->steps;
+    wh.width	= gop->width;
+    wh.height	= gop->height;
+    wh.color	= gop->color;
+    wh.bg		= gop->bg;
+    wh.bpp		= gop->bpp;
+    wh.steps	= gop->steps;
 
-    sz = (gop->sd->color == BAYER) ? ((gop->sd->steps-1)*3+1)<<2 : gop->sd->steps*3 + 1;
+    sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : gop->steps*3 + 1;
     bits[0] = (uchar *)calloc(sz, sizeof(uchar));
     for(i=0; i<sz; i++)  bits[0][i] = (frm->img[0].sub[i].a_bits<<4) | frm->img[0].sub[i].q_bits;
 
-    if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
-    	sz1 = gop->sd->steps*3 + 1;
+    if(gop->color != GREY  && gop->color != BAYER) {
+    	sz1 = gop->steps*3 + 1;
     	bits[1] = (uchar *)calloc(sz, sizeof(uchar));
     	bits[2] = (uchar *)calloc(sz, sizeof(uchar));
     	for(i=0; i<sz; i++)  bits[1][i] = (frm->img[1].sub[i].a_bits<<4) | frm->img[1].sub[i].q_bits;
@@ -226,7 +227,7 @@ uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
     //Write data
     fwrite (gop->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
 
-    if(gop->sd->color != GREY  && gop->sd->color != BAYER) {
+    if(gop->color != GREY  && gop->color != BAYER) {
     	fwrite (&bits[1], 1, sz1, wl);  size += sz1;
     	fwrite (&gop->buf[frm->img[0].c_size], 1, frm->img[1].c_size, wl); size += frm->img[1].c_size;
     	fwrite (&bits[2], 1, sz1, wl);	size += sz1;
@@ -267,12 +268,12 @@ uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
     	return;
     }
     // Fill Stream data stucture
-    gop->sd->width = 	wh.width;
-    gop->sd->height =	wh.height;
-    gop->sd->color = 	wh.color;
-    gop->sd->bg = 		wh.bg;
-    gop->sd->bpp = 	wh.bpp;
-    gop->sd->steps = 	wh.steps;
+    gop->width = 	wh.width;
+    gop->height =	wh.height;
+    gop->color = 	wh.color;
+    gop->bg = 		wh.bg;
+    gop->bpp = 	wh.bpp;
+    gop->steps = 	wh.steps;
 
     //if(gop->sd->color)
  }
@@ -280,7 +281,7 @@ uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
 void frame_compress(GOP *gop, uint32 fr, uint32 times)
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 bits = gop->sd->bpp, color =  gop->sd->color, steps = gop->sd->steps;
+	uint32 bits = gop->bpp, color =  gop->color, steps = gop->steps;
 	uint32 size;
 	Subband **sub;
 	clock_t start, end;

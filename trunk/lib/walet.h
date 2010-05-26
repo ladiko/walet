@@ -97,7 +97,7 @@ typedef struct {
 	uint32				gop_size;		// GOP size
 } StreamData;
 */
-
+/*
 typedef struct {
 	uint32 				width;			// Image width
 	uint32 				height;			// Image width
@@ -109,7 +109,7 @@ typedef struct {
 	//uint32				rates;			// Frame rates
 	uint32				gop_size;		// GOP size
 } StreamData;
-
+*/
 //File header
 // -----------------------------------------------------------------------------------------
 // |offset | size | description
