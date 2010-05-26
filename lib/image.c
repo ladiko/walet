@@ -4,9 +4,16 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define lim(max,min, x)  ((x)>max ? max :((x)<min ? min : (x)))
+#define lim(max,min, x)  	((x)>max ? max :((x)<min ? min : (x)))
+#define max(x, m) 			((x>m) ? (m) : (x))
+
 
 static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\fn static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D 5.3 wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
 {
 	int wt, i, j, sj, shift = (w>>1) + w%2;
 	wt = w-2;
@@ -27,6 +34,11 @@ static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 }
 
 static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\fn static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D 5.3 invert wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
 {
 	int wt, i, j, sj, shift = (w>>1) + w%2;
 	wt = w-2;
@@ -46,12 +58,13 @@ static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 	}
 }
 
-
 static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
-/*
- * 	The order of subband  LL HL LH HH
- *
- */
+///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief 2D 5.3 vertical wavelet transform.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
 {
 	uint32 i, k=1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + h%2, w2 = (w>>1), w1 = (w>>1) + w%2;
@@ -111,10 +124,12 @@ static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const u
 }
 
 static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
-/*
- * 	The order of subband  LL HL LH HH
- *
- */
+///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief 2D 5.3 vertical invert wavelet transform.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
 {
 	uint32 i, k=0;
 	uint32 h2 = (h>>1), h1 = (h>>1) + h%2, w2 = (w>>1), w1 = (w>>1) + w%2;
@@ -172,61 +187,66 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 	}
 }
 
+void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
+///	\fn void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
+///	\brief Init image structure.
+///	\param im	 		The image structure.
+///	\param w 			The image width.
+///	\param h 			The image height.
+///	\param color		The color space of the stream.
+///	\param bpp 			The bits per pixel.
+///	\param steps 		The steps of DWT transform.
 
-void image_init(Image *img, StreamData *sd, uint32 x, uint32 y)
-///	\fn void image_init(Image *img, StreamData *sd)
-///	\brief Create image
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
 {
 	int i, num;
-	img->img = (imgtype *)calloc(x*y, sizeof(imgtype));
-	img->hist = (sd->color == BAYER) ? (uint32 *)calloc((1<<sd->bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<sd->bpp, sizeof(uint32));
-	img->look = (sd->color == BAYER) ? (uint16 *)calloc((1<<sd->bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<sd->bpp, sizeof(uint16));
+	im->width = width; im->height = height;
+	im->img = (imgtype *)calloc(width*height, sizeof(imgtype));
+	im->hist = (color == BAYER) ? (uint32 *)calloc((1<<bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bpp, sizeof(uint32));
+	im->look = (color == BAYER) ? (uint16 *)calloc((1<<bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bpp, sizeof(uint16));
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
-	num = (sd->color == BAYER) ? sd->steps : sd->steps+1;
-	img->qfl  = (uint32 *)calloc(num, sizeof(uint32));
-	img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
-	for(i=0; i<sd->steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
+	num = (color == BAYER) ? steps : steps+1;
+	im->qfl  = (uint32 *)calloc(num, sizeof(uint32));
+	im->qfl[0] = 1; for(i=1; i< num-1; i++) im->qfl[i] += im->qfl[i-1]+3; im->qfl[num-1] = im->qfl[num-2]+2;
+	for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, im->qfl[i]);
 
-	img->size.x = x; img->size.y = y;
-	printf("Create frame x = %d y = %d p = %p\n", img->size.x, img->size.y, img->img);
+	printf("Create frame x = %d y = %d p = %p\n", im->width, im->height, im->img);
 }
 
-void image_copy(Image *img, StreamData *sd, uchar *v)
-///	\fn void image_copy(Image *img, StreamData *sd, uchar *v)
-///	\brief Copy image.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param v 			Input image buffer.
+void image_copy(Image *im, uint32 bpp, uchar *v)
+///	\fn void image_copy(Image *im, uint32 bpp, uchar *v)
+///	\brief Copy image from stream to image structure.
+///	\param im	 		The image structure.
+///	\param bpp 			The bits per pixel.
+///	\param v 			The input stream buffer.
 {
-	uint32 i, size = img->size.x*img->size.y;
-	printf("Start copy  x = %d y = %d p = %p \n", img->size.x, img->size.y, img->img);
-	if(sd->bpp > 8) for(i=0; i<size; i++) img->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
-	else 		 for(i=0; i<size; i++) img->img[i] = v[i];
+	uint32 i, size = im->width*im->height;
+	//printf("Start copy  x = %d y = %d p = %p \n", img->size.x, img->size.y, img->img);
+	if(bpp > 8) for(i=0; i<size; i++) im->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
+	else 		 for(i=0; i<size; i++) im->img[i] = v[i];
 }
 
-void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
-///	\fn void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
+void image_dwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf)
+///	\fn void image_dwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf)
 ///	\brief Discrete wavelets transform of the image.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param buf 			Pointer to temporary buffer.
+///	\param im	 		The image structure.
+///	\param color		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param buf 			The temporary buffer.
 {
 	imgtype *s1 = buf, *img = im->img;
 	uint32 j, k, h, w, st;
 	int i;
-	h =  im->size.y; w = im->size.x;
+	w = im->width; h = im->height;
 	Subband *sub = im->sub;
 
-	if(sd->color == BAYER){
+	if(color == BAYER){
 		for(j=0; j < h; j++) dwt53_1d_1h(&img[j*w], &s1[j*w], w);
 		dwt53_2d_v(s1, img, w, h);
 		//dwt53_2d_v_8bit(s1, img, w, h);
-		if(sd->steps > 1){
+		if(steps > 1){
 			for(k=0; k<4; k++) {
-				st = ((sd->steps-1)*3+1)*k;
-				for(i=(sd->steps-1); i>0; i--){
+				st = ((steps-1)*3+1)*k;
+				for(i=(steps-1); i>0; i--){
 					w = sub[3*i-1+st].size.x + sub[3*i-2+st].size.x;
 					h = sub[3*i-1+st].size.y + sub[3*i-2+st].size.y;
 					for(j=0; j < h; j++) dwt53_1d_1h(&img[sub[st].loc+j*w], &s1[j*w], w);
@@ -235,7 +255,7 @@ void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
 			}
 		}
 	} else {
-		for(i=sd->steps; i>0; i--){
+		for(i=steps; i>0; i--){
 			for(j=0; j < h; j++) dwt53_1d_1h(&img[j*w], &s1[j*w], w);
 			dwt53_2d_v(s1, img, w, h);
 			w = sub[3*i-1].size.x;
@@ -244,39 +264,39 @@ void image_dwt_53(Image *im, StreamData *sd, imgtype *buf)
 	}
 }
 
-void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
-///	\fn void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
-///	\brief Invert discrete wavelets transform of the image.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param buf 			Pointer to temporary buffer.
-///	\param steps		IDWT steps.
+void image_idwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint32 isteps)
+///	\fn void image_idwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint32 isteps)
+///	\brief Discrete invert wavelets transform of the image.
+///	\param im	 		The image structure.
+///	\param color		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param buf 			The temporary buffer.
+///	\param isteps		The steps of IDWT transform.
 {
 	imgtype *s1 = buf, *img = im->img;
 	uint32 k, i, j, h, w, st;
 	Subband *sub = im->sub;
 
-	if(sd->color == BAYER){
-		if(sd->steps == 1){
-			h = im->size.y;
-			w = im->size.x;
+	if(color == BAYER){
+		if(steps == 1){
+			w = im->width; h = im->height;
 			idwt53_2d_v(img, s1, w, h);
 			for(j=0; j < h; j++) idwt53_1d_1h(&s1[j*w], &img[j*w], w);
 			im->idwts.x = w; im->idwts.y = h;
 		} else {
 			for(k=0; k<4; k++) {
-				for(i=0; i<(steps-1); i++){
-					st = ((sd->steps-1)*3+1)*k;
+				for(i=0; i<(isteps-1); i++){
+					st = ((steps-1)*3+1)*k;
 					h = sub[3*i+1+st].size.y + sub[3*i+2+st].size.y;
 					w = sub[3*i+1+st].size.x + sub[3*i+2+st].size.x;
 					idwt53_2d_v(&img[sub[st].loc], s1, w, h);
 					for(j=0; j < h; j++) idwt53_1d_1h(&s1[j*w], &img[sub[st].loc+j*w], w);
 				}
 			}
-			if(sd->steps == steps) { h = im->size.y; w = im->size.x;}
+			if(steps == isteps) { w = im->width; h = im->height; }
 			else {
-				h = sub[3*i+1].size.y + sub[3*i+1 + ((sd->steps-1)*3+1)*2].size.y;
-				w = sub[3*i+2].size.x + sub[3*i+2 + ((sd->steps-1)*3+1)  ].size.x;
+				h = sub[3*i+1].size.y + sub[3*i+1 + ((steps-1)*3+1)*2].size.y;
+				w = sub[3*i+2].size.x + sub[3*i+2 + ((steps-1)*3+1)  ].size.x;
 			}
 
 			idwt53_2d_v(img, s1, w, h);
@@ -284,7 +304,7 @@ void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
 			im->idwts.x = w; im->idwts.y = h;
 		}
 	} else {
-		for(i=0; i<steps; i++){
+		for(i=0; i<isteps; i++){
 			h = sub[3*i+1].size.y + sub[3*i+2].size.y;
 			w = sub[3*i+1].size.x + sub[3*i+2].size.x;
 			//printf("1.y = %d 2.y = %d 2.x = %d 1.x = %d\n",sub[0][3*i+1]->size.y, sub[0][3*i+2]->size.y, sub[0][3*i+2]->size.x, sub[0][3*i+1]->size.x);
@@ -295,41 +315,45 @@ void image_idwt_53(Image *im, StreamData *sd, imgtype *buf, uint32 steps)
 	}
 }
 
-void image_fill_subb(Image *im, StreamData *sd)
-///	\fn void image_fill_subb(Image *im, StreamData *sd)
-///	\brief Fill distribution probability arrays.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
+void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
+///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
+///	\brief Fill distribution probability array for each subband after DWT
+///			and calculate the number of quantization steps.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
 {
-	uint32 i, sz, st = ((sd->steps-1)*3+1);
+	uint32 i, sz, st = ((steps-1)*3+1);
 	imgtype *img = im->img;
 	im->qst = 0;
 	Subband *sub = im->sub;
 
-
-	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	printf("sz = %d\n  ", sz);
 	for(i=0; i < sz; i++) {
 		printf("%2d  ", i);
 		subband_fill_prob(&img[sub[i].loc], &sub[i]);
 		im->qst += sub[i].a_bits-1;
 	}
-	sz = (sd->color == BAYER) ? 4 : 1;
-	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all ll subbands from quantization
+	sz = (color == BAYER) ? 4 : 1;
+	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all LL subbands from quantization
 }
 
-void image_fill_bayer_hist(Image *im, StreamData *sd)
-///	\fn void image_fill_bayer_hist(Image *im, StreamData *sd)
+void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
+///	\fn void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
 ///	\brief Fill color histogram for white balancing.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param bpp 			The bits per pixel.
+///	\param bg			The bayer grid pattern
+///	\param bpp 			The bits per pixel.
 {
-	uint32 i, size = im->size.y*im->size.x, sz = 1<<sd->bpp, sum;
+	uint32 i, size = im->width*im->height, sz = 1<<bpp, sum;
 	uint32	tmp = size;
-	if(sd->color == BAYER) {
-		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->size.y, im->size.x, sd->bg, sd->bpp);
+	if(color == BAYER) {
+		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->width, im->height, bg, bpp);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
-		printf("size = %d r = %d ", im->size.y*im->size.x, sum);
+		printf("size = %d r = %d ", size, sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
 		printf("g = %d ", sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[(sz<<1)+i]; tmp -= sum;
@@ -339,74 +363,19 @@ void image_fill_bayer_hist(Image *im, StreamData *sd)
 
 }
 
-#define max(x, m) ((x>m) ? (m) : (x))
-/*
-static void bits_per_subband1(Image *im, Subband **sub, uint32 num, ColorSpace color, uint32 steps, uint32 qst, uint32 st)
-///	\fn static void bits_allocation(Image *im, Subband **sub, ColorSpace color, uint32 steps, uint32 st)
+void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
-///	\param im	 		The pointer to image.
-///	\param sub 			Pointer to subband arrey.
-///	\param color		Color space.
-///	\param steps		DWT steps.
-///	\param st			Quantization steps 0-no quantization.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param qstep 		The quantization step  (0 <= qstep < qst).
 {
 	uint32 i, j, k, sz, df;
+	Subband *sub = im->sub;
 	//qst = 0;
 	if(color == BAYER) {
 		sz = (steps-1)*3;
-		for(k=0; k<4; k++) {
-			for(i=0; i < sz+1; i++) sub[k][i].q_bits = sub[k][i].a_bits;
-		}
-		//printf("qst = %d\n", qst);
-		st = max(st, qst);
-		for(i=0; ; i++){
-			for(k=0; k<4; k++){
-				switch(k){
-					case(0):{ df = im->qfl[max(i,steps-1)]; break;}
-					case(1):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
-					case(2):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
-					case(3):{ df = i>1 ? im->qfl[max(i-2,steps-1)] : 0; break;}
-				}
-				for(j=0; j < df; j++){
-					if(sub[3-k][sz-j].q_bits > 1) { sub[3-k][sz-j].q_bits--; st--;}
-					if(!st) break;
-				}
-				if(!st) break;
-			}
-			if(!st) break;
-		}
-	} else {
-		sz = steps*3;
-		//for(i=0; i < sz+1; i++) sub[num][i].q_bits = sub[num][i].bits;
-
-		//printf("stmax = %d\n", stmax);
-		st = max(st, qst);
-		for(i=0; ; i++){
-			for(j=0; j < im->qfl[max(i,steps)]; j++){
-				if(sub[num][sz-j].q_bits > 1) { sub[num][sz-j].q_bits--; st--;}
-				if(!st) break;
-			}
-			if(!st) break;
-		}
-		//for(i=0; i < sz+1; i++) printf("%2d ", sub[0][i].q_bits);
-		//printf("\n");
-	}
-}
-*/
-
-static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
-///	\fn static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
-///	\brief Bits allocation for quantization algorithm.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param qstep		Quantization steps (if 0-no quantization).
-{
-	uint32 i, j, k, sz, df;
-	//im->qst = 0;
-	Subband *sub = im->sub;
-	//qst = 0;
-	if(sd->color == BAYER) {
-		sz = (sd->steps-1)*3;
 
 		for(i=0; i < ((sz+1)<<2); i++) sub[i].q_bits = sub[i].a_bits;
 		//printf("qstep = %d\n", qstep);
@@ -414,10 +383,10 @@ static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
 		for(i=0; i<50; i++){
 			for(k=0; k<4; k++){
 				switch(k){
-					case(0):{ df = im->qfl[max(i,sd->steps-1)]; break;}
-					case(1):{ df = i>0 ? im->qfl[max(i-1,sd->steps-1)] : 0; break;}
-					case(2):{ df = i>0 ? im->qfl[max(i-1,sd->steps-1)] : 0; break;}
-					case(3):{ df = i>1 ? im->qfl[max(i-2,sd->steps-1)] : 0; break;}
+					case(0):{ df = im->qfl[max(i,steps-1)]; break;}
+					case(1):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
+					case(2):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
+					case(3):{ df = i>1 ? im->qfl[max(i-2,steps-1)] : 0; break;}
 				}
 				for(j=0; j < df; j++){
 					//if(sub[3-k][sz-j].q_bits > 1) { sub[3-k][sz-j].q_bits--; qstep--;}
@@ -431,12 +400,12 @@ static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
 		}
 		//for(i=0; i < (sz+1)*4; i++) printf("a_bits = %d q_bits = %2d\n", sub[i].a_bits, sub[i].q_bits);
 	} else {
-		sz = sd->steps*3;
+		sz = steps*3;
 		for(i=0; i < (sz+1); i++) sub[i].q_bits = sub[i].a_bits;
 		//printf("stmax = %d\n", stmax);
 		qstep = max(qstep, im->qst);
 		for(i=0; ; i++){
-			for(j=0; j < im->qfl[max(i,sd->steps)]; j++){
+			for(j=0; j < im->qfl[max(i,steps)]; j++){
 				if(sub[sz-j].q_bits > 1) { sub[sz-j].q_bits--; qstep--;}
 				if(!qstep) break;
 			}
@@ -446,126 +415,117 @@ static void bits_per_subband(Image *im, StreamData *sd, uint32 qstep)
 		//printf("\n");
 	}
 }
-/*
-double image_entropy(Image *im, Subband **sub, uint32 num, uint32 bits, ColorSpace color, uint32 steps, uint32 st)
-/// \fn double image_entropy(Image *im, Subband **sub, uint32 bits, ColorSpace color, uint32 steps, int st)
-///     \brief Calculate image entropy.
-/// \param im                   The pointer to image.
-/// \param sub                  The pointer to subband array.
-///     \param bits                     The bits per pixel.
-///     \param color            Image color space.
-///     \param steps            The DWT steps.
-///     \param st                       The step of quantization.
-///     \retval                         The image entropy.
-{
-        uint32 i, j, k, sq, sz;
-        uint32 size = 0;
-        Subband *s;
-        imgtype *img = im->img;
-        double en=0.;
 
-        //if(st) bits_per_subband(im, sub, num, color, steps, im->qst, st);
-
-        sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-        for(i=0; i < sz; i++) {
-                s = (color == BAYER) ? sub[i & 0x3] : sub[num];
-                j = (color == BAYER) ? i>>2 : i;
-                sq = s[j].size.x*s[j].size.y;
-                if(s[j].q_bits > 1) en += sq*subband_entropy(s[j].dist, sq, bits+2, s[j].a_bits, s[j].q_bits);
-        }
-        return en /= (im->size.x*im->size.y);
-}
-*/
-uint32 image_size(Image *im, StreamData *sd, uint32 qstep)
-///	\fn uint32 image_size(Image *im, StreamData *sd, uint32 qstep)
-///	\brief Calculate the size off subband after quantization.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param qstep		Quantization steps (if 0-no quantization).
-///	\retval				The size of subband.
+uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+///	\fn uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+///	\brief Estimate the image size after quantization and entropy encoder.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param qstep 		The quantization step  (0 <= qstep < qst).
+///	\retval				The size of image in bits.
 {
 	uint32 i, sz, s=0;
 	Subband *sub = im->sub;
 
-	if(qstep) bits_per_subband(im, sd, qstep);
+	if(qstep) image_bits_per_subband(im, color, steps,  qstep);
 
-	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		if(sub[i].q_bits > 1) s += subband_size(&sub[i]);
 	}
 	return s;
 }
 
-void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
-///	\fn void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
-///	\brief Bits allocation for subbands.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
-///	\param times		Compression in times in relation to the original image.
+void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint32 times)
+///	\fn void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint32 times)
+///	\brief Bits allocation for subbands for given compression times.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param bpp 			The bits per pixel.
+///	\param times		Compression times.
 {
 	uint32 i, s, qstep, size;
 
-	size = (im->size.x*im->size.y*sd->bpp)/times;
+	size = (im->width*im->height*bpp)/times;
 	qstep = (im->qst>>1);
 
 	for(i=2;;i++){
-		s = image_size(im, sd, qstep);
+		s = image_size(im, color, steps, qstep);
 		printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size>>3, qstep, s>>3);
 		qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
 		if(!(im->qst>>i)) break;
 	}
 }
 
-void image_quantization(Image *im, StreamData *sd)
-///	\fn void image_bits_alloc(Image *im, StreamData *sd, uint32 times)
+void image_quantization(Image *im, ColorSpace color, uint32 steps)
+///	\fn void image_quantization(Image *im, ColorSpace color, uint32 steps)
 ///	\brief Image quantization.
-///	\param im	 		The pointer to image.
-///	\param sd 			Pointer to StreamData.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
 {
 	uint32 i, sz;
 	Subband *sub = im->sub;
 	imgtype *img = im->img;
 
-	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		//printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
 		subband_quantization(&img[sub[i].loc], &sub[i]);
 	}
 }
 
-uint32 image_range_encode(Image *im, StreamData *sd, uchar *buf)
+uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf)
+///	\fn uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf)
+///	\brief Image range encoder.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param bpp 			The bits per pixel.
+///	\param buf 			The buffer for encoded data.
+///	\retval				The size of encoded image in bytes.
 {
 	uint32 i, sq, sz;
 	uint32 size = 0;
 	imgtype *img = im->img;
 	Subband *sub = im->sub;
 
-	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_encode_table(&sub[i]);
-			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 		}
 	}
 	printf("Finish range_encoder\n");
 	return size;
 }
 
-uint32 image_range_decode(Image *im, StreamData *sd, uchar *buf)
+uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf)
+///	\fn uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf)
+///	\brief Image range decoder.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param bpp 			The bits per pixel.
+///	\param buf 			The buffer for encoded data.
+///	\retval				The size of decoded image in bytes.
 {
 	uint32 i, j, sq, sz;
 	uint32 size = 0;
 	imgtype *img = im->img;
 	Subband *sub = im->sub;
 
-	sz = (sd->color == BAYER) ? ((sd->steps-1)*3+1)<<2 : sd->steps*3 + 1;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	//i=0; {
 	for(i=0; i < sz; i++) {
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_decode_table(&sub[i]);
-			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(sd->bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 		} else for(j=0; j<sq; j++) img[sub[i].loc+j] = 0;
 	}
 	return size;

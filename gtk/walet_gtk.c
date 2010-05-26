@@ -1,201 +1,9 @@
 #include <walet_gtk.h>
 
-//GTK
-WaletGTK	*wlgtk;
-TwoPixBuff	*twoimg[4];
-//Walet
-StreamData	*sd;
-GOP			*gop;
-//Gstreamet
-GMainLoop *loop;
-GstBus *bus;
-GstElement *pipeline, *src, *dec, *fakesink, *pgmdec;
-
-
-void  print_status(WaletGTK *wlgtk, const gchar *mesage)
+static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, GtkWalet *gw)
 {
-	//gchar	*file;
-	//gchar	*status;
-
-	//if (wlgtk->filename == NULL)
-	//{
-	//	file = g_strdup ("NULL");
-	//}
-	//else file = g_path_get_basename (wlgtk->filename);
-
-	//status = g_strdup_printf ("File: %s", file);
-	gtk_statusbar_pop (GTK_STATUSBAR (wlgtk->statusbar), wlgtk->statusbar_context_id);
-	gtk_statusbar_push(GTK_STATUSBAR (wlgtk->statusbar), wlgtk->statusbar_context_id, mesage);
-	//g_free (status);
-	//g_free (file);
-}
-
-void error_message(const gchar *message)
-{
-        GtkWidget               *dialog;
-
-        /* log to terminal window */
-        g_warning (message);
-
-        /* create an error message dialog and display modally to the user */
-        dialog = gtk_message_dialog_new(NULL,
-										GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-										GTK_MESSAGE_ERROR,
-										GTK_BUTTONS_OK,
-										message);
-
-        gtk_window_set_title (GTK_WINDOW (dialog), "Error!");
-        gtk_dialog_run (GTK_DIALOG (dialog));
-        gtk_widget_destroy (dialog);
-}
-
-void on_quit_activate(GtkObject *object, WaletGTK *wlgtk)
-{
-	//gst_element_set_state (pipeline, GST_STATE_NULL);
-	//gst_object_unref (GST_OBJECT (pipeline));
-	g_main_loop_quit (loop);
-    gtk_main_quit ();
-}
-
-
-void on_open_activate(GtkObject *object)
-{
-	GtkWidget	*chooser;
-	GError  	*err=NULL;
-	guint		i, size;
-	//gchar		**line;
-
-	//GstCaps 			*caps = gst_pad_get_caps (gst_element_get_static_pad (pgmdec, "src"));
-	//GstStructure 		*str;
-	//GstPadLinkReturn	ret;
-
-	chooser = gtk_file_chooser_dialog_new ("Open File...",
-											GTK_WINDOW (wlgtk->window),
-											GTK_FILE_CHOOSER_ACTION_OPEN,
-											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-											NULL);
-
-	if (gtk_dialog_run(GTK_DIALOG (chooser)) == GTK_RESPONSE_OK) {
-		wlgtk->filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
-		print_status(wlgtk, wlgtk->filename);
-	} else {
-		g_error("Could'n open file\n");
-	}
-	gtk_widget_destroy (chooser);
-
-	g_object_set (G_OBJECT(src), "location", wlgtk->filename, NULL);
-
-	//gst_element_set_state (pipeline, GST_STATE_PLAYING);
-	//caps = gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink"));
-	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(gst_pad_get_negotiated_caps (gst_element_get_static_pad (fakesink, "sink")), 0)));
-
-	//g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
-
-	// Play
-	gst_element_set_state (pipeline, GST_STATE_PLAYING);
-	g_main_loop_run (loop);
-	//if (!gst_element_seek 	(pipeline, 1.0,
-	//					GST_FORMAT_DEFAULT,
-	//					GST_SEEK_FLAG_FLUSH,
-	//					GST_SEEK_TYPE_SET, 0,
-	//					GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) g_print ("Seek failed!\n");
-
-}
-
-gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
-{
-	if(twoimg[0]->pixbuf[0]){
-		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							twoimg[0]->pixbuf[0],
-							0 ,0 ,0 ,0 ,
-							-1,-1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
-	return TRUE;
-}
-
-gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer data)
-{
-	if(twoimg[1]->pixbuf[0]){
-		//gdk_pixbuf_render_to_drawable(	twoimg->pixbuf[0],
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							twoimg[1]->pixbuf[0],
-							0 ,0 ,0 ,0 ,
-							-1, -1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
-	return TRUE;
-}
-
-gboolean  init_wlgtk(WaletGTK *wlgtk)
-{
-	GtkBuilder              *builder;
-	GError                  *err=NULL;
-	guint                   id;
-	PangoFontDescription    *font_desc;
-
-	// use GtkBuilder to build our interface from the XML file
-	builder = gtk_builder_new();
-	if (gtk_builder_add_from_file(builder, "walet_gtk.xml", &err) == 0){
-		error_message(err->message);
-		g_error_free(err);
-		return FALSE;
-	}
-
-	// get the widgets which will be referenced in callbacks
-	wlgtk->window 		= GTK_WIDGET (gtk_builder_get_object (builder, "window"));
-	wlgtk->statusbar 	= GTK_WIDGET (gtk_builder_get_object (builder, "statusbar"));
-	// Menu buttons
-	wlgtk->menu_new		= GTK_WIDGET (gtk_builder_get_object (builder, "menu_new"));
-	wlgtk->menu_open 	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_open"));
-	wlgtk->menu_save	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_save"));
-	wlgtk->menu_save_as = GTK_WIDGET (gtk_builder_get_object (builder, "menu_save_as"));
-	wlgtk->menu_quit 	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_quit"));
-	// Toolbar buttons
-	wlgtk->button_open 	= GTK_WIDGET (gtk_builder_get_object (builder, "button_open"));
-	// Drawingareas
-	wlgtk->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
-	wlgtk->drawingarea2	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea2"));
-	wlgtk->drawingarea3	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea3"));
-	wlgtk->drawingarea4	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea4"));
-
-	//connect signals, don't work now
-	//gtk_builder_connect_signals(builder, wlgtk);
-
-    g_signal_connect(G_OBJECT(wlgtk->window)		, "destroy", 		G_CALLBACK (on_quit_activate), NULL);
-    g_signal_connect(G_OBJECT(wlgtk->menu_open)		, "activate", 		G_CALLBACK (on_open_activate), NULL);
-    g_signal_connect(G_OBJECT(wlgtk->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), NULL);
-
-    g_signal_connect(G_OBJECT(wlgtk->button_open)	, "clicked"	, 		G_CALLBACK (on_open_activate), NULL);
-    g_signal_connect(G_OBJECT(wlgtk->drawingarea1)	, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event),  NULL);
-    g_signal_connect(G_OBJECT(wlgtk->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event),  NULL);
-    //g_signal_connect(G_OBJECT(wlgtk->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event),  NULL);
-    //g_signal_connect(G_OBJECT(wlgtk->drawingarea4)	, "expose_event",	G_CALLBACK (on_drawingarea4_expose_event),  NULL);
-
-	// free memory used by GtkBuilder object
-	g_object_unref (G_OBJECT (builder));
-
-	// set the default icon to the GTK "edit" icon
-	gtk_window_set_default_icon_name (GTK_STOCK_EDIT);
-
-	wlgtk->filename = NULL;
-	// setup and initialize our statusbar
-	wlgtk->statusbar_context_id = gtk_statusbar_get_context_id (GTK_STATUSBAR (wlgtk->statusbar), "Open file");
-	print_status(wlgtk, "No file open");
-
-	return TRUE;
-}
-
-static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpointer data)
-{
-	GstElement 		*linkElement 	= (GstElement *) data;
-	GstPad 			*sinkpad 		= gst_element_get_static_pad (linkElement, "sink");
+	//GstElement 		*linkElement 	= (GstElement *) data;
+	GstPad 			*sinkpad 		= gst_element_get_static_pad (gw->fakesink, "sink");
 	GstCaps 		*caps 			= gst_pad_get_caps (pad);
 	GstStructure 	*str;
 	GstPadLinkReturn	ret;
@@ -232,19 +40,19 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, gpoint
 	//caps = gst_pad_peer_get_caps (sinkpad);
 	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(caps, 0)));
 	str = gst_caps_get_structure (caps, 0);
-	ret =  gst_structure_get_int (str, "width", &wlgtk->width);
-	ret &= gst_structure_get_int (str, "height", &wlgtk->height);
-	ret &= gst_structure_get_int (str, "bpp", &wlgtk->bpp);
+	ret =  gst_structure_get_int (str, "width", &gw->gop->width);
+	ret &= gst_structure_get_int (str, "height", &gw->gop->height);
+	ret &= gst_structure_get_int (str, "bpp", &gw->gop->bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
-	g_printf("width = %d  height = %d bpp = %d\n", wlgtk->width, wlgtk->height, wlgtk->bpp);
+	g_printf("width = %d  height = %d bpp = %d\n", gw->gop->width, gw->gop->height, gw->gop->bpp);
 
 	gst_caps_unref (caps);
 
 	gst_object_unref(sinkpad);
 }
 
-static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gpointer user_data)
+static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, GtkWalet *gw)
 {
 	//GstPad 			*sinkpad 	= gst_element_get_static_pad (fakesink, "sink");
 	//GstCaps 		*caps 		= gst_pad_get_caps (pad);
@@ -252,51 +60,46 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, gp
 	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
 	gboolean ret;
 	GstStructure	*str;
-	guint8	*pix = GST_BUFFER_DATA(buffer);
-	gint i;
+	//guint8	*pix = GST_BUFFER_DATA(buffer);
+	guint width, height, bpp;
 
-	g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
-
-	//for(i=0; i<12000; i++) g_printf("%2X ", pix[i]);
-
+	//g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
 
 	str = gst_caps_get_structure (caps, 0);
 	g_print("%s\n", gst_caps_to_string (caps));
-	ret  = gst_structure_get_int (str, "width"	, &sd->width);
-	ret &= gst_structure_get_int (str, "height"	, &sd->height);
-	ret &= gst_structure_get_int (str, "bpp"	, &sd->bpp);
+	ret  = gst_structure_get_int (str, "width"	, &width);
+	ret &= gst_structure_get_int (str, "height"	, &height);
+	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
-	sd->color 		= 	BAYER;
-	sd->bg 			= 	GRBG;	//Sony Alpha pattern
-	sd->steps		= 	5;
-	sd->gop_size	=	1;
-	walet_decoder_init(sd, gop);
+	gw->gop = walet_decoder_init(width, height, BAYER, GRBG, bpp, 5, 1, 0);
 	//Copy frame 0 to decoder pipeline
-	frame_copy(gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+	draw_picture(gw->drawingarea0, gw->tp[0], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
+	draw_picture(gw->drawingarea1, gw->tp[1], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
 
 
-	twoimg[0]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width, sd->height);
-	utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[0]->pixbuf[0]), sd->width, sd->height);
-	gtk_widget_set_size_request(wlgtk->drawingarea1, sd->width, sd->height);
-	g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[0]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[0]->pixbuf[0]));
+	//twoimg[0]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, gw->gop->width, gw->gop->height);
+	//utils_grey_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[0]->pixbuf[0]), gw->gop->width, gw->gop->height);
+	//gtk_widget_set_size_request(gw->drawingarea1, gw->gop->width, gw->gop->height);
+	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[0]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[0]->pixbuf[0]));
 
-	twoimg[1]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, sd->width-1, sd->height-1);
+	//twoimg[1]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), sd->width, sd->height);
-	utils_bayer_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), sd->width, sd->height, sd->bg);
-	gtk_widget_set_size_request(wlgtk->drawingarea2, sd->width-1, sd->height-1);
-	g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[1]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[1]->pixbuf[0]));
+	//utils_bayer_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), gw->gop->width, gw->gop->height, gw->gop->bg);
+	//gtk_widget_set_size_request(gw->drawingarea2, gw->gop->width-1, gw->gop->height-1);
+	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[1]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[1]->pixbuf[0]));
 
 	//g_printf("width = %d height = %d\n", sd->width, sd->height);
 	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
+}
 
- }
-
-static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data)
+static gboolean my_bus_callback (GstBus *bus, GstMessage *message,  gpointer data) //GtkWalet *gw)
 {
-	GMainLoop *loop = (GMainLoop*) data;
-	g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
+	//GMainLoop *loop = (GMainLoop*) data;
+	GtkWalet *gw = (GtkWalet*) data;
+	//g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
 
 	switch (GST_MESSAGE_TYPE (message)) {
 		case GST_MESSAGE_ERROR: {
@@ -308,12 +111,12 @@ static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data
 			g_error_free (err);
 			g_free (debug);
 
-			g_main_loop_quit (loop);
+			g_main_loop_quit (gw->loop);
 			break;
 		}
 		case GST_MESSAGE_EOS:
 		// end-of-stream
-			g_main_loop_quit (loop);
+			g_main_loop_quit (gw->loop);
 			break;
 		default:
 		// unhandled message
@@ -330,70 +133,67 @@ static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data
 
 int main (int argc, char *argv[])
 {
+	//GTK structure allocate memory
+	GtkWalet *gw = g_slice_new(GtkWalet);
+	//Walet structure allocate memory
+	//gw->gop = g_slice_new(GOP);
+
 	// Allocate the memory needed by structs
-	wlgtk 	= g_slice_new(WaletGTK);
-	sd 		= g_slice_new(StreamData);
-	gop		= g_slice_new(GOP);
-	twoimg[0]	= g_slice_new(TwoPixBuff);
-	twoimg[1]	= g_slice_new(TwoPixBuff);
+	//twoimg[0]	= g_slice_new(TwoPixBuff);
+	//twoimg[1]	= g_slice_new(TwoPixBuff);
 	//twoimg[2]	= g_slice_new(TwoPixBuff);
 	//twoimg[3]	= g_slice_new(TwoPixBuff);
-	wlgtk->sd 	= sd;
-	wlgtk->gop	= gop;
 
 	if (!g_thread_supported ()) g_thread_init (NULL);
 
 	// Initialize the Gsreamer libraries
 	gst_init(&argc, &argv);
-	loop = g_main_loop_new (NULL, FALSE);
+	gw->loop = g_main_loop_new (NULL, FALSE);
 
 	// Setup Gsreamer libraries
-	pipeline = gst_pipeline_new ("pipeline");
+	gw->pipeline = gst_pipeline_new ("pipeline");
 
-	bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
-	gst_bus_add_watch (bus, my_bus_callback, loop);
-	gst_object_unref  (bus);
+	gw->bus = gst_pipeline_get_bus (GST_PIPELINE (gw->pipeline));
+	gst_bus_add_watch (gw->bus, my_bus_callback, gw);
+	gst_object_unref  (gw->bus);
 
-	src 		= gst_element_factory_make("filesrc", "source");
-	dec 		= gst_element_factory_make("decodebin", "decoder");
-	pgmdec		= gst_element_factory_make("pgmdec", "decoder");
-	fakesink 	= gst_element_factory_make("fakesink", "sink");
+	gw->src 		= gst_element_factory_make("filesrc", "source");
+	gw->dec 		= gst_element_factory_make("decodebin", "decoder");
+	gw->pgmdec		= gst_element_factory_make("pgmdec", "decoder");
+	gw->fakesink 	= gst_element_factory_make("fakesink", "sink");
 	//appsink		= gst_element_factory_make(("appsink","appsink");
 
-	if(!(src && dec && fakesink && pgmdec)){
+	if(!(gw->src && gw->dec && gw->fakesink && gw->pgmdec)){
 		g_critical("Could not create pipeline elements");
 		return FALSE;
 	}
 	//gst_bin_add_many (GST_BIN (pipeline), src, dec, fakesink, NULL);
 	//gst_element_link_many (src, dec, NULL);
-	gst_bin_add_many (GST_BIN (pipeline), src, pgmdec, fakesink, NULL);
-	gst_element_link_many (src, pgmdec, fakesink, NULL);
+	gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->pgmdec, gw->fakesink, NULL);
+	gst_element_link_many (gw->src, gw->pgmdec, gw->fakesink, NULL);
 
-	g_signal_connect (dec, "new-decoded-pad", G_CALLBACK (cb_newpad), fakesink);
+	g_signal_connect (gw->dec, "new-decoded-pad", G_CALLBACK (cb_newpad), gw);
 	//g_signal_connect (dec, "unknown-type",    G_CALLBACK (cb_error),  NULL);
-	g_object_set (G_OBJECT (fakesink), "signal-handoffs", TRUE, NULL);
-	//g_object_set (G_OBJECT (fakesink), "blocksize", 16777216, NULL);
-	g_signal_connect (fakesink, "handoff", G_CALLBACK (cb_handoff), NULL);
+	g_object_set (gw->fakesink, "signal-handoffs", TRUE, NULL);
+	g_signal_connect (gw->fakesink, "handoff", G_CALLBACK (cb_handoff), gw);
 
 
 
 
 	// Initialize GTK+ libraries
 	gtk_init (&argc, &argv);
-	if (init_wlgtk(wlgtk) == FALSE) return 1; // error loading UI
+	if (init_gw(gw) == FALSE) return 1; // error loading UI
 	// Show the window
-	gtk_widget_show (wlgtk->window);
+	gtk_widget_show (gw->window);
 	// Enter GTK+ main loop
 	gtk_main ();
 	// Free memory we allocated for TutorialTextEditor struct
-	g_slice_free (WaletGTK, wlgtk);
-	g_slice_free (StreamData, sd);
-	g_slice_free (GOP, gop);
-	g_slice_free (TwoPixBuff*, twoimg);
+	g_slice_free (GOP, gw->gop);
 
 	// Clean up gstreamer
-	gst_element_set_state (pipeline, GST_STATE_NULL);
-	gst_object_unref (GST_OBJECT (pipeline));
+	gst_element_set_state (gw->pipeline, GST_STATE_NULL);
+	gst_object_unref (GST_OBJECT (gw->pipeline));
+	g_slice_free (GtkWalet, gw);
 
 	return 0;
 }

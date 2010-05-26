@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,7 +37,8 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = walet_gtk$(EXEEXT)
 subdir = gtk
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -47,7 +49,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_walet_gtk_OBJECTS = walet_gtk-walet_gtk.$(OBJEXT)
+am_walet_gtk_OBJECTS = walet_gtk-walet_gtk.$(OBJEXT) \
+	walet_gtk-gui.$(OBJEXT)
 walet_gtk_OBJECTS = $(am_walet_gtk_OBJECTS)
 am__DEPENDENCIES_1 =
 walet_gtk_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -70,6 +73,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(walet_gtk_SOURCES)
 DIST_SOURCES = $(walet_gtk_SOURCES)
+HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -198,10 +202,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-walet_gtk_SOURCES = walet_gtk.c
+walet_gtk_SOURCES = walet_gtk.c gui.c walet_gtk.h
 walet_gtk_CFLAGS = $(GTK_CFLAGS) $(GST_CFLAGS)
 walet_gtk_LDADD = $(GTK_LIBS) $(GST_LIBS) ../lib/libwalet.la
 INCLUDES = -I../lib/
+noinst_HEADERS = gui.h
 all: all-am
 
 .SUFFIXES:
@@ -289,6 +294,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/walet_gtk-gui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/walet_gtk-walet_gtk.Po@am__quote@
 
 .c.o:
@@ -325,6 +331,20 @@ walet_gtk-walet_gtk.obj: walet_gtk.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='walet_gtk.c' object='walet_gtk-walet_gtk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -c -o walet_gtk-walet_gtk.obj `if test -f 'walet_gtk.c'; then $(CYGPATH_W) 'walet_gtk.c'; else $(CYGPATH_W) '$(srcdir)/walet_gtk.c'; fi`
+
+walet_gtk-gui.o: gui.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -MT walet_gtk-gui.o -MD -MP -MF $(DEPDIR)/walet_gtk-gui.Tpo -c -o walet_gtk-gui.o `test -f 'gui.c' || echo '$(srcdir)/'`gui.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet_gtk-gui.Tpo $(DEPDIR)/walet_gtk-gui.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gui.c' object='walet_gtk-gui.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -c -o walet_gtk-gui.o `test -f 'gui.c' || echo '$(srcdir)/'`gui.c
+
+walet_gtk-gui.obj: gui.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -MT walet_gtk-gui.obj -MD -MP -MF $(DEPDIR)/walet_gtk-gui.Tpo -c -o walet_gtk-gui.obj `if test -f 'gui.c'; then $(CYGPATH_W) 'gui.c'; else $(CYGPATH_W) '$(srcdir)/gui.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/walet_gtk-gui.Tpo $(DEPDIR)/walet_gtk-gui.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gui.c' object='walet_gtk-gui.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(walet_gtk_CFLAGS) $(CFLAGS) -c -o walet_gtk-gui.obj `if test -f 'gui.c'; then $(CYGPATH_W) 'gui.c'; else $(CYGPATH_W) '$(srcdir)/gui.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -416,7 +436,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(PROGRAMS) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \

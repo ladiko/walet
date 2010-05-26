@@ -99,7 +99,7 @@ uint32 subband_size(Subband *sub)
 	//          |  |  |  |  |  |  |
 	//     step  =  1<<(a_bits-q_bits)
 
-	double s = 0, s0 = log2(sub->size.x*sub->size.y);
+	double s = 0., s0 = log2(sub->size.x*sub->size.y);
 	uint32  en=0;
 	int i, j;
 	int step = 1<<(sub->a_bits-sub->q_bits), rest = 1<<(sub->a_bits-1), half = (1<<(sub->d_bits-1));
@@ -125,7 +125,7 @@ uint32 subband_size(Subband *sub)
 		if(en) s -= en*(log2(en) - s0);
 		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
 	}
-	return s;
+	return (uint32)s;
 }
 
 void  subband_encode_table(Subband *sub)
