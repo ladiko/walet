@@ -1,40 +1,74 @@
 #include <walet_gtk.h>
 
-void draw_picture (GtkWidget* drawingarea, TwoPixbuf *tp, imgtype* img, guint width, guint height)
+//void draw_picture (GtkWidget* drawingarea, Pixbuf *orid, imgtype* img, guint width, guint height)
+void scale(GtkWidget* viewport, Pixbuf *orid, Pixbuf *scal)
 {
-	if(tp->width != width || tp->height != height || !tp->init[0]){
-		tp->width = width; tp->height = height;
-		if(tp->init[0]) gdk_pixbuf_unref(tp->pxb[0]); //gdk_pixbuf_unref(tp->pxb[1]);
-		tp->pxb[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
-		tp->init[0] = 1;
-		gtk_widget_set_size_request(drawingarea, width, height);
-	}
-	utils_grey_to_rgb(img, gdk_pixbuf_get_pixels(tp->pxb[0]), width, height);
-	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(tp->pxb[0]), gdk_pixbuf_get_height(tp->pxb[0]));
-}
+	//Pixbuf *scal;
 
-void scale(GtkWidget* drawingarea, GtkWidget* viewport, TwoPixbuf *tp)
-{
-	guint s_width, s_height;
 	gdouble v_width 	= gtk_adjustment_get_page_size (gtk_viewport_get_hadjustment ((GtkViewport*)viewport));
 	gdouble v_height 	= gtk_adjustment_get_page_size (gtk_viewport_get_vadjustment ((GtkViewport*)viewport));
 
-	gdouble w = ((gdouble)tp->width)/v_width;
-	gdouble h = ((gdouble)tp->height)/v_height;
+	gdouble w = ((gdouble)orid->width)/v_width;
+	gdouble h = ((gdouble)orid->height)/v_height;
 
 	if (h > w) {
-		s_width = (int)(((gdouble)tp->width)/h);
-		s_height = (int)v_height;
+		scal->width = (int)(((gdouble)orid->width)/h);
+		scal->height = (int)v_height;
 	}
 	else {
-		s_width = (int)v_width;
-		s_height = (int)(((gdouble)tp->width)/w);
+		scal->width = (int)v_width;
+		scal->height = (int)(((gdouble)orid->width)/w);
 	}
 
-	if(tp->init[1]) gdk_pixbuf_unref (tp->pxb[1]);
-	tp->pxb[1] = gdk_pixbuf_scale_simple (tp->pxb[0], s_width, s_height, GDK_INTERP_BILINEAR);
-	gtk_widget_set_size_request(drawingarea, s_width, s_height);
-	tp->init[1] = 1;
+	if(scal->init) gdk_pixbuf_unref (scal->pxb);
+	scal->pxb = gdk_pixbuf_scale_simple (orid->pxb, scal->width, scal->height, GDK_INTERP_BILINEAR);
+	scal->init = 1;
+
+	//return scal;
+}
+
+void draw_new_picture(guint n, imgtype* img, guint width, guint height, GtkWalet *gw)
+{
+	//GtkDrawingArea  *drawingarea;
+	//GtkViewport		*viewport;
+	GtkWidget  	*drawingarea;
+	GtkWidget	*viewport;
+	guint init, w, h;
+	GdkPixbuf *pxb;
+
+	switch(n){
+		case(0) : { drawingarea = gw->drawingarea0; viewport = gw->viewport0; break;}
+		case(1) : { drawingarea = gw->drawingarea1; viewport = gw->viewport1; break;}
+		case(2) : { drawingarea = gw->drawingarea2; viewport = gw->viewport2; break;}
+		case(3) : { drawingarea = gw->drawingarea3; viewport = gw->viewport3; break;}
+		default : { g_printf("The numbers of drawing areas from 0 to 3\n"); return; }
+	}
+	g_printf("pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
+	if(gw->orig[n]->width != width || gw->orig[n]->height != height || !gw->orig[n]->init){
+		gw->orig[n]->width = width; gw->orig[n]->height = height;
+		if(gw->orig[n]->init) gdk_pixbuf_unref(gw->orig[n]->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
+		gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
+		gw->orig[n]->init = 1;
+		//gtk_widget_set_size_request(drawingarea, width, height);
+	}
+	utils_grey_to_rgb(img, gdk_pixbuf_get_pixels(gw->orig[n]->pxb), width, height);
+
+	if(gtk_toggle_tool_button_get_active((GtkToggleToolButton*)gw->feet_button)) {
+		scale(viewport, gw->orig[n], gw->scal[n]);
+		w = gw->scal[n]->width; h = gw->scal[n]->height; pxb = gw->scal[n]->pxb;
+	} else {
+		w = gw->orig[n]->width; h = gw->orig[n]->height; pxb = gw->orig[n]->pxb;
+	}
+	gtk_widget_set_size_request(drawingarea, w, h);
+	g_printf("gtk_widget_set_size_request pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
+	//gdk_draw_pixbuf(gw->drawingarea0->window,
+	//		gw->drawingarea0->style->black_gc,
+	//		gw->orig[0]->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
+	//gdk_draw_pixbuf(drawingarea->window,
+	//		///drawingarea->style->fg_gc[GTK_WIDGET_STATE(drawingarea)],
+	//		drawingarea->style->black_gc,
+	//		pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
+	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(tp->pxb[0]), gdk_pixbuf_get_height(tp->pxb[0]));
 }
 
 void print_status (GtkWalet *gw, const gchar *mesage)
@@ -114,11 +148,11 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw)
 {
 	g_printf("feet_button = %d\n", gtk_toggle_tool_button_get_active((GtkToggleToolButton*)object));
-	//if(!gtk_toggle_tool_button_get_active((GtkToggleToolButton*)object)){
+	if(!gtk_toggle_tool_button_get_active((GtkToggleToolButton*)object)){
 	//	gtk_toggle_tool_button_set_active((GtkToggleToolButton*)gw->feet_button, TRUE);
-	//} else {
+	} else {
 	//	gtk_toggle_tool_button_set_active((GtkToggleToolButton*)gw->full_button, FALSE);
-	//}
+	}
 }
 
 void on_full_button_clicked (GtkObject *object, GtkWalet *gw)
@@ -133,66 +167,15 @@ void on_full_button_clicked (GtkObject *object, GtkWalet *gw)
 
 gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
-	guint init;
-	GdkPixbuf *pxb;
-	if(gtk_toggle_tool_button_get_active((GtkToggleToolButton*)gw->feet_button)){
-		if(gw->tp[0]->init[0]) scale(gw->drawingarea0, gw->viewport0, gw->tp[0]);
-		init = gw->tp[0]->init[1]; pxb = gw->tp[0]->pxb[1];
-	} else {
-		init = gw->tp[0]->init[0]; pxb = gw->tp[0]->pxb[0];
-	}
-
-	if(init){
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							pxb,
-							0 ,0 ,0 ,0 ,
-							-1,-1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
-	return TRUE;
-}
-
-gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
-{
-	if(gw->tp[1]->init[0]){
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							gw->tp[1]->pxb[0],
-							0 ,0 ,0 ,0 ,
-							-1, -1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
-	return TRUE;
-}
-
-gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
-{
-	if(gw->tp[2]->init[0]){
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							gw->tp[2]->pxb[0],
-							0 ,0 ,0 ,0 ,
-							-1, -1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
-	return TRUE;
-}
-
-gboolean on_drawingarea3_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
-{
-	if(gw->tp[3]->init[0]){
-		gdk_draw_pixbuf(	widget->window,
-							widget->style->fg_gc[gtk_widget_get_state (widget)],
-							gw->tp[3]->pxb[0],
-							0 ,0 ,0 ,0 ,
-							-1, -1,
-							GDK_RGB_DITHER_NONE,
-							0, 0);
-	}
+	//gtk_widget_set_size_request(widget, w, h);
+	//g_printf("gtk_widget_set_size_request pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
+	//gdk_draw_pixbuf(widget->window,
+	//		widget->style->black_gc,
+	//		gw->orig[0]->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
+	//return TRUE;
+	gdk_draw_pixbuf(gw->drawingarea0->window,
+			gw->drawingarea0->style->black_gc,
+			gw->orig[0]->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
 	return TRUE;
 }
 
@@ -235,10 +218,16 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->viewport2	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport2"));
 	gw->viewport3	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport3"));
 
-	gw->tp[0] = g_slice_new(TwoPixbuf); gw->tp[0]->init[0] = 0; gw->tp[0]->init[1] = 0;
-	gw->tp[1] = g_slice_new(TwoPixbuf); gw->tp[1]->init[0] = 0; gw->tp[1]->init[1] = 0;
-	gw->tp[2] = g_slice_new(TwoPixbuf); gw->tp[2]->init[0] = 0; gw->tp[2]->init[1] = 0;
-	gw->tp[3] = g_slice_new(TwoPixbuf); gw->tp[3]->init[0] = 0; gw->tp[3]->init[1] = 0;
+	gw->orig[0] = g_slice_new(Pixbuf); gw->orig[0]->init = 0;
+	gw->orig[1] = g_slice_new(Pixbuf); gw->orig[1]->init = 0;
+	gw->orig[2] = g_slice_new(Pixbuf); gw->orig[2]->init = 0;
+	gw->orig[3] = g_slice_new(Pixbuf); gw->orig[3]->init = 0;
+
+	gw->scal[0] = g_slice_new(Pixbuf); gw->scal[0]->init = 0;
+	gw->scal[1] = g_slice_new(Pixbuf); gw->scal[1]->init = 0;
+	gw->scal[2] = g_slice_new(Pixbuf); gw->scal[2]->init = 0;
+	gw->scal[3] = g_slice_new(Pixbuf); gw->scal[3]->init = 0;
+
 
 	//connect signals, don't work now
 	//gtk_builder_connect_signals(builder, wlgtk);
@@ -252,9 +241,9 @@ gboolean  init_gw(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->full_button)	, "clicked"	, 		G_CALLBACK (on_full_button_clicked), gw);
 
     g_signal_connect(G_OBJECT(gw->drawingarea0)	, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea1)	, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
+    //g_signal_connect(G_OBJECT(gw->drawingarea1)	, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
+    //g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
+    //g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));

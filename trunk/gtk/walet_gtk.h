@@ -8,9 +8,9 @@ typedef struct  {
 	guint 		width;			// Image width
 	guint 		height;			// Image width
 	//GtkWidget	*da;		//Drawingarea
-	GdkPixbuf 	*pxb[2];	//Two pix buffers one real image second scale image if need.
-	gboolean	init[2];
-}TwoPixbuf;
+	GdkPixbuf 	*pxb;	//Two pix buffers one real image second scale image if need.
+	gboolean	init;
+}Pixbuf;
 
 typedef struct  {
 	//GTK widgets
@@ -27,7 +27,8 @@ typedef struct  {
 	GtkWidget	*feet_button;
 	GtkWidget	*full_button;
 	// Drawingareas
-	TwoPixbuf	*tp[4];
+	Pixbuf	*orig[4];		//Original image
+	Pixbuf	*scal[4];		//Scaled image
 	GtkWidget	*drawingarea0;
 	GtkWidget	*drawingarea1;
 	GtkWidget	*drawingarea2;
@@ -39,6 +40,7 @@ typedef struct  {
 
 	gchar		*filename;
 	guint		statusbar_context_id;
+	gboolean 	scale;
 	//guint8		*buff; //Buffer for image loading.
 
 	//Walet structure
