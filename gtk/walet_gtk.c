@@ -76,23 +76,16 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	gw->gop = walet_decoder_init(width, height, BAYER, GRBG, bpp, 5, 1, 0);
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-	draw_picture(gw->drawingarea0, gw->tp[0], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
-	draw_picture(gw->drawingarea1, gw->tp[1], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
+	draw_new_picture (0, gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, gw);
 
+	//draw_picture(gw->orid[0], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
+	//gtk_widget_set_size_request(gw->drawingarea0, gw->orid[0]->width, gw->orid[0]->height);
+	//gdk_draw_pixbuf(gw->drawingarea0->window,
+	//		gw->drawingarea0->style->fg_gc[gtk_widget_get_state (gw->drawingarea0)],
+	//		gw->orid[0]->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
+	//draw_picture(gw->orid[1], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
+	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea0), "expose_event", G_TYPE_NONE);
 
-	//twoimg[0]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, gw->gop->width, gw->gop->height);
-	//utils_grey_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[0]->pixbuf[0]), gw->gop->width, gw->gop->height);
-	//gtk_widget_set_size_request(gw->drawingarea1, gw->gop->width, gw->gop->height);
-	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[0]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[0]->pixbuf[0]));
-
-	//twoimg[1]->pixbuf[0] = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_to_rgb(gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), sd->width, sd->height);
-	//utils_bayer_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(twoimg[1]->pixbuf[0]), gw->gop->width, gw->gop->height, gw->gop->bg);
-	//gtk_widget_set_size_request(gw->drawingarea2, gw->gop->width-1, gw->gop->height-1);
-	//g_printf("w = %d h = %d\n", gdk_pixbuf_get_width(twoimg[1]->pixbuf[0]), gdk_pixbuf_get_height(twoimg[1]->pixbuf[0]));
-
-	//g_printf("width = %d height = %d\n", sd->width, sd->height);
-	//gst_element_set_state (pipeline, GST_STATE_PAUSED);
 }
 
 static gboolean my_bus_callback (GstBus *bus, GstMessage *message,  gpointer data) //GtkWalet *gw)

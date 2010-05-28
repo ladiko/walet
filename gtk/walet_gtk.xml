@@ -234,7 +234,6 @@
                   <object class="GtkToggleToolButton" id="feet_button">
                     <property name="visible">True</property>
                     <property name="stock_id">gtk-zoom-fit</property>
-                    <property name="active">True</property>
                     <signal name="clicked" handler="on_feet_button_clicked"/>
                   </object>
                 </child>
