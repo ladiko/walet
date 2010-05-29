@@ -1,7 +1,9 @@
 #ifndef _GUI_H_
 #define _GUI_H_
 
-void draw_picture (guint n, imgtype* img, guint width, guint height, GtkWalet *gw);
+void new_buffer(guint n, guint width, guint height, GtkWalet *gw);
+void scale(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal);
+void draw_image(GtkWidget* drawingarea, Pixbuf *orig);
 
 void print_status(GtkWalet *gw, const gchar *mesage);
 void error_message(const gchar *message);
