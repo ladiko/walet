@@ -73,17 +73,17 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
-	gw->gop = walet_decoder_init(width, height, BAYER, GRBG, bpp, 5, 1, 0);
+	gw->gop = walet_decoder_init(width, height, BAYER, RGGB, bpp, 5, 1, 0);
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-	draw_new_picture (0, gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, gw);
 
-	//draw_picture(gw->orid[0], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
-	//gtk_widget_set_size_request(gw->drawingarea0, gw->orid[0]->width, gw->orid[0]->height);
-	//gdk_draw_pixbuf(gw->drawingarea0->window,
-	//		gw->drawingarea0->style->fg_gc[gtk_widget_get_state (gw->drawingarea0)],
-	//		gw->orid[0]->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
-	//draw_picture(gw->orid[1], gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
+	new_buffer (0, gw->gop->width, gw->gop->height, gw);
+	utils_grey_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+	//draw_image(gw->drawingarea0, gw->orig[0]);
+
+	new_buffer (1, gw->gop->width-1, gw->gop->height-1, gw);
+	utils_bayer_to_rgb(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	//draw_image(gw->drawingarea1, gw->orig[1]);
 	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea0), "expose_event", G_TYPE_NONE);
 
 }
