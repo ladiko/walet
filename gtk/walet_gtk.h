@@ -26,6 +26,8 @@ typedef struct  {
 	GtkWidget 	*open_button;
 	GtkWidget	*feet_button;
 	GtkWidget	*full_button;
+	GtkWidget	*zoom_in_button;
+	GtkWidget	*zoom_out_button;
 	// Drawingareas
 	Pixbuf	*orig[4];		//Original image
 	Pixbuf	*scal[4];		//Scaled image
@@ -40,7 +42,8 @@ typedef struct  {
 
 	gchar		*filename;
 	guint		statusbar_context_id;
-	gboolean 	scale;
+	gboolean 	feet;
+	gdouble		zoom;
 	//guint8		*buff; //Buffer for image loading.
 
 	//Walet structure

@@ -12,7 +12,18 @@ void new_buffer(guint n, guint width, guint height, GtkWalet *gw)
 	//g_printf("gtk_widget_set_size_request pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
 }
 
-void scale(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal)
+void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
+{
+	scal->width 	= (guint)(((gdouble)orig->width)*zoom);
+	scal->height 	= (guint)(((gdouble)orig->height)*zoom);
+	if(scal->init) gdk_pixbuf_unref (scal->pxb);
+	if(zoom < 1.) 	scal->pxb = gdk_pixbuf_scale_simple (orig->pxb, scal->width, scal->height, GDK_INTERP_BILINEAR);
+	else			scal->pxb = gdk_pixbuf_scale_simple (orig->pxb, scal->width, scal->height, GDK_INTERP_NEAREST);
+	scal->init = 1;
+
+}
+
+void feet(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal)
 {
 	//Pixbuf *scal;
 
@@ -121,22 +132,139 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw)
 {
-	gw->scale = 1;
+	gw->feet = 1;
 	if(gw->orig[0]->init){
-		scale(gw->viewport0, gw->orig[0], gw->scal[0]);
+		feet(gw->viewport0, gw->orig[0], gw->scal[0]);
 		draw_image(gw->drawingarea0, gw->scal[0]);
 	}
 	if(gw->orig[1]->init){
-		scale(gw->viewport1, gw->orig[1], gw->scal[1]);
+		feet(gw->viewport1, gw->orig[1], gw->scal[1]);
 		draw_image(gw->drawingarea1, gw->scal[1]);
+	}
+	if(gw->orig[2]->init){
+		feet(gw->viewport2, gw->orig[2], gw->scal[2]);
+		draw_image(gw->drawingarea2, gw->scal[2]);
+	}
+	if(gw->orig[3]->init){
+		feet(gw->viewport3, gw->orig[3], gw->scal[3]);
+		draw_image(gw->drawingarea3, gw->scal[3]);
 	}
 }
 
 void on_full_button_clicked (GtkObject *object, GtkWalet *gw)
 {
-	gw->scale = 0;
+	gw->feet = 0;
+	gw->zoom = 1.;
 	if(gw->orig[0]->init) draw_image(gw->drawingarea0, gw->orig[0]);
 	if(gw->orig[1]->init) draw_image(gw->drawingarea1, gw->orig[1]);
+	if(gw->orig[2]->init) draw_image(gw->drawingarea2, gw->orig[2]);
+	if(gw->orig[3]->init) draw_image(gw->drawingarea3, gw->orig[3]);
+}
+
+void on_zoom_in_button_clicked (GtkObject *object, GtkWalet *gw)
+{
+	if(gw->feet == 1){
+		if(gw->orig[0]->init) draw_image(gw->drawingarea0, gw->orig[0]);
+		if(gw->orig[1]->init) draw_image(gw->drawingarea1, gw->orig[1]);
+		if(gw->orig[2]->init) draw_image(gw->drawingarea2, gw->orig[2]);
+		if(gw->orig[3]->init) draw_image(gw->drawingarea3, gw->orig[3]);
+		gw->feet = 0;
+		gw->zoom = 1.;
+	} else {
+		gw->zoom *= 2.;
+		if(gw->orig[0]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea0, gw->orig[0]);
+			} else {
+				zoom(gw->orig[0], gw->scal[0], gw->zoom);
+				draw_image(gw->drawingarea0, gw->scal[0]);
+			}
+		}
+		if(gw->orig[1]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea1, gw->orig[1]);
+			} else {
+				zoom(gw->orig[1], gw->scal[1], gw->zoom);
+				draw_image(gw->drawingarea1, gw->scal[1]);
+			}
+		}
+		if(gw->orig[2]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea2, gw->orig[2]);
+			} else {
+				zoom(gw->orig[2], gw->scal[2], gw->zoom);
+				draw_image(gw->drawingarea2, gw->scal[2]);
+			}
+		}
+		if(gw->orig[3]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea3, gw->orig[3]);
+			} else {
+				zoom(gw->orig[3], gw->scal[3], gw->zoom);
+				draw_image(gw->drawingarea3, gw->scal[3]);
+			}
+		}
+	}
+	//g_printf("zoom = %f feet = %d \n", gw->zoom, gw->feet);
+}
+
+void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
+{
+	if(gw->feet == 1){
+		gw->feet = 0;
+		gw->zoom = 0.5;
+		if(gw->orig[0]->init) {
+			zoom(gw->orig[0], gw->scal[0], gw->zoom);
+			draw_image(gw->drawingarea0, gw->scal[0]);
+		}
+		if(gw->orig[1]->init) {
+			zoom(gw->orig[1], gw->scal[1], gw->zoom);
+			draw_image(gw->drawingarea1, gw->scal[1]);
+		}
+		if(gw->orig[2]->init) {
+			zoom(gw->orig[2], gw->scal[2], gw->zoom);
+			draw_image(gw->drawingarea2, gw->scal[2]);
+		}
+		if(gw->orig[3]->init) {
+			zoom(gw->orig[3], gw->scal[3], gw->zoom);
+			draw_image(gw->drawingarea3, gw->scal[3]);
+		}
+	} else {
+		gw->zoom /= 2.;
+		if(gw->orig[0]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea0, gw->orig[0]);
+			} else {
+				zoom(gw->orig[0], gw->scal[0], gw->zoom);
+				draw_image(gw->drawingarea0, gw->scal[0]);
+			}
+		}
+		if(gw->orig[1]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea1, gw->orig[1]);
+			} else {
+				zoom(gw->orig[1], gw->scal[1], gw->zoom);
+				draw_image(gw->drawingarea1, gw->scal[1]);
+			}
+		}
+		if(gw->orig[2]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea2, gw->orig[2]);
+			} else {
+				zoom(gw->orig[2], gw->scal[2], gw->zoom);
+				draw_image(gw->drawingarea2, gw->scal[2]);
+			}
+		}
+		if(gw->orig[3]->init){
+			if(gw->zoom == 1.) {
+				draw_image(gw->drawingarea3, gw->orig[3]);
+			} else {
+				zoom(gw->orig[3], gw->scal[3], gw->zoom);
+				draw_image(gw->drawingarea3, gw->scal[3]);
+			}
+		}
+	}
+	//g_printf("zoom = %f feet = %d \n", gw->zoom, gw->feet);
 }
 
 gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
@@ -144,11 +272,13 @@ gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event,
 	//gtk_widget_set_size_request(widget, w, h);
 	//g_printf("on_drawingarea0_expose_event \n");
 	if(gw->orig[0]->init){
-		if(gw->scale) {
-			scale(gw->viewport0, gw->orig[0], gw->scal[0]);
+		if(gw->feet) {
+			feet(gw->viewport0, gw->orig[0], gw->scal[0]);
 			draw_image(gw->drawingarea0, gw->scal[0]);
-		} else {
-			draw_image(gw->drawingarea0, gw->orig[0]);
+		} else{
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea0, gw->orig[0]);
+			else				draw_image(gw->drawingarea0, gw->scal[0]);
+
 		}
 	}
 	return TRUE;
@@ -159,11 +289,13 @@ gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event,
 	//gtk_widget_set_size_request(widget, w, h);
 	//g_printf("on_drawingarea0_expose_event \n");
 	if(gw->orig[1]->init){
-		if(gw->scale) {
-			scale(gw->viewport1, gw->orig[1], gw->scal[1]);
+		if(gw->feet) {
+			feet(gw->viewport1, gw->orig[1], gw->scal[1]);
 			draw_image(gw->drawingarea1, gw->scal[1]);
-		} else {
-			draw_image(gw->drawingarea1, gw->orig[1]);
+		} else{
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea1, gw->orig[1]);
+			else				draw_image(gw->drawingarea1, gw->scal[1]);
+
 		}
 	}
 	return TRUE;
@@ -197,6 +329,8 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->open_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "open_button"));
 	gw->feet_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "feet_button"));
 	gw->full_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "full_button"));
+	gw->zoom_in_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_in_button"));
+	gw->zoom_out_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_out_button"));
 	// Drawingareas
 	gw->drawingarea0	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
@@ -218,22 +352,24 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->scal[2] = g_slice_new(Pixbuf); gw->scal[2]->init = 0;
 	gw->scal[3] = g_slice_new(Pixbuf); gw->scal[3]->init = 0;
 
-	gw->scale = 1;
+	gw->feet = 1; gw->zoom = 1.;
 
 
 	//connect signals, don't work now
 	//gtk_builder_connect_signals(builder, wlgtk);
 
-    g_signal_connect(G_OBJECT(gw->window)		, "destroy", 		G_CALLBACK (on_quit_activate), gw);
-    g_signal_connect(G_OBJECT(gw->menu_open)	, "activate", 		G_CALLBACK (on_open_button_clicked), gw);
-    g_signal_connect(G_OBJECT(gw->menu_quit)	, "activate", 		G_CALLBACK (on_quit_activate), gw);
+    g_signal_connect(G_OBJECT(gw->window)			, "destroy", 		G_CALLBACK (on_quit_activate), gw);
+    g_signal_connect(G_OBJECT(gw->menu_open)		, "activate", 		G_CALLBACK (on_open_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), gw);
 
-    g_signal_connect(G_OBJECT(gw->open_button)	, "clicked"	, 		G_CALLBACK (on_open_button_clicked), gw);
-    g_signal_connect(G_OBJECT(gw->feet_button)	, "clicked"	, 		G_CALLBACK (on_feet_button_clicked), gw);
-    g_signal_connect(G_OBJECT(gw->full_button)	, "clicked"	, 		G_CALLBACK (on_full_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->open_button)		, "clicked"	, 		G_CALLBACK (on_open_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->feet_button)		, "clicked"	, 		G_CALLBACK (on_feet_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->full_button)		, "clicked"	, 		G_CALLBACK (on_full_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->zoom_in_button)	, "clicked"	, 		G_CALLBACK (on_zoom_in_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->zoom_out_button)	, "clicked"	, 		G_CALLBACK (on_zoom_out_button_clicked), gw);
 
-    g_signal_connect(G_OBJECT(gw->drawingarea0)	, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea1)	, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea0)		, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea1)		, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
     //g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
     //g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
 
