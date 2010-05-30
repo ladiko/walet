@@ -164,12 +164,13 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGr
 			rgb[xwy3 + 2] = (y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]))&0xFF;
 		}
 	}*/
+
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
 			y2 = oe(a,y);
 			x2 = oe(b,x);
 			xwy = x + yw;
-			wy = (x + yw1);
+			wy 	= x + yw1;
 			xwy3 = wy + wy + wy;
 			rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
 			rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :

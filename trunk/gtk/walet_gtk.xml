@@ -245,7 +245,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkToolItem" id="toolitem8">
+              <object class="GtkToolItem" id="toolitem6">
                 <property name="visible">True</property>
                 <child>
                   <object class="GtkToolButton" id="full_button">
@@ -262,7 +262,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkToolItem" id="toolitem6">
+              <object class="GtkToolItem" id="toolitem5">
                 <property name="visible">True</property>
                 <child>
                   <object class="GtkVSeparator" id="vseparator1">
@@ -278,12 +278,65 @@
               <object class="GtkToolItem" id="toolitem7">
                 <property name="visible">True</property>
                 <child>
-                  <object class="GtkToolItem" id="toolitem5">
+                  <object class="GtkToolButton" id="zoom_in_button">
                     <property name="visible">True</property>
-                    <child>
-                      <placeholder/>
-                    </child>
+                    <property name="label" translatable="yes">Open file</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-zoom-in</property>
+                    <signal name="clicked" handler="on_zoom_in_button_clicked"/>
                   </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem8">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="zoom_out_button">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Open file</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-zoom-out</property>
+                    <signal name="clicked" handler="on_zoom_out_button_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem9">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkVSeparator" id="vseparator3">
+                    <property name="visible">True</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem10">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem11">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
