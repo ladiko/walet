@@ -15,7 +15,7 @@ static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\param out 			The output line.
 ///	\param w 			The line width.
 {
-	int wt, i, j, sj, shift = (w>>1) + w%2;
+	int wt, i, j, sj, shift = (w>>1) + (w&1);
 	wt = w-2;
 	out[shift] = in[1] - ((in[0] + in[2])>>1);
 	out[0] = in[0] + (out[shift]>>1);
@@ -24,7 +24,7 @@ static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 		out[sj] = in[i+1] - ((in[i] + in[i+2])>>1);
 		out[j]  = in[i] + ((out[sj-1] + out[sj])>>2);
 	}
-	if(w%2){
+	if(w&1){
 		out[j] = in[i] + (out[shift+j-1]>>1);
 	} else{
 		sj = shift+j;
@@ -40,7 +40,7 @@ static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\param out 			The output line.
 ///	\param w 			The line width.
 {
-	int wt, i, j, sj, shift = (w>>1) + w%2;
+	int wt, i, j, sj, shift = (w>>1) + (w&1);
 	wt = w-2;
 	out[0] = in[0] - (in[shift]>>1);
 	for(i=2,j=0; i <= wt; i+=2,j++){
@@ -48,7 +48,7 @@ static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 		out[i] = in[j+1] - ((in[sj] + in[sj+1])>>2);
 		out[i-1] = in[sj] + ((out[i-2] + out[i])>>1);
 	}
-	if(w%2){
+	if(w&1){
 		sj = shift+j;
 		out[i] = in[j+1] - (in[sj]>>1);
 		out[i-1] = in[sj] + ((out[i-2] + out[i])>>1);
@@ -67,7 +67,7 @@ static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const u
 ///	\param h 			The image height.
 {
 	uint32 i, k=1;
-	uint32 h2 = (h>>1), h1 = (h>>1) + h%2, w2 = (w>>1), w1 = (w>>1) + w%2;
+	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
 	int kw1, kwi, kw, k1;
 
@@ -96,7 +96,7 @@ static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const u
 			out[s[1]+kw1] = in[kwi-w]  + ((out[s[3]+kw1-w2] + out[s[3]+kw1])>>2);
 		}
 	}
-	if(h%2){
+	if(h&1){
 		k1 = (k>>1)*w1; kw = k*w;
 		for(i=0; i<w1; i++){
 			kw1 = k1+i; kwi = kw+i;
@@ -132,7 +132,7 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 ///	\param h 			The image height.
 {
 	uint32 i, k=0;
-	uint32 h2 = (h>>1), h1 = (h>>1) + h%2, w2 = (w>>1), w1 = (w>>1) + w%2;
+	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
 	int kw1, kwi, kw, k1;
 
@@ -158,7 +158,7 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 			out[kwi-w] = in[s[3]+kw1-w2] + ((out[kwi-(w<<1)] + out[kwi])>>1);
 		}
 	}
-	if(h%2){
+	if(h&1){
 		k1 = (k>>1)*w1; kw = k*w;
 		for(i=0; i<w1; i++){
 			kw1 = k1+i; kwi = kw+i;
@@ -287,16 +287,16 @@ void image_idwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint
 			for(k=0; k<4; k++) {
 				for(i=0; i<(isteps-1); i++){
 					st = ((steps-1)*3+1)*k;
-					h = sub[3*i+1+st].size.y + sub[3*i+2+st].size.y;
 					w = sub[3*i+1+st].size.x + sub[3*i+2+st].size.x;
+					h = sub[3*i+1+st].size.y + sub[3*i+2+st].size.y;
 					idwt53_2d_v(&img[sub[st].loc], s1, w, h);
 					for(j=0; j < h; j++) idwt53_1d_1h(&s1[j*w], &img[sub[st].loc+j*w], w);
 				}
 			}
 			if(steps == isteps) { w = im->width; h = im->height; }
 			else {
-				h = sub[3*i+1].size.y + sub[3*i+1 + ((steps-1)*3+1)*2].size.y;
 				w = sub[3*i+2].size.x + sub[3*i+2 + ((steps-1)*3+1)  ].size.x;
+				h = sub[3*i+1].size.y + sub[3*i+1 + ((steps-1)*3+1)*2].size.y;
 			}
 
 			idwt53_2d_v(img, s1, w, h);
@@ -305,8 +305,8 @@ void image_idwt_53(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint
 		}
 	} else {
 		for(i=0; i<isteps; i++){
-			h = sub[3*i+1].size.y + sub[3*i+2].size.y;
 			w = sub[3*i+1].size.x + sub[3*i+2].size.x;
+			h = sub[3*i+1].size.y + sub[3*i+2].size.y;
 			//printf("1.y = %d 2.y = %d 2.x = %d 1.x = %d\n",sub[0][3*i+1]->size.y, sub[0][3*i+2]->size.y, sub[0][3*i+2]->size.x, sub[0][3*i+1]->size.x);
 			idwt53_2d_v(img, s1, w, h);
 			for(j=0; j < h; j++) idwt53_1d_1h(&s1[j*w], &img[j*w], w);

@@ -10,6 +10,10 @@ typedef struct {
 	uint32 			steps;  		// Steps of DWT
 	uint32			gop_size;		// GOP size
 	uint32			rates;			// Frame rates
+
+	uint32			cur_gop_frame;	// The current gop frame
+	uint64			cur_stream_frame;	// The current stream frame
+
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
 	//StreamData		*sd;		//Pointer to stream data.
 	Frame			*frames;	//Pointer to frames array

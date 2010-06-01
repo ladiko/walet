@@ -6,6 +6,7 @@ typedef struct{
 	Image 	img[3];	//Pointer to image
 	uint32 	size;	//The number of pixeles.
 	imgtype *buf;	//The pointer to temporary buffer in GOP structure
+	uint32 	state;	//The state of frame
 }	Frame;
 
 #include <gop.h>

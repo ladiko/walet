@@ -312,6 +312,25 @@ void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
 	//g_printf("zoom = %f feet = %d \n", gw->zoom, gw->feet);
 }
 
+void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	frame_dwt_53(gw->gop, gw->gop->cur_gop_frame);
+	new_buffer (2, gw->gop->width, gw->gop->height, gw);
+	utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
+	draw_image(gw->drawingarea2, gw->orig[2]);
+}
+
+void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
+	new_buffer (3, gw->gop->width, gw->gop->height, gw);
+	utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
+	//new_buffer (3, gw->gop->width-1, gw->gop->height-1, gw);
+	//utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
+	draw_image(gw->drawingarea3, gw->orig[3]);
+}
+
 gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
 	//gtk_widget_set_size_request(widget, w, h);
@@ -340,6 +359,40 @@ gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event,
 		} else{
 			if(gw->zoom == 1.) 	draw_image(gw->drawingarea1, gw->orig[1]);
 			else				draw_image(gw->drawingarea1, gw->scal[1]);
+
+		}
+	}
+	return TRUE;
+}
+
+gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
+{
+	//gtk_widget_set_size_request(widget, w, h);
+	//g_printf("on_drawingarea0_expose_event \n");
+	if(gw->orig[2]->init){
+		if(gw->feet) {
+			feet(gw->viewport2, gw->orig[2], gw->scal[2]);
+			draw_image(gw->drawingarea2, gw->scal[2]);
+		} else{
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea2, gw->orig[2]);
+			else				draw_image(gw->drawingarea2, gw->scal[2]);
+
+		}
+	}
+	return TRUE;
+}
+
+gboolean on_drawingarea3_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
+{
+	//gtk_widget_set_size_request(widget, w, h);
+	//g_printf("on_drawingarea0_expose_event \n");
+	if(gw->orig[3]->init){
+		if(gw->feet) {
+			feet(gw->viewport3, gw->orig[3], gw->scal[3]);
+			draw_image(gw->drawingarea3, gw->scal[3]);
+		} else{
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea3, gw->orig[3]);
+			else				draw_image(gw->drawingarea3, gw->scal[3]);
 
 		}
 	}
@@ -377,6 +430,8 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->full_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "full_button"));
 	gw->zoom_in_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_in_button"));
 	gw->zoom_out_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_out_button"));
+	gw->dwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "dwt_button"));
+	gw->idwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "idwt_button"));
 	// Drawingareas
 	gw->drawingarea0	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
@@ -417,11 +472,13 @@ gboolean  init_gw(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->full_button)		, "clicked"	, 		G_CALLBACK (on_full_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->zoom_in_button)	, "clicked"	, 		G_CALLBACK (on_zoom_in_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->zoom_out_button)	, "clicked"	, 		G_CALLBACK (on_zoom_out_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->dwt_button)		, "clicked"	, 		G_CALLBACK (on_dwt_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->idwt_button)		, "clicked"	, 		G_CALLBACK (on_idwt_button_clicked), gw);
 
     g_signal_connect(G_OBJECT(gw->drawingarea0)		, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
     g_signal_connect(G_OBJECT(gw->drawingarea1)		, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
-    //g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
-    //g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));

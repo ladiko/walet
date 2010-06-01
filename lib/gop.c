@@ -42,6 +42,8 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 		gop->frames[0].img[1].sub = gop->sub[1]; // Set pointer to subband to frame[0]
 		gop->frames[0].img[2].sub = gop->sub[2]; // Set pointer to subband to frame[0]
 	}
+	gop->cur_stream_frame = 0;
+	gop->cur_gop_frame = 0;
 	return gop;
 }
 
@@ -84,6 +86,8 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 		gop->frames[0].img[1].sub = gop->sub[1]; // Set pointer to subband to frame[0]
 		gop->frames[0].img[2].sub = gop->sub[2]; // Set pointer to subband to frame[0]
 	}
+	gop->cur_stream_frame = 0;
+	gop->cur_gop_frame = 0;
 	return gop;
 }
 
