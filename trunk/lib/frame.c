@@ -27,6 +27,7 @@ void frames_init(GOP *gop, uint32 fr)
 		image_init(&frame->img[2], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
 		frame->size = (frame->size*3)>>1;
 	}
+	frame->state = 0;
 }
 
 void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
@@ -47,6 +48,7 @@ void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
 		image_copy(&frame->img[1], gop->bpp, u);
 		image_copy(&frame->img[2], gop->bpp, v);
 	}
+	frame->state = FRAME_COPY;
 }
 
 void frame_dwt_53(GOP *gop, uint32 fr)
@@ -56,6 +58,11 @@ void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
+	//Check frame state
+	if(!((frame->state & FRAME_COPY) || (frame->state & IDWT))) {
+		printf("Frame copy or IDWT transform should be before DWT transform\n");
+		return;
+	}
 
 	frame->img[0].sub = gop->sub[0]; //Set current image for DWT transform
 	image_dwt_53(&frame->img[0], gop->color, gop->steps, gop->buf);
@@ -65,6 +72,7 @@ void frame_dwt_53(GOP *gop, uint32 fr)
 		image_dwt_53(&frame->img[1], gop->color, gop->steps, gop->buf);
 		image_dwt_53(&frame->img[2], gop->color, gop->steps, gop->buf);
 	}
+	frame->state = DWT;
 }
 
 void frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
@@ -75,6 +83,11 @@ void frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
 /// \param	isteps		The steps of IDWT should be lees or equal DWT steps
 {
 	Frame *frame = &gop->frames[fr];
+	//Check frame state
+	//if(!((frame->state & RANGE_DECODER) || (frame->state & DWT))) {
+	//	printf("Range decode or DWT transform should be before IDWT transform\n");
+	//	return;
+	//}
 
 	frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
 	image_idwt_53(&frame->img[0], gop->color, gop->steps, gop->buf, isteps);
@@ -84,6 +97,7 @@ void frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
 		image_idwt_53(&frame->img[1], gop->color, gop->steps, gop->buf, isteps);
 		image_idwt_53(&frame->img[2], gop->color, gop->steps, gop->buf, isteps);
 	}
+	frame->state = IDWT;
 }
 
 void frame_fill_subb(GOP *gop, uint32 fr)

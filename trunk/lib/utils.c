@@ -34,7 +34,7 @@ int g[9][2] = {
 
 
 
-static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint32 w, uint32 h, uint32 size, uint32 shift)
+static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y;
 	for(y=0; y < h; y++ ){
@@ -46,7 +46,7 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 h0, uint32 w0, uint3
 	}
 }
 
-uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps)
+uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps)
 //For vizualisation only
 {
 	uint32 k, h, w, h0, w0, h1, w1, st;
@@ -69,56 +69,57 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 					h0 = sub[k*st + 3*i-2].size.y; w0 = sub[k*st + 3*i-1].size.x;
 					h  = sub[k*st + 3*i-2].size.y;  w = sub[k*st + 3*i-2].size.x;
 					im = &img->img[sub[k*st + 3*i-2].loc];
-					drawrect(rgb, im, h1, w1+w0, h, w, img->width, 128);
+					drawrect(rgb, im, w1+w0, h1, w, h, img->width, 128);
 
 					h = sub[k*st + 3*i-1].size.y; w = sub[k*st + 3*i-1].size.x;
 					im = &img->img[sub[k*st + 3*i-1].loc];
-					drawrect(rgb, im, h1+h0, w1, h, w, img->width, 128);
+					drawrect(rgb, im, w1, h1+h0, w, h, img->width, 128);
 
 					h = sub[k*st + 3*i].size.y; w = sub[k*st + 3*i].size.x;
 					im = &img->img[sub[k*st + 3*i].loc];
-					drawrect(rgb, im, h1+h0, w1+w0, h, w, img->width, 128);
+					drawrect(rgb, im, w1+w0, h1+h0, w, h, img->width, 128);
 				}
 				h = sub[k*st ].size.y; w = sub[k*st].size.x;
 				im = &img->img[sub[k*st].loc];
-				drawrect(rgb, im, h1, w1, h, w, img->width, 128);
+				drawrect(rgb, im, w1, h1, w, h, img->width, 128);
 			}
 		} else {
+
 			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
 			h  = sub[1].size.y; w  = sub[1].size.x;
 			im = &img->img[sub[1].loc];
-			drawrect(rgb, im, 0, w0, h, w, img->width, 128);
+			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
 
 			h = sub[2].size.y; w = sub[2].size.x;
 			im = &img->img[sub[2].loc];
-			drawrect(rgb, im, h0, 0, h, w, img->width, 128);
+			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
 
 			h = sub[3].size.y; w = sub[3].size.x;
 			im = &img->img[sub[3].loc];
-			drawrect(rgb, im, h0, w0, h, w, img->width, 128);
+			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
 
 			h = sub[0].size.y; w = sub[0].size.x;
 			im = &img->img[sub[0].loc];
-			drawrect(rgb, im, 0, 0, h, w, img->width, 0);
+			drawrect(rgb, im, 0, 0, w, h, img->width, 0);
 		}
 	} else {
 		for(i=steps; i>0; i--){
 			h0 = sub[3*i-2].size.y; w0 = sub[3*i-1].size.x;
 			h  = sub[3*i-2].size.y; w  = sub[3*i-2].size.x;
 			im = &img->img[sub[3*i-2].loc];
-			drawrect(rgb, im, 0, w0, h, w, img->width, 128);
+			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
 
 			h = sub[3*i-1].size.y; w = sub[3*i-1].size.x;
 			im = &img->img[sub[3*i-1].loc];
-			drawrect(rgb, im, h0, 0, h, w, img->width, 128);
+			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
 
 			h = sub[3*i].size.y; w = sub[3*i].size.x;
 			im = &img->img[sub[3*i].loc];
-			drawrect(rgb, im, h0, w0, h, w, img->width, 128);
+			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
 		}
 		h = sub[0].size.y; w = sub[0].size.x;
 		im = &img->img[sub[0].loc];
-		drawrect(rgb, im, 0, 0, h, w, img->width, 0);
+		drawrect(rgb, im, 0, 0, w, h, img->width, 0);
 	}
 	return rgb;
 }
@@ -126,7 +127,7 @@ uchar* utils_subband_draw(uchar *rgb, Image *img, ColorSpace color, uint32 steps
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
 #define lb(x) (x&0xFF)
 
-uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
+uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
@@ -168,7 +169,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGr
 	return rgb;
 }
 
-uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h)
+uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){

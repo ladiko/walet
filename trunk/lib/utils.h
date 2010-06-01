@@ -10,9 +10,9 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-uchar* 		utils_subband_draw	(uchar *rgb, Image *img, ColorSpace color, uint32 steps);
-uchar* 		utils_bayer_to_rgb	(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
-uchar* 		utils_grey_to_rgb	(imgtype *img, uchar *rgb, uint32 height, uint32 width);
+uchar* 		utils_subband_draw	(Image *img, uchar *rgb, ColorSpace color, uint32 steps);
+uchar* 		utils_bayer_draw	(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
+uchar* 		utils_grey_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 width);
 imgtype* 	utils_cat			(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
 void 		utils_fill_bayer_hist	(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 h, uint32 w,  BayerGrid bay, uint32 bits);
 void 		utils_white_balance	(imgtype *in, imgtype *out, uint32 *hist, uint16 *look, uint32 h, uint32 w, BayerGrid bay, uint32 in_bits, uint32 out_bits,Gamma gamma);

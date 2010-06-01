@@ -40,7 +40,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="always_show_image">True</property>
-                        <signal name="activate" handler="on_open_activate"/>
+                        <signal name="activate" handler="on_open_button_clicked"/>
                       </object>
                     </child>
                     <child>
@@ -50,7 +50,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="always_show_image">True</property>
-                        <signal name="activate" handler="on_save_activate"/>
+                        <signal name="activate" handler="on_save_button_clicked"/>
                       </object>
                     </child>
                     <child>
@@ -60,7 +60,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="always_show_image">True</property>
-                        <signal name="activate" handler="on_save_as_activate"/>
+                        <signal name="activate" handler="on_save_as_button_clicked"/>
                       </object>
                     </child>
                     <child>
@@ -174,7 +174,8 @@
                 <child>
                   <object class="GtkToolButton" id="new_button">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">Open file</property>
+                    <property name="tooltip_text" translatable="yes">New file</property>
+                    <property name="label" translatable="yes">toolbutton</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-new</property>
                     <signal name="clicked" handler="on_new_button_clicked"/>
@@ -191,6 +192,7 @@
                 <child>
                   <object class="GtkToolButton" id="open_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Open file</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-open</property>
@@ -208,6 +210,7 @@
                 <child>
                   <object class="GtkToolButton" id="save_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Save file</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-floppy</property>
@@ -238,6 +241,7 @@
                 <child>
                   <object class="GtkToolButton" id="feet_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Feet images</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-zoom-fit</property>
@@ -255,6 +259,7 @@
                 <child>
                   <object class="GtkToolButton" id="full_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Full size images</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-zoom-100</property>
@@ -285,6 +290,7 @@
                 <child>
                   <object class="GtkToolButton" id="zoom_in_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Zoom in</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-zoom-in</property>
@@ -302,6 +308,7 @@
                 <child>
                   <object class="GtkToolButton" id="zoom_out_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Zoom out</property>
                     <property name="label" translatable="yes">Open file</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-zoom-out</property>
@@ -330,7 +337,14 @@
               <object class="GtkToolItem" id="toolitem10">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkToolButton" id="dwt_button">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">DWT transform</property>
+                    <property name="label" translatable="yes">Open file</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-go-up</property>
+                    <signal name="clicked" handler="on_dwt_button_clicked"/>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -339,6 +353,46 @@
             </child>
             <child>
               <object class="GtkToolItem" id="toolitem11">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="idwt_button">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">IDWT transform</property>
+                    <property name="label" translatable="yes">Open file</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-go-down</property>
+                    <signal name="clicked" handler="on_idwt_button_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem12">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem13">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem14">
                 <property name="visible">True</property>
                 <child>
                   <placeholder/>

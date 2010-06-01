@@ -29,6 +29,9 @@ typedef struct  {
 	GtkWidget	*full_button;
 	GtkWidget	*zoom_in_button;
 	GtkWidget	*zoom_out_button;
+	GtkWidget	*dwt_button;
+	GtkWidget	*idwt_button;
+
 	// Drawingareas
 	Pixbuf	*orig[4];		//Original image
 	Pixbuf	*scal[4];		//Scaled image
