@@ -54,6 +54,7 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->color  	= color;
 	gop->bg			= bg;
 	gop->bpp		= bpp;
+	gop->steps		= steps;
 	gop->gop_size	= gop_size;
 	gop->rates		= rates;
 
@@ -85,3 +86,71 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	}
 	return gop;
 }
+
+void walet_decoder_free(GOP *gop)
+{
+}
+
+void walet_encoder_free(GOP *gop)
+{
+}
+
+uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
+{
+    FILE *wl;
+    WaletHeader wh;
+    uint32 i;
+    uint64 size = 0;
+
+    wh.marker	= 0x776C;
+    wh.width	= gop->width;
+    wh.height	= gop->height;
+    wh.color	= gop->color;
+    wh.bg		= gop->bg;
+    wh.bpp		= gop->bpp;
+    wh.steps	= gop->steps;
+    wh.gop_size	= gop->gop_size;
+    wh.rates	= gop->rates;
+
+	wl = fopen(filename, "wb");
+    if(wl == NULL) {
+    	printf("Can't write to file %s\n", filename);
+    	return;
+    }
+    //Write header
+    fwrite (&wh, sizeof(wh), 1, wl); size += sizeof(wh);
+    //Write frames
+    for(i=0; i < num; i++) size += frame_write(gop, i, wl);
+    //Close file
+    fclose(wl);
+
+    return size;
+}
+
+uint32 walet_read_stream(GOP *gop, uint32 num, const char *filename)
+{
+    FILE *wl;
+    WaletHeader wh;
+    uint32 i;
+    uint64 size = 0;
+
+	wl = fopen(filename, "rb");
+    if(wl == NULL) {
+    	printf("Can't open file %s\n", filename);
+    	return;
+    }
+
+    //Read header
+    if(fread(&wh, sizeof(wh), 1, wl) != 1) { printf("Header read error\n"); return; }
+    size += sizeof(wh);
+    if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
+    gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates);
+    //Write frames
+    for(i=0; i < num; i++) size += frame_read(gop, i, wl);
+    //Close file
+    fclose(wl);
+
+    return size;
+}
+
+

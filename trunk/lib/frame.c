@@ -1,9 +1,5 @@
 #include <walet.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
 
 void frames_init(GOP *gop, uint32 fr)
 ///	\fn	void frames_init(GOP *gop, uint32 fr)
@@ -180,7 +176,7 @@ uint32 frame_range_decode(GOP *gop, uint32 fr)
 	return size;
 }
 
-uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
+uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Write frame in file.
 ///	\param	gop			The pointer to the GOP structure.
@@ -188,56 +184,62 @@ uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 //	\param	filename	The file name.
 ///	\retval				The size of file.
 {
-    FILE *wl;
-    WaletHeader wh;
-    uchar *bits[3];
-    uint32 i, sz, sz1, size=0;
+    //FILE *wl;
+    //WaletHeader wh;
+    uchar *bits;
+    uint32 i, sz, size=0, fsize;
     Frame *frm = &gop->frames[fr];
+    uint32  rgb = (gop->color != GREY  && gop->color != BAYER);
 
     //Fill header
-    wh.marker	= 0x776C;
-    wh.width	= gop->width;
-    wh.height	= gop->height;
-    wh.color	= gop->color;
-    wh.bg		= gop->bg;
-    wh.bpp		= gop->bpp;
-    wh.steps	= gop->steps;
+    //wh.marker	= 0x776C;
+    //wh.width	= gop->width;
+    //wh.height	= gop->height;
+    //wh.color	= gop->color;
+    //wh.bg		= gop->bg;
+    //wh.bpp		= gop->bpp;
+    //wh.steps	= gop->steps;
+    //wh.gop_size	= gop->gop_size;
+    //wh.rates	= gop->rates;
 
-    sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : gop->steps*3 + 1;
-    bits[0] = (uchar *)calloc(sz, sizeof(uchar));
-    for(i=0; i<sz; i++)  bits[0][i] = (frm->img[0].sub[i].a_bits<<4) | frm->img[0].sub[i].q_bits;
+    //Fill and write bits array
+    sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : (gop->steps*3 + 1);
+    bits = (uchar *)calloc(sz, sizeof(uchar));
+    for(i=0; i<sz; i++)  bits[i] = (frm->img[0].sub[i].a_bits<<4) | frm->img[0].sub[i].q_bits;
+    fwrite (&bits, 1, sz , wl); size += sz;
+    fsize = frm->img[0].c_size;
 
-    if(gop->color != GREY  && gop->color != BAYER) {
-    	sz1 = gop->steps*3 + 1;
-    	bits[1] = (uchar *)calloc(sz, sizeof(uchar));
-    	bits[2] = (uchar *)calloc(sz, sizeof(uchar));
-    	for(i=0; i<sz; i++)  bits[1][i] = (frm->img[1].sub[i].a_bits<<4) | frm->img[1].sub[i].q_bits;
-    	for(i=0; i<sz; i++)  bits[2][i] = (frm->img[2].sub[i].a_bits<<4) | frm->img[2].sub[i].q_bits;
+    if(rgb) {
+     	for(i=0; i<sz; i++)  bits[i] = (frm->img[1].sub[i].a_bits<<4) | frm->img[1].sub[i].q_bits;
+    	fwrite (&bits, 1, sz , wl); size += sz ;
+    	for(i=0; i<sz; i++)  bits[i] = (frm->img[2].sub[i].a_bits<<4) | frm->img[2].sub[i].q_bits;
+    	fwrite (&bits, 1, sz , wl); size += sz ;
+    	fsize += frm->img[1].c_size + frm->img[2].c_size;
     }
 
-	wl = fopen(filename, "wb");
-    if(wl == NULL) {
-    	printf("Can't write to file %s\n", filename);
-    	return;
-    }
-    //Write header
-    fwrite (&wh, sizeof(wh), 1, wl); size += sizeof(wh);
     //Write bits array
-    fwrite (&bits[0], 1, sz, wl); size += sz;
-    //Write data
-    fwrite (gop->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
-
-    if(gop->color != GREY  && gop->color != BAYER) {
-    	fwrite (&bits[1], 1, sz1, wl);  size += sz1;
-    	fwrite (&gop->buf[frm->img[0].c_size], 1, frm->img[1].c_size, wl); size += frm->img[1].c_size;
-    	fwrite (&bits[2], 1, sz1, wl);	size += sz1;
-    	fwrite (&gop->buf[frm->img[0].c_size+frm->img[1].c_size], 1, frm->img[2].c_size, wl); size += frm->img[2].c_size;
+    fwrite (&bits[0], 1, sz , wl); size += sz;
+    if(rgb) {
+    	fwrite (&bits[1], 1, sz , wl); size += sz ;
+    	fwrite (&bits[2], 1, sz , wl); size += sz ;
     }
-    fclose(wl);
+    //Write compress image size
+    fwrite (&fsize, 4, 1, wl); size += 4;
+    //Write data
+    fwrite (gop->buf, 1, fsize, wl); size += fsize;
+    //fwrite (gop->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
+
+   // if(rgb) {
+    	//fwrite (&frm->img[1].c_size, 4, 1, wl); size += 4;
+    	//fwrite (&gop->buf[frm->img[0].c_size], 1, frm->img[1].c_size, wl); size += frm->img[1].c_size;
+    	//fwrite (&frm->img[2].c_size, 4, 1, wl); size += 4;
+    	//fwrite (&gop->buf[frm->img[0].c_size+frm->img[1].c_size], 1, frm->img[2].c_size, wl); size += frm->img[2].c_size;
+    //}
+    free(bits);
     return size;
 }
 
-uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
+uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Read frame from file.
 ///	\param	gop			The pointer to the GOP structure.
@@ -245,37 +247,38 @@ uint32 frame_read(GOP *gop, uint32 fr, const char *filename)
 //	\param	filename	The file name.
 ///	\retval				The size of file.
 {
-    FILE *wl;
-    WaletHeader wh;
-    uchar *bits[3];
-    uint32 i, sz, sz1, size=0;
+    uchar *bits;
+    uint32 i, sz, size = 0, fsize;
     Frame *frm = &gop->frames[fr];
+    uint32  rgb = (gop->color != GREY  && gop->color != BAYER);
 
-	wl = fopen(filename, "rb");
-    if(wl == NULL) {
-    	printf("Can't open file %s\n", filename);
-    	return;
-    }
+    sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : (gop->steps*3 + 1);
+    bits = (uchar *)calloc(sz, sizeof(uchar));
 
-    //Read header
-    if(fread(&wh, sizeof(wh), 1, wl) != 1) {
-    	printf("Header read error\n", filename);
-    	return;
-    }
-    size += sizeof(wh);
-    if(wh.marker != 0x776C ){
-    	printf("It's not walet format file\n", filename);
-    	return;
-    }
-    // Fill Stream data stucture
-    gop->width = 	wh.width;
-    gop->height =	wh.height;
-    gop->color = 	wh.color;
-    gop->bg = 		wh.bg;
-    gop->bpp = 	wh.bpp;
-    gop->steps = 	wh.steps;
+     //Read bits array
+    if(fread (&bits, 1, sz, wl)!= 1) { printf("Bits array read error\n"); return; }
+    size += sz;
+    //Fill bits array;
+    for(i=0; i<sz; i++)  {frm->img[0].sub[i].a_bits = (bits[i]>>4);  frm->img[0].sub[i].q_bits = bits[i]&0xF; }
 
-    //if(gop->sd->color)
+    if(rgb) {
+        if(fread (&bits, 1, sz, wl)!= 1) { printf("Bits array read error\n"); return; }
+        size += sz;
+        for(i=0; i<sz; i++)  {frm->img[1].sub[i].a_bits = (bits[i]>>4);  frm->img[1].sub[i].q_bits = bits[i]&0xF; }
+        if(fread (&bits, 1, sz, wl)!= 1) { printf("Bits array read error\n"); return; }
+        size += sz;
+        for(i=0; i<sz; i++)  {frm->img[2].sub[i].a_bits = (bits[i]>>4);  frm->img[2].sub[i].q_bits = bits[i]&0xF; }
+    }
+    //Read compress image size
+    if(fread (&fsize, 4, 1, wl)!= 1) { printf("Bits array read error\n"); return; }
+    size += 4;
+    //Read data
+    if(fread (gop->buf, 1, fsize, wl)!= 1) { printf("Bits array read error\n"); return; }
+    size += fsize;
+
+    free(bits);
+
+    return size;
  }
 
 void frame_compress(GOP *gop, uint32 fr, uint32 times)

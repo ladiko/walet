@@ -9,6 +9,12 @@ typedef struct{
 }	Frame;
 
 #include <gop.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/time.h>
+#include <time.h>
+#include <stdlib.h>
+
 
 
 #ifdef __cplusplus
@@ -24,7 +30,7 @@ void	frame_bits_alloc	(GOP *gop, uint32 fr, uint32 times);
 void 	frame_quantization	(GOP *gop, uint32 fr);
 uint32 	frame_range_encode	(GOP *gop, uint32 fr);
 uint32 	frame_range_decode	(GOP *gop, uint32 fr);
-uint32 	frame_write			(GOP *gop, uint32 fr, const char *filename);
+uint32 	frame_write			(GOP *gop, uint32 fr, FILE *wl);
 void 	frame_compress		(GOP *gop, uint32 fr, uint32 times);
 void 	frame_decompress	(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, uint32 st);
 
