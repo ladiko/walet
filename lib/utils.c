@@ -150,20 +150,6 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGr
 		case(GBRG):{ a = 1; b = 0; break;}
 		case(RGGB):{ a = 0; b = 0; break;}
 	}
-	/*
-	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
-		for(x=0; x < w1; x++){
-			y2 = oe(a,y);
-			x2 = oe(b,x);
-			xwy = x + yw;
-			wy = (x + yw1);
-			xwy3 = wy + wy + wy;
-			rgb[xwy3    ] = (y2 ? (x2 ?  img[xwy    ] : img[xwy+1]) : (x2 ? img[xwy+w] : img[xwy+w+1]))&0xFF;
-			rgb[xwy3 + 1] = (y2 ? (x2 ? (img[xwy+w  ] + img[xwy+1])>>1 :   (img[xwy  ] + img[xwy+w+1])>>1) :
-								  (x2 ? (img[xwy+w+1] + img[xwy  ])>>1 :   (img[xwy+1] + img[xwy+w  ])>>1))&0xFF;
-			rgb[xwy3 + 2] = (y2 ? (x2 ?  img[xwy+w+1] : img[xwy+w]) : (x2 ? img[xwy+1] : img[xwy    ]))&0xFF;
-		}
-	}*/
 
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
@@ -178,6 +164,7 @@ uchar* utils_bayer_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGr
 			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
 		}
 	}
+
 	return rgb;
 }
 
@@ -185,9 +172,9 @@ uchar* utils_grey_to_rgb(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i]&0xFF;
-		rgb[j + 1] = img[i]&0xFF;
-		rgb[j + 2] = img[i]&0xFF;
+		rgb[j]     = lb(img[i]);
+		rgb[j + 1] = lb(img[i]);
+		rgb[j + 2] = lb(img[i]);
 		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
 	}
 	return rgb;

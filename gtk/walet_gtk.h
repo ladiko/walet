@@ -24,6 +24,7 @@ typedef struct  {
 	GtkWidget	*menu_quit;
 	//Toolbar widgets
 	GtkWidget 	*open_button;
+	GtkWidget	*save_button;
 	GtkWidget	*feet_button;
 	GtkWidget	*full_button;
 	GtkWidget	*zoom_in_button;
@@ -40,8 +41,10 @@ typedef struct  {
 	GtkWidget	*viewport2;
 	GtkWidget	*viewport3;
 
-	gchar		*filename;
+	gchar		*filename_open;
+	gchar		*filename_save;
 	guint		statusbar_context_id;
+	gboolean	new; 	// If file was not saved
 	gboolean 	feet;
 	gdouble		zoom;
 	//guint8		*buff; //Buffer for image loading.

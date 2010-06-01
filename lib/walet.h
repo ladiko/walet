@@ -139,9 +139,9 @@ typedef struct {
 	uchar		bg;				// Bayer grid pattern
 	uchar		bpp;			// Bits per pixel
 	uchar 		steps;  		// Steps of DWT
+	uchar		gop_size;		// GOP size
+	uchar		rates;			// Frame rates
 	//Compression			comp;			// Type of compression
-	//uint32				rates;			// Frame rates
-	//uint32				gop_size;		// GOP size
 } WaletHeader;
 
 

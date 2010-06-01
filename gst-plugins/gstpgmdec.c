@@ -254,8 +254,6 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		//      GST_SEEK_TYPE_SET, byts,
 		//      GST_SEEK_TYPE_SET, filter->size + byts);
 
-		//for(i=0; i<GST_BUFFER_SIZE(in); i++) g_printf("%2X ", inbuf[i]);
-		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA (in), GST_BUFFER_SIZE (in),GST_BUFFER_OFFSET (in));
 	}
 
 	//Check for the buffer size
@@ -264,18 +262,9 @@ static GstFlowReturn gst_pgmdec_chain (GstPad * pad, GstBuffer * in)
 		GST_BUFFER_OFFSET(filter->buff) += GST_BUFFER_SIZE(in);
 		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff),GST_BUFFER_OFFSET(filter->buff));
 		gst_buffer_unref(in);
-		//g_printf("DATA = %p OFSET = %X", GST_BUFFER_DATA (in), GST_BUFFER_OFFSET(in));
-		//filter->buff = gst_buffer_join(filter->buff, in);
-		//filter->buff = gst_buffer_merge (filter->buff, in);
-		//GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",
-		//		GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff), GST_BUFFER_OFFSET(filter->buff));
 		if(GST_BUFFER_OFFSET(filter->buff) != GST_BUFFER_SIZE(filter->buff)) return GST_FLOW_OK;
 	}
 
-	//gst_buffer_make_metadata_writable(in);
-	//GST_BUFFER_DATA (in) = filter->buff;
-	//GST_BUFFER_SIZE (in) = filter->size;
-	//GST_BUFFER_OFFSET(in)= 0;
 	GST_DEBUG_OBJECT (filter, "DATA = %p SIZE = %d OFFSET = %d",
 				GST_BUFFER_DATA(filter->buff), GST_BUFFER_SIZE(filter->buff), GST_BUFFER_OFFSET(filter->buff));
 

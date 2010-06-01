@@ -73,7 +73,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
-	gw->gop = walet_decoder_init(width, height, BAYER, RGGB, bpp, 5, 1, 0);
+	gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 5, 1, 0);
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 
@@ -131,12 +131,6 @@ int main (int argc, char *argv[])
 	//Walet structure allocate memory
 	//gw->gop = g_slice_new(GOP);
 
-	// Allocate the memory needed by structs
-	//twoimg[0]	= g_slice_new(TwoPixBuff);
-	//twoimg[1]	= g_slice_new(TwoPixBuff);
-	//twoimg[2]	= g_slice_new(TwoPixBuff);
-	//twoimg[3]	= g_slice_new(TwoPixBuff);
-
 	if (!g_thread_supported ()) g_thread_init (NULL);
 
 	// Initialize the Gsreamer libraries
@@ -169,8 +163,6 @@ int main (int argc, char *argv[])
 	//g_signal_connect (dec, "unknown-type",    G_CALLBACK (cb_error),  NULL);
 	g_object_set (gw->fakesink, "signal-handoffs", TRUE, NULL);
 	g_signal_connect (gw->fakesink, "handoff", G_CALLBACK (cb_handoff), gw);
-
-
 
 
 	// Initialize GTK+ libraries

@@ -3,13 +3,17 @@
 //void draw_picture (GtkWidget* drawingarea, Pixbuf *orid, imgtype* img, guint width, guint height)
 void new_buffer(guint n, guint width, guint height, GtkWalet *gw)
 {
-	//g_printf("pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
+	guchar *data;
 	if(gw->orig[n]->init) gdk_pixbuf_unref(gw->orig[n]->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
-	gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
+	data = (guchar *)calloc(width*height*3, sizeof(guchar));
+	gw->orig[n]->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
+					     FALSE, 8, width, height, width*3, NULL, NULL);
+	//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
 	gw->orig[n]->width = width; gw->orig[n]->height = height;
 	gw->orig[n]->init = 1;
 	//utils_grey_to_rgb(img, gdk_pixbuf_get_pixels(gw->orig[n]->pxb), width, height);
-	//g_printf("gtk_widget_set_size_request pxb_orig = %p pxb_scal = %p \n", gw->orig[n]->pxb, gw->scal[n]->pxb);
+	//g_printf("width = %d height = %d rowstride = %d\n",
+	//		gdk_pixbuf_get_width (gw->orig[n]->pxb),gdk_pixbuf_get_height (gw->orig[n]->pxb), gdk_pixbuf_get_rowstride (gw->orig[n]->pxb));
 }
 
 void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
@@ -103,31 +107,72 @@ void on_quit_activate(GtkObject *object, GtkWalet *gw)
 
 void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	GtkWidget	*chooser;
+	GtkWidget	*dialog;
 	GError  	*err=NULL;
 	guint		i, size;
 
-	chooser = gtk_file_chooser_dialog_new ("Open File...",
+	dialog = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (gw->window),
 											GTK_FILE_CHOOSER_ACTION_OPEN,
 											GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 											GTK_STOCK_OPEN, GTK_RESPONSE_OK,
 											NULL);
 
-	if (gtk_dialog_run(GTK_DIALOG (chooser)) == GTK_RESPONSE_OK) {
-		gw->filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
-		print_status(gw, gw->filename);
+    gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), "/home/vadim/raw/photo");
+	if (gtk_dialog_run(GTK_DIALOG (dialog)) == GTK_RESPONSE_OK) {
+		gw->filename_open = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+		print_status(gw, gw->filename_open);
 	} else {
 		g_warning("Could'n open file\n");
 		return;
 	}
-	gtk_widget_destroy (chooser);
+	gtk_widget_destroy (dialog);
 
-	g_object_set (G_OBJECT(gw->src), "location", gw->filename, NULL);
+	g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
 
 	// Play
 	gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
 	g_main_loop_run (gw->loop);
+}
+
+void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	GtkWidget	*dialog;
+	GError  	*err=NULL;
+	guint		i, size;
+	//g_printf("new = %d\n", gw->new);
+
+	dialog = gtk_file_chooser_dialog_new ("Save File...",
+							GTK_WINDOW (gw->window),
+							GTK_FILE_CHOOSER_ACTION_SAVE,
+							GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+							GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+							NULL);
+
+	gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (dialog), TRUE);
+    gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (dialog), "/home/vadim/raw/photo");
+    if(gw->filename_open){
+    	if (gw->new){
+    		gw->new = 0;
+    		gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), gw->filename_open);
+    	} else gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (dialog), gw->filename_save);
+
+    }
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
+	    gw->filename_save = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+	    walet_write_stream(gw->gop, 1, gw->filename_save);
+	    //save_to_file (filename);
+	    //g_free (filename);
+	  } else gw->new = 1;
+
+	gtk_widget_destroy (dialog);
+}
+
+void on_save_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	if(gw->new) on_save_as_button_clicked(object, gw);
+	else	   walet_write_stream(gw->gop, 1, gw->filename_save);
 }
 
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw)
@@ -327,6 +372,7 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->menu_quit 		= GTK_WIDGET (gtk_builder_get_object (builder, "menu_quit"));
 	// Toolbar buttons
 	gw->open_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "open_button"));
+	gw->save_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "save_button"));
 	gw->feet_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "feet_button"));
 	gw->full_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "full_button"));
 	gw->zoom_in_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_in_button"));
@@ -353,6 +399,7 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->scal[3] = g_slice_new(Pixbuf); gw->scal[3]->init = 0;
 
 	gw->feet = 1; gw->zoom = 1.;
+	gw->new = 1;
 
 
 	//connect signals, don't work now
@@ -360,9 +407,12 @@ gboolean  init_gw(GtkWalet *gw)
 
     g_signal_connect(G_OBJECT(gw->window)			, "destroy", 		G_CALLBACK (on_quit_activate), gw);
     g_signal_connect(G_OBJECT(gw->menu_open)		, "activate", 		G_CALLBACK (on_open_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->menu_save)		, "activate", 		G_CALLBACK (on_save_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->menu_save_as)		, "activate", 		G_CALLBACK (on_save_as_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->menu_quit)		, "activate", 		G_CALLBACK (on_quit_activate), gw);
 
     g_signal_connect(G_OBJECT(gw->open_button)		, "clicked"	, 		G_CALLBACK (on_open_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->save_button)		, "clicked"	, 		G_CALLBACK (on_save_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->feet_button)		, "clicked"	, 		G_CALLBACK (on_feet_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->full_button)		, "clicked"	, 		G_CALLBACK (on_full_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->zoom_in_button)	, "clicked"	, 		G_CALLBACK (on_zoom_in_button_clicked), gw);
@@ -379,7 +429,8 @@ gboolean  init_gw(GtkWalet *gw)
 	// set the default icon to the GTK "edit" icon
 	gtk_window_set_default_icon_name (GTK_STOCK_EDIT);
 
-	gw->filename = NULL;
+	gw->filename_open = NULL;
+	gw->filename_save = NULL;
 	// setup and initialize our statusbar
 	gw->statusbar_context_id = gtk_statusbar_get_context_id (GTK_STATUSBAR (gw->statusbar), "Open file");
 	print_status(gw, "No file open");
