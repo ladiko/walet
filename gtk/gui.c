@@ -128,11 +128,18 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	}
 	gtk_widget_destroy (dialog);
 
-	g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
-
-	// Play
-	gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
-	g_main_loop_run (gw->loop);
+	if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".pgm")){
+		//Open with gstreamer plugin
+		printf("Open pgm %s file\n", gw->filename_open);
+		g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
+		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
+		g_main_loop_run (gw->loop);
+	} else if (!strcmp(&gw->filename_open[strlen(gw->filename_open)-3],".wl")){
+		walet_read_stream(&gw->gop, 1, gw->filename_open);
+		printf("Open wl %s file gop = %p\n", gw->filename_open, gw->gop);
+	} else {
+		printf("Can't open file %s\n", gw->filename_open);
+	}
 }
 
 void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -156,7 +163,6 @@ void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
     		gw->new = 0;
     		gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), gw->filename_open);
     	} else gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (dialog), gw->filename_save);
-
     }
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
@@ -314,21 +320,61 @@ void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
 
 void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	frame_dwt_53(gw->gop, gw->gop->cur_gop_frame);
-	new_buffer (2, gw->gop->width, gw->gop->height, gw);
-	utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
-	draw_image(gw->drawingarea2, gw->orig[2]);
+	if(gw->gop == NULL ) return;
+	if(frame_dwt_53(gw->gop, gw->gop->cur_gop_frame)) {
+		new_buffer (2, gw->gop->width, gw->gop->height, gw);
+		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
+		draw_image(gw->drawingarea2, gw->orig[2]);
+	}
 }
 
 void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
-	new_buffer (3, gw->gop->width, gw->gop->height, gw);
-	utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
-	//new_buffer (3, gw->gop->width-1, gw->gop->height-1, gw);
-	//utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
-	draw_image(gw->drawingarea3, gw->orig[3]);
+	if(gw->gop == NULL ) return;
+	if(frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps)){
+		new_buffer (0, gw->gop->width-1, gw->gop->height-1, gw);
+		utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		draw_image(gw->drawingarea0, gw->orig[0]);
+	}
+}
+
+void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	if(gw->gop == NULL ) return;
+	frame_fill_subb(gw->gop, gw->gop->cur_gop_frame);
+}
+
+void on_bits_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	if(gw->gop == NULL ) return;
+	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton));
+}
+
+void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	if(gw->gop == NULL ) return;
+	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame)){
+		new_buffer (3, gw->gop->width, gw->gop->height, gw);
+		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
+		draw_image(gw->drawingarea3, gw->orig[3]);
+	}
+}
+
+void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	uint32 size;
+	if(gw->gop == NULL ) return;
+	frame_range_encode(gw->gop, gw->gop->cur_gop_frame, &size);
+	//printf("Encoded frame size = %d\n", size);
+}
+
+void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	uint32 size;
+	//printf("gop = %p\n", gw->gop);
+	if(gw->gop == NULL ) return;
+	frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &size);
+	//printf("Decoded frame size = %d\n", size);
 }
 
 gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
@@ -432,6 +478,12 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->zoom_out_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_out_button"));
 	gw->dwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "dwt_button"));
 	gw->idwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "idwt_button"));
+	gw->fill_button		= GTK_WIDGET (gtk_builder_get_object (builder, "fill_button"));
+	gw->times_spinbutton= GTK_WIDGET (gtk_builder_get_object (builder, "times_spinbutton"));
+	gw->bits_button		= GTK_WIDGET (gtk_builder_get_object (builder, "bits_button"));
+	gw->quant_button	= GTK_WIDGET (gtk_builder_get_object (builder, "quant_button"));
+	gw->range_enc_button= GTK_WIDGET (gtk_builder_get_object (builder, "range_enc_button"));
+	gw->range_dec_button= GTK_WIDGET (gtk_builder_get_object (builder, "range_dec_button"));
 	// Drawingareas
 	gw->drawingarea0	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
@@ -474,11 +526,16 @@ gboolean  init_gw(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->zoom_out_button)	, "clicked"	, 		G_CALLBACK (on_zoom_out_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->dwt_button)		, "clicked"	, 		G_CALLBACK (on_dwt_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->idwt_button)		, "clicked"	, 		G_CALLBACK (on_idwt_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->fill_button)		, "clicked"	, 		G_CALLBACK (on_fill_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->bits_button)		, "clicked"	, 		G_CALLBACK (on_bits_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->quant_button)		, "clicked"	, 		G_CALLBACK (on_quant_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->range_enc_button)	, "clicked"	, 		G_CALLBACK (on_range_enc_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->range_dec_button)	, "clicked"	, 		G_CALLBACK (on_range_dec_button_clicked), gw);
 
     g_signal_connect(G_OBJECT(gw->drawingarea0)		, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
     g_signal_connect(G_OBJECT(gw->drawingarea1)		, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea2)	, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea3)	, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea2)		, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea3)		, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));
@@ -488,6 +545,8 @@ gboolean  init_gw(GtkWalet *gw)
 
 	gw->filename_open = NULL;
 	gw->filename_save = NULL;
+
+	gtk_spin_button_set_value((GtkSpinButton *) gw->times_spinbutton, 20.);
 	// setup and initialize our statusbar
 	gw->statusbar_context_id = gtk_statusbar_get_context_id (GTK_STATUSBAR (gw->statusbar), "Open file");
 	print_status(gw, "No file open");
