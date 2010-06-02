@@ -125,7 +125,8 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 }
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
-#define lb(x) (x&0xFF)
+//#define lb(x) (x&0xFF)
+#define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
 uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
@@ -165,7 +166,6 @@ uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid
 			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
 		}
 	}
-
 	return rgb;
 }
 

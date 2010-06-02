@@ -281,12 +281,12 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		set_freq(out1, d, q_bits);
 		sz++;
 		//if(img[i]-q[out]) printf("i=%d ", i);
-		//img[i] = q[out];
+		img[i] = q[out1];
 		//dif = out1 - half;
 		//fin = dif > 0 ? (dif<<del)+sub : (dif < 0 ? -((-dif)<<del)-sub : 0);
-		if(img[i]- q[out1]) //printf("i=%d ", i);
-			printf("low = %16LX range = %16LX out = %3d out1 = %3d img = %4d qimg = %4d diff = %d\n",
-					low, range, out, out1, img[i], q[out1], img[i]- q[out1]);
+		//if(img[i]- q[out1]) //printf("i=%d ", i);
+		//	printf("low = %16LX range = %16LX out = %3d out1 = %3d img = %4d qimg = %4d diff = %d\n",
+		//			low, range, out, out1, img[i], q[out1], img[i]- q[out1]);
 
 	}
 	//printf("size = %d Decoder size  = %d first = %4X end = %4X img = %d %d %d %d\n", size, j<<1, buff[0], buff[j-1], img[0], img[1], img[2], img[3]);

@@ -45,7 +45,7 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, GtkWal
 	ret &= gst_structure_get_int (str, "bpp", &gw->gop->bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
-	g_printf("width = %d  height = %d bpp = %d\n", gw->gop->width, gw->gop->height, gw->gop->bpp);
+	//g_printf("width = %d  height = %d bpp = %d\n", gw->gop->width, gw->gop->height, gw->gop->bpp);
 
 	gst_caps_unref (caps);
 
@@ -61,7 +61,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	gboolean ret;
 	GstStructure	*str;
 	//guint8	*pix = GST_BUFFER_DATA(buffer);
-	guint width, height, bpp;
+	gint width, height, bpp;
 
 	//g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
 
@@ -79,12 +79,14 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 	new_buffer (0, gw->gop->width, gw->gop->height, gw);
 	utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-	draw_image(gw->drawingarea0, gw->orig[0]);
+	//draw_image(gw->drawingarea0, gw->orig[0]);
+	gtk_widget_queue_draw(gw->drawingarea0);
 
 	new_buffer (1, gw->gop->width-1, gw->gop->height-1, gw);
 	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	draw_image(gw->drawingarea1, gw->orig[1]);
-	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea0), "expose_event", NULL);
+	gtk_widget_queue_draw(gw->drawingarea1);
+	//draw_image(gw->drawingarea1, gw->orig[1]);
+	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea1), "expose_event", NULL);
 
 }
 

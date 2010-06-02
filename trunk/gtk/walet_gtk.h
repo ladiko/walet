@@ -39,8 +39,8 @@ typedef struct  {
 	GtkWidget	*range_dec_button;
 
 	// Drawingareas
-	Pixbuf	*orig[4];		//Original image
-	Pixbuf	*scal[4];		//Scaled image
+	Pixbuf		*orig[4];		//Original image
+	Pixbuf		*scal[4];		//Scaled image
 	GtkWidget	*drawingarea0;
 	GtkWidget	*drawingarea1;
 	GtkWidget	*drawingarea2;
