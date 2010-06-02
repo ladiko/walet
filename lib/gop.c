@@ -127,11 +127,11 @@ uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
     for(i=0; i < num; i++) size += frame_write(gop, i, wl);
     //Close file
     fclose(wl);
-
+    printf("Write size = %Ld\n", size);
     return size;
 }
 
-uint32 walet_read_stream(GOP *gop, uint32 num, const char *filename)
+uint32 walet_read_stream(GOP **gop, uint32 num, const char *filename)
 {
     FILE *wl;
     WaletHeader wh;
@@ -147,12 +147,16 @@ uint32 walet_read_stream(GOP *gop, uint32 num, const char *filename)
     //Read header
     if(fread(&wh, sizeof(wh), 1, wl) != 1) { printf("Header read error\n"); return; }
     size += sizeof(wh);
+    printf("size = %Ld\n", size);
     if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
-    gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates);
+    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates);
+	//printf("walet_decoder_init  gop = %p\n", *gop);
+
     //Write frames
-    for(i=0; i < num; i++) size += frame_read(gop, i, wl);
+    for(i=0; i < num; i++) size += frame_read(*gop, i, wl);
     //Close file
     fclose(wl);
+    printf("Read size = %Ld\n", size);
 
     return size;
 }

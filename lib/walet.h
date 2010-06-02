@@ -68,14 +68,14 @@ FrameType;
 
 typedef enum {
 	FRAME_COPY		=	1,
-	BUFFER_COPY		=	1<<1,
+	FRAME_READ		=	1<<1,
   	DWT 			= 	1<<2,
   	IDWT 			= 	1<<3,
-  	FILL_DISTRIB 	= 	1<<4,
+  	FILL_SUBBAND 	= 	1<<4,
   	QUANTIZATION	= 	1<<5,
   	RANGE_ENCODER	= 	1<<6,
   	RANGE_DECODER	= 	1<<7,
-  	BIT_ALLOCATION	= 	1<<8,
+  	BITS_ALLOCATION	= 	1<<8,
 }	CodecState;
 
 /*

@@ -77,15 +77,13 @@ void print_status (GtkWalet *gw, const gchar *mesage)
 	//g_free (status);
 	//g_free (file);
 }
-
+/*
 void error_message(const gchar *message)
 {
         GtkWidget               *dialog;
 
-        /* log to terminal window */
         g_warning (message);
 
-        /* create an error message dialog and display modally to the user */
         dialog = gtk_message_dialog_new(NULL,
 										GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 										GTK_MESSAGE_ERROR,
@@ -96,7 +94,7 @@ void error_message(const gchar *message)
         gtk_dialog_run (GTK_DIALOG (dialog));
         gtk_widget_destroy (dialog);
 }
-
+*/
 void on_quit_activate(GtkObject *object, GtkWalet *gw)
 {
 	//gst_element_set_state (pipeline, GST_STATE_NULL);
@@ -108,8 +106,8 @@ void on_quit_activate(GtkObject *object, GtkWalet *gw)
 void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GtkWidget	*dialog;
-	GError  	*err=NULL;
-	guint		i, size;
+	//GError  	*err=NULL;
+	//guint		size;
 
 	dialog = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (gw->window),
@@ -145,8 +143,8 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GtkWidget	*dialog;
-	GError  	*err=NULL;
-	guint		i, size;
+	//GError  	*err=NULL;
+	//guint		size;
 	//g_printf("new = %d\n", gw->new);
 
 	dialog = gtk_file_chooser_dialog_new ("Save File...",
@@ -324,7 +322,8 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(frame_dwt_53(gw->gop, gw->gop->cur_gop_frame)) {
 		new_buffer (2, gw->gop->width, gw->gop->height, gw);
 		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
-		draw_image(gw->drawingarea2, gw->orig[2]);
+		gtk_widget_queue_draw(gw->drawingarea2);
+		//draw_image(gw->drawingarea2, gw->orig[2]);
 	}
 }
 
@@ -334,7 +333,8 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps)){
 		new_buffer (0, gw->gop->width-1, gw->gop->height-1, gw);
 		utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-		draw_image(gw->drawingarea0, gw->orig[0]);
+		gtk_widget_queue_draw(gw->drawingarea0);
+		//draw_image(gw->drawingarea0, gw->orig[0]);
 	}
 }
 
@@ -356,7 +356,8 @@ void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame)){
 		new_buffer (3, gw->gop->width, gw->gop->height, gw);
 		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
-		draw_image(gw->drawingarea3, gw->orig[3]);
+		gtk_widget_queue_draw(gw->drawingarea3);
+		//draw_image(gw->drawingarea3, gw->orig[3]);
 	}
 }
 
@@ -365,16 +366,15 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint32 size;
 	if(gw->gop == NULL ) return;
 	frame_range_encode(gw->gop, gw->gop->cur_gop_frame, &size);
-	//printf("Encoded frame size = %d\n", size);
+	printf("Encoded frame size = %d\n", size);
 }
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	uint32 size;
-	//printf("gop = %p\n", gw->gop);
 	if(gw->gop == NULL ) return;
 	frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &size);
-	//printf("Decoded frame size = %d\n", size);
+	printf("Decoded frame size = %d\n", size);
 }
 
 gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
@@ -449,13 +449,14 @@ gboolean  init_gw(GtkWalet *gw)
 {
 	GtkBuilder              *builder;
 	GError                  *err=NULL;
-	guint                   id;
-	PangoFontDescription    *font_desc;
+	//guint                   id;
+	//PangoFontDescription    *font_desc;
 
 	// use GtkBuilder to build our interface from the XML file
 	builder = gtk_builder_new();
 	if (gtk_builder_add_from_file(builder, "walet_gtk.xml", &err) == 0){
-		error_message(err->message);
+		//error_message(err->message);
+		//g_warning (message);
 		g_error_free(err);
 		return FALSE;
 	}

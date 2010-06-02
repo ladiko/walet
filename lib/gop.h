@@ -25,8 +25,11 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
-GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
+GOP* 	walet_decoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
+GOP* 	walet_encoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
+
+uint32 	walet_write_stream	(GOP *gop, uint32 num, const char *filename);
+uint32 	walet_read_stream	(GOP **gop, uint32 num, const char *filename);
 
 #ifdef __cplusplus
 }
