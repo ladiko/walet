@@ -31,6 +31,12 @@ typedef struct  {
 	GtkWidget	*zoom_out_button;
 	GtkWidget	*dwt_button;
 	GtkWidget	*idwt_button;
+	GtkWidget	*fill_button;
+	GtkWidget	*times_spinbutton;
+	GtkWidget	*bits_button;
+	GtkWidget	*quant_button;
+	GtkWidget	*range_enc_button;
+	GtkWidget	*range_dec_button;
 
 	// Drawingareas
 	Pixbuf	*orig[4];		//Original image
