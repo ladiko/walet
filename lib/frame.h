@@ -33,7 +33,7 @@ uint32 	frame_range_encode	(GOP *gop, uint32 fr, uint32 *size);
 uint32 	frame_range_decode	(GOP *gop, uint32 fr, uint32 *size);
 uint32 	frame_write			(GOP *gop, uint32 fr, FILE *wl);
 void 	frame_compress		(GOP *gop, uint32 fr, uint32 times);
-void 	frame_decompress	(Frame *frame, Subband **sub, ColorSpace color, uint32 steps, uint32 bits, uint32 st);
+void 	frame_decompress	(GOP *gop, uint32 fr, uint32 isteps);
 
 void 	frame_white_balance	(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma);
 

@@ -1,16 +1,16 @@
 #include <walet_gtk.h>
 
 //void draw_picture (GtkWidget* drawingarea, Pixbuf *orid, imgtype* img, guint width, guint height)
-void new_buffer(guint n, guint width, guint height, GtkWalet *gw)
+void new_buffer(Pixbuf *orig, guint width, guint height)
 {
 	guchar *data;
-	if(gw->orig[n]->init) gdk_pixbuf_unref(gw->orig[n]->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
-	data = (guchar *)calloc(width*height*3, sizeof(guchar));
-	gw->orig[n]->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
+	if(orig->init) g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
+	data = (guchar *)g_malloc(width*height*3);
+	orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
 					     FALSE, 8, width, height, width*3, NULL, NULL);
 	//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
-	gw->orig[n]->width = width; gw->orig[n]->height = height;
-	gw->orig[n]->init = 1;
+	orig->width = width; orig->height = height;
+	orig->init = 1;
 	//utils_grey_to_rgb(img, gdk_pixbuf_get_pixels(gw->orig[n]->pxb), width, height);
 	//g_printf("width = %d height = %d rowstride = %d\n",
 	//		gdk_pixbuf_get_width (gw->orig[n]->pxb),gdk_pixbuf_get_height (gw->orig[n]->pxb), gdk_pixbuf_get_rowstride (gw->orig[n]->pxb));
@@ -20,7 +20,7 @@ void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
 {
 	scal->width 	= (guint)(((gdouble)orig->width)*zoom);
 	scal->height 	= (guint)(((gdouble)orig->height)*zoom);
-	if(scal->init) gdk_pixbuf_unref (scal->pxb);
+	if(scal->init) 	g_object_unref (scal->pxb);
 	if(zoom < 1.) 	scal->pxb = gdk_pixbuf_scale_simple (orig->pxb, scal->width, scal->height, GDK_INTERP_BILINEAR);
 	else			scal->pxb = gdk_pixbuf_scale_simple (orig->pxb, scal->width, scal->height, GDK_INTERP_NEAREST);
 	scal->init = 1;
@@ -29,8 +29,6 @@ void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
 
 void feet(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal)
 {
-	//Pixbuf *scal;
-
 	gdouble v_width 	= gtk_adjustment_get_page_size (gtk_viewport_get_hadjustment ((GtkViewport*)viewport));
 	gdouble v_height 	= gtk_adjustment_get_page_size (gtk_viewport_get_vadjustment ((GtkViewport*)viewport));
 
@@ -43,10 +41,10 @@ void feet(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal)
 	}
 	else {
 		scal->width = (int)v_width;
-		scal->height = (int)(((gdouble)orig->width)/w);
+		scal->height = (int)(((gdouble)orig->height)/w);
 	}
 
-	if(scal->init) gdk_pixbuf_unref (scal->pxb);
+	if(scal->init) g_object_unref (scal->pxb);
 	scal->pxb = gdk_pixbuf_scale_simple (orig->pxb, scal->width, scal->height, GDK_INTERP_BILINEAR);
 	scal->init = 1;
 }
@@ -57,7 +55,6 @@ void draw_image(GtkWidget* drawingarea, Pixbuf *orig)
 	gdk_draw_pixbuf(drawingarea->window,
 			drawingarea->style->black_gc,
 			orig->pxb, 0 ,0 ,0 ,0 , -1,-1, GDK_RGB_DITHER_NONE, 0, 0);
-
 }
 
 void print_status (GtkWalet *gw, const gchar *mesage)
@@ -77,24 +74,24 @@ void print_status (GtkWalet *gw, const gchar *mesage)
 	//g_free (status);
 	//g_free (file);
 }
-/*
+
 void error_message(const gchar *message)
 {
         GtkWidget               *dialog;
 
-        g_warning (message);
+        g_warning ("%s",message);
 
         dialog = gtk_message_dialog_new(NULL,
 										GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 										GTK_MESSAGE_ERROR,
 										GTK_BUTTONS_OK,
-										message);
+										"%s",message);
 
         gtk_window_set_title (GTK_WINDOW (dialog), "Error!");
         gtk_dialog_run (GTK_DIALOG (dialog));
         gtk_widget_destroy (dialog);
 }
-*/
+
 void on_quit_activate(GtkObject *object, GtkWalet *gw)
 {
 	//gst_element_set_state (pipeline, GST_STATE_NULL);
@@ -133,8 +130,19 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
 		g_main_loop_run (gw->loop);
 	} else if (!strcmp(&gw->filename_open[strlen(gw->filename_open)-3],".wl")){
+		printf("Open %s file\n", gw->filename_open);
+
 		walet_read_stream(&gw->gop, 1, gw->filename_open);
-		printf("Open wl %s file gop = %p\n", gw->filename_open, gw->gop);
+		//frame_decompress(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
+
+		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
+
+		new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[1]);
+
 	} else {
 		printf("Can't open file %s\n", gw->filename_open);
 	}
@@ -181,76 +189,40 @@ void on_save_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw)
 {
+	gint i;
 	gw->feet = 1;
-	if(gw->orig[0]->init){
-		feet(gw->viewport0, gw->orig[0], gw->scal[0]);
-		draw_image(gw->drawingarea0, gw->scal[0]);
-	}
-	if(gw->orig[1]->init){
-		feet(gw->viewport1, gw->orig[1], gw->scal[1]);
-		draw_image(gw->drawingarea1, gw->scal[1]);
-	}
-	if(gw->orig[2]->init){
-		feet(gw->viewport2, gw->orig[2], gw->scal[2]);
-		draw_image(gw->drawingarea2, gw->scal[2]);
-	}
-	if(gw->orig[3]->init){
-		feet(gw->viewport3, gw->orig[3], gw->scal[3]);
-		draw_image(gw->drawingarea3, gw->scal[3]);
+	for(i=0; i<4; i++){
+		if(gw->orig[i]->init){
+			feet(gw->viewport[i], gw->orig[i], gw->scal[i]);
+			gtk_widget_queue_draw(gw->drawingarea[i]);
+		}
 	}
 }
 
 void on_full_button_clicked (GtkObject *object, GtkWalet *gw)
 {
+	gint i;
 	gw->feet = 0;
 	gw->zoom = 1.;
-	if(gw->orig[0]->init) draw_image(gw->drawingarea0, gw->orig[0]);
-	if(gw->orig[1]->init) draw_image(gw->drawingarea1, gw->orig[1]);
-	if(gw->orig[2]->init) draw_image(gw->drawingarea2, gw->orig[2]);
-	if(gw->orig[3]->init) draw_image(gw->drawingarea3, gw->orig[3]);
+	for(i=0; i<4; i++) if(gw->orig[i]->init) gtk_widget_queue_draw(gw->drawingarea[i]);
 }
 
 void on_zoom_in_button_clicked (GtkObject *object, GtkWalet *gw)
 {
+	gint i;
 	if(gw->feet == 1){
-		if(gw->orig[0]->init) draw_image(gw->drawingarea0, gw->orig[0]);
-		if(gw->orig[1]->init) draw_image(gw->drawingarea1, gw->orig[1]);
-		if(gw->orig[2]->init) draw_image(gw->drawingarea2, gw->orig[2]);
-		if(gw->orig[3]->init) draw_image(gw->drawingarea3, gw->orig[3]);
+		for(i=0; i<4; i++) if(gw->orig[i]->init) gtk_widget_queue_draw(gw->drawingarea[i]);
 		gw->feet = 0;
 		gw->zoom = 1.;
 	} else {
 		gw->zoom *= 2.;
-		if(gw->orig[0]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea0, gw->orig[0]);
-			} else {
-				zoom(gw->orig[0], gw->scal[0], gw->zoom);
-				draw_image(gw->drawingarea0, gw->scal[0]);
-			}
-		}
-		if(gw->orig[1]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea1, gw->orig[1]);
-			} else {
-				zoom(gw->orig[1], gw->scal[1], gw->zoom);
-				draw_image(gw->drawingarea1, gw->scal[1]);
-			}
-		}
-		if(gw->orig[2]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea2, gw->orig[2]);
-			} else {
-				zoom(gw->orig[2], gw->scal[2], gw->zoom);
-				draw_image(gw->drawingarea2, gw->scal[2]);
-			}
-		}
-		if(gw->orig[3]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea3, gw->orig[3]);
-			} else {
-				zoom(gw->orig[3], gw->scal[3], gw->zoom);
-				draw_image(gw->drawingarea3, gw->scal[3]);
+		for(i=0; i<4; i++){
+			if(gw->orig[i]->init){
+				if(gw->zoom == 1.) gtk_widget_queue_draw(gw->drawingarea[i]);
+				else {
+					zoom(gw->orig[i], gw->scal[i], gw->zoom);
+					gtk_widget_queue_draw(gw->drawingarea[i]);
+				}
 			}
 		}
 	}
@@ -259,57 +231,25 @@ void on_zoom_in_button_clicked (GtkObject *object, GtkWalet *gw)
 
 void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
 {
+	gint i;
 	if(gw->feet == 1){
 		gw->feet = 0;
 		gw->zoom = 0.5;
-		if(gw->orig[0]->init) {
-			zoom(gw->orig[0], gw->scal[0], gw->zoom);
-			draw_image(gw->drawingarea0, gw->scal[0]);
-		}
-		if(gw->orig[1]->init) {
-			zoom(gw->orig[1], gw->scal[1], gw->zoom);
-			draw_image(gw->drawingarea1, gw->scal[1]);
-		}
-		if(gw->orig[2]->init) {
-			zoom(gw->orig[2], gw->scal[2], gw->zoom);
-			draw_image(gw->drawingarea2, gw->scal[2]);
-		}
-		if(gw->orig[3]->init) {
-			zoom(gw->orig[3], gw->scal[3], gw->zoom);
-			draw_image(gw->drawingarea3, gw->scal[3]);
+		for(i=0; i<4; i++){
+			if(gw->orig[i]->init) {
+				zoom(gw->orig[i], gw->scal[i], gw->zoom);
+				gtk_widget_queue_draw(gw->drawingarea[i]);
+			}
 		}
 	} else {
 		gw->zoom /= 2.;
-		if(gw->orig[0]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea0, gw->orig[0]);
-			} else {
-				zoom(gw->orig[0], gw->scal[0], gw->zoom);
-				draw_image(gw->drawingarea0, gw->scal[0]);
-			}
-		}
-		if(gw->orig[1]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea1, gw->orig[1]);
-			} else {
-				zoom(gw->orig[1], gw->scal[1], gw->zoom);
-				draw_image(gw->drawingarea1, gw->scal[1]);
-			}
-		}
-		if(gw->orig[2]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea2, gw->orig[2]);
-			} else {
-				zoom(gw->orig[2], gw->scal[2], gw->zoom);
-				draw_image(gw->drawingarea2, gw->scal[2]);
-			}
-		}
-		if(gw->orig[3]->init){
-			if(gw->zoom == 1.) {
-				draw_image(gw->drawingarea3, gw->orig[3]);
-			} else {
-				zoom(gw->orig[3], gw->scal[3], gw->zoom);
-				draw_image(gw->drawingarea3, gw->scal[3]);
+		for(i=0; i<4; i++){
+			if(gw->orig[i]->init){
+				if(gw->zoom == 1.) gtk_widget_queue_draw(gw->drawingarea[i]);
+				else {
+					zoom(gw->orig[i], gw->scal[i], gw->zoom);
+					gtk_widget_queue_draw(gw->drawingarea[i]);
+				}
 			}
 		}
 	}
@@ -320,10 +260,9 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	if(frame_dwt_53(gw->gop, gw->gop->cur_gop_frame)) {
-		new_buffer (2, gw->gop->width, gw->gop->height, gw);
+		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
 		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
-		gtk_widget_queue_draw(gw->drawingarea2);
-		//draw_image(gw->drawingarea2, gw->orig[2]);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 	}
 }
 
@@ -331,10 +270,9 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	if(frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps)){
-		new_buffer (0, gw->gop->width-1, gw->gop->height-1, gw);
+		new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
 		utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-		gtk_widget_queue_draw(gw->drawingarea0);
-		//draw_image(gw->drawingarea0, gw->orig[0]);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 	}
 }
 
@@ -354,10 +292,9 @@ void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame)){
-		new_buffer (3, gw->gop->width, gw->gop->height, gw);
+		new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
 		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
-		gtk_widget_queue_draw(gw->drawingarea3);
-		//draw_image(gw->drawingarea3, gw->orig[3]);
+		gtk_widget_queue_draw(gw->drawingarea[3]);
 	}
 }
 
@@ -377,75 +314,95 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("Decoded frame size = %d\n", size);
 }
 
-gboolean on_drawingarea0_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
+gboolean on_drawingarea0123_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
 	//gtk_widget_set_size_request(widget, w, h);
 	//g_printf("on_drawingarea0_expose_event \n");
-	if(gw->orig[0]->init){
+	gint i;
+	if(widget == gw->drawingarea[0]) i=0;
+	if(widget == gw->drawingarea[1]) i=1;
+	if(widget == gw->drawingarea[2]) i=2;
+	if(widget == gw->drawingarea[3]) i=3;
+
+	if(gw->orig[i]->init){
 		if(gw->feet) {
-			feet(gw->viewport0, gw->orig[0], gw->scal[0]);
-			draw_image(gw->drawingarea0, gw->scal[0]);
+			feet(gw->viewport[i], gw->orig[i], gw->scal[i]);
+			draw_image(gw->drawingarea[i], gw->scal[i]);
 		} else{
-			if(gw->zoom == 1.) 	draw_image(gw->drawingarea0, gw->orig[0]);
-			else				draw_image(gw->drawingarea0, gw->scal[0]);
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea[i], gw->orig[i]);
+			else				draw_image(gw->drawingarea[i], gw->scal[i]);
 
 		}
 	}
 	return TRUE;
 }
 
-gboolean on_drawingarea1_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
+gboolean on_drawingarea0123_button_press_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
+{
+	gint i;
+	if(widget == gw->drawingarea[0]) i=0;
+	if(widget == gw->drawingarea[1]) i=1;
+	if(widget == gw->drawingarea[2]) i=2;
+	if(widget == gw->drawingarea[3]) i=3;
+
+	if(gw->orig[i]->init){
+		gw->orig[4]->height = gw->orig[i]->height;
+		gw->orig[4]->width  = gw->orig[i]->width;
+		gw->orig[4]->init  = 1;
+		gw->orig[4]->pxb = gw->orig[i]->pxb;
+
+		//gtk_adjustment_set_page_size (gtk_viewport_get_hadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->width>>2));
+		//gtk_adjustment_set_page_size (gtk_viewport_get_vadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->height>>2));
+		gtk_widget_show (gw->window1);
+		gtk_widget_queue_draw(gw->drawingarea[4]);
+	}
+
+	return TRUE;
+}
+
+gboolean on_quit_windows1(GtkObject *object, GdkEventExpose *event, GtkWalet *gw)
+{
+	gtk_widget_hide (gw->window1);
+	return TRUE;
+	//g_object_unref(gw->orig[0]->pxb);
+	//g_object_unref(gw->orig[4]->pxb);
+
+}
+
+void on_feet_button1_clicked (GtkObject *object, GtkWalet *gw)
+{
+	gw->feet1 = 1;
+	if(gw->orig[4]->init){
+		feet(gw->viewport[4], gw->orig[4], gw->scal[4]);
+		gtk_widget_queue_draw(gw->drawingarea[4]);
+	}
+}
+
+void on_full_button1_clicked (GtkObject *object, GtkWalet *gw)
+{
+	gw->feet1 = 0;
+	//gw->zoom = 1.;
+	if(gw->orig[4]->init) gtk_widget_queue_draw(gw->drawingarea[4]);
+}
+
+gboolean on_drawingarea4_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
 	//gtk_widget_set_size_request(widget, w, h);
 	//g_printf("on_drawingarea0_expose_event \n");
-	if(gw->orig[1]->init){
-		if(gw->feet) {
-			feet(gw->viewport1, gw->orig[1], gw->scal[1]);
-			draw_image(gw->drawingarea1, gw->scal[1]);
+	if(gw->orig[4]->init){
+		if(gw->feet1) {
+			feet(gw->viewport[4], gw->orig[4], gw->scal[4]);
+			draw_image(gw->drawingarea[4], gw->scal[4]);
 		} else{
-			if(gw->zoom == 1.) 	draw_image(gw->drawingarea1, gw->orig[1]);
-			else				draw_image(gw->drawingarea1, gw->scal[1]);
+			if(gw->zoom == 1.) 	draw_image(gw->drawingarea[4], gw->orig[4]);
+			else				draw_image(gw->drawingarea[4], gw->scal[4]);
 
 		}
 	}
 	return TRUE;
 }
 
-gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
-{
-	//gtk_widget_set_size_request(widget, w, h);
-	//g_printf("on_drawingarea0_expose_event \n");
-	if(gw->orig[2]->init){
-		if(gw->feet) {
-			feet(gw->viewport2, gw->orig[2], gw->scal[2]);
-			draw_image(gw->drawingarea2, gw->scal[2]);
-		} else{
-			if(gw->zoom == 1.) 	draw_image(gw->drawingarea2, gw->orig[2]);
-			else				draw_image(gw->drawingarea2, gw->scal[2]);
-
-		}
-	}
-	return TRUE;
-}
-
-gboolean on_drawingarea3_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
-{
-	//gtk_widget_set_size_request(widget, w, h);
-	//g_printf("on_drawingarea0_expose_event \n");
-	if(gw->orig[3]->init){
-		if(gw->feet) {
-			feet(gw->viewport3, gw->orig[3], gw->scal[3]);
-			draw_image(gw->drawingarea3, gw->scal[3]);
-		} else{
-			if(gw->zoom == 1.) 	draw_image(gw->drawingarea3, gw->orig[3]);
-			else				draw_image(gw->drawingarea3, gw->scal[3]);
-
-		}
-	}
-	return TRUE;
-}
-
-gboolean  init_gw(GtkWalet *gw)
+gboolean  init_main_window(GtkWalet *gw)
 {
 	GtkBuilder              *builder;
 	GError                  *err=NULL;
@@ -455,7 +412,7 @@ gboolean  init_gw(GtkWalet *gw)
 	// use GtkBuilder to build our interface from the XML file
 	builder = gtk_builder_new();
 	if (gtk_builder_add_from_file(builder, "walet_gtk.xml", &err) == 0){
-		//error_message(err->message);
+		error_message(err->message);
 		//g_warning (message);
 		g_error_free(err);
 		return FALSE;
@@ -471,44 +428,32 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->menu_save_as 	= GTK_WIDGET (gtk_builder_get_object (builder, "menu_save_as"));
 	gw->menu_quit 		= GTK_WIDGET (gtk_builder_get_object (builder, "menu_quit"));
 	// Toolbar buttons
-	gw->open_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "open_button"));
-	gw->save_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "save_button"));
-	gw->feet_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "feet_button"));
-	gw->full_button 	= GTK_WIDGET (gtk_builder_get_object (builder, "full_button"));
-	gw->zoom_in_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_in_button"));
-	gw->zoom_out_button	= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_out_button"));
-	gw->dwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "dwt_button"));
-	gw->idwt_button		= GTK_WIDGET (gtk_builder_get_object (builder, "idwt_button"));
-	gw->fill_button		= GTK_WIDGET (gtk_builder_get_object (builder, "fill_button"));
-	gw->times_spinbutton= GTK_WIDGET (gtk_builder_get_object (builder, "times_spinbutton"));
-	gw->bits_button		= GTK_WIDGET (gtk_builder_get_object (builder, "bits_button"));
-	gw->quant_button	= GTK_WIDGET (gtk_builder_get_object (builder, "quant_button"));
-	gw->range_enc_button= GTK_WIDGET (gtk_builder_get_object (builder, "range_enc_button"));
-	gw->range_dec_button= GTK_WIDGET (gtk_builder_get_object (builder, "range_dec_button"));
+	gw->open_button 		= GTK_WIDGET (gtk_builder_get_object (builder, "open_button"));
+	gw->save_button 		= GTK_WIDGET (gtk_builder_get_object (builder, "save_button"));
+	gw->feet_button 		= GTK_WIDGET (gtk_builder_get_object (builder, "feet_button"));
+	gw->full_button 		= GTK_WIDGET (gtk_builder_get_object (builder, "full_button"));
+	gw->zoom_in_button		= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_in_button"));
+	gw->zoom_out_button		= GTK_WIDGET (gtk_builder_get_object (builder, "zoom_out_button"));
+	gw->dwt_button			= GTK_WIDGET (gtk_builder_get_object (builder, "dwt_button"));
+	gw->idwt_button			= GTK_WIDGET (gtk_builder_get_object (builder, "idwt_button"));
+	gw->fill_button			= GTK_WIDGET (gtk_builder_get_object (builder, "fill_button"));
+	gw->times_spinbutton	= GTK_WIDGET (gtk_builder_get_object (builder, "times_spinbutton"));
+	gw->bits_button			= GTK_WIDGET (gtk_builder_get_object (builder, "bits_button"));
+	gw->quant_button		= GTK_WIDGET (gtk_builder_get_object (builder, "quant_button"));
+	gw->range_enc_button	= GTK_WIDGET (gtk_builder_get_object (builder, "range_enc_button"));
+	gw->range_dec_button	= GTK_WIDGET (gtk_builder_get_object (builder, "range_dec_button"));
+	gw->compress_button		= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
+	gw->decompress_button	= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
 	// Drawingareas
-	gw->drawingarea0	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
-	gw->drawingarea1	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
-	gw->drawingarea2	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea2"));
-	gw->drawingarea3	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea3"));
+	gw->drawingarea[0]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
+	gw->drawingarea[1]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
+	gw->drawingarea[2]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea2"));
+	gw->drawingarea[3]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea3"));
 	// Viewports
-	gw->viewport0	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport0"));
-	gw->viewport1	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport1"));
-	gw->viewport2	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport2"));
-	gw->viewport3	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport3"));
-
-	gw->orig[0] = g_slice_new(Pixbuf); gw->orig[0]->init = 0;
-	gw->orig[1] = g_slice_new(Pixbuf); gw->orig[1]->init = 0;
-	gw->orig[2] = g_slice_new(Pixbuf); gw->orig[2]->init = 0;
-	gw->orig[3] = g_slice_new(Pixbuf); gw->orig[3]->init = 0;
-
-	gw->scal[0] = g_slice_new(Pixbuf); gw->scal[0]->init = 0;
-	gw->scal[1] = g_slice_new(Pixbuf); gw->scal[1]->init = 0;
-	gw->scal[2] = g_slice_new(Pixbuf); gw->scal[2]->init = 0;
-	gw->scal[3] = g_slice_new(Pixbuf); gw->scal[3]->init = 0;
-
-	gw->feet = 1; gw->zoom = 1.;
-	gw->new = 1;
-
+	gw->viewport[0]	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport0"));
+	gw->viewport[1]	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport1"));
+	gw->viewport[2]	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport2"));
+	gw->viewport[3]	= GTK_WIDGET (gtk_builder_get_object (builder, "viewport3"));
 
 	//connect signals, don't work now
 	//gtk_builder_connect_signals(builder, wlgtk);
@@ -532,11 +477,48 @@ gboolean  init_gw(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->quant_button)		, "clicked"	, 		G_CALLBACK (on_quant_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->range_enc_button)	, "clicked"	, 		G_CALLBACK (on_range_enc_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->range_dec_button)	, "clicked"	, 		G_CALLBACK (on_range_dec_button_clicked), gw);
+    //g_signal_connect(G_OBJECT(gw->compress_button)	, "clicked"	, 		G_CALLBACK (on_compress_button_clicked), gw);
+    //g_signal_connect(G_OBJECT(gw->decompress_button), "clicked"	, 		G_CALLBACK (on_decompress_button_clicked), gw);
 
-    g_signal_connect(G_OBJECT(gw->drawingarea0)		, "expose_event",	G_CALLBACK (on_drawingarea0_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea1)		, "expose_event",	G_CALLBACK (on_drawingarea1_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea2)		, "expose_event",	G_CALLBACK (on_drawingarea2_expose_event), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea3)		, "expose_event",	G_CALLBACK (on_drawingarea3_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[0])		, "expose_event",	G_CALLBACK (on_drawingarea0123_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[1])		, "expose_event",	G_CALLBACK (on_drawingarea0123_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[2])		, "expose_event",	G_CALLBACK (on_drawingarea0123_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[3])		, "expose_event",	G_CALLBACK (on_drawingarea0123_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[0])		, "button_press_event",	G_CALLBACK (on_drawingarea0123_button_press_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[1])		, "button_press_event",	G_CALLBACK (on_drawingarea0123_button_press_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[2])		, "button_press_event",	G_CALLBACK (on_drawingarea0123_button_press_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[3])		, "button_press_event",	G_CALLBACK (on_drawingarea0123_button_press_event), gw);
+
+	gw->orig[0] = g_slice_new(Pixbuf); gw->orig[0]->init = 0;
+	gw->orig[1] = g_slice_new(Pixbuf); gw->orig[1]->init = 0;
+	gw->orig[2] = g_slice_new(Pixbuf); gw->orig[2]->init = 0;
+	gw->orig[3] = g_slice_new(Pixbuf); gw->orig[3]->init = 0;
+
+	gw->scal[0] = g_slice_new(Pixbuf); gw->scal[0]->init = 0;
+	gw->scal[1] = g_slice_new(Pixbuf); gw->scal[1]->init = 0;
+	gw->scal[2] = g_slice_new(Pixbuf); gw->scal[2]->init = 0;
+	gw->scal[3] = g_slice_new(Pixbuf); gw->scal[3]->init = 0;
+
+	gw->feet = 1; gw->zoom = 1.;
+	gw->new = 1;
+
+	//Image window
+	gw->window1 		= GTK_WIDGET (gtk_builder_get_object (builder, "window1"));
+	gw->drawingarea[4]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea4"));
+	gw->viewport[4]		= GTK_WIDGET (gtk_builder_get_object (builder, "viewport4"));
+
+	gw->feet_button1 	= GTK_WIDGET (gtk_builder_get_object (builder, "feet_button1"));
+	gw->full_button1	= GTK_WIDGET (gtk_builder_get_object (builder, "full_button1"));
+
+    //g_signal_connect(G_OBJECT(gw->window1)			, "destroy", 		G_CALLBACK (on_quit_windows1), gw);
+    g_signal_connect(G_OBJECT(gw->window1)			, "delete_event", 	G_CALLBACK (on_quit_windows1), gw);
+    g_signal_connect(G_OBJECT(gw->feet_button1)		, "clicked"	, 		G_CALLBACK (on_feet_button1_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->full_button1)		, "clicked"	, 		G_CALLBACK (on_full_button1_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[4])		, "expose_event",	G_CALLBACK (on_drawingarea4_expose_event), gw);
+
+	gw->orig[4] = g_slice_new(Pixbuf); gw->orig[4]->init = 0;
+	gw->scal[4] = g_slice_new(Pixbuf); gw->scal[4]->init = 0;
+	gw->feet1 = 1;
 
 	// free memory used by GtkBuilder object
 	g_object_unref (G_OBJECT (builder));
@@ -552,7 +534,6 @@ gboolean  init_gw(GtkWalet *gw)
 	gw->statusbar_context_id = gtk_statusbar_get_context_id (GTK_STATUSBAR (gw->statusbar), "Open file");
 	print_status(gw, "No file open");
 
+
 	return TRUE;
 }
-
-

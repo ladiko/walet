@@ -357,10 +357,7 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
 
 void frame_compress(GOP *gop, uint32 fr, uint32 times)
 {
-	//Frame *frame = &gop->frames[fr];
-	//uint32 bits = gop->bpp, color =  gop->color, steps = gop->steps;
 	uint32 size;
-	//Subband **sub;
 	clock_t start, end;
 	struct timeval tv;
 
@@ -387,9 +384,24 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times)
 	//frame_write
 }
 
-void frame_decompress(Frame *frame, Subband **sub,  ColorSpace color, uint32 steps, uint32 bits, uint32 st)
+void frame_decompress(GOP *gop, uint32 fr, uint32 isteps)
 {
-	//frame_read
-	//frame_range_decode	(frame, sub, color, steps, bits);
-	//frame_idwt_53		(frame, sub, color, steps, st);
+	uint32 size;
+	clock_t start, end;
+	struct timeval tv;
+	double time=0., tmp;
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	frame_range_decode	(gop, fr, &size);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("Range decoder time    = %f\n", tmp);
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	frame_idwt_53		(gop, fr, isteps);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("IDWT time             = %f\n", tmp);
+
+	printf("Frame time = %f size  = %d\n", time, size);
 }

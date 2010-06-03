@@ -77,14 +77,13 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-	new_buffer (0, gw->gop->width, gw->gop->height, gw);
-	utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-	//draw_image(gw->drawingarea0, gw->orig[0]);
-	gtk_widget_queue_draw(gw->drawingarea0);
+	new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
+	utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	new_buffer (1, gw->gop->width-1, gw->gop->height-1, gw);
-	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea1);
+	new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+	utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
 	//draw_image(gw->drawingarea1, gw->orig[1]);
 	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea1), "expose_event", NULL);
 
@@ -169,7 +168,8 @@ int main (int argc, char *argv[])
 
 	// Initialize GTK+ libraries
 	gtk_init (&argc, &argv);
-	if (init_gw(gw) == FALSE) return 1; // error loading UI
+	//Init main window
+	if (init_main_window(gw) == FALSE) return 1; // error loading UI
 	// Show the window
 	gtk_widget_show (gw->window);
 	// Enter GTK+ main loop
