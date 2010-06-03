@@ -21,6 +21,10 @@
 #ifndef _WALET_H_
 #define _WALET_H_
 
+#define WALET_MAJOR_VERSION 0
+#define WALET_MINOR_VERSION 5
+#define WALET_MICRO_VERSION 1
+
 #ifndef _WALET_TYPES_
 #define _WALET_TYPES_
 typedef unsigned char       uchar;

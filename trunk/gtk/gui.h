@@ -1,7 +1,7 @@
 #ifndef _GUI_H_
 #define _GUI_H_
 
-void new_buffer(guint n, guint width, guint height, GtkWalet *gw);
+void new_buffer(Pixbuf *orig, guint width, guint height);
 void feet(GtkWidget* viewport, Pixbuf *orig, Pixbuf *scal);
 void draw_image(GtkWidget* drawingarea, Pixbuf *orig);
 
@@ -15,6 +15,6 @@ gboolean on_drawingarea2_expose_event (GtkWidget *widget, GdkEventExpose *event,
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw);
 void on_full_button_clicked (GtkObject *object, GtkWalet *gw);
 
-gboolean  init_gw(GtkWalet *gw);
+gboolean  init_main_window(GtkWalet *gw);
 
 #endif //_GUI_H_

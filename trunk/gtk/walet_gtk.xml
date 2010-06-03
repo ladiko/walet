@@ -431,7 +431,7 @@
                     <property name="tooltip_text" translatable="yes">Range encoder</property>
                     <property name="label" translatable="yes">Fill subbands</property>
                     <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-jump-to</property>
+                    <property name="stock_id">gtk-redo</property>
                     <signal name="clicked" handler="on_range_enc_button_clicked"/>
                   </object>
                 </child>
@@ -488,6 +488,7 @@
                 <child>
                   <object class="GtkToolButton" id="idwt_button">
                     <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">IDWT transform</property>
                     <property name="label" translatable="yes">IDWT</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-go-up</property>
@@ -503,7 +504,9 @@
               <object class="GtkToolItem" id="toolitem20">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkVSeparator" id="vseparator5">
+                    <property name="visible">True</property>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -514,7 +517,14 @@
               <object class="GtkToolItem" id="toolitem21">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkToolButton" id="compress_button">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Compress image</property>
+                    <property name="label" translatable="yes">IDWT</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-go-forward</property>
+                    <signal name="clicked" handler="on_compress_button_clicked"/>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -523,6 +533,48 @@
             </child>
             <child>
               <object class="GtkToolItem" id="toolitem22">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="decompress_button">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Decompress image</property>
+                    <property name="label" translatable="yes">IDWT</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-go-back</property>
+                    <signal name="clicked" handler="on_decompress_button_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem23">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkVSeparator" id="vseparator6">
+                    <property name="visible">True</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem24">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem25">
                 <property name="visible">True</property>
                 <child>
                   <placeholder/>
@@ -557,7 +609,9 @@
                     <child>
                       <object class="GtkDrawingArea" id="drawingarea0">
                         <property name="visible">True</property>
+                        <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                         <signal name="expose_event" handler="on_drawingarea0_expose_event"/>
+                        <signal name="button_press_event" handler="on_drawingarea0_button_press_event"/>
                       </object>
                     </child>
                   </object>
@@ -577,6 +631,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="drawingarea1">
                         <property name="visible">True</property>
+                        <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                         <signal name="expose_event" handler="on_drawingarea1_expose_event"/>
                       </object>
                     </child>
@@ -601,6 +656,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="drawingarea2">
                         <property name="visible">True</property>
+                        <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                         <signal name="expose_event" handler="on_drawingarea2_expose_event"/>
                       </object>
                     </child>
@@ -625,6 +681,7 @@
                     <child>
                       <object class="GtkDrawingArea" id="drawingarea3">
                         <property name="visible">True</property>
+                        <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                         <signal name="expose_event" handler="on_drawingarea3_expose_event"/>
                       </object>
                     </child>
@@ -662,5 +719,108 @@
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
+  </object>
+  <object class="GtkWindow" id="window1">
+    <property name="width_request">1024</property>
+    <property name="height_request">768</property>
+    <child>
+      <object class="GtkVBox" id="vbox2">
+        <property name="visible">True</property>
+        <child>
+          <object class="GtkToolbar" id="toolbar2">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkToolItem" id="toolitem201">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkVSeparator" id="vseparator201">
+                    <property name="visible">True</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem202">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="feet_button1">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Feet image</property>
+                    <property name="label" translatable="yes">Feet images</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-zoom-fit</property>
+                    <signal name="clicked" handler="on_feet_button1_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem203">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="full_button1">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">100% size</property>
+                    <property name="label" translatable="yes">100%</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-zoom-100</property>
+                    <signal name="clicked" handler="on_full_button1_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem204">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkVSeparator" id="vseparator202">
+                    <property name="visible">True</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow4">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <child>
+              <object class="GtkViewport" id="viewport4">
+                <property name="visible">True</property>
+                <property name="resize_mode">queue</property>
+                <child>
+                  <object class="GtkDrawingArea" id="drawingarea4">
+                    <property name="visible">True</property>
+                    <signal name="expose_event" handler="on_drawingarea4_expose_event"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
   </object>
 </interface>
