@@ -217,7 +217,7 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
-	if(check_state(frame->state, FRAME_READ | RANGE_ENCODER)){
+	if(check_state(frame->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
 		*size += image_range_decode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 		if(gop->color != GREY  && gop->color != BAYER) {
@@ -225,6 +225,48 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 			*size += image_range_decode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 		}
 		frame->state |= RANGE_DECODER;
+		return 1;
+	} else return 0;
+}
+
+uint32 frame_median_filter(GOP *gop, uint32 fr)
+///	\fn	void frame_quantization(GOP *gop, uint32 fr)
+///	\brief	Frame quantization.
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+///	\retval				1 - if all OK, 0 - if not OK
+{
+	if(gop == NULL ) return 0;
+	Frame *frame = &gop->frames[fr];
+
+	if(check_state(frame->state, IDWT | FRAME_COPY)){
+		image_median_filter(&frame->img[0], gop->color, gop->bg, gop->buf);
+		if(gop->color != GREY  && gop->color != BAYER) {
+			image_median_filter(&frame->img[1], gop->color, gop->bg, gop->buf);
+			image_median_filter(&frame->img[2], gop->color, gop->bg, gop->buf);
+		}
+		frame->state |= MEDIAN_FILTER;
+		return 1;
+	} else return 0;
+}
+
+uint32 frame_subband_median_filter(GOP *gop, uint32 fr)
+///	\fn	void frame_quantization(GOP *gop, uint32 fr)
+///	\brief	Frame quantization.
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+///	\retval				1 - if all OK, 0 - if not OK
+{
+	if(gop == NULL ) return 0;
+	Frame *frame = &gop->frames[fr];
+
+	if(check_state(frame->state, DWT )){
+		image_subband_median_filter(&frame->img[0], gop->color, gop->steps, gop->buf);
+		if(gop->color != GREY  && gop->color != BAYER) {
+			image_subband_median_filter(&frame->img[1], gop->color, gop->steps, gop->buf);
+			image_subband_median_filter(&frame->img[2], gop->color, gop->steps, gop->buf);
+		}
+		frame->state |= MEDIAN_FILTER;
 		return 1;
 	} else return 0;
 }
@@ -240,12 +282,9 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 	Image *im = &gop->frames[fr].img[0];
 	if(gop->color == BAYER){
 		image_fill_hist(im, gop->color, gop->bg, gop->bpp);
-		utils_white_balance(im->img, im->img, im->hist, im->look, im->width, im->height, gop->bg, gop->bpp, out_bits, gamma);
+		filters_white_balance(im->img, im->img, im->width, im->height, gop->bg, im->hist, im->look, gop->bpp, out_bits, gamma);
 	}
 }
-
-
-
 
 uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
@@ -350,7 +389,7 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
 
     free(bits);
 
-    frame->state = FRAME_READ;
+    frame->state = BUFFER_READ;
 
     return size;
  }

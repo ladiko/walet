@@ -133,7 +133,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		printf("Open %s file\n", gw->filename_open);
 
 		walet_read_stream(&gw->gop, 1, gw->filename_open);
-		//frame_decompress(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
+		frame_decompress(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
 
 		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
 		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
@@ -253,17 +253,17 @@ void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
 			}
 		}
 	}
-	//g_printf("zoom = %f feet = %d \n", gw->zoom, gw->feet);
 }
 
 void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	if(frame_dwt_53(gw->gop, gw->gop->cur_gop_frame)) {
-		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
-		utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
-	}
+	frame_dwt_53(gw->gop, gw->gop->cur_gop_frame);
+	//if(frame_dwt_53(gw->gop, gw->gop->cur_gop_frame)) {
+	//	new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
+	//	utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
+	//	gtk_widget_queue_draw(gw->drawingarea[2]);
+	//}
 }
 
 void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -272,8 +272,14 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps)){
 		new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
 		utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
 	}
+	//if(frame_idwt_53(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps-3)){
+	//	new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);
+	//	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
+	//			gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
+	//	gtk_widget_queue_draw(gw->drawingarea[0]);
+	//}
 }
 
 void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -314,6 +320,16 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("Decoded frame size = %d\n", size);
 }
 
+void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	if(gw->gop == NULL ) return;
+	if(frame_median_filter(gw->gop, gw->gop->cur_gop_frame)){
+		new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
+		utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
+	}
+}
+
 gboolean on_drawingarea0123_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
 	//gtk_widget_set_size_request(widget, w, h);
@@ -339,24 +355,25 @@ gboolean on_drawingarea0123_expose_event (GtkWidget *widget, GdkEventExpose *eve
 
 gboolean on_drawingarea0123_button_press_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
-	gint i;
-	if(widget == gw->drawingarea[0]) i=0;
-	if(widget == gw->drawingarea[1]) i=1;
-	if(widget == gw->drawingarea[2]) i=2;
-	if(widget == gw->drawingarea[3]) i=3;
+	if(event->type==GDK_2BUTTON_PRESS){
+		gint i;
+		if(widget == gw->drawingarea[0]) i=0;
+		if(widget == gw->drawingarea[1]) i=1;
+		if(widget == gw->drawingarea[2]) i=2;
+		if(widget == gw->drawingarea[3]) i=3;
 
-	if(gw->orig[i]->init){
-		gw->orig[4]->height = gw->orig[i]->height;
-		gw->orig[4]->width  = gw->orig[i]->width;
-		gw->orig[4]->init  = 1;
-		gw->orig[4]->pxb = gw->orig[i]->pxb;
+		if(gw->orig[i]->init){
+			gw->orig[4]->height = gw->orig[i]->height;
+			gw->orig[4]->width  = gw->orig[i]->width;
+			gw->orig[4]->init  = 1;
+			gw->orig[4]->pxb = gw->orig[i]->pxb;
 
-		//gtk_adjustment_set_page_size (gtk_viewport_get_hadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->width>>2));
-		//gtk_adjustment_set_page_size (gtk_viewport_get_vadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->height>>2));
-		gtk_widget_show (gw->window1);
-		gtk_widget_queue_draw(gw->drawingarea[4]);
+			//gtk_adjustment_set_page_size (gtk_viewport_get_hadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->width>>2));
+			//gtk_adjustment_set_page_size (gtk_viewport_get_vadjustment ((GtkViewport*)gw->viewport[4]), (gdouble)(gw->gop->height>>2));
+			gtk_widget_show (gw->window1);
+			gtk_widget_queue_draw(gw->drawingarea[4]);
+		}
 	}
-
 	return TRUE;
 }
 
@@ -444,6 +461,7 @@ gboolean  init_main_window(GtkWalet *gw)
 	gw->range_dec_button	= GTK_WIDGET (gtk_builder_get_object (builder, "range_dec_button"));
 	gw->compress_button		= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
 	gw->decompress_button	= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
+	gw->median_button		= GTK_WIDGET (gtk_builder_get_object (builder, "median_button"));
 	// Drawingareas
 	gw->drawingarea[0]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea[1]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
@@ -477,6 +495,7 @@ gboolean  init_main_window(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->quant_button)		, "clicked"	, 		G_CALLBACK (on_quant_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->range_enc_button)	, "clicked"	, 		G_CALLBACK (on_range_enc_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->range_dec_button)	, "clicked"	, 		G_CALLBACK (on_range_dec_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->median_button)	, "clicked"	, 		G_CALLBACK (on_median_button_clicked), gw);
     //g_signal_connect(G_OBJECT(gw->compress_button)	, "clicked"	, 		G_CALLBACK (on_compress_button_clicked), gw);
     //g_signal_connect(G_OBJECT(gw->decompress_button), "clicked"	, 		G_CALLBACK (on_decompress_button_clicked), gw);
 
@@ -514,7 +533,7 @@ gboolean  init_main_window(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->window1)			, "delete_event", 	G_CALLBACK (on_quit_windows1), gw);
     g_signal_connect(G_OBJECT(gw->feet_button1)		, "clicked"	, 		G_CALLBACK (on_feet_button1_clicked), gw);
     g_signal_connect(G_OBJECT(gw->full_button1)		, "clicked"	, 		G_CALLBACK (on_full_button1_clicked), gw);
-    g_signal_connect(G_OBJECT(gw->drawingarea[4])		, "expose_event",	G_CALLBACK (on_drawingarea4_expose_event), gw);
+    g_signal_connect(G_OBJECT(gw->drawingarea[4])	, "expose_event",	G_CALLBACK (on_drawingarea4_expose_event), gw);
 
 	gw->orig[4] = g_slice_new(Pixbuf); gw->orig[4]->init = 0;
 	gw->scal[4] = g_slice_new(Pixbuf); gw->scal[4]->init = 0;
