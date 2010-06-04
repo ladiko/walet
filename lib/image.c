@@ -187,6 +187,42 @@ static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const 
 	}
 }
 
+static void fill_bayer_hist(imgtype *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits)
+{
+//
+//   All RGB cameras use one of these Bayer grids:
+//
+//	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+//	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+//	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+//	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+//	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+//	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+//
+	uint32 x, y, i, size = h*w;
+	uint32 *c[4];
+	memset(r, 0, sizeof r);
+	memset(g, 0, sizeof g);
+	memset(b, 0, sizeof b);
+
+	switch(bay){
+		case(BGGR):{ c[0] = r; c[1] = g; c[2] = g; c[3] = b; break;}
+		case(GRBG):{ c[0] = g; c[1] = b; c[2] = r; c[3] = g; break;}
+		case(GBRG):{ c[0] = g; c[1] = r; c[2] = b; c[3] = g; break;}
+		case(RGGB):{ c[0] = b; c[1] = g; c[2] = g; c[3] = r; break;}
+	}
+
+	for(i=0, x=0, y=0; i < size; i++, x++){
+		if(x == w) { x=0; y++;}
+		if(y&1)
+			if(x&1) c[0][img[i]]++;
+			else 	c[1][img[i]]++;
+		else
+			if(x&1)	c[2][img[i]]++;
+			else 	c[3][img[i]]++;
+	}
+}
+
 void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 ///	\fn void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 ///	\brief Init image structure.
@@ -351,7 +387,7 @@ void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
 	uint32 i, size = im->width*im->height, sz = 1<<bpp, sum;
 	uint32	tmp = size;
 	if(color == BAYER) {
-		utils_fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->width, im->height, bg, bpp);
+		fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->width, im->height, bg, bpp);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
 		printf("size = %d r = %d ", size, sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
@@ -532,3 +568,33 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 	}
 	return size;
 }
+
+void image_median_filter(Image *im, ColorSpace color, BayerGrid bg, imgtype *buf)
+///	\fn void image_median_filter(Image *im, ColorSpace color, BayerGrid bg, imgtype *buf)
+///	\brief Image median filter.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+{
+	if(color == BAYER) filters_bayer_median_3x3(im->img, buf, im->width, im->height, bg);
+	else filters_median_3x3(im->img, buf, im->width, im->height);
+}
+
+void image_subband_median_filter(Image *im, ColorSpace color, uint32 steps, imgtype *buf)
+///	\fn uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf)
+///	\brief Image range decoder.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param bpp 			The bits per pixel.
+///	\param buf 			The buffer for encoded data.
+///	\retval				The size of decoded image in bytes.
+{
+	uint32 i, sz;
+	imgtype *img = im->img;
+	Subband *sub = im->sub;
+
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	for(i=0; i < sz; i++) filters_median_3x3(&img[sub[i].loc], &buf[sub[i].loc], sub[i].size.x, sub[i].size.y);
+}
+

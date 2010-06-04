@@ -6,7 +6,7 @@ typedef struct {
 	uint32 		height;		// Image width
 	Vector 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
 	imgtype 	*img;		//Pointer to image
-	uint32 		*hist;		//Distribution probabilities array white balancing
+	uint32 		*hist;		//distribution probabilities array for white balancing
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
@@ -48,6 +48,8 @@ void 	image_bits_alloc	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, u
 void 	image_quantization	(Image *im, ColorSpace color, uint32 steps);
 uint32 	image_range_encode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf);
 uint32	image_range_decode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uchar *buf);
+void 	image_median_filter	(Image *im, ColorSpace color, BayerGrid bg, imgtype *buf);
+void 	image_subband_median_filter	(Image *im, ColorSpace color, uint32 steps, imgtype *buf);
 
 //void	image_init				(Image *im, StreamData *sd, uint32 x, uint32 y);
 //void 	image_copy				(Image *im, StreamData *sd, uchar *v);

@@ -72,7 +72,7 @@ FrameType;
 
 typedef enum {
 	FRAME_COPY		=	1,
-	FRAME_READ		=	1<<1,
+	BUFFER_READ		=	1<<1,
   	DWT 			= 	1<<2,
   	IDWT 			= 	1<<3,
   	FILL_SUBBAND 	= 	1<<4,
@@ -80,6 +80,7 @@ typedef enum {
   	RANGE_ENCODER	= 	1<<6,
   	RANGE_DECODER	= 	1<<7,
   	BITS_ALLOCATION	= 	1<<8,
+  	MEDIAN_FILTER	=	1<<9,
 }	CodecState;
 
 /*
@@ -176,5 +177,6 @@ typedef struct {
 #include <gop.h>
 #include <utils.h>
 #include <rangecoder.h>
+#include <filters.h>
 
 #endif //_WALET_HH_

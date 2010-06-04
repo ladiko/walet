@@ -35,7 +35,9 @@ uint32 	frame_write			(GOP *gop, uint32 fr, FILE *wl);
 void 	frame_compress		(GOP *gop, uint32 fr, uint32 times);
 void 	frame_decompress	(GOP *gop, uint32 fr, uint32 isteps);
 
-void 	frame_white_balance	(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma);
+void 	frame_white_balance		(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma);
+uint32 	frame_median_filter		(GOP *gop, uint32 fr);
+uint32 	frame_subband_median_filter	(GOP *gop, uint32 fr);
 
 #ifdef __cplusplus
 }

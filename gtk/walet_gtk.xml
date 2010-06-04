@@ -566,7 +566,13 @@
               <object class="GtkToolItem" id="toolitem24">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkToolButton" id="median_button">
+                    <property name="visible">True</property>
+                    <property name="tooltip_text" translatable="yes">Median filter</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-convert</property>
+                    <signal name="clicked" handler="on_median_button_clicked"/>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -575,6 +581,39 @@
             </child>
             <child>
               <object class="GtkToolItem" id="toolitem25">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem26">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem27">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem28">
                 <property name="visible">True</property>
                 <child>
                   <placeholder/>
