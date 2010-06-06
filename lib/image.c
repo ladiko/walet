@@ -8,6 +8,58 @@
 #define max(x, m) 			((x>m) ? (m) : (x))
 
 
+static inline void dwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
+///	\fn static inline void dwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D Haar wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
+{
+	int i, j, sh = (w>>1) + (w&1), w1 = ((w>>2)<<2);
+	for(i=0, j=0; i < w1; i+=4, j+=2){
+		out[i]		= (in[i]	+ in[sh+i])>>1;
+		out[i+1] 	= (in[i+1]	+ in[i+3])>>1;
+		out[sh+j]	= (in[i]	- in[i+2])>>1;
+		out[sh+j+1] = (in[i+1]	- in[i+3])>>1;
+	}
+	switch(w&0x3){
+	case 0 : { 	break; }
+	case 1 : { 	out[j] 	 = in[i]; break; }
+	case 2 : { 	out[j]	 = in[i];
+				out[j+1] = in[i+1]; break; }
+	case 3 : { 	out[j]	 = (in[i] + in[i+2])>>1;
+				out[j+1] = in[i+1];
+				out[sh+j]= (in[i] - in[i+2])>>1;
+				break; }
+	}
+}
+
+static inline void idwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
+///	\fn static inline void idwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D Haar invert wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
+{
+	int i, j, sh = (w>>1) + (w&1), w1 = ((w>>2)<<2);
+	for(i=0, j=0; i < w1; i+=4, j+=2){
+		out[i]		= (in[i]	+ in[sh+i])>>1;
+		out[i+1] 	= (in[i+1]	+ in[i+3])>>1;
+		out[sh+j]	= (in[i]	- in[i+2])>>1;
+		out[sh+j+1] = (in[i+1]	- in[i+3])>>1;
+	}
+	switch(w&0x3){
+	case 0 : { 	break; }
+	case 1 : { 	out[j] 	 = in[i]; break; }
+	case 2 : { 	out[j]	 = in[i];
+				out[j+1] = in[i+1]; break; }
+	case 3 : { 	out[j]	 = (in[i] + in[i+2])>>1;
+				out[j+1] = in[i+1];
+				out[sh+j]= (in[i] - in[i+2])>>1;
+				break; }
+	}
+}
+
 static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\fn static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\brief 1D 5.3 wavelet transform.
