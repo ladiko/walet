@@ -43,6 +43,7 @@ typedef struct  {
 	GtkWidget	*compress_button;
 	GtkWidget	*decompress_button;
 	GtkWidget	*median_button;
+	GtkWidget	*check_button;
 
 	// Drawingareas
 	Pixbuf		*orig[5];		//Original image

@@ -583,7 +583,12 @@
               <object class="GtkToolItem" id="toolitem25">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkToolButton" id="check_button">
+                    <property name="visible">True</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-info</property>
+                    <signal name="clicked" handler="on_check_button_clicked"/>
+                  </object>
                 </child>
               </object>
               <packing>
