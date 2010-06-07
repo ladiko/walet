@@ -214,6 +214,126 @@ void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid
 	}
 }
 
+double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \brief Calculate distortion of two image.
+/// \param before	Pointer to first image.
+/// \param after	Pointer to second image.
+/// \param dim 		Size of image height*width.
+/// \param d 		d = 1 if gray image, d = 3 if color image.
+/// \retval 		The distortion.
+{
+	uint32 i;
+	double ape;
+	unsigned long long r = 0, g = 0, b = 0;
+	if(d==3){
+		for(i = 0; i < dim; i = i + 3){
+			//if(before[i]     - after[i]) printf("x = %4d y = %4d r = %4d\n",i/3,i/3,before[i]     - after[i]);
+			r += (before[i]     - after[i])*(before[i]     - after[i]);
+			g += (before[i+1] - after[i+1])*(before[i+1] - after[i+1]);
+			b += (before[i+2] - after[i+2])*(before[i+2] - after[i+2]);
+		}
+		ape = (double)(r + g + b)/((double)dim*3.);
+		return ape;
+	}
+	if(d==1){
+		for(i = 0; i < dim; i++){
+			//if(before[i]- after[i]) printf("i = %9d b = %4d a = %4d r = %4d\n",i,before[i], after[i], before[i] - after[i] );
+			r += (before[i] - after[i])*(before[i] - after[i]);
+			//printf("a = %3d  b = %3d ", before[i], after[i]);
+		}
+		//printf("r = %d  dim = %d ", r, dim);
+		ape = (double)r/(double)dim;
+		//printf(" dist = %f\n",ape);
+		return ape;
+	}
+	else{printf("ape: ERROR\n");
+		 return 0.;
+	}
+}
+
+double utils_ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \fn double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \brief Calculate APE of two image.
+/// \param before	Pointer to first image.
+/// \param after	Pointer to second image.
+/// \param dim 		Size of image height*width.
+/// \param d 		d = 1 if gray image, d = 3 if color image.
+/// \retval 		The APE.
+{
+	uint32 i;
+	double ape;
+	unsigned long long r = 0, g = 0, b = 0;
+	if(d==3){
+		for(i = 0; i < dim; i = i + 3){
+			//if(before[i]     - after[i]) printf("x = %4d y = %4d r = %4d\n",i/3,i/3,before[i]     - after[i]);
+			r += abs((int)(before[i]     - after[i]));
+			g += abs((int)(before[i+1] - after[i+1]));
+			b += abs((int)(before[i+2] - after[i+2]));
+		}
+		ape = (double)(r + g + b)/((double)dim*3.);
+		return ape;
+	}
+	if(d==1){
+		for(i = 0; i < dim; i++){
+			//if(before[i] - after[i] && i < 1920*2) printf("i = %4d b = %4d a = %4d\n", i, before[i], after[i]);
+			r += abs((int)(before[i] - after[i] ));
+		}
+		ape = (double)r/(double)dim;
+		return ape;
+	}
+	else{printf("ape: ERROR\n");
+		 return 0.;
+	}
+}
+
+double utils_psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \fn double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+/// \brief Calculate PSNR of two image.
+/// \param before	Pointer to first image.
+/// \param after	Pointer to second image.
+/// \param dim 		Size of image height*width.
+/// \param d 		d = 1 if gray image, d = 3 if color image.
+/// \retval 		The PSNR.
+{
+	uint32 i;
+	double psnr;
+	unsigned long long r = 0, g = 0, b = 0;
+	if(d==3){
+		for(i = 0; i< dim; i = i + 3){
+			r += (before[i]   - after[i]  )*(before[i]   - after[i]  );
+			g += (before[i+1] - after[i+1])*(before[i+1] - after[i+1]);
+			b += (before[i+2] - after[i+2])*(before[i+2] - after[i+2]);
+		}
+
+		if((r + g + b) == 0){
+			return 0.;
+		}
+
+		psnr = 10.*log10((255.*255.)/((double)(r + g + b)/((double)dim*3.)));
+		return psnr;
+	}
+	if(d==1){
+		for(i = 0; i< dim; i++){
+			r += (before[i]   - after[i] )*(before[i]   - after[i]);
+		}
+
+		if(r  == 0){
+			return 0.;
+		}
+
+		psnr = 10.*log10((255.*255.)/((double)r/(double)dim));
+		return psnr;
+	}
+	else{
+		printf("psnr: ERROR\n");
+		return 0.;
+	}
+}
+
+
+
+
 void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uchar sub, uint32 size, uint32 *q, double *dis, double *e)
 /*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
 	\brief Calculate distortion for the given uniform quantizer.
@@ -609,44 +729,6 @@ uchar* malet_to_rgb(imgtype *img, uchar *rgb, int h, int w, int step)
 	return rgb;
 }
 
-double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/*! \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-    \brief Calculate distortion of two image.
-    \param before	Pointer to first image.
-    \param after	Pointer to second image.
-    \param dim 		Size of image height*width.
-    \param d 		d = 1 if gray image, d = 3 if color image.
-    \retval 		The distortion.
-*/
-{
-	uint32 i;
-	double ape;
-	unsigned long long r = 0, g = 0, b = 0;
-	if(d==3){
-		for(i = 0; i < dim; i = i + 3){
-			//if(before[i]     - after[i]) printf("x = %4d y = %4d r = %4d\n",i/3,i/3,before[i]     - after[i]);
-			r += (before[i]     - after[i])*(before[i]     - after[i]);
-			g += (before[i+1] - after[i+1])*(before[i+1] - after[i+1]);
-			b += (before[i+2] - after[i+2])*(before[i+2] - after[i+2]);
-		}
-		ape = (double)(r + g + b)/((double)dim*3.);
-		return ape;
-	}
-	if(d==1){
-		for(i = 0; i < dim; i++){
-			//if(before[i]- after[i]) printf("i = %9d b = %4d a = %4d r = %4d\n",i,before[i], after[i], before[i] - after[i] );
-			r += (before[i] - after[i])*(before[i] - after[i]);
-			//printf("a = %3d  b = %3d ", before[i], after[i]);
-		}
-		//printf("r = %d  dim = %d ", r, dim);
-		ape = (double)r/(double)dim;
-		//printf(" dist = %f\n",ape);
-		return ape;
-	}
-	else{printf("ape: ERROR\n");
-		 return 0.;
-	}
-}
 
 double dist3(uchar *before, uchar *after, uint32 dim, uint32 d)
 /*! \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
@@ -759,50 +841,7 @@ double ape3(uchar *before, uchar *after, uint32 dim, uint32 d)
 	}
 }
 
-double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/*! \fn double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-    \brief Calculate PSNR of two image.
-    \param before	Pointer to first image.
-    \param after	Pointer to second image.
-    \param dim 		Size of image height*width.
-    \param d 		d = 1 if gray image, d = 3 if color image.
-    \retval 		The PSNR.
-*/
-{
-	uint32 i;
-	double psnr;
-	unsigned long long r = 0, g = 0, b = 0;
-	if(d==3){
-		for(i = 0; i< dim; i = i + 3){
-			r += (before[i]   - after[i]  )*(before[i]   - after[i]  );
-			g += (before[i+1] - after[i+1])*(before[i+1] - after[i+1]);
-			b += (before[i+2] - after[i+2])*(before[i+2] - after[i+2]);
-		}
-		
-		if((r + g + b) == 0){
-			return 0.;
-		}
-		
-		psnr = 10.*log10((255.*255.)/((double)(r + g + b)/((double)dim*3.)));
-		return psnr;
-	}
-	if(d==1){
-		for(i = 0; i< dim; i++){
-			r += (before[i]   - after[i] )*(before[i]   - after[i]);
-		}
-		
-		if(r  == 0){
-			return 0.;
-		}
-		
-		psnr = 10.*log10((255.*255.)/((double)r/(double)dim));
-		return psnr;
-	}
-	else{
-		printf("psnr: ERROR\n");
-		return 0.;
-	}
-}
+
 double psnr3(uchar *before, uchar *after, uint32 dim, uint32 d)
 /*! \fn double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
     \brief Calculate PSNR of two image.

@@ -1,6 +1,8 @@
 #ifndef _FILTERS_H_
 #define _FILTERS_H_
 
+typedef int (*FP)(imgtype* , uint32 );
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

@@ -1,6 +1,9 @@
 #ifndef IMAGE_H_
 #define IMAGE_H_
 
+typedef void (*fun1d)(imgtype *in, imgtype *out, const uint32 w);
+typedef void (*fun2d)(imgtype *in, imgtype *out, const uint32 w, const uint32 h);
+
 typedef struct {
 	uint32 		width;		// Image width
 	uint32 		height;		// Image width
@@ -40,6 +43,8 @@ void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, ui
 void 	image_copy			(Image *im, uint32 bpp, uchar *v);
 void 	image_dwt_53		(Image *im, ColorSpace color, uint32 steps, imgtype *buf);
 void 	image_idwt_53		(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint32 isteps);
+void 	image_dwt_haar		(Image *im, ColorSpace color, uint32 steps, imgtype *buf);
+void 	image_idwt_haar		(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint32 isteps);
 void 	image_fill_subb		(Image *im, ColorSpace color, uint32 steps);
 void 	image_fill_hist		(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp);
 //void 	image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep);
