@@ -10,6 +10,8 @@ typedef struct {
 	uint32 			steps;  		// Steps of DWT
 	uint32			gop_size;		// GOP size
 	uint32			rates;			// Frame rates
+	uint32			comp;			// Compression in times to original image if 1 - lossless
+	FilterBank		fb;				// Filters for wavelet transform
 
 	uint32			cur_gop_frame;	// The current gop frame
 	uint64			cur_stream_frame;	// The current stream frame
@@ -25,8 +27,8 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-GOP* 	walet_decoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
-GOP* 	walet_encoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates);
+GOP* 	walet_decoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb);
+GOP* 	walet_encoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb);
 
 uint32 	walet_write_stream	(GOP *gop, uint32 num, const char *filename);
 uint32 	walet_read_stream	(GOP **gop, uint32 num, const char *filename);

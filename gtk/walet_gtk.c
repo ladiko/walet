@@ -73,7 +73,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
-	gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 5, 2, 0);
+	gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 2, 2, 0, 20, FR_HAAR);
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 	frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
