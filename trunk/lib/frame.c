@@ -60,7 +60,7 @@ void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
 	frame->state = FRAME_COPY;
 }
 
-uint32 frame_dwt_53(GOP *gop, uint32 fr)
+uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)
 ///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\brief	Discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
@@ -69,26 +69,22 @@ uint32 frame_dwt_53(GOP *gop, uint32 fr)
 {
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
-	//Check frame state
-	//if(!((frame->state & FRAME_COPY) || (frame->state & IDWT))) {
-	//	printf("Frame copy or IDWT transform should be before DWT transform\n");
-	//	return;
-	//}
 	if(check_state(frame->state, FRAME_COPY | IDWT)){
-		frame->img[0].sub = gop->sub[0]; //Set current image for DWT transform
-		image_dwt_53(&frame->img[0], gop->color, gop->steps, gop->buf);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			frame->img[1].sub = gop->sub[1]; //Set current image for DWT transform
-			frame->img[2].sub = gop->sub[2]; //Set current image for DWT transform
-			image_dwt_53(&frame->img[1], gop->color, gop->steps, gop->buf);
-			image_dwt_53(&frame->img[2], gop->color, gop->steps, gop->buf);
+		frame->img[0].sub = gop->sub[0]; 	//Set current image for DWT transform
+		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, MALLET, fb);
+		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, CLASSIC, fb);
+		else{
+			frame->img[1].sub = gop->sub[1]; 	//Set current image for DWT transform
+			frame->img[2].sub = gop->sub[2]; 	//Set current image for DWT transform
+			image_dwt(&frame->img[1], gop->color, gop->steps, gop->buf, CLASSIC, fb);
+			image_dwt(&frame->img[2], gop->color, gop->steps, gop->buf, CLASSIC, fb);
 		}
 		frame->state = DWT;
 		return 1;
 	} else return 0;
 }
 
-uint32 frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
+uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 ///	\fn	void frame_idwt_53(GOP *gop, uint32 fr, uint32 step)
 ///	\brief	Invert discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
@@ -98,19 +94,15 @@ uint32 frame_idwt_53(GOP *gop, uint32 fr, uint32 isteps)
 {
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
-	//Check frame state
-	//if(!((frame->state & RANGE_DECODER) || (frame->state & DWT))) {
-	//	printf("Range decode or DWT transform should be before IDWT transform\n");
-	//	return;
-	//}
 	if(check_state(frame->state, RANGE_DECODER | DWT)){
 		frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
-		image_idwt_53(&frame->img[0], gop->color, gop->steps, gop->buf, isteps);
+		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, MALLET, fb);
+		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
 		if(gop->color != GREY  && gop->color != BAYER) {
 			frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
 			frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
-			image_idwt_53(&frame->img[1], gop->color, gop->steps, gop->buf, isteps);
-			image_idwt_53(&frame->img[2], gop->color, gop->steps, gop->buf, isteps);
+			image_idwt(&frame->img[1], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
+			image_idwt(&frame->img[2], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
 		}
 		frame->state = IDWT;
 		return 1;
@@ -394,14 +386,14 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
     return size;
  }
 
-void frame_compress(GOP *gop, uint32 fr, uint32 times)
+void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 {
 	uint32 size;
 	clock_t start, end;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt_53		(gop, fr);
+	frame_dwt			(gop, fr, fb);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("DWT time             = %f\n", (double)(end-start)/1000000.);
 
@@ -423,7 +415,7 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times)
 	//frame_write
 }
 
-void frame_decompress(GOP *gop, uint32 fr, uint32 isteps)
+void frame_decompress(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 {
 	uint32 size;
 	clock_t start, end;
@@ -437,7 +429,7 @@ void frame_decompress(GOP *gop, uint32 fr, uint32 isteps)
 	printf("Range decoder time    = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_idwt_53		(gop, fr, isteps);
+	frame_idwt			(gop, fr, isteps, fb);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("IDWT time             = %f\n", tmp);

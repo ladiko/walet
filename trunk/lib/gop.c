@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates)
+GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb)
 {
 	int i;
 	GOP *gop = (GOP*) malloc(sizeof(GOP));
@@ -15,6 +15,8 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->steps		= steps;
 	gop->gop_size	= gop_size;
 	gop->rates		= rates;
+	gop->comp		= comp;
+	gop->fb			= fb;
 
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
@@ -47,7 +49,7 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	return gop;
 }
 
-GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates)
+GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb)
 {
 	int i;
 	GOP *gop = (GOP*) malloc(sizeof(GOP));
@@ -59,6 +61,8 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->steps		= steps;
 	gop->gop_size	= gop_size;
 	gop->rates		= rates;
+	gop->comp		= comp;
+	gop->fb			= fb;
 
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
@@ -75,8 +79,8 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->frames[0].img[0].sub = gop->sub[0];  // Set pointer to subband to frame[0]
 
 	if(color == CS444 || color == RGB) 	{
-		subband_init(gop->sub, 1, color, width   , height, steps, bpp, gop->q);
-		subband_init(gop->sub, 2, color, width   , height, steps, bpp, gop->q);
+		subband_init(gop->sub, 1, color, width, height, steps, bpp, gop->q);
+		subband_init(gop->sub, 2, color, width, height, steps, bpp, gop->q);
 		gop->frames[0].img[1].sub = gop->sub[1]; // Set pointer to subband to frame[0]
 		gop->frames[0].img[2].sub = gop->sub[2]; // Set pointer to subband to frame[0]
 	}
@@ -115,6 +119,8 @@ uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
     wh.steps	= gop->steps;
     wh.gop_size	= gop->gop_size;
     wh.rates	= gop->rates;
+	wh.comp		= gop->comp;
+	wh.fb		= gop->fb;
 
 	wl = fopen(filename, "wb");
     if(wl == NULL) {
@@ -149,7 +155,7 @@ uint32 walet_read_stream(GOP **gop, uint32 num, const char *filename)
     size += sizeof(wh);
     printf("size = %Ld\n", size);
     if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
-    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates);
+    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.bg);
 	//printf("walet_decoder_init  gop = %p\n", *gop);
 
     //Write frames

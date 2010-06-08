@@ -67,8 +67,7 @@ typedef enum {
   	I_FRAME = 0,	
   	P_FRAME = 1,	
   	B_FRAME = 2,	
-}
-FrameType;
+} FrameType;
 
 typedef enum {
 	FRAME_COPY		=	1,
@@ -100,34 +99,20 @@ typedef enum {
 	RGGB = 3,
 }	BayerGrid;
 
+typedef enum {		//Wavelet transform type
+	CLASSIC	= 0,
+	MALLET 	= 1,
+}	TransformType;
+
+typedef enum {		//Wavelet transform filter banks
+	FR_HAAR	= 0,
+	FR_5_3	= 1,
+	FR_9_7	= 2,
+}	FilterBank;
+
 typedef struct {
 	int x,y;
 }	Vector;
-/*
-typedef struct {
-	Vector 				size;			// Image size
-	ColorSpace		 	color;			// Color space
-	Compression			comp;			// Type of compression
-	BayerGrid			bg;				// Bayer grid pattern
-	uint32				bits;			// Bits per pixel
-	uint32				rates;			// Frame rates
-	uint32 				steps;  		// Steps of DWT
-	uint32				gop_size;		// GOP size
-} StreamData;
-*/
-/*
-typedef struct {
-	uint32 				width;			// Image width
-	uint32 				height;			// Image width
-	ColorSpace		 	color;			// Color space
-	BayerGrid			bg;				// Bayer grid pattern
-	uint32				bpp;			// Bits per pixel
-	uint32 				steps;  		// Steps of DWT
-	//Compression			comp;			// Type of compression
-	//uint32				rates;			// Frame rates
-	uint32				gop_size;		// GOP size
-} StreamData;
-*/
 //File header
 // -----------------------------------------------------------------------------------------
 // |offset | size | description
@@ -146,8 +131,9 @@ typedef struct {
 // --------------------------------------------------------------------------------------------
 // |  9    |  1   | Steps of DWT
 // --------------------------------------------------------------------------------------------
-// |  10   | 4 -
-
+// |  10   |  1   | GOP size
+// --------------------------------------------------------------------------------------------
+// |  11   |  1   | Frame rates
 
 typedef struct {
 	uint16		marker;			// The walet codec marker
@@ -159,7 +145,8 @@ typedef struct {
 	uchar 		steps;  		// Steps of DWT
 	uchar		gop_size;		// GOP size
 	uchar		rates;			// Frame rates
-	//Compression			comp;			// Type of compression
+	uchar		comp;			// Compression in times to original image if 1 - lossless
+	uchar		fb;				// Filters for wavelet transform
 } WaletHeader;
 
 
