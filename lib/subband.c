@@ -22,7 +22,7 @@ static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 b
 	}
 	sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = ofset;
 	for(i=0; i<st; i++){
-		sub[i].dist = (uint32 *)calloc(1<<(bits+3), sizeof(uint32));
+		sub[i].dist = (uint32 *)calloc((1<<(bits+2))*3, sizeof(uint32));
 		sub[i].q = q;
 		sub[i].d_bits = bits+2;
 	}

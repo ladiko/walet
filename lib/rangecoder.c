@@ -17,7 +17,10 @@ static inline void set_freq(imgtype img, uint32 *d, uint32 bits)
 //	d[3]	|0                    * |1                      |
 {
 	uint32 i, ind;
-	for(i=0, ind=0; i<bits; ind+=(1<<(bits-i)), i++) d[ind + (img>>i)]++;
+	for(i=0, ind=0; i<bits; ind+=(1<<(bits-i)), i++) {
+		d[ind + (img>>i)]++;
+		//if(ind + (img>>i) >= 1024) printf(" set_freq = %d ", ind + (img>>i));
+	}
 		//printf("img = %d  d[%d + %d] = %d\n", img, ind, img>>i, d[ind + (img>>i)]);
 
 }
@@ -32,7 +35,11 @@ static inline uint32 get_freq(imgtype img, uint32 *d, uint32 bits)
 {
 	uint32 i, c=0, bit = bits-1, ind = (1<<(bits+1))-4;
 	//for(i=0; i<bits; i++) if((img>>(bit-i))%2) c+=d[bit-i][(img>>(bit-i))-1];
-	for(i=0; i<bits; i++, ind-=(1<<(i+1))) if((img>>(bit-i))%2) c+=d[ind +(img>>(bit-i))-1];
+	for(i=0; i<bits; i++, ind-=(1<<(i+1))) if((img>>(bit-i))%2) {
+		c+=d[ind +(img>>(bit-i))-1];
+		//if(ind +(img>>(bit-i))-1 >= 1024) printf(" get_freq = %d ", ind +(img>>(bit-i))-1);
+
+	}
 	return c;
 
 }
@@ -76,7 +83,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
-    \param d		The pointer to array of distribution probabilities of the mesage.
+    \param d		The pointer to array of distribution probabilities of the message.
 	\param size		The size of the  message
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
@@ -93,6 +100,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 
 	memset(d, 0, sizeof(uint32)*num*2);
 	for(i=0; i<num; i++) set_freq(i, d, q_bits);
+	//printf("num = %d\n", num*2);
 
 	//Ecoder setup
 	range = top; low = 0; j=0;
@@ -130,7 +138,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
-    \param d		The pointer to array of distribution probabilities of the mesage.
+    \param d		The pointer to array of distribution probabilities of the message.
 	\param size		The size of the  message
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
@@ -166,11 +174,10 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		range = range*f;
 		set_freq(out1, d, q_bits);
 		sz++;
-		//if(img[i]-q[out]) printf("i=%d ", i);
 		img[i] = q[out1];
 		//dif = out1 - half;
 		//fin = dif > 0 ? (dif<<del)+sub : (dif < 0 ? -((-dif)<<del)-sub : 0);
-		//if(img[i]- q[out1]) //printf("i=%d ", i);
+		//if(img[i]- q[out1]) printf("i=%d ", i);
 		//	printf("low = %16LX range = %16LX out = %3d out1 = %3d img = %4d qimg = %4d diff = %d\n",
 		//			low, range, out, out1, img[i], q[out1], img[i]- q[out1]);
 

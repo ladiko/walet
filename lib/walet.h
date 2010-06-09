@@ -102,6 +102,7 @@ typedef enum {
 typedef enum {		//Wavelet transform type
 	CLASSIC	= 0,
 	MALLET 	= 1,
+	COLOR	= 2,
 }	TransformType;
 
 typedef enum {		//Wavelet transform filter banks
