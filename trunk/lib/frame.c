@@ -71,9 +71,9 @@ uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)
 	Frame *frame = &gop->frames[fr];
 	if(check_state(frame->state, FRAME_COPY | IDWT)){
 		frame->img[0].sub = gop->sub[0]; 	//Set current image for DWT transform
-		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, MALLET, fb);
+		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, MALLET, fb); //MALLET
 		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, CLASSIC, fb);
-		else{
+		else {
 			frame->img[1].sub = gop->sub[1]; 	//Set current image for DWT transform
 			frame->img[2].sub = gop->sub[2]; 	//Set current image for DWT transform
 			image_dwt(&frame->img[1], gop->color, gop->steps, gop->buf, CLASSIC, fb);
@@ -94,11 +94,11 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 {
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
-	if(check_state(frame->state, RANGE_DECODER | DWT)){
+	if(check_state(frame->state, RANGE_DECODER | DWT | QUANTIZATION)){
 		frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
 		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, MALLET, fb);
 		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
-		if(gop->color != GREY  && gop->color != BAYER) {
+		else {
 			frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
 			frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
 			image_idwt(&frame->img[1], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
@@ -184,7 +184,7 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
-	if(check_state(frame->state, BITS_ALLOCATION)){
+	if(check_state(frame->state, FILL_SUBBAND)){
 		*size = 0;
 		frame->img[0].c_size = image_range_encode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
 		*size += frame->img[0].c_size;
@@ -380,6 +380,7 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
     size += fsize;
 
     free(bits);
+    //printf("File size = %d\n", fsize);
 
     frame->state = BUFFER_READ;
 
@@ -390,28 +391,36 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 {
 	uint32 size;
 	clock_t start, end;
+	double time=0., tmp;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_dwt			(gop, fr, fb);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("DWT time             = %f\n", (double)(end-start)/1000000.);
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("DWT time             = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_fill_subb		(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Fill subband time    = %f\n", (double)(end-start)/1000000.);
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("Fill subband time    = %f\n", tmp);
 
+	if(times != 1) {
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_bits_alloc	(gop, fr, times);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Bits allocation time = %f\n", (double)(end-start)/1000000.);
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("Bits allocation time = %f\n", tmp);
+	}
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_range_encode	(gop, fr, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Range coder time     = %f\n", (double)(end-start)/1000000.);
-	printf("Frame size  = %d\n", size);
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("Range coder time     = %f\n", tmp);
+
+	printf("Frame time = %f size  = %d\n", time, size);
 	//frame_write
 }
 
