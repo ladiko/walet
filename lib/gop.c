@@ -155,7 +155,7 @@ uint32 walet_read_stream(GOP **gop, uint32 num, const char *filename)
     size += sizeof(wh);
     printf("size = %Ld\n", size);
     if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
-    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.bg);
+    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
 	//printf("walet_decoder_init  gop = %p\n", *gop);
 
     //Write frames

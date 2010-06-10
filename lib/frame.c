@@ -326,6 +326,8 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
     fwrite (&fsize, 4, 1, wl); size += 4;
     //Write data
     fwrite (gop->buf, 1, fsize, wl); size += fsize;
+    //printf("File size = %d fist = %2X%2X\n", fsize, gop->buf[0], gop->buf[1]);
+
     //fwrite (gop->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
 
    // if(rgb) {
@@ -380,7 +382,7 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
     size += fsize;
 
     free(bits);
-    //printf("File size = %d\n", fsize);
+    //printf("File size = %d fist = %2X%2X\n", fsize, gop->buf[0], gop->buf[1]);
 
     frame->state = BUFFER_READ;
 

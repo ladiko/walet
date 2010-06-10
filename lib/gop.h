@@ -11,16 +11,15 @@ typedef struct {
 	uint32			gop_size;		// GOP size
 	uint32			rates;			// Frame rates
 	uint32			comp;			// Compression in times to original image if 1 - lossless
-	FilterBank		fb;				// Filters for wavelet transform
+	FilterBank		fb;				// Filters bank for wavelet transform
 
 	uint32			cur_gop_frame;	// The current gop frame
 	uint64			cur_stream_frame;	// The current stream frame
 
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
-	//StreamData		*sd;		//Pointer to stream data.
 	Frame			*frames;	//Pointer to frames array
 	Subband			*sub[3];	//Subband location and size structure
-	int 			*q;			//Quatntization value array
+	int 			*q;			//Quantization value array
 }	GOP;
 
 #ifdef __cplusplus

@@ -1,19 +1,17 @@
 #include <walet_gtk.h>
 
-//void draw_picture (GtkWidget* drawingarea, Pixbuf *orid, imgtype* img, guint width, guint height)
 void new_buffer(Pixbuf *orig, guint width, guint height)
 {
 	guchar *data;
-	if(orig->init) g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
-	data = (guchar *)g_malloc(width*height*3);
-	orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
+	if(orig->width != width || orig->height != height){
+		if(orig->init) g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
+		data = (guchar *)g_malloc(width*height*3);
+		orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
 					     FALSE, 8, width, height, width*3, NULL, NULL);
-	//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
-	orig->width = width; orig->height = height;
-	orig->init = 1;
-	//utils_grey_to_rgb(img, gdk_pixbuf_get_pixels(gw->orig[n]->pxb), width, height);
-	//g_printf("width = %d height = %d rowstride = %d\n",
-	//		gdk_pixbuf_get_width (gw->orig[n]->pxb),gdk_pixbuf_get_height (gw->orig[n]->pxb), gdk_pixbuf_get_rowstride (gw->orig[n]->pxb));
+		//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
+		orig->width = width; orig->height = height;
+		orig->init = 1;
+	} else data = (guchar *)g_malloc(width*height*3);
 }
 
 void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
@@ -103,8 +101,6 @@ void on_quit_activate(GtkObject *object, GtkWalet *gw)
 void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GtkWidget	*dialog;
-	//GError  	*err=NULL;
-	//guint		size;
 
 	dialog = gtk_file_chooser_dialog_new ("Open File...",
 											GTK_WINDOW (gw->window),
@@ -126,6 +122,10 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".pgm")){
 		//Open with gstreamer plugin
 		printf("Open pgm %s file\n", gw->filename_open);
+
+		gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->pgmdec, gw->fakesink, NULL);
+		gst_element_link_many (gw->src, gw->pgmdec, gw->fakesink, NULL);
+
 		g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
 		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
 		g_main_loop_run (gw->loop);
@@ -144,7 +144,31 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 	} else {
-		printf("Can't open file %s\n", gw->filename_open);
+		//printf("Can't open file %s\n", gw->filename_open);
+		printf("Open %s file\n", gw->filename_open);
+		if(gw->gst_init){
+			//gst_pad_push_event(gst_element_get_static_pad(gw->src, "src"), gst_event_new_eos());
+			//g_printf("gst_pad_push_event\n");
+			g_main_loop_quit (gw->loop);
+			g_printf("g_main_loop_quit\n");
+			//gst_element_set_state (gw->pipeline, GST_STATE_NULL);
+			//g_printf("gst_element_set_state\n");
+			gst_element_unlink_many (gw->src, gw->dec, gw->fakesink, NULL);
+			g_printf("gst_element_unlink\n");
+			//gst_bin_remove(GST_BIN (gw->pipeline), gw->src);
+			//gst_bin_remove_many(GST_BIN (gw->pipeline), gw->src, gw->dec, gw->fakesink, NULL);
+			g_printf("g_object_set\n");
+			//gst_bin_add(GST_BIN (gw->pipeline), gw->src);
+			g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
+
+		} else {
+			gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->dec, gw->fakesink, NULL);
+			g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
+			gst_element_link(gw->src, gw->dec);
+			gw->gst_init = 1;
+		}
+		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
+		g_main_loop_run (gw->loop);
 	}
 }
 
@@ -554,6 +578,8 @@ gboolean  init_main_window(GtkWalet *gw)
 
 	gw->feet = 1; gw->zoom = 1.;
 	gw->new = 1;
+
+	gw->walet_init = 0; gw->gst_init = 0;
 
 	//Image window
 	gw->window1 		= GTK_WIDGET (gtk_builder_get_object (builder, "window1"));

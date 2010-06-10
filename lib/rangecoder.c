@@ -118,6 +118,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		//printf(" %2d  img = %3d f = %4u cu = %4u low = %16LX range = %16LX\n", i, im, d[im], cu, low, range);
 		while(range <= bot) {
 			buff[j++]  = (low>>48);
+			//if(j==1) printf("encoder img = %4X\n", buff[0]);
 			range <<= 16;
 			low <<= 16;
 			//printf("                                  low = %16LX range = %16LX\n", low, range);
@@ -159,6 +160,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 
 	//Ecoder setup
 	range = top;
+	//printf("decoder img = %4X\n", buff[0]);
 	low =  ((uint64)buff[0]<<48) | ((uint64)buff[1]<<32) | ((uint64)buff[2]<<16) | (uint64)buff[3];
 	j=4;
 	//printf("range = %16LX low = %16LX\n", range, low);
