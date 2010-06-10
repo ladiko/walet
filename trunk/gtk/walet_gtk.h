@@ -58,6 +58,10 @@ typedef struct  {
 	gboolean 	feet;
 	gdouble		zoom;
 
+	gboolean 	walet_init;
+	gboolean 	gst_init;
+
+
 	//Image window
 	GtkWidget	*window1;
 	GtkWidget	*feet_button1;

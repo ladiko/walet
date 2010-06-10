@@ -3,18 +3,24 @@
 static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, GtkWalet *gw)
 {
 	//GstElement 		*linkElement 	= (GstElement *) data;
-	GstPad 			*sinkpad 		= gst_element_get_static_pad (gw->fakesink, "sink");
-	GstCaps 		*caps 			= gst_pad_get_caps (pad);
+	GstPad 			*sinkpad 	= gst_element_get_static_pad (gw->fakesink, "sink");
+	GstCaps 		*caps 		= gst_pad_get_caps (pad);
 	GstStructure 	*str;
 	GstPadLinkReturn	ret;
+	GstMessage *        message;
+
+	GError* err = g_error_new(G_FILE_ERROR, G_FILE_ERROR_BADF, "It's not video file");
 
 	guint  size = gst_caps_get_size(caps), i;
 	// Check media type
-	//if (!g_strrstr (gst_structure_get_name (str), "video")) {
-	//	gst_caps_unref (caps);
-	//	gst_object_unref (sinkpad);
-	//	return;
-	//}
+	if (!g_strrstr (gst_structure_get_name (gst_caps_get_structure (caps, 0)), "video")) {
+		gst_caps_unref (caps);
+		gst_object_unref (sinkpad);
+		message = gst_message_new_error((GstObject *)gw->fakesink ,err, NULL);
+		gst_object_unref (err);
+		gst_object_unref(message);
+		return;
+	}
 	for(i=0; i < size; i++) {
 		str = gst_caps_get_structure (caps, i);
 		g_print("Decoded cap %d : %s\n", i , gst_structure_get_name(str));
@@ -39,16 +45,15 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, GtkWal
 	//caps = gst_pad_get_negotiated_caps (sinkpad);
 	//caps = gst_pad_peer_get_caps (sinkpad);
 	//g_print("Negotiated cap: %s\n", gst_structure_get_name(gst_caps_get_structure(caps, 0)));
-	str = gst_caps_get_structure (caps, 0);
-	ret =  gst_structure_get_int (str, "width", &gw->gop->width);
-	ret &= gst_structure_get_int (str, "height", &gw->gop->height);
-	ret &= gst_structure_get_int (str, "bpp", &gw->gop->bpp);
-	if (!ret) g_critical("Can't get image parameter");
+	//str = gst_caps_get_structure (caps, 0);
+	//ret =  gst_structure_get_int (str, "width", &gw->gop->width);
+	//ret &= gst_structure_get_int (str, "height", &gw->gop->height);
+	//ret &= gst_structure_get_int (str, "bpp", &gw->gop->bpp);
+	//if (!ret) g_critical("Can't get image parameter");
 
 	//g_printf("width = %d  height = %d bpp = %d\n", gw->gop->width, gw->gop->height, gw->gop->bpp);
 
 	gst_caps_unref (caps);
-
 	gst_object_unref(sinkpad);
 }
 
@@ -69,22 +74,27 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	g_print("%s\n", gst_caps_to_string (caps));
 	ret  = gst_structure_get_int (str, "width"	, &width);
 	ret &= gst_structure_get_int (str, "height"	, &height);
-	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
+	//ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
-	gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 5, 2, 0, 20, FR_5_3);
+	if(!gw->walet_init){
+		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 5, 2, 0, 20, FR_5_3);
+		gw->walet_init = 1;
+	}
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-	frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+	//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 	new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
 	utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-	utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
+	gst_element_set_state (gw->pipeline, GST_STATE_NULL);
+	//gst_element_set_state (gw->pipeline, GST_STATE_PAUSED);
+	//new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+	//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	//gtk_widget_queue_draw(gw->drawingarea[1]);
 	//draw_image(gw->drawingarea1, gw->orig[1]);
 	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea1), "expose_event", NULL);
 
@@ -110,6 +120,7 @@ static gboolean my_bus_callback (GstBus *bus, GstMessage *message,  gpointer dat
 			break;
 		}
 		case GST_MESSAGE_EOS:
+			g_print ("GST_MESSAGE_EOS\n");
 		// end-of-stream
 			g_main_loop_quit (gw->loop);
 			break;
@@ -147,7 +158,7 @@ int main (int argc, char *argv[])
 	gst_object_unref  (gw->bus);
 
 	gw->src 		= gst_element_factory_make("filesrc", "source");
-	gw->dec 		= gst_element_factory_make("decodebin", "decoder");
+	gw->dec 		= gst_element_factory_make("decodebin2", "decoder");
 	gw->pgmdec		= gst_element_factory_make("pgmdec", "decoder");
 	gw->fakesink 	= gst_element_factory_make("fakesink", "sink");
 	//appsink		= gst_element_factory_make(("appsink","appsink");
@@ -156,10 +167,12 @@ int main (int argc, char *argv[])
 		g_critical("Could not create pipeline elements");
 		return FALSE;
 	}
+
+
 	//gst_bin_add_many (GST_BIN (pipeline), src, dec, fakesink, NULL);
 	//gst_element_link_many (src, dec, NULL);
-	gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->pgmdec, gw->fakesink, NULL);
-	gst_element_link_many (gw->src, gw->pgmdec, gw->fakesink, NULL);
+	//gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->pgmdec, gw->fakesink, NULL);
+	//gst_element_link_many (gw->src, gw->pgmdec, gw->fakesink, NULL);
 
 	g_signal_connect (gw->dec, "new-decoded-pad", G_CALLBACK (cb_newpad), gw);
 	//g_signal_connect (dec, "unknown-type",    G_CALLBACK (cb_error),  NULL);
@@ -180,6 +193,7 @@ int main (int argc, char *argv[])
 
 	// Clean up gstreamer
 	gst_element_set_state (gw->pipeline, GST_STATE_NULL);
+	g_main_loop_quit (gw->loop);
 	gst_object_unref (GST_OBJECT (gw->pipeline));
 	g_slice_free (GtkWalet, gw);
 
