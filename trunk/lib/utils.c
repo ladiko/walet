@@ -39,9 +39,9 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint3
 	uint32 x, y;
 	for(y=0; y < h; y++ ){
 		for(x=0; x < w; x++){
-			rgb[3*((y+h0)*size+w0+x)]   = rnd(shift+im[y*w+x]);
-			rgb[3*((y+h0)*size+w0+x)+1] = rnd(shift+im[y*w+x]);
-			rgb[3*((y+h0)*size+w0+x)+2] = rnd(shift+im[y*w+x]);
+			rgb[3*((y+h0)*size+w0+x)]   = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
+			rgb[3*((y+h0)*size+w0+x)+1] = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
+			rgb[3*((y+h0)*size+w0+x)+2] = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
 		}
 	}
 }
@@ -84,24 +84,6 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 				drawrect(rgb, im, w1, h1, w, h, img->width, 128);
 			}
 		} else {
-			/*
-			h0 = sub[0].size.y+sub[2].size.y; w0 = sub[0].size.x+sub[1].size.x;
-
-			h  = sub[4].size.y+sub[6].size.y; w  = sub[4].size.y+sub[5].size.y;
-			im = &img->img[sub[4].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
-
-			h = sub[8].size.y+sub[10].size.y; w = sub[8].size.y+sub[9].size.y;
-			im = &img->img[sub[8].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
-
-			h = sub[12].size.y+sub[14].size.y; w = sub[12].size.y+sub[13].size.y;
-			im = &img->img[sub[12].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
-
-			h = sub[0].size.y+sub[2].size.y; w = sub[0].size.x+sub[1].size.x;
-			im = img->img;
-			drawrect(rgb, im, 0, 0, w, h, img->width, 0);*/
 			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
 			h  = sub[1].size.y; w  = sub[1].size.x;
 			im = &img->img[sub[1].loc];

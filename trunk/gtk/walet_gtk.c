@@ -7,21 +7,26 @@ static void cb_newpad (GstElement *decodebin, GstPad *pad, gboolean last, GtkWal
 	GstCaps 		*caps 		= gst_pad_get_caps (pad);
 	GstStructure 	*str;
 	GstPadLinkReturn	ret;
-	GstMessage *        message;
 
-	GError* err = g_error_new(G_FILE_ERROR, G_FILE_ERROR_BADF, "It's not video file");
+	//GError* err = g_error_new(G_FILE_ERROR, G_FILE_ERROR_BADF, "It's not video file");
+	//GstMessage * message = gst_message_new_error((GstObject *)gw->fakesink ,err, NULL);
 
-	guint  size = gst_caps_get_size(caps), i;
+
+	guint  i;
 	// Check media type
 	if (!g_strrstr (gst_structure_get_name (gst_caps_get_structure (caps, 0)), "video")) {
 		gst_caps_unref (caps);
 		gst_object_unref (sinkpad);
-		message = gst_message_new_error((GstObject *)gw->fakesink ,err, NULL);
-		gst_object_unref (err);
-		gst_object_unref(message);
+		//gst_element_post_message(gw->fakesink, message);
+		g_print("It's not video file\n");
+		//gst_bus_post(gw->bus, message);
+		gst_caps_unref (caps);
+		gst_object_unref(sinkpad);
+		//gst_object_unref (err);
+		//gst_object_unref(message);
 		return;
 	}
-	for(i=0; i < size; i++) {
+	for(i=0; i < gst_caps_get_size(caps); i++) {
 		str = gst_caps_get_structure (caps, i);
 		g_print("Decoded cap %d : %s\n", i , gst_structure_get_name(str));
 	}
@@ -63,9 +68,11 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	//GstCaps 		*caps 		= gst_pad_get_caps (pad);
 	GstCaps 		*caps 		= gst_buffer_get_caps (buffer);
 	//GstStructure	*structure 	= gst_caps_get_structure (caps, 0);
-	gboolean ret;
+	//gboolean ret;
 	GstStructure	*str;
 	//guint8	*pix = GST_BUFFER_DATA(buffer);
+	GstStateChangeReturn ret;
+	GstState state;
 	gint width, height, bpp;
 
 	//g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
@@ -74,7 +81,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	g_print("%s\n", gst_caps_to_string (caps));
 	ret  = gst_structure_get_int (str, "width"	, &width);
 	ret &= gst_structure_get_int (str, "height"	, &height);
-	//ret &= gst_structure_get_int (str, "bpp"	, &bpp);
+	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
 	//Init Walet decoder only at first call on cb_handoff
@@ -84,17 +91,24 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	}
 	//Copy frame 0 to decoder pipeline
 	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-	//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+	frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 	new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
 	utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	gst_element_set_state (gw->pipeline, GST_STATE_NULL);
-	//gst_element_set_state (gw->pipeline, GST_STATE_PAUSED);
-	//new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-	//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	//gtk_widget_queue_draw(gw->drawingarea[1]);
+	new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+	utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
+
+	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
+	//g_printf("The current state = %d ret = %d\n", state, ret);
+	//gst_element_set_state (gw->pipeline, GST_STATE_NULL);
+	ret = gst_element_set_state (gw->pipeline, GST_STATE_PAUSED);
+
+	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
+	g_printf("The current state = %d ret = %d\n", state, ret);
+
 	//draw_image(gw->drawingarea1, gw->orig[1]);
 	//g_signal_emit_by_name(G_OBJECT(gw->drawingarea1), "expose_event", NULL);
 

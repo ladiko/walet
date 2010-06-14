@@ -1025,6 +1025,16 @@ void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uin
 		qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
 		if(!(im->qst>>i)) break;
 	}
+
+	//For test only-----------------------------------------
+	Subband *sub = im->sub;
+	uint32 sz;
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	for(i=0; i < sz; i++) {
+		if(sub[i].q_bits > 1) printf("%2d %d size = %d entropy = %f \n", i,
+				sub[i].size.x*sub[i].size.y, subband_size(&sub[i]), (double)subband_size(&sub[i])/(double)(sub[i].size.x*sub[i].size.y));
+	}
+	//--------------------------------------------------------
 }
 
 void image_quantization(Image *im, ColorSpace color, uint32 steps)
@@ -1061,6 +1071,7 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	//i=0; {
 	for(i=0; i < sz; i++) {
 		sq = sub[i].size.x*sub[i].size.y;
 		//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, sub[i].a_bits, sub[i].q_bits, (sub[i].a_bits<<4) | sub[i].q_bits);
@@ -1091,6 +1102,7 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	//i=0; {
 	for(i=0; i < sz; i++) {
+		printf("Decode %d a_bits = %d q_bits = %d\n", i, sub[i].a_bits,  sub[i].q_bits);
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_decode_table(&sub[i]);
