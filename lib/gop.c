@@ -134,6 +134,9 @@ uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
     //Close file
     fclose(wl);
     printf("Write size = %Ld\n", size);
+	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d\n",
+			wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
+
     return size;
 }
 
@@ -156,7 +159,8 @@ uint32 walet_read_stream(GOP **gop, uint32 num, const char *filename)
     printf("size = %Ld\n", size);
     if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
     *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
-	//printf("walet_decoder_init  gop = %p\n", *gop);
+	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d\n",
+			wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
 
     //Write frames
     for(i=0; i < num; i++) size += frame_read(*gop, i, wl);

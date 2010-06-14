@@ -118,6 +118,17 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		return;
 	}
 	gtk_widget_destroy (dialog);
+	////Look up tables
+	int i;
+	for(i=0; i<256; i++){
+		printf("%d, ", (int)(2048./(1.+(double)i/256.)));
+		if((i&0x7) == 7) printf("\n");
+	}
+	//for(i=0; i<256; i++){
+	//	printf("%f, ", (2048./(1.+(double)i/256.)));
+	//	if((i&0x7) == 7) printf("\n");
+	//}
+
 
 	if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".pgm")){
 		//Open with gstreamer plugin
@@ -129,6 +140,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
 		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
 		g_main_loop_run (gw->loop);
+
 	} else if (!strcmp(&gw->filename_open[strlen(gw->filename_open)-3],".wl")){
 		printf("Open %s file\n", gw->filename_open);
 
@@ -149,10 +161,11 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		if(gw->gst_init){
 			//gst_pad_push_event(gst_element_get_static_pad(gw->src, "src"), gst_event_new_eos());
 			//g_printf("gst_pad_push_event\n");
-			g_main_loop_quit (gw->loop);
-			g_printf("g_main_loop_quit\n");
-			//gst_element_set_state (gw->pipeline, GST_STATE_NULL);
-			//g_printf("gst_element_set_state\n");
+			//g_main_loop_quit (gw->loop);
+			//g_printf("g_main_loop_quit\n");
+			//gst_bus_set_flushing (gw->bus, TRUE);
+			gst_element_set_state (gw->pipeline, GST_STATE_READY);
+			g_printf("gst_element_set_state\n");
 			gst_element_unlink_many (gw->src, gw->dec, gw->fakesink, NULL);
 			g_printf("gst_element_unlink\n");
 			//gst_bin_remove(GST_BIN (gw->pipeline), gw->src);
@@ -385,6 +398,17 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
 }
 
+void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
+{
+	GstStateChangeReturn ret;
+	GstState state;
+
+	ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
+	g_printf("The current state = %d ret = %d\n", state, ret);
+	gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
+
+}
+
 gboolean on_drawingarea0123_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
 {
 	//gtk_widget_set_size_request(widget, w, h);
@@ -518,6 +542,7 @@ gboolean  init_main_window(GtkWalet *gw)
 	gw->decompress_button	= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
 	gw->median_button		= GTK_WIDGET (gtk_builder_get_object (builder, "median_button"));
 	gw->check_button		= GTK_WIDGET (gtk_builder_get_object (builder, "check_button"));
+	gw->next_button		= GTK_WIDGET (gtk_builder_get_object (builder, "next_button"));
 	// Drawingareas
 	gw->drawingarea[0]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea[1]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));
@@ -554,6 +579,7 @@ gboolean  init_main_window(GtkWalet *gw)
     g_signal_connect(G_OBJECT(gw->compress_button)	, "clicked"	, 		G_CALLBACK (on_compress_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->median_button)	, "clicked"	, 		G_CALLBACK (on_median_button_clicked), gw);
     g_signal_connect(G_OBJECT(gw->check_button)		, "clicked"	, 		G_CALLBACK (on_check_button_clicked), gw);
+    g_signal_connect(G_OBJECT(gw->next_button)		, "clicked"	, 		G_CALLBACK (on_next_button_clicked), gw);
     //g_signal_connect(G_OBJECT(gw->compress_button)	, "clicked"	, 		G_CALLBACK (on_compress_button_clicked), gw);
     //g_signal_connect(G_OBJECT(gw->decompress_button), "clicked"	, 		G_CALLBACK (on_decompress_button_clicked), gw);
 

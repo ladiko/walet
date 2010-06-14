@@ -599,7 +599,9 @@
               <object class="GtkToolItem" id="toolitem26">
                 <property name="visible">True</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkVSeparator" id="vseparator7">
+                    <property name="visible">True</property>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -619,6 +621,34 @@
             </child>
             <child>
               <object class="GtkToolItem" id="toolitem28">
+                <property name="visible">True</property>
+                <child>
+                  <object class="GtkToolButton" id="next_button">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">IDWT</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-media-next</property>
+                    <signal name="clicked" handler="on_next_button_clicked"/>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem29">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolItem" id="toolitem30">
                 <property name="visible">True</property>
                 <child>
                   <placeholder/>
