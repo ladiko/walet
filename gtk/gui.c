@@ -121,7 +121,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	////Look up tables
 	int i;
 	for(i=0; i<256; i++){
-		printf("%d, ", (int)(2048./(1.+(double)i/256.)));
+		printf("%4d, ", (int)(2048./(1.+(double)i/256.)-1024.));
 		if((i&0x7) == 7) printf("\n");
 	}
 	//for(i=0; i<256; i++){
