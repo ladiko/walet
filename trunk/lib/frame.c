@@ -391,10 +391,10 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
 
 void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 {
-	uint32 size;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
+	uint32 size;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_dwt			(gop, fr, fb);
@@ -409,11 +409,11 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 	printf("Fill subband time    = %f\n", tmp);
 
 	if(times != 1) {
-	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_bits_alloc	(gop, fr, times);
-	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	tmp = (double)(end-start)/1000000.; time +=tmp;
-	printf("Bits allocation time = %f\n", tmp);
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		frame_bits_alloc	(gop, fr, times);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		tmp = (double)(end-start)/1000000.; time +=tmp;
+		printf("Bits allocation time = %f\n", tmp);
 	}
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;

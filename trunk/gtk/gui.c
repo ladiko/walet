@@ -1,5 +1,9 @@
 #include <walet_gtk.h>
 
+clock_t start, end;
+struct timeval tv;
+
+
 void new_buffer(Pixbuf *orig, guint width, guint height)
 {
 	guchar *data;
@@ -119,16 +123,11 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	}
 	gtk_widget_destroy (dialog);
 	////Look up tables
-	int i;
-	for(i=0; i<256; i++){
-		printf("%4d, ", (int)(2048./(1.+(double)i/256.)-1024.));
-		if((i&0x7) == 7) printf("\n");
-	}
+	//int i;
 	//for(i=0; i<256; i++){
-	//	printf("%f, ", (2048./(1.+(double)i/256.)));
+	//	printf("%4d, ", (int)(2048./(1.+(double)i/256.)-1024.));
 	//	if((i&0x7) == 7) printf("\n");
 	//}
-
 
 	if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".pgm")){
 		//Open with gstreamer plugin
@@ -351,16 +350,24 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	uint32 size;
 	if(gw->gop == NULL ) return;
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_range_encode(gw->gop, gw->gop->cur_gop_frame, &size);
-	printf("Frame size  = %d Encoded frame size = %d compess = %f\n", gw->gop->width*gw->gop->height, size, (double)(gw->gop->width*gw->gop->height)/(double)size);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+
+	printf("Frame size  = %d Encoded frame size = %d compess = %f time = %f\n",
+			gw->gop->width*gw->gop->height, size, (double)(gw->gop->width*gw->gop->height)/(double)size, (double)(end-start)/1000000.);
 }
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	uint32 size;
 	if(gw->gop == NULL ) return;
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &size);
-	printf("Decoded frame size = %d\n", size);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+
+	printf("Decoded frame size = %d time = %f\n", size, (double)(end-start)/1000000.);
 }
 
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
