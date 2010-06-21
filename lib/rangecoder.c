@@ -4,52 +4,68 @@
 #include <rangecoder.h>
 
 uint32 div_look_up[256] = {
-		1016, 1008, 1000, 992,  984,  977,  969,
-		961,  954,  947,  939,  932,  925,  917,  910,
-		903,  896,  889,  882,  875,  868,  861,  855,
-		848,  841,  835,  828,  822,  815,  809,  802,
-		796,  790,  783,  777,  771,  765,  759,  753,
-		747,  741,  735,  729,  723,  717,  712,  706,
-		700,  694,  689,  683,  678,  672,  667,  661,
-		656,  651,  645,  640,  635,  629,  624,  619,
-		614,  609,  604,  599,  594,  589,  584,  579,
-		574,  569,  564,  559,  555,  550,  545,  541,
-		536,  531,  527,  522,  518,  513,  509,  504,
-		500,  495,  491,  486,  482,  478,  473,  469,
-		465,  461,  457,  452,  448,  444,  440,  436,
-		432,  428,  424,  420,  416,  412,  408,  404,
-		400,  396,  392,  389,  385,  381,  377,  374,
-		370,  366,  363,  359,  355,  352,  348,  344,
-		341,  337,  334,  330,  327,  323,  320,  316,
-		313,  310,  306,  303,  299,  296,  293,  290,
-		286,  283,  280,  276,  273,  270,  267,  264,
-		261,  257,  254,  251,  248,  245,  242,  239,
-		236,  233,  230,  227,  224,  221,  218,  215,
-		212,  209,  206,  203,  200,  198,  195,  192,
-		189,  186,  184,  181,  178,  175,  173,  170,
-		167,  164,  162,  159,  156,  154,  151,  148,
-		146,  143,  141,  138,  135,  133,  130,  128,
-		125,  123,  120,  118,  115,  113,  110,  108,
-		105,  103,  101,   98,   96,   93,   91,   89,
-		86,   84,   82,   79,   77,   75,   72,   70,
-		68,   65,   63,   61,   59,   57,   54,   52,
-		50,   48,   45,   43,   41,   39,   37,   35,
-		33,   30,   28,   26,   24,   22,   20,   18,
-		16,   14,   12,   10,    8,    6,    4,    2, 0,
+                1016, 1008, 1000, 992,  984,  977,  969,
+                961,  954,  947,  939,  932,  925,  917,  910,
+                903,  896,  889,  882,  875,  868,  861,  855,
+                848,  841,  835,  828,  822,  815,  809,  802,
+                796,  790,  783,  777,  771,  765,  759,  753,
+                747,  741,  735,  729,  723,  717,  712,  706,
+                700,  694,  689,  683,  678,  672,  667,  661,
+                656,  651,  645,  640,  635,  629,  624,  619,
+                614,  609,  604,  599,  594,  589,  584,  579,
+                574,  569,  564,  559,  555,  550,  545,  541,
+                536,  531,  527,  522,  518,  513,  509,  504,
+                500,  495,  491,  486,  482,  478,  473,  469,
+                465,  461,  457,  452,  448,  444,  440,  436,
+                432,  428,  424,  420,  416,  412,  408,  404,
+                400,  396,  392,  389,  385,  381,  377,  374,
+                370,  366,  363,  359,  355,  352,  348,  344,
+                341,  337,  334,  330,  327,  323,  320,  316,
+                313,  310,  306,  303,  299,  296,  293,  290,
+                286,  283,  280,  276,  273,  270,  267,  264,
+                261,  257,  254,  251,  248,  245,  242,  239,
+                236,  233,  230,  227,  224,  221,  218,  215,
+                212,  209,  206,  203,  200,  198,  195,  192,
+                189,  186,  184,  181,  178,  175,  173,  170,
+                167,  164,  162,  159,  156,  154,  151,  148,
+                146,  143,  141,  138,  135,  133,  130,  128,
+                125,  123,  120,  118,  115,  113,  110,  108,
+                105,  103,  101,   98,   96,   93,   91,   89,
+                86,   84,   82,   79,   77,   75,   72,   70,
+                68,   65,   63,   61,   59,   57,   54,   52,
+                50,   48,   45,   43,   41,   39,   37,   35,
+                33,   30,   28,   26,   24,   22,   20,   18,
+                16,   14,   12,   10,    8,    6,    4,    2, 0,
 };
+
+static inline uint32 find_bits(uint32 b)
+{
+	uint32 bits;
+	bits = (b>>16) ? 16 : 0;
+	bits = (b>>(bits+=8)) ? bits : bits - 8;
+	bits = (b>>(bits+=4)) ? bits : bits - 4;
+	bits = (b>>(bits+=2)) ? bits : bits - 2;
+	bits = (b>>(bits+=1)) ? bits : bits - 1;
+	return bits;
+}
 
 static inline uint32  division(uint32 a, uint32 b, uint32 bits)
 {
-	uint32 rest = b - (1<<bits);
-	//sh = bits-8, vl = rest>>sh, ch = ((1<<sh)-1);
-	//printf("i = %d look = %d\n ",bits > 8 ? (rest>>(bits-8)) : (rest<<(8-bits)), div_look_up[bits > 8 ? (rest>>(bits-8)) : (rest<<(8-bits))]);
-	//((1<<(sh))-1)&rest
-	//if(bits > 8)
-	//return	(a>>(11+bits))*(div_look_up[sh] -((div_look_up[sh] - div_look_up[sh+1])>>sh)*(ch&rest));
+        uint32 rest = b - (1<<bits);
+        return (a>>bits)*(div_look_up[bits > 8 ? rest>>(bits-8) : rest<<(8-bits)] + 1024)>>11;
+}
 
-	return (a>>bits)*(div_look_up[bits > 8 ? (rest>>(bits-8)) : (rest<<(8-bits))]+1024)>>11;
-	//return (a>>(11+bits))*(div_look_up[bits > 8 ? (rest>>(bits-8)) : (rest<<(8-bits))]+1024);
-	//return (a>>(11+bits))*div_look_up[bits > 8 ? (rest>>(bits-8)) : (rest<<(8-bits))];
+static inline uint32 divide(uint32 n, uint32 d)
+{
+	uint32 i, k, q=0;
+	for(k=0; !(0x80000000 & d); k++) d<<=1;
+	k++;
+	for(i=0; i<k; i++){
+		if(n >= d) { n-=d; q<<=1; q|=1;}
+		else	q<<=1;
+		d>>=1;
+	}
+	return q;
 }
 
 static inline void set_freq(imgtype img, uint32 *d, uint32 bits)
@@ -86,23 +102,7 @@ static inline uint32 get_freq(imgtype img, uint32 *d, uint32 bits)
 	for(i=0; i<bits; i++, ind-=(1<<(i+1))) if((img>>(bit-i))%2) {
 		c+=d[ind +(img>>(bit-i))-1];
 		//if(ind +(img>>(bit-i))-1 >= 1024) printf(" get_freq = %d ", ind +(img>>(bit-i))-1);
-
 	}
-	return c;
-
-}
-
-static inline uint32 get_freq1(imgtype img, uint32 *d, uint32 bits)
-/*! \fn void update_friq(imgtype img, uint32 *d, uint32 *c, const uit32 num)
-	\brief Update cummulative frequency.
-	\param img	 	The next data.
-	\param d		The pointer to array of distribution probabilities of the message.
-	\param bits		The numbers of bits per  symbols.
-*/
-{
-	uint32 i, c=0, bit = bits-1, ind = (1<<(bits+1))-4;
-	//for(i=0; i<bits; i++) if((img>>(bit-i))%2) c+=d[bit-i][(img>>(bit-i))-1];
-	for(i=0; i<bits; i++, ind-=(1<<(i+1))) if((img>>(bit-i))%2) c+=d[ind +(img>>(bit-i))-1];
 	return c;
 }
 
@@ -143,28 +143,29 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
 	uint32 i, j, k=0 , cu, bits;
 	uint32 half = 1<<(a_bits-1);
-	//uint16 *buff = (uint16*) buf;
-	//uchar  *buff = buf;
 	int im;
 
 	memset(d, 0, sizeof(uint32)*num*2);
 	for(i=0; i<num; i++) set_freq(i, d, q_bits);
 	//printf("num = %d\n", num*2);
 
-	//Ecoder setup
+	//Encoder setup
 	range = top; low = 0; j=0;
-	for(bits=0; ;bits++) if(!(num>>=1)) break;
+	bits = find_bits(num);
+	//for(bits=0; ;bits++) if(!(num>>=1)) break;
 	//printf("sz = %d bits = %d\n", sz, bits);
 
 	//printf(" top = %16LX bot = %16LX\n", top, bot);
 	for(i=0; i<size; i++) {
 		im = q[img[i] + half];
 
-		//if((1<<(bits+1)) & sz) bits++;
-		//range = division(range, sz, bits);
-
-		range = range/sz;
-		//printf(" %2d  sz = %u bits = %u range = %16LX range1 = %16LX diff = %16LX\n", i, sz, bits, range, range1, range - range1);
+		if((1<<(bits+1)) & sz) bits++;
+		range = division(range, sz, bits);
+		//uint32  range1;
+		//range = divid(range, sz);
+		//range = range/sz;
+		//printf("bits = %d\n", bits);
+		//printf(" %2d  sz = %u range = %8X range1 = %8X diff = %8X\n", i, sz, range, range1, range - range1);
 
 		low1 = low;
 		cu = get_freq(im, d, q_bits);
@@ -212,7 +213,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	\retval			The encoded message size in byts .
 */
 {
-	uint32 num = (1<<q_bits), sz = num, sum = 0, out, out1, f, cf, sh = 8;
+	uint32 num = (1<<q_bits), sz = num, sum = 0, out, out1, out2, f, cf, sh = 8;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low = 0, range;
 	uint32 i, j, del = a_bits-q_bits, sub = (1<<del)>>1;
 	uint32 half = num>>1, bits, bits1;
@@ -228,8 +229,9 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	range = top;
 	//printf("bits = %d\n", bits);
 	//for(bits=0; ;bits++) if(!(num>>=1)) break;
-	for(bits=1; ;bits++) if(!(num>>bits)) break;
-	bits--;
+	//for(bits=1; ;bits++) if(!(num>>bits)) break;
+	//bits--;
+	bits = find_bits(num);
 	//printf("bits = %d\n", bits);
 
 	//printf("decoder img = %4X\n", buff[0]);
@@ -243,10 +245,14 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 			range <<=sh;
 			low = (low<<sh) | (uint32)buff[j++];
 		}
-		//if((1<<(bits+1)) & sz) bits++;
-		//range = division(range, sz, bits);
-
-		range = range/sz;
+		if((1<<(bits+1)) & sz) bits++;
+		range = division(range, sz, bits);
+		//printf("bits = %d\n", bits);
+		//range = range/sz;
+		//range = divid(range, sz);
+		//out2 = low/range;
+		//uint32 out2 = divid(low, range);
+		out = division(low, range, find_bits(range));
 		out = low/range;
 		//for(bits1=1; ;bits1++) if(!(range>>bits1)) break;
 		//printf("range = %16LX bits1 = %d\n", range, bits1);
@@ -255,9 +261,10 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 
 		out1 =  get_freq_cum(out, d, q_bits, &f, &cf);
 		if(img[i]-q[out1]) {//printf("i=%d ", i);
-			if(i<1 )printf("%5d low = %8X range = %8X out = %3d out1 = %3d img = %4d q[out1] = %4d diff = %d\n",
-					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1]);
-			//else return 0;
+		//if(out2-out) {//printf("i=%d ", i);
+			if(i<1)printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8x\n",
+					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2);
+			return 0;
 		}
 		low -= cf*range;
 		range = range*f;
