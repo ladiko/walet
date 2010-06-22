@@ -1101,7 +1101,7 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	//i=9; {
+	//i=0; {
 	for(i=0; i < sz; i++) {
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
