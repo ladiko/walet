@@ -71,6 +71,22 @@ static inline uint32 divide(uint32 n, uint32 d)
 	return q;
 }
 
+static inline uint32 nr_divide(uint32 n, uint32 d, uint32 bit)
+//Newton-Raphson  integer division algorithm.
+{
+	uint32  i, q = 0xFFFFFFFF>>bit, q1 = q, qt;
+	for(i = 0;i<10;i++) {
+		if(q1) q1 = (((0 - d*q)>>bit)*q)>>(32-bit);
+		else break;
+		printf("n = %8X d = %8X bit = %d d*q = %8X (0 - d*q) = %8X ((0 - d*q)>>bit) = %8X (((0 - d*q)>>bit)*q) = %8X q = %8X q1 = %8X\n",
+				n, d, bit, d*q, (0 - d*q), ((0 - d*q)>>bit), (((0 - d*q)>>bit)*q), q, q1);
+		q += q1;
+	}
+
+	qt = q*(n>>bit)>>(32-bit);
+	return qt;
+}
+
 static inline void init_prob( uint32 *d, uint32 bits, uint32 **c)
 //Init probability array.
 {
@@ -190,7 +206,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 
 	// Start decoding
-	for(i=0; i<size; i++) {
+	for(i=0; i<1; i++) {
 		while(range <= bot) {
 			range <<=sh;
 			low = (low<<sh) | (uint32)buff[j++];
@@ -198,15 +214,17 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
 		range = division(range, sz, bits);
 		//range = range/sz;
-		out = division(low, range, find_msb_bit(range));
-		if((out+1)*range <= low) out++;
+		//out = division(low, range, find_msb_bit(range));
+		out = nr_divide(low, range, find_msb_bit(range));
+		//out += division(low - out*range, range, find_msb_bit(range));
+		//if((out+1)*range <= low) out++;
 		out2 = low/range;
 		out1 = get_pix(out, c, q_bits, &f, &cf);
 		//if(img[i]-q[out1]) {
-		if(out-out2) {
-			printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8x\n",
-					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2);
-			return 0;
+		if(out2-out>1) {
+			if(i<1) printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
+					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2, out2-out);
+			//return 0;
 		}
 		low -= cf*range;
 		range = range*f;
