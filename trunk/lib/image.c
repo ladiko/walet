@@ -1066,7 +1066,7 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 ///	\retval				The size of encoded image in bytes.
 {
 	uint32 i, sq, sz;
-	uint32 size = 0;
+	uint32 size = 0, size1=0;
 	imgtype *img = im->img;
 	Subband *sub = im->sub;
 
@@ -1077,8 +1077,10 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 		//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, sub[i].a_bits, sub[i].q_bits, (sub[i].a_bits<<4) | sub[i].q_bits);
 		if(sub[i].q_bits >1){
 			subband_encode_table(&sub[i]);
-			size += range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
-			printf("Decode %d a_bits = %d q_bits = %d size = %d\n", i, sub[i].a_bits,  sub[i].q_bits, size);
+			size1 = range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += size1;
+			printf("Decode %d a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
+					i, sub[i].a_bits,  sub[i].q_bits, size, size1, sub[i].size.x*sub[i].size.y, subband_size(&sub[i])/8 );
 		}
 	}
 	//printf("Finish range_encoder\n");

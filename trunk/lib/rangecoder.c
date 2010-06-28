@@ -74,7 +74,7 @@ static inline uint32 divide(uint32 n, uint32 d)
 static inline uint32 nr_divide(uint32 n, uint32 d, uint32 bit1)
 //Newton-Raphson  integer division algorithm.
 {
-	uint32  i, bit = bit1+1, q = 0xFFFFFFFF>>bit, q1 = q, qt;
+	uint32  i, bit = bit1+1, qt, q= 0xFFFFFFFF>>bit, q1 = q;
 	for(i = 0;i<10;i++) {
 		if(q1) q1 = (((-d*q)>>bit)*q)>>(32-bit);
 		else break;
@@ -85,6 +85,26 @@ static inline uint32 nr_divide(uint32 n, uint32 d, uint32 bit1)
 	qt = q*(n>>(bit))>>(32-bit);
 	if(n-qt*d > (d<<1) ) qt+=2;
 	if(n-qt*d > (d<<1) ) qt+=2;
+	return qt;
+}
+
+static inline uint32 nr_divide1(uint32 n, uint32 d, uint32 bit1)
+//Newton-Raphson  integer division algorithm.
+{
+	uint32  i, bit = bit1+1, q , qt;
+	q = division(0xFFFFFFFF, d, bit1);
+	uint64 q1 = q;
+	for(i=0;;i++) {
+		if(q1) q1 = ((0x100000000-(uint64)d*(uint64)q)*(uint64)q)>>32;
+		else break;
+		//printf("%d n = %8X d = %8X bit = %d d*q = %16LX -d*q = %16LX  (-(uint64)d*(uint64)q)*(uint64)q) = %16LX q = %8X q1 = %16LX\n",
+		//		i, n, d, bit, (uint64)d*(uint64)q, 0x100000000-(uint64)d*(uint64)q, (0x100000000-(uint64)d*(uint64)q)*(uint64)q, q, q1);
+		q += q1;
+	}
+	//printf("%d ", i);
+	qt = (uint64)q*(uint64)n>>32;
+	if(n-qt*d >= d) qt+=1;
+	//if(n-qt*d > d) qt+=1;
 	return qt;
 }
 
@@ -126,6 +146,74 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
 	else { *cf = cum - cu; *f = c[0][j]; c[0][j]++; return j; }
 }
 
+static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bits, uint32 size, int *q)
+//Init probability array.
+{
+	uint32 j, sz = 1<<bits, *c = &d[sz], half = 1<<(a_bits-1);
+	//printf("bits = %d sz = %d half = %d  size = %d\n", bits, sz, half, size);
+	//memset(d, 1, sizeof(uint32)*sz);
+	for(j=0; j < sz; j++) d[j] = 1;
+	for(j=0; j < size; j++) d[q[img[j] + half]]++;
+	c[0] = 0;
+	for(j=1; j < sz; j++) c[j] = c[j-1]+d[j-1];
+	//for(j=0; j < sz; j++) printf("d[%d] = %d c[%d] = %d\n", j, d[j], j, c[j]);
+}
+
+uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
+/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+	\brief Range encoder.
+    \param img	 	The pointer to encoding message data.
+    \param d		The pointer to array of distribution probabilities of the message.
+	\param size		The size of the  message
+	\param a_bits	Bits per symbols befor quantization.
+	\param q_bits	Bits per symbols after quantization.
+	\param buff		The encoded output  buffer
+	\retval			The encoded message size in byts .
+*/
+{
+	uint32 sz = (1<<q_bits), sh = 8, size1 = size-1;
+	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
+	uint32 i, j, k=0 , l, cu, bits, tmp;
+	uint32 half = 1<<(a_bits-1), *c = &d[sz], lst;
+	int im;
+
+	//Encoder setup
+	range = top; low = 0; j=0;
+	//bits = q_bits < 10 ? 10 : q_bits;
+	bits = q_bits;
+	sz = (1<<bits)*3;
+
+	for(l=0; l<size; l+=sz){
+		lst = size - l;
+		sz = lst<sz ? lst : sz;
+		//printf("size = %d l = %d sz = %d\n", size, l, sz);
+		fill_prob(&img[l], d, q_bits, a_bits, sz, q);
+		//printf("fill_prob\n");
+		for(i=l; i<l+sz; i++){
+			im = q[img[i] + half];
+			range = range>>(q_bits+2);
+			low1 = low;
+			//cu = c[im];
+			//printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d del = %8X c = %d d = %d\n", i, low, low1, range, im, img[i], 1<<(q_bits+1), c[im], d[im]);
+			low += range*c[im];
+			range = range*d[im];
+			if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
+			if(i != size1){
+				while(range <= bot) {
+					buff[j++] = (low>>24);
+					range <<= sh;
+					low <<= sh;
+				}
+			}
+		}
+	}
+	buff[j++] = (low>>24);
+	buff[j++] = (low>>16) & 0xFF;
+	buff[j++] = (low>>8)  & 0xFF;
+	buff[j++] = low & 0xFF;
+	return j;
+}
+
 uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
@@ -147,16 +235,16 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	//Encoder setup
 	init_prob(d, q_bits, c);
 	range = top; low = 0; j=0;
-	bits = find_msb_bit(num);
-	tmp = 1<<(bits+1);
+	//bits = find_msb_bit(num);
+	//tmp = 1<<(bits+1);
 
 	//Start encoding
 	for(i=0; i<size; i++) {
 		im = q[img[i] + half];
 
-		if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
-		range = division(range, sz, bits);
-		//range = range/sz;
+		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
+		//range = division(range, sz, bits);
+		range = range/sz;
 		low1 = low;
 		cu = get_cum(im, c, q_bits);
 		//cu = get_freq(im, d, q_bits);
@@ -201,28 +289,29 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 
 	//Decoder setup
 	init_prob(d, q_bits, c);
-	range = top;
-	bits = find_msb_bit(num);
-	tmp = 1<<(bits+1); j=4;
+	range = top; j=4;
+	//bits = find_msb_bit(num);
+	//tmp = 1<<(bits+1);
+
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 
 	// Start decoding
-	for(i=0; i<500; i++) {
+	for(i=0; i<size; i++) {
 		while(range <= bot) {
 			range <<=sh;
 			low = (low<<sh) | (uint32)buff[j++];
 		}
-		if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
-		range = division(range, sz, bits);
-		//range = range/sz;
+		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
+		//range = division(range, sz, bits);
+		range = range/sz;
 		//out = division(low, range, find_msb_bit(range));
-		out = nr_divide(low, range, find_msb_bit(range));
+		//out = nr_divide1(low, range, find_msb_bit(range));
 		//out += division(low - out*range, range, find_msb_bit(range));
 		//if((out+1)*range <= low) out++;
-		out2 = low/range;
+		out = low/range;
 		out1 = get_pix(out, c, q_bits, &f, &cf);
-		//if(img[i]-q[out1]) {
-		if(out2-out>1) {
+		if(img[i]-q[out1]) {
+		//if(out2-out!=0) {
 			printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
 					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2, out2-out);
 			//return 0;
