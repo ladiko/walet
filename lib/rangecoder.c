@@ -250,7 +250,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		//cu = get_freq(im, d, q_bits);
 		//set_freq(im, d, q_bits);
 		low += range*cu;
-		//if(i<5)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
+		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
 		range = range*(d[im]-1);
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
@@ -310,12 +310,12 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		//if((out+1)*range <= low) out++;
 		out = low/range;
 		out1 = get_pix(out, c, q_bits, &f, &cf);
-		if(img[i]-q[out1]) {
+		//if(img[i]-q[out1]) {
 		//if(out2-out!=0) {
-			printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
-					i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2, out2-out);
+		//	printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
+		//			i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2, out2-out);
 			//return 0;
-		}
+		//}
 		low -= cf*range;
 		range = range*f;
 		//set_freq(out1, d, q_bits);

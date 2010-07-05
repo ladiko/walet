@@ -138,7 +138,7 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\param	times		Compression times.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	if(gop == NULL ) return 0;
+	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, FILL_SUBBAND)){
@@ -326,7 +326,7 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
     fwrite (&fsize, 4, 1, wl); size += 4;
     //Write data
     fwrite (gop->buf, 1, fsize, wl); size += fsize;
-    printf("File size = %d fist = %4X %4X\n", fsize, gop->buf[0], gop->buf[1]);
+    //printf("File size = %d fist = %2X %2X\n", fsize, ((char*)gop->buf)[0], ((char*)gop->buf)[1]);
 
     //fwrite (gop->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
 
@@ -382,7 +382,7 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
     size += fsize;
 
     free(bits);
-    printf("File size = %d fist = %4X %4X\n", fsize, gop->buf[0], gop->buf[1]);
+    //printf("File size = %d fist = %2X %2X\n", fsize, ((char*)gop->buf)[0], ((char*)gop->buf)[1]);
 
     frame->state = BUFFER_READ;
 
@@ -408,13 +408,11 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("Fill subband time    = %f\n", tmp);
 
-	if(times != 1) {
-		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		frame_bits_alloc	(gop, fr, times);
-		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		tmp = (double)(end-start)/1000000.; time +=tmp;
-		printf("Bits allocation time = %f\n", tmp);
-	}
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	frame_bits_alloc	(gop, fr, times);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	tmp = (double)(end-start)/1000000.; time +=tmp;
+	printf("Bits allocation time = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_range_encode	(gop, fr, &size);

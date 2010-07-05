@@ -39,9 +39,9 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint3
 	uint32 x, y;
 	for(y=0; y < h; y++ ){
 		for(x=0; x < w; x++){
-			rgb[3*((y+h0)*size+w0+x)]   = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
-			rgb[3*((y+h0)*size+w0+x)+1] = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
-			rgb[3*((y+h0)*size+w0+x)+2] = im[y*w+x] ? 255 : 0; //rnd(shift+im[y*w+x]);
+			rgb[3*((y+h0)*size+w0+x)]   = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+h0)*size+w0+x)+1] = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+h0)*size+w0+x)+2] = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
 		}
 	}
 }
