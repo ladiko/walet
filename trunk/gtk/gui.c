@@ -333,7 +333,8 @@ void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_bits_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton));
+	gw->gop->comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
+	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, gw->gop->comp);
 }
 
 void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -373,8 +374,9 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	frame_compress(gw->gop, gw->gop->cur_gop_frame, gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton), FR_5_3);
-
+	gw->gop->comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
+	frame_compress(gw->gop, gw->gop->cur_gop_frame, gw->gop->comp, FR_5_3);
+	//printf("times = %d\n", gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton));
 	frame_quantization(gw->gop, gw->gop->cur_gop_frame);
 	frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, gw->gop->fb);
 	new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);

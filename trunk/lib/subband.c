@@ -128,6 +128,100 @@ uint32 subband_size(Subband *sub)
 	return (uint32)s;
 }
 
+void quant_interval(Subband *sub)
+{
+	int i, del = sub->a_bits - sub->q_bits, step = 1<<del, range = 1<<(sub->q_bits-1);
+	int *in = &sub->q[1<<sub->d_bits];
+	in[0] = step;
+	//printf("in[%d] = %d ", 0, in[0]);
+	for(i=1; i < range; i++) {
+		in[i] = in[i-1] + step;
+		//printf("in[%d] = %d ", i, in[i]);
+	}
+	//printf("in[%d] = %d a_bits = %d q_bits = %d\n", i-1, in[i-1], sub->a_bits, sub->q_bits);
+}
+
+uint32 subband_size1(Subband *sub)
+/// \fn uint32 subband_size(Subband *sub)
+/// \brief Calculate subband size after quantization.
+///	\param sub 			Pointer to subband.
+/// \retval 			The subband size after quantization.
+{
+	// |--------|--------0--------|--------|
+	// |           1<< dist_bits           |
+	//          |   1<<act_bits   |
+	//          |  |  |  |  |  |  |
+	//     step  =  1<<(a_bits-q_bits)
+
+	double s = 0., s0 = log2(sub->size.x*sub->size.y);
+	uint32  en=0;
+	int i, j;
+	int rest = 1<<(sub->q_bits-1), half = (1<<(sub->d_bits-1));;
+	int *in = &sub->q[1<<sub->d_bits];
+
+	quant_interval(sub);
+
+	if(sub->q_bits == 0){
+		printf("q_bits should be more than 0\n");
+		return 0;
+	}
+
+	for(j=(1-in[0]); j< in[0]; j++) en += sub->dist[half+j];
+	if(en) s -= en*(log2(en) - s0);
+
+	for(i=0; i < rest; i++){
+		en = 0;
+		for(j= in[i]; j< in[i+1]; j++) en += sub->dist[half+j];
+		if(en) s -= en*(log2(en) - s0);
+		en=0;
+		for(j= in[i]; j< in[i+1]; j++) en += sub->dist[half-j];
+		if(en) s -= en*(log2(en) - s0);
+	}
+	return (uint32)s;
+}
+
+void  subband_encode_table1(Subband *sub)
+/// \fn void  subband_encode_table(Subband *sub, int *q)
+///	\brief Make quantization array for encoder.
+///	\param sub 			Pointer to subband.
+/// \param q			The quantization array.
+{
+	int i, j;
+	int range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);;
+	int *in = &sub->q[1<<sub->d_bits];
+
+	quant_interval(sub);
+
+	for(j=(1-in[0]); j< in[0]; j++) sub->q[range+j] = half;
+	for(i=0; i < half; i++){
+		for(j= in[i]; j< in[i+1]; j++) {
+			sub->q[range+j] = half + i + 1;
+			sub->q[range-j] = half - i - 1;
+		}
+	}
+	sub->q[range-j] = sub->q[range-j+1];
+}
+
+void  subband_decode_table1(Subband *sub)
+/// \fn void  subband_decode_table(Subband *sub, int *q)
+///	\brief Make quantization array for decoder.
+///	\param sub 			Pointer to subband.
+/// \param q			The quantization array.
+{
+	int j;
+	int  half = 1<<(sub->q_bits-1);
+	int *in = &sub->q[1<<sub->d_bits];
+
+	quant_interval(sub);
+
+	sub->q[half] = 0;
+	for(j=0; j < half; j++) {
+		sub->q[half+j+1] =  ( in[j] + in[j+1])>>1;
+		sub->q[half-j-1] = -((in[j] + in[j+1])>>1);
+	}
+	sub->q[half-j] = sub->q[half-j+1];
+}
+
 void  subband_encode_table(Subband *sub)
 /// \fn void  subband_encode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for encoder.
@@ -166,6 +260,31 @@ void  subband_decode_table(Subband *sub)
 }
 
 void  subband_quantization(imgtype *img, Subband *sub)
+/// \fn void  subband_quantization(imgtype *img, Subband *sub)
+///	\brief Subband quantization.
+///	\param img			The pointer to subband
+///	\param sub 			Pointer to subband.
+
+{
+	int i, j, size = sub->size.x*sub->size.y;
+	int del = sub->a_bits - sub->q_bits, step = 1<<del, half = 1<<(sub->a_bits-1), val = step>>1;;
+
+	if(sub->a_bits != sub->q_bits){
+		if(sub->q_bits > 1) {
+			for(j=(1-step); j< step; j++) sub->q[half+j] = 0;
+			for(i=step; i < half; i+=step) for(j= 0; j< step; j++) sub->q[half+i+j] =  i+val;
+			for(i=step; i < half; i+=step) for(j= 0; j< step; j++) sub->q[half-i-j] = -i-val;
+			sub->q[half-i+step-j] = sub->q[half-i+step-j+1];
+			for(i=0; i < size; i++ ) img[i] = sub->q[img[i] + half];
+			//for(i=0; i< half*2; i++) printf("q[%d] = %4d ", i, sub->q[i]);
+			//printf("Quantization\n");
+		} else for(i=0; i < size; i++ ) img[i] = 0;
+	}
+	//printf("min = %d max = %d  tot = %d bits = %d step = %d range = %d\n", min, max, max-min, i+1, step, range);
+	//return i+1;
+}
+
+void  subband_quantization1(imgtype *img, Subband *sub)
 /// \fn void  subband_quantization(imgtype *img, Subband *sub)
 ///	\brief Subband quantization.
 ///	\param img			The pointer to subband
