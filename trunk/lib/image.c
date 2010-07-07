@@ -7,6 +7,7 @@
 #define lim(max,min, x)  	((x)>max ? max :((x)<min ? min : (x)))
 #define max(x, m) 			((x>m) ? (m) : (x))
 
+
 static inline void dwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
 ///	\fn static inline void dwt_haar_1d(imgtype *in, imgtype *out, const uint32 w)
 ///	\brief 1D Haar DWT.
@@ -983,6 +984,10 @@ void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qs
 	}
 }
 
+//QI func = q_i_uniform;
+//QI func = q_i_nonuniform;
+QI func = q_i_nonuniform1;
+
 uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\fn uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Estimate the image size after quantization and entropy encoder.
@@ -1000,7 +1005,7 @@ uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		if(sub[i].q_bits > 1) {
-			s1 = subband_size1(&sub[i]);
+			s1 = subband_size(&sub[i], func);
 			s += s1;
 		}
 	}
@@ -1036,7 +1041,7 @@ void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uin
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		if(sub[i].q_bits > 1) printf("%2d %d size = %d entropy = %f q_bits = %d\n", i,
-				sub[i].size.x*sub[i].size.y, subband_size(&sub[i])>>3, (double)subband_size(&sub[i])/(double)(sub[i].size.x*sub[i].size.y), sub[i].q_bits);
+				sub[i].size.x*sub[i].size.y, subband_size(&sub[i], func)>>3, (double)subband_size(&sub[i], func)/(double)(sub[i].size.x*sub[i].size.y), sub[i].q_bits);
 	}
 	//--------------------------------------------------------
 }
@@ -1055,7 +1060,7 @@ void image_quantization(Image *im, ColorSpace color, uint32 steps)
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		//printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
-		subband_quantization(&img[sub[i].loc], &sub[i]);
+		subband_quantization(&img[sub[i].loc], &sub[i], func);
 	}
 }
 
@@ -1080,11 +1085,11 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 		sq = sub[i].size.x*sub[i].size.y;
 		//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, sub[i].a_bits, sub[i].q_bits, (sub[i].a_bits<<4) | sub[i].q_bits);
 		if(sub[i].q_bits >1){
-			subband_encode_table1(&sub[i]);
+			subband_encode_table(&sub[i], func);
 			size1 = range_encoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 			size += size1;
 			printf("Decode %d a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
-					i, sub[i].a_bits,  sub[i].q_bits, size, size1, sub[i].size.x*sub[i].size.y, subband_size(&sub[i])/8 );
+					i, sub[i].a_bits,  sub[i].q_bits, size, size1, sub[i].size.x*sub[i].size.y, subband_size(&sub[i], func)/8 );
 		}
 	}
 	//printf("Finish range_encoder\n");
@@ -1111,7 +1116,7 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 	for(i=0; i < sz; i++) {
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
-			subband_decode_table1(&sub[i]);
+			subband_decode_table(&sub[i], func);
 			size += range_decoder(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 			printf("Decode %d a_bits = %d q_bits = %d size = %d\n", i, sub[i].a_bits,  sub[i].q_bits, size);
 		} else for(j=0; j<sq; j++) img[sub[i].loc+j] = 0;
