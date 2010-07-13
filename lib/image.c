@@ -984,9 +984,9 @@ void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qs
 	}
 }
 
-//QI func = q_i_uniform;
+QI func = q_i_uniform;
 //QI func = q_i_nonuniform;
-QI func = q_i_nonuniform1;
+//QI func = q_i_nonuniform1;
 
 uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\fn uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
