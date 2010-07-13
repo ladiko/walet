@@ -87,15 +87,15 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
 			h  = sub[1].size.y; w  = sub[1].size.x;
 			im = &img->img[sub[1].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 0);
+			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
 
 			h = sub[2].size.y; w = sub[2].size.x;
 			im = &img->img[sub[2].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 0);
+			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
 
 			h = sub[3].size.y; w = sub[3].size.x;
 			im = &img->img[sub[3].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 0);
+			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
 
 			h = sub[0].size.y; w = sub[0].size.x;
 			im = &img->img[sub[0].loc];

@@ -159,7 +159,7 @@ static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bit
 	//for(j=0; j < sz; j++) printf("d[%d] = %d c[%d] = %d\n", j, d[j], j, c[j]);
 }
 
-uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
+static void make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 q_bits, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -168,51 +168,30 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
 	\param buff		The encoded output  buffer
-	\retval			The encoded message size in byts .
 */
 {
-	uint32 sz = (1<<q_bits), sh = 8, size1 = size-1;
-	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
-	uint32 i, j, k=0 , l, cu, bits, tmp;
-	uint32 half = 1<<(a_bits-1), *c = &d[sz], lst;
-	int im;
+	uint32 i, num = 1<<q_bits, half = 1<<q_bits-1, max, msb , sum = 0;
 
-	//Encoder setup
-	range = top; low = 0; j=0;
-	//bits = q_bits < 10 ? 10 : q_bits;
-	bits = q_bits;
-	sz = (1<<bits)*3;
-
-	for(l=0; l<size; l+=sz){
-		lst = size - l;
-		sz = lst<sz ? lst : sz;
-		//printf("size = %d l = %d sz = %d\n", size, l, sz);
-		fill_prob(&img[l], d, q_bits, a_bits, sz, q);
-		//printf("fill_prob\n");
-		for(i=l; i<l+sz; i++){
-			im = q[img[i] + half];
-			range = range>>(q_bits+2);
-			low1 = low;
-			//cu = c[im];
-			//printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d del = %8X c = %d d = %d\n", i, low, low1, range, im, img[i], 1<<(q_bits+1), c[im], d[im]);
-			low += range*c[im];
-			range = range*d[im];
-			if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
-			if(i != size1){
-				while(range <= bot) {
-					buff[j++] = (low>>24);
-					range <<= sh;
-					low <<= sh;
-				}
-			}
+	memset(d, 0, sizeof(uint32)*num<<1);
+	//Fill distribution array after quantization
+	for(i=0; i<size; i++) d[q[img[i] + half]]++;
+	//Find max element of array
+	//max = d[0];
+	//for(i=1; i<num; i++)  if(max < d[i]) max = d[i];
+	//Make distribution with cumulitive friquency power of 2
+	for(i=0; i<num; i++) {
+		printf(" d[%d] = %d ", i, d[i]);
+		if(d[i]) {
+			msb = find_msb_bit(d[i]);
+			d[i] = (d[i] == (1<<msb)) ? 1<<msb : 1<<msb+1;
 		}
+		printf(" d[%d] = %d ", i, d[i]);
+		sum += d[i];
 	}
-	buff[j++] = (low>>24);
-	buff[j++] = (low>>16) & 0xFF;
-	buff[j++] = (low>>8)  & 0xFF;
-	buff[j++] = low & 0xFF;
-	return j;
+	printf("\n size = %d sum = %d\n", size, sum);
 }
+
+
 
 uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
@@ -266,6 +245,7 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	buff[j++] = (low>>16) & 0xFF;
 	buff[j++] = (low>>8)  & 0xFF;
 	buff[j++] = low & 0xFF;
+	make_distrib(img, d, size, q_bits, q);
 	return j;
 }
 
@@ -303,6 +283,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		}
 		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
 		//range = division(range, sz, bits);
+		out2 = (low/range)*sz;
 		range = range/sz;
 		//out = division(low, range, find_msb_bit(range));
 		//out = nr_divide1(low, range, find_msb_bit(range));
@@ -312,12 +293,12 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		out1 = get_pix(out, c, q_bits, &f, &cf);
 		//if(img[i]-q[out1]) {
 		//if(out2-out!=0) {
-		//	printf("%5d low = %8X range = %8X out = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
-		//			i, low, range, out, out1, img[i], q[out1], img[i]-q[out1], out2, out2-out);
+		if(i<100) printf("%5d low = %8X range = %8X out = %8X out2 = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
+					i, low, range, out, out1, out2, img[i], q[out1], img[i]-q[out1], out2, out2-out);
 			//return 0;
 		//}
 		low -= cf*range;
-		range = range*f;
+		range = f*range;
 		//set_freq(out1, d, q_bits);
 		sz++;
 		img[i] = q[out1];
