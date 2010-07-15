@@ -20,7 +20,7 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
-	gop->q = (int *)calloc(1<<(bpp+3), sizeof(int));
+	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
 	//Frames init
