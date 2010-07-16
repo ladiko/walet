@@ -360,19 +360,64 @@ static uint32 read_distrib(uchar *buff, uint32 *d, uint32 q_bits)
 	return bits;
 }
 
+static uint32 read_distrib1(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint32 *cu_sz)
+{
+	uint32 i, j, in, num = 1<<q_bits, sz, msb , sum = 0, bits, tmp;
+	uint32 *cu = &d[num];
+	//memset(d, 0, sizeof(uint32)*num);
+	//Fill distribution array after quantization
+	for(i=0; i<num; i++)  { sum += d[i]; }
+	bits = find_msb_bit(sum);
+
+	cu[0] = 0;
+	for(i=0; i<=num; i++) if(d[i]) { in = i; break; }
+	//d[0] = d[in];
+	for(i = in+1, j=1; i<num; i++)  {
+		if(d[i]) {
+			cu[j] = cu[j-1] + d[in];
+			d[j-1] = d[in];
+			q[j-1] = q[in];
+			//printf(" cu[%d] = %d d[%d] = %d ", j, cu[j], j-1, d[j-1]);
+			j++; in = i;
+		}
+	}
+	q[j-1] = q[in];
+	d[j-1] = d[in];
+	cu[j] = cu[j-1] + d[in];
+
+	tmp = j-1;
+
+	*cu_sz = 1<<(find_msb_bit(j-1)+1);
+
+	//tmp = find_msb_bit(j-1);
+	//if((tmp-1)&tmp)  *cu_sz = 1<<tmp;
+	//else *cu_sz = 1<<(tmp+1);
+
+	for(; j < *cu_sz; j++) cu[j+1] = cu[j];
+	//if(j&1) { cu[j+1] = cu[j]; *cu_sz = j+1; }
+	//for(i=0; i< *cu_sz; i++) printf("d[%4d] = %6d cu[%4d] = %6d\n", i, d[i], i, cu[i]);
+
+	printf("\n tmp = %d sum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d\n", tmp, sum, j, cu[j], num , bits, *cu_sz);
+	//printf("\nsum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d \n", sum, j, cu[j-1], num , bits, *cu_sz);
+	return bits;
+}
+
 static uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
 {
 	uint32 i, j;
+	//if(!out) return 0;
 	for(i = size>>1, j = i; ; ){
-		//printf("out = %d cu[%d] = %d j = %d \n", out, i, cu[i], j);
+		//if(test>10) break;
+		//if (bool) printf("size = %d out = %d cu[%d] = %d j = %d \n", size, out, i, cu[i], j);
 		if(out >= cu[i]) {
 			if(out < cu[i+1]) {
-				//printf("cu[%d] = %d\n", i, cu[i]);
+				//if (bool) printf("cu[%d] = %d\n", i, cu[i]);
 				return i;
 			}
 			else { j >>=1; i+=j;}
 		}
-		else { j >>=1; i-=j;}
+		else { j = (j==0) ? 1 : j>>1; i-=j;}
+		//else { j >>=1; i-=j;}
 	}
 }
 
@@ -446,6 +491,7 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 
 	//Decoder setup
 	sz = read_distrib(buff, d, q_bits);
+	//sz = read_distrib1(buff, d, q, q_bits, &cu_sz);
 	range = top; j=4;
 
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
@@ -460,13 +506,10 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 		out = low/range;
 		//im = get_cum_f(out, cu, cu_sz);
 		im = get_cum_f(out, cu, num);
-		//printf("d[%d] = %d\n",im , d[im]);
-		//if(img[i]-q[im])
-			//return 0;
-		//}
-		if(img[i] != q[im])
-		printf("%5d low = %8X low = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
-					i, low, low-cu[im]*range, range<<sz, range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
+		//if(img[i] != q[im])
+		//if(i >=0 && i< 5)
+		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
+		//			i, low, low-cu[im]*range, range<<sz, range, d[im]*range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
 		low -= cu[im]*range;
 		range = d[im]*range;
 		//set_freq(out1, d, q_bits);
