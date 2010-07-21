@@ -71,6 +71,20 @@ static inline uint32 divide(uint32 n, uint32 d)
 	return q;
 }
 
+static inline uint32 divide1(uint32 n, uint32 d)
+//Slow division algorithm.
+{
+	uint32 i, k, q=0;
+	k = 32 - find_msb_bit(d);
+	d<<=k;
+	for(i=0; i<k; i++){
+		if(n >= d) { n-=d; q<<=1; q|=1;}
+		else	q<<=1;
+		d>>=1;
+	}
+	return q;
+}
+
 static inline uint32 nr_divide(uint32 n, uint32 d, uint32 bit1)
 //Newton-Raphson  integer division algorithm.
 {
@@ -146,6 +160,7 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
 	else { *cf = cum - cu; *f = c[0][j]; c[0][j]++; return j; }
 }
 
+/*
 static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bits, uint32 size, int *q)
 //Init probability array.
 {
@@ -158,7 +173,7 @@ static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bit
 	for(j=1; j < sz; j++) c[j] = c[j-1]+d[j-1];
 	//for(j=0; j < sz; j++) printf("d[%d] = %d c[%d] = %d\n", j, d[j], j, c[j]);
 }
-
+*/
 
 uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
@@ -193,11 +208,13 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		range = range/sz;
 		low1 = low;
 		cu = get_cum(im, c, q_bits);
+		//cu = get_cum1(im, c, q_bits);
 		//cu = get_freq(im, d, q_bits);
 		//set_freq(im, d, q_bits);
 		low += range*cu;
-		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
+		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d cu = %8X sz = %8X\n", i, low, low1, range, im, img[i], cu, sz);
 		range = range*(d[im]-1);
+		//range = range*d[im];
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
 			while(range <= bot) {
@@ -250,7 +267,7 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 		}
 		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
 		//range = division(range, sz, bits);
-		out2 = (low/range)*sz;
+		//out2 = (low/range)*sz;
 		range = range/sz;
 		//out = division(low, range, find_msb_bit(range));
 		//out = nr_divide1(low, range, find_msb_bit(range));
@@ -306,9 +323,10 @@ static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,
 			//msb = find_msb_bit(d[i]);
 			//d[i] = (d[i] == (1<<msb)) ? 1<<msb : 1<<msb+1;
 		}
-		//printf(" d[%d] = %d ", i, d[i]);
+		printf(" d[%d] = %d ", i, d[i]);
 		sum2 += d[i];
 	}
+	printf("\n");
 	d[maxi] += sum1 - sum2;
 	//for(i=0; i<num; i++)  { sum3 += d[i]; }
 	cu[0] = 0;
@@ -320,7 +338,76 @@ static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,
 	return bits;
 }
 
+static inline  write_bit_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+{
+	uint32 i, rest, mask;
+	for(;;){
+		rest = 8 - (*poz&7);
+		mask = (1<<rest) - 1 ;
+		buff[*poz>>3] += mask & st[bits>>3];
+		if(rest >= bits) { *poz += bits; break; }
+		else { *poz += rest; bits = bits - rest; }
+	}
+
+}
+
+static inline  read_bit_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+{
+	uint32 i, rest, mask;
+	for(;;){
+		rest = 8 - (*poz&7);
+		mask = (1<<rest) - 1 ;
+		buff[*poz>>3] += mask & st[bits>>3];
+		if(rest >= bits) { *poz += bits; break; }
+		else { *poz += rest; bits = bits - rest; }
+	}
+}
+
+uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
+{
+	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st, bits, msb;
+	uchar z = 0;
+	//Write distribution
+	for(i=0; i < num; i++) {
+		if(d[i]) {
+			write_bit_poz(buff, &poz, &z, 8); z = 0;
+			msb = find_msb_bit(d[i]);
+			st = 0x80000000;
+			st = st | (msb<<26);
+			st = st | (d[i]<<26-msb);
+			bits = 6+msb;
+			write_bit_poz(buff, &poz, (uchar*)&st, bits);
+		} else {
+			z++;
+			if(z == 127) { write_bit_poz(buff, &poz, &z, 8); z = 0;}
+		}
+	}
+	return poz;
+}
+
 static uint32 read_distrib(uchar *buff, uint32 *d, uint32 q_bits)
+{
+	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st, bits, msb;
+	uchar z = 0;
+	//Write distribution
+	for(i=0; i < num; i++) {
+		if(d[i]) {
+			write_bit_poz(buff, &poz, &z, 8); z = 0;
+			msb = find_msb_bit(d[i]);
+			st = 0x80000000;
+			st = st | (msb<<26);
+			st = st | (d[i]<<26-msb);
+			bits = 6+msb;
+			write_bit_poz(buff, &poz, (uchar*)&st, bits);
+		} else {
+			z++;
+			if(z == 127) { write_bit_poz(buff, &poz, &z, 8); z = 0;}
+		}
+	}
+	return poz;
+}
+
+static uint32 read_distrib1(uchar *buff, uint32 *d, uint32 q_bits)
 {
 	uint32 i, j, in, num = 1<<q_bits, sz, msb , sum = 0, bits;
 	uint32 *cu = &d[num];
@@ -333,34 +420,10 @@ static uint32 read_distrib(uchar *buff, uint32 *d, uint32 q_bits)
 	for(i=1; i<=num; i++)  {
 		cu[i] = cu[i-1] + d[i-1];
 	}
-	/*
-	cu[0] = 0;
-	for(i=0; i<=num; i++) if(d[i]) { in = i; break; }
-	//d[0] = d[in];
-	for(i = in+1, j=1; i<num; i++)  {
-		if(d[i]) {
-			cu[j] = cu[j-1] + d[in];
-			d[j-1] = d[in];
-			q[j-1] = q[in];
-			//printf(" cu[%d] = %d d[%d] = %d ", j, cu[j], j-1, d[j-1]);
-			j++; in = i;
-		}
-	}
-	q[j-1] = q[in];
-	d[j-1] = d[in];
-	cu[j] = cu[j-1] + d[in];
-
-	*cu_sz = 1<<(find_msb_bit(j-1)+1);
-	for(; j < *cu_sz; j++) cu[j+1] = cu[j];
-	//if(j&1) { cu[j+1] = cu[j]; *cu_sz = j+1; }
-	for(i=0; i< *cu_sz; i++) printf("d[%4d] = %6d cu[%4d] = %6d\n", i, d[i], i, cu[i]);
-	*/
-	printf("\n sum = %d cu[%d] = %d num  = %d bits = %d\n", sum, i-1, cu[i-1], num , bits);
-	//printf("\nsum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d \n", sum, j, cu[j-1], num , bits, *cu_sz);
 	return bits;
 }
 
-static uint32 read_distrib1(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint32 *cu_sz)
+static uint32 read_distrib2(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint32 *cu_sz)
 {
 	uint32 i, j, in, num = 1<<q_bits, sz, msb , sum = 0, bits, tmp;
 	uint32 *cu = &d[num];
@@ -397,7 +460,7 @@ static uint32 read_distrib1(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint3
 	//if(j&1) { cu[j+1] = cu[j]; *cu_sz = j+1; }
 	//for(i=0; i< *cu_sz; i++) printf("d[%4d] = %6d cu[%4d] = %6d\n", i, d[i], i, cu[i]);
 
-	printf("\n tmp = %d sum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d\n", tmp, sum, j, cu[j], num , bits, *cu_sz);
+	//printf("\n tmp = %d sum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d\n", tmp, sum, j, cu[j], num , bits, *cu_sz);
 	//printf("\nsum = %d cu[%d] = %d num  = %d bits = %d cu_sz = %d \n", sum, j, cu[j-1], num , bits, *cu_sz);
 	return bits;
 }
@@ -441,9 +504,12 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 
 	//Encoder setup
 	sz = make_distrib(img, d, size, a_bits, q_bits, q);
+	tmp = write_distrib(d, q_bits, buff);
+	j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
+	printf("dist_size = %d bits %d byts\n", tmp, j);
 
 	//init_prob(d, q_bits, c);
-	range = top; low = 0; j=0;
+	range = top; low = 0;
 
 	//Start encoding
 	for(i=0; i<size; i++) {
@@ -503,6 +569,7 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 			low = (low<<sh) | (uint32)buff[j++];
 		}
 		range = range>>sz;
+		//out = divide1(low, range);
 		out = low/range;
 		//im = get_cum_f(out, cu, cu_sz);
 		im = get_cum_f(out, cu, num);
