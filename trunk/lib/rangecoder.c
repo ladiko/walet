@@ -323,10 +323,10 @@ static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,
 			//msb = find_msb_bit(d[i]);
 			//d[i] = (d[i] == (1<<msb)) ? 1<<msb : 1<<msb+1;
 		}
-		printf(" d[%d] = %d ", i, d[i]);
+		//printf(" d[%d] = %d ", i, d[i]);
 		sum2 += d[i];
 	}
-	printf("\n");
+	//printf("\n");
 	d[maxi] += sum1 - sum2;
 	//for(i=0; i<num; i++)  { sum3 += d[i]; }
 	cu[0] = 0;
@@ -338,7 +338,7 @@ static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,
 	return bits;
 }
 
-static inline  write_bit_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+static inline write_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
 {
 	uint32 i, rest, mask;
 	for(;;){
@@ -348,15 +348,20 @@ static inline  write_bit_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
 		if(rest >= bits) { *poz += bits; break; }
 		else { *poz += rest; bits = bits - rest; }
 	}
-
 }
 
-static inline  read_bit_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+static inline uint32 check_bit_poz(uchar *buff, uint32 *poz)
 {
-	uint32 i, rest, mask;
+	uint32 ch =  (1<<(7-(*poz&7))) & buff[*poz&7 ? (*poz>>3) + 1 : *poz>>3];
+	*poz++;
+	return ch;
+}
+
+static inline read_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+{
+	uint32 i, rest, mask, bit;
 	for(;;){
-		rest = 8 - (*poz&7);
-		mask = (1<<rest) - 1 ;
+		bit = (1<<rest-1) & buff[*poz>>3];
 		buff[*poz>>3] += mask & st[bits>>3];
 		if(rest >= bits) { *poz += bits; break; }
 		else { *poz += rest; bits = bits - rest; }
@@ -370,16 +375,16 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
 	//Write distribution
 	for(i=0; i < num; i++) {
 		if(d[i]) {
-			write_bit_poz(buff, &poz, &z, 8); z = 0;
+			write_bits_poz(buff, &poz, &z, 8); z = 0;
 			msb = find_msb_bit(d[i]);
 			st = 0x80000000;
 			st = st | (msb<<26);
 			st = st | (d[i]<<26-msb);
 			bits = 6+msb;
-			write_bit_poz(buff, &poz, (uchar*)&st, bits);
+			write_bits_poz(buff, &poz, (uchar*)&st, bits);
 		} else {
 			z++;
-			if(z == 127) { write_bit_poz(buff, &poz, &z, 8); z = 0;}
+			if(z == 127) { write_bits_poz(buff, &poz, &z, 8); z = 0;}
 		}
 	}
 	return poz;
@@ -387,22 +392,10 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
 
 static uint32 read_distrib(uchar *buff, uint32 *d, uint32 q_bits)
 {
-	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st, bits, msb;
-	uchar z = 0;
+	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st1, bits, msb;
+	uchar z = 0, st;
 	//Write distribution
 	for(i=0; i < num; i++) {
-		if(d[i]) {
-			write_bit_poz(buff, &poz, &z, 8); z = 0;
-			msb = find_msb_bit(d[i]);
-			st = 0x80000000;
-			st = st | (msb<<26);
-			st = st | (d[i]<<26-msb);
-			bits = 6+msb;
-			write_bit_poz(buff, &poz, (uchar*)&st, bits);
-		} else {
-			z++;
-			if(z == 127) { write_bit_poz(buff, &poz, &z, 8); z = 0;}
-		}
 	}
 	return poz;
 }
@@ -484,6 +477,44 @@ static uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
 	}
 }
 
+static inline uint32 get_free_letter(uint32 *ab, uint32 *get, uint32 size)
+{
+	if(*get < size) return ab[*get++];
+	else { *get = 0; return ab[0]; }
+}
+
+static inline set_free_letter(uint32 *ab, uint32 *set, uint32 size, uint32 letter)
+{
+	if(*set < size) ab[*set++] = letter;
+	else { *set = 0; ab[0] = letter; }
+}
+
+static inline sw_update(uint32 *sw, uint32 *swc, uint32 size, uint32 in, uint32 *out)
+{
+	if(*swc < size) { *out = sw[*swc]; sw[*swc++] = in; }
+	else { *swc = 0; *out = sw[0]; sw[0] = in; }
+}
+
+void init_alphabet(imgtype *img, uint32 *d, uint32 *ds, uint32 *ab, uint32 *sw, int *q, uint32 size, uint32 q_bits, uint32 *get, uint32 *swc)
+{
+	uint32 i, im, half = 1<<q_bits-1, out;
+	for(i=0; i < size; i++){
+		im = q[img[i] + half];
+		if(!d[im]) d[im] = get_free_letter(ab, get, size);
+		ds[d[im]]++;
+		sw_update(sw, swc, size, im, &out);
+	}
+}
+
+void update_dist(uint32 im, uint32 *d, uint32 *ds, uint32 *ab, uint32 *sw, uint32 size, uint32 *get, uint32 *set, uint32 *swc)
+{
+	uint32 out;
+	if(!d[im]) d[im] = get_free_letter(ab, get, size);
+	ds[d[im]]++;
+	sw_update(sw, swc, size, im, &out);
+	if(!--ds[d[out]]) set_free_letter(ab, set, size, d[out]);
+}
+
 uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
 /*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
 	\brief Range encoder.
@@ -503,10 +534,22 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	int im;
 
 	//Encoder setup
+	/*
+	uint32 *ds = &d[num]; 			//Adaptive probability array
+	uint32 *ab = &ds[size_ab];	 	//Free alphabet array
+	uint32 *sw = &ab[size_ab];		//Sliding window array
+	uint32 get = 0, set = 0, swc = 0;		//The counters free letters and sliding window
+
+	memset(d, 0, sizeof(uint32)*(num+size_ab));
+	init_prob(d, q_bits, c);
+	for(i=0; i < size_ab; i++) ab[i] = i;
+	init_alphabet(img, d, ds, ab, sw, q, size_ab, q_bits, &get, &swc);
+	*/
 	sz = make_distrib(img, d, size, a_bits, q_bits, q);
-	tmp = write_distrib(d, q_bits, buff);
-	j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
-	printf("dist_size = %d bits %d byts\n", tmp, j);
+	//tmp = write_distrib(d, q_bits, buff);
+	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
+	//printf("dist_size = %d bits %d byts\n", tmp, j);
+	j=0;
 
 	//init_prob(d, q_bits, c);
 	range = top; low = 0;
@@ -517,10 +560,12 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 		//printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d\n", i, img[i], half, sz, im, cu[im]);
 
 		range = range>>sz;
+		//cu = get_cum(im, c, q_bits);
 		low1 = low;
 		low += range*cu[im];
 		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
 		range = range*d[im];
+		//update_dist(im, d, ds, ab, sw, size_ab, &get, &set, &swc);
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
 			while(range <= bot) {
@@ -556,8 +601,8 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	int dif, fin;
 
 	//Decoder setup
-	sz = read_distrib(buff, d, q_bits);
-	//sz = read_distrib1(buff, d, q, q_bits, &cu_sz);
+	//sz = read_distrib(buff, d, q_bits);
+	sz = read_distrib1(buff, d, q_bits);
 	range = top; j=4;
 
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
