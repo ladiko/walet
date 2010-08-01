@@ -411,10 +411,26 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GstStateChangeReturn ret;
 	GstState state;
+	uchar *buf;
 
-	ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
-	g_printf("The current state = %d ret = %d\n", state, ret);
-	gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
+	utils_bayer_to_Y(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height);
+	new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width-1, gw->gop->height-1);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
+
+	utils_bayer_to_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 5);
+	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width-1, gw->gop->height-1);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
+	//g_printf("The current state = %d ret = %d\n", state, ret);
+	//gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
+
+	//motion_contour(&gw->gop->frames[0].img[0], gw->gop->color, gw->gop->steps, buf);
+	//new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
+	//utils_subband_draw(&gw->gop->frames[0].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
+	//gtk_widget_queue_draw(gw->drawingarea[3]);
 
 }
 
@@ -551,7 +567,7 @@ gboolean  init_main_window(GtkWalet *gw)
 	gw->decompress_button	= GTK_WIDGET (gtk_builder_get_object (builder, "compress_button"));
 	gw->median_button		= GTK_WIDGET (gtk_builder_get_object (builder, "median_button"));
 	gw->check_button		= GTK_WIDGET (gtk_builder_get_object (builder, "check_button"));
-	gw->next_button		= GTK_WIDGET (gtk_builder_get_object (builder, "next_button"));
+	gw->next_button			= GTK_WIDGET (gtk_builder_get_object (builder, "next_button"));
 	// Drawingareas
 	gw->drawingarea[0]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea0"));
 	gw->drawingarea[1]	= GTK_WIDGET (gtk_builder_get_object (builder, "drawingarea1"));

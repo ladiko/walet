@@ -36,12 +36,14 @@ int g[9][2] = {
 
 static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
-	uint32 x, y;
+	uint32 x, y, tmp;
 	for(y=0; y < h; y++ ){
 		for(x=0; x < w; x++){
-			rgb[3*((y+h0)*size+w0+x)]   = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
-			rgb[3*((y+h0)*size+w0+x)+1] = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
-			rgb[3*((y+h0)*size+w0+x)+2] = rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
+			tmp = rnd(shift+im[y*w+x]);
+			rgb[3*((y+h0)*size+w0+x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+h0)*size+w0+x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+h0)*size+w0+x)+2] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
 		}
 	}
 }
@@ -187,16 +189,9 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 bits)
 	return img1;
 }
 
-void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay)
+imgtype* utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
-
-	switch(bay){
-		case(BGGR):{ a = 1; b = 1; break;}
-		case(GRBG):{ a = 0; b = 1; break;}
-		case(GBRG):{ a = 1; b = 0; break;}
-		case(RGGB):{ a = 0; b = 0; break;}
-	}
 
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
@@ -205,12 +200,53 @@ void utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid
 			xwy = x + yw;
 			wy = (x + yw1);
 			//xwy3 = wy + wy + wy;
-			img1[wy] = 	((y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1])))>>2) +
-						((y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
-							   (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1))>>1) +
-						((y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ])))>>2);
+			img1[wy] = 	(img[xwy    ] + img[xwy+1] + img[xwy+w] + img[xwy+w+1])>>2;
 		}
 	}
+	return img1;
+}
+
+imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
+{
+	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
+
+    switch(bay){
+            case(BGGR) : { a = 1; b = 1; break; }
+            case(GRBG) : { a = 0; b = 1; break; }
+            case(GBRG) : { a = 1; b = 0; break; }
+            case(RGGB) : { a = 0; b = 0; break; }
+    }
+
+//	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+//		for(x=0; x < w1; x++){
+	for(y=1, yw=w, yw1=w1 ; y < h1-1; y++, yw+=w, yw1+=w1){
+		for(x=1; x < w1-1; x++){
+		//for(y=1, yw=w, yw1=w1 ; y < 2; y++, yw+=w, yw1+=w1){
+		//	for(x=1; x < 2; x++){
+			y2 = oe(a,y);
+			x2 = oe(b,x);
+			xwy = x + yw;
+			wy = (x + yw1);
+			//printf("y2 = %d %d x2 = %d %d\n", y2,!y2, x2, !x2);
+			//printf("xwy+w+1 = %d xwy-(w<<1) = %d xwy = %d\n", xwy+w+1, xwy-(w<<1), xwy);
+
+			//Green
+            img1[wy] = y2 ? (x2 ? abs(img[xwy+w  ] - img[xwy+1  ]) : abs(img[xwy    ] - img[xwy+w+1])) :
+                            (x2 ? abs(img[xwy+w+1] - img[xwy    ]) : abs(img[xwy+1  ] - img[xwy+w  ])) ;
+            //Red
+			img1[wy] += y2 ? (x2 ? abs(img[xwy  ]   - ((img[xwy]     + img[xwy+2]   + img[xwy+(w<<1)]   + img[xwy+(w<<1)+2])>>2)) :
+								   abs(img[xwy+1]   - ((img[xwy+1]   + img[xwy-1]   + img[xwy+(w<<1)+1] + img[xwy+(w<<1)-1])>>2))):
+							 (x2 ? abs(img[xwy+w]   - ((img[xwy+w]   + img[xwy+2+w] + img[xwy-w]        + img[xwy-w+2])>>2)) :
+								   abs(img[xwy+w+1] - ((img[xwy+w+1] + img[xwy-1+w] + img[xwy-w+1]      + img[xwy-w-1])>>2)));
+			//Blue
+			img1[wy] += !y2 ? (!x2 ? abs(img[xwy  ]   - ((img[xwy]     + img[xwy+2]   + img[xwy+(w<<1)]   + img[xwy+(w<<1)+2])>>2)) :
+								     abs(img[xwy+1]   - ((img[xwy+1]   + img[xwy-1]   + img[xwy+(w<<1)+1] + img[xwy+(w<<1)-1])>>2))):
+							  (!x2 ? abs(img[xwy+w]   - ((img[xwy+w]   + img[xwy+2+w] + img[xwy-w]        + img[xwy-w+2])>>2)) :
+								     abs(img[xwy+w+1] - ((img[xwy+w+1] + img[xwy-1+w] + img[xwy-w+1]      + img[xwy-w-1])>>2)));
+			img1[wy] = img1[wy] > thresh ? img1[wy] : 0;
+ 		}
+	}
+	return img1;
 }
 
 double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
