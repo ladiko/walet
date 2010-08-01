@@ -71,7 +71,7 @@ am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libwalet_la_LIBADD =
 am_libwalet_la_OBJECTS = gop.lo subband.lo image.lo frame.lo utils.lo \
-	rangecoder.lo filters.lo
+	rangecoder.lo filters.lo motion.lo
 libwalet_la_OBJECTS = $(am_libwalet_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -218,10 +218,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libwalet.la
-libwalet_la_SOURCES = gop.c subband.c image.c frame.c utils.c rangecoder.c filters.c walet.h
+libwalet_la_SOURCES = gop.c subband.c image.c frame.c utils.c rangecoder.c filters.c motion.c walet.h
 #AM_CXXFLAGS = $(GCC_FLAGS)
 #libwalet_la_CFLAGS = $(GCC_FLAGS)
-noinst_HEADERS = gop.h subband.h image.h frame.h rangecoder.h utils.h filters.h
+noinst_HEADERS = gop.h subband.h image.h frame.h rangecoder.h utils.h filters.h motion.h
 all: all-am
 
 .SUFFIXES:
@@ -300,6 +300,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/frame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/motion.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rangecoder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subband.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Plo@am__quote@

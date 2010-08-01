@@ -458,7 +458,7 @@ static uint32 read_distrib2(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint3
 	return bits;
 }
 
-static uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
+static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
 {
 	uint32 i, j;
 	//if(!out) return 0;
@@ -477,42 +477,23 @@ static uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
 	}
 }
 
-static inline uint32 get_free_letter(uint32 *ab, uint32 *get, uint32 size)
+static inline uint32 get_cum_f1(uint32 out, uint32 *cu, uint32 i, uint32 j)
 {
-	if(*get < size) return ab[*get++];
-	else { *get = 0; return ab[0]; }
-}
-
-static inline set_free_letter(uint32 *ab, uint32 *set, uint32 size, uint32 letter)
-{
-	if(*set < size) ab[*set++] = letter;
-	else { *set = 0; ab[0] = letter; }
-}
-
-static inline sw_update(uint32 *sw, uint32 *swc, uint32 size, uint32 in, uint32 *out)
-{
-	if(*swc < size) { *out = sw[*swc]; sw[*swc++] = in; }
-	else { *swc = 0; *out = sw[0]; sw[0] = in; }
-}
-
-void init_alphabet(imgtype *img, uint32 *d, uint32 *ds, uint32 *ab, uint32 *sw, int *q, uint32 size, uint32 q_bits, uint32 *get, uint32 *swc)
-{
-	uint32 i, im, half = 1<<q_bits-1, out;
-	for(i=0; i < size; i++){
-		im = q[img[i] + half];
-		if(!d[im]) d[im] = get_free_letter(ab, get, size);
-		ds[d[im]]++;
-		sw_update(sw, swc, size, im, &out);
+	//uint32 i, j;
+	//if(!out) return 0;
+	for(; ;){
+		//if(test>10) break;
+		//if (bool) printf("size = %d out = %d cu[%d] = %d j = %d \n", size, out, i, cu[i], j);
+		if(out >= cu[i]) {
+			if(out < cu[i+1]) {
+				//if (bool) printf("cu[%d] = %d\n", i, cu[i]);
+				return i;
+			}
+			else { j>>=1; i+=j; }
+		}
+		else { j = (j==0) ? 1 : j>>1; i-=j;}
+		//else { j >>=1; i-=j;}
 	}
-}
-
-void update_dist(uint32 im, uint32 *d, uint32 *ds, uint32 *ab, uint32 *sw, uint32 size, uint32 *get, uint32 *set, uint32 *swc)
-{
-	uint32 out;
-	if(!d[im]) d[im] = get_free_letter(ab, get, size);
-	ds[d[im]]++;
-	sw_update(sw, swc, size, im, &out);
-	if(!--ds[d[out]]) set_free_letter(ab, set, size, d[out]);
 }
 
 uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
@@ -617,7 +598,9 @@ uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 		//out = divide1(low, range);
 		out = low/range;
 		//im = get_cum_f(out, cu, cu_sz);
-		im = get_cum_f(out, cu, num);
+		//im = get_cum_f(out, cu, num);
+		im = get_cum_f1(out, cu, half, half);
+		//im = half;
 		//if(img[i] != q[im])
 		//if(i >=0 && i< 5)
 		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",

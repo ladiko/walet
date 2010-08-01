@@ -7,10 +7,12 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-uchar* 		utils_subband_draw	(Image *img, uchar *rgb, ColorSpace color, uint32 steps);
-uchar* 		utils_bayer_draw	(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
-uchar* 		utils_grey_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 width);
-imgtype* 	utils_cat			(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
+uchar* 		utils_subband_draw		(Image *img, uchar *rgb, ColorSpace color, uint32 steps);
+uchar* 		utils_bayer_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
+uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 width);
+imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
+imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+imgtype* 	utils_bayer_to_gradient	(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh);
 
 double 		utils_dist	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
 double 		utils_ape	(imgtype *before, imgtype *after, uint32 dim, uint32 d);

@@ -166,5 +166,6 @@ typedef struct {
 #include <utils.h>
 #include <rangecoder.h>
 #include <filters.h>
+#include <motion.h>
 
 #endif //_WALET_HH_

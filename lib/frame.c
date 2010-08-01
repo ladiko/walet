@@ -278,6 +278,17 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 	}
 }
 
+void frame_contours(GOP *gop, uint32 fr)
+///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
+///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+{
+	Image *im = &gop->frames[fr].img[0];
+	if(gop->color == BAYER){
+	}
+}
+
 uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Write frame in file.
