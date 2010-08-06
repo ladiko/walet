@@ -278,7 +278,7 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 	}
 }
 
-void frame_contours(GOP *gop, uint32 fr)
+void frame_segmetation(GOP *gop, uint32 fr)
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
 ///	\param	gop			The GOP structure.

@@ -13,6 +13,10 @@ uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 widt
 imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
 imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 imgtype* 	utils_bayer_to_gradient	(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh);
+imgtype* 	utils_watershed			(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+imgtype* 	utils_kill_pix			(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void 		utils_min_region		(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h);
+void 		utils_steep_descent		(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h);
 
 double 		utils_dist	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
 double 		utils_ape	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
