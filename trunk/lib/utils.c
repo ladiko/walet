@@ -249,6 +249,107 @@ imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h
 	return img1;
 }
 
+void inline local_max(imgtype *img, imgtype *img1, uint32 w)
+{
+	uint32 x, w1 = w-1;
+	for(x=1; x < w1; x++){
+		if(img[x-1])
+		img1[x] = (img[x-1] <= img[x] && img[x] >= img[x+1]) ? img[x] : 0;
+	}
+}
+
+
+static inline void check_min(imgtype *img, uint32 x, int w , uint32 *min)
+{
+	uint32 y = x+w;
+	if(img[x] > img[y]) if(img[*min] > img[y]) *min = y;
+}
+
+imgtype* utils_watershed(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y=0, sq = w*(h-1), x, w1 = w-1, min, yx;
+	img[0] = 255;
+	y=0;
+	for(y=w; y < sq; y+=w) {
+		x = 0;
+		for(x=1; x < w1; x++){
+			min = 0;
+			yx = y+x;
+			check_min(img, yx, -1 , &min);
+			check_min(img, yx, -w , &min);
+			check_min(img, yx,  1 , &min);
+			check_min(img, yx,  w , &min);
+			check_min(img, yx, -1-w , &min);
+			check_min(img, yx,  1-w , &min);
+			check_min(img, yx,  w+1 , &min);
+			check_min(img, yx,  w-1 , &min);
+			if(min) { img1[min] = 255; img1[yx] = img[yx]; }
+			else if (img[yx] > 0 ) img1[yx] = 255;
+		}
+	}
+	return img1;
+}
+
+
+void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+{
+	uint32 y=0, sq = w*(h-1), x, w1 = w-1, min, yx, zc = 0, mc = sq>>1 ;
+
+	ind[0] = img[0] ? mc++ : zc++;
+	for(x=1; x < w1; x++){
+		yx = y+x;
+		ind[yx] = img[yx] ? mc++ : (img[yx-1] ? zc++ : ind[yx-1]);
+	}
+	//printf("ind[%d] = %d\n", yx, ind[yx]);
+	for(y=w; y < sq; y+=w) {
+		for(x=1; x < w1; x++){
+			yx = y+x;
+			//ind[yx] = img[yx] ? mc++ : (img[yx-1] ? zc++ : ind[yx-1]);
+			if(img[yx] == 0) {
+				if(img[yx-1] == 0 ) {
+					ind[yx] = ind[yx-1];
+					if(ind[yx-1] != ind[yx-w]) arg[ind[yx-w]] = ind[yx];
+					//printf("ind[%d] = %d\n", yx-w, ind[yx-w]);
+				}
+				else if (img[yx-w] == 0) {
+					ind[yx] = ind[yx-w];
+					//if(ind[yx-1] != ind[yx-w]) arg[ind[yx-w]] = ind[yx-1];
+				}
+				else ind[yx] = zc++;
+			} else {
+				ind[yx] = mc++;
+			}
+		}
+	}
+}
+
+void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+{
+	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx;
+	//y=w;{
+	for(y=w; y < sq; y+=w) {
+		for(x=1; x < w1; x++){
+			yx = y+x;
+			//printf("img[%d] = %d ind[%d] = %d arg[] = %d\n", yx, img[yx], yx, ind[yx], arg[ind[yx]]);
+			if(img[yx] == 0) {
+				//printf("ind[%d] = %d arg[] = %d\n", yx, ind[yx], arg[ind[yx]]);
+				img[yx] = arg[ind[yx]];
+			}
+			/*
+			if(img[yx] == 0) {
+				ind[yx] = arg[ind[yx]];
+			} else {
+				check_min(img, yx, -1 , &min);
+				check_min(img, yx, -w , &min);
+				check_min(img, yx,  1 , &min);
+				check_min(img, yx,  w , &min);
+				ind[yx] = min ? ind[min] : ind[yx-1];
+			}
+			*/
+		}
+	}
+}
+
 double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 /// \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 /// \brief Calculate distortion of two image.
