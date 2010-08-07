@@ -439,7 +439,14 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	//utils_watershed	(gw->gop->buf, gw->gop->frames[0].img[0].img,  gw->gop->width-1, gw->gop->height-1);
 	utils_min_region(gw->gop->buf, gw->gop->seg, gw->gop->arg, gw->gop->width-1, gw->gop->height-1);
+
+	//utils_print_img(gw->gop->buf, gw->gop->seg, gw->gop->width-1, gw->gop->height-1,  0, 0,  30, 30);
+	//utils_print_ind(gw->gop->seg, gw->gop->width-1, gw->gop->height-1,  0, 0,  30, 30);
+
 	utils_steep_descent(gw->gop->buf, gw->gop->seg, gw->gop->arg, gw->gop->width-1, gw->gop->height-1);
+	utils_print_img(gw->gop->buf, gw->gop->seg, gw->gop->width-1, gw->gop->height-1,  0, 0,  30, 30);
+	utils_print_img(gw->gop->buf, gw->gop->seg, gw->gop->width-1, gw->gop->height-1,  1000, 2000,  30, 30);
+	//utils_print_ind(gw->gop->seg, gw->gop->width-1, gw->gop->height-1,  0, 0,  30, 30);
 
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->buf[i] ? 255 : 0;
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->buf[i]<<3;
