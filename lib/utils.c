@@ -308,16 +308,19 @@ void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h
 			if(img[yx] == 0) {
 				if(img[yx-1] == 0 ) {
 					ind[yx] = ind[yx-1];
-					if(ind[yx-1] != ind[yx-w]) arg[ind[yx-w]] = ind[yx];
-					//printf("ind[%d] = %d\n", yx-w, ind[yx-w]);
-				}
-				else if (img[yx-w] == 0) {
+				} else ind[yx] = zc++;
+
+				if (img[yx-w] == 0) {
+					if(ind[yx] != ind[yx-w]) {
+						if( ind[yx] > ind[yx-w]) arg[ind[yx]] = ind[yx-w];
+						else arg[ind[yx-w]] = ind[yx];
+					}
 					ind[yx] = ind[yx-w];
 					//if(ind[yx-1] != ind[yx-w]) arg[ind[yx-w]] = ind[yx-1];
 				}
-				else ind[yx] = zc++;
 			} else {
-				ind[yx] = mc++;
+				//ind[yx] = mc++;
+				ind[yx] = zc++;
 			}
 		}
 	}
@@ -325,7 +328,7 @@ void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h
 
 void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
 {
-	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx;
+	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx, tmp;
 	//y=w;{
 	for(y=w; y < sq; y+=w) {
 		for(x=1; x < w1; x++){
@@ -333,7 +336,10 @@ void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint3
 			//printf("img[%d] = %d ind[%d] = %d arg[] = %d\n", yx, img[yx], yx, ind[yx], arg[ind[yx]]);
 			if(img[yx] == 0) {
 				//printf("ind[%d] = %d arg[] = %d\n", yx, ind[yx], arg[ind[yx]]);
-				img[yx] = arg[ind[yx]];
+				//img[yx] = (arg[ind[yx]] = 0) ? 255 : img[yx];
+				for(tmp = arg[ind[yx]]; arg[tmp] != tmp; tmp = arg[tmp]);
+					//printf("yx = %d ind[yx] = %d arg[ind] = %d arg[arg[ind]] = %d  \n", yx, ind[yx], arg[ind[yx]], arg[tmp]);
+				ind[yx] = tmp;
 			}
 			/*
 			if(img[yx] == 0) {
@@ -349,6 +355,34 @@ void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint3
 		}
 	}
 }
+
+void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
+{
+	uint32 x, y;
+	for(y=by; y < ly+by; y++) {
+		for(x=bx; x < lx+bx; x++){
+			printf("%5d ", img[y*w+x]);
+		}
+		printf("\n");
+		for(x=bx; x < lx+bx; x++){
+			printf("%5d ", ind[y*w+x]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+}
+
+void utils_print_ind(uint32* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
+{
+	uint32 x, y;
+	for(y=by; y < ly; y++) {
+		for(x=bx; x < lx; x++){
+			printf("%5d ", img[y*w+x]);
+		}
+		printf("\n");
+	}
+}
+
 
 double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 /// \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
