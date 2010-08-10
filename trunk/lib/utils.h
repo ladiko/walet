@@ -19,7 +19,9 @@ void 		utils_min_region		(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint
 void 		utils_steep_descent		(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h);
 
 void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);
-void utils_print_ind(uint32* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);
+void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);
+void utils_connect_region(imgtype *img,uint32 *ind, uint32 *arg, uint32 w, uint32 h);
+uchar* utils_region_draw(uint32 *img, uchar *rgb, uint32 w, uint32 h);
 
 double 		utils_dist	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
 double 		utils_ape	(imgtype *before, imgtype *after, uint32 dim, uint32 d);

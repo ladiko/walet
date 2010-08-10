@@ -182,6 +182,18 @@ uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
+uchar* utils_region_draw(uint32 *img, uchar *rgb, uint32 w, uint32 h)
+{
+	int i, j, dim = h*w*3;
+	for(i = 0,  j= 0; j < dim; j+=3, i++){
+		rgb[j]     = img[i]&0xFF;
+		rgb[j + 1] = img[i]&0xFF;
+		rgb[j + 2] = img[i]&0xFF;
+		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
+	}
+	return rgb;
+}
+
 imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 bits)
 {
 	int i, dim = h*w, sh = bits-8;
@@ -249,6 +261,26 @@ imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h
 	return img1;
 }
 
+imgtype* utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
+{
+	uint32 x, y, yx, h1 = (h-1)*w, w1 = w-1, yw;
+
+	for(y=w ; y < h1; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+
+			img1[yx] =   abs(img[yx-1] + img[yx-w] + img[yx-w-1] - img[yx+1] - img[yx+w] - img[yx+w+1])>>2;
+			img1[yx] +=  abs(img[yx+1] + img[yx-w] + img[yx-w+1] - img[yx-1] - img[yx+w] - img[yx+w-1])>>2;
+			//img1[yx] +=  abs(img[yx-1-w] + img[yx-w] + img[yx-w+1] - img[yx-1+w] - img[yx+w] - img[yx+w+1])>>2;
+			//img1[yx] +=  abs(img[yx-1-w] + img[yx-1] + img[yx+w-1] - img[yx+1-w] - img[yx+1] - img[yx+w+1])>>2;
+
+			img1[yx] = img1[yx] > thresh ? img1[yx] : 0;
+ 		}
+	}
+	return img1;
+}
+
+
 void inline local_max(imgtype *img, imgtype *img1, uint32 w)
 {
 	uint32 x, w1 = w-1;
@@ -268,23 +300,28 @@ static inline void check_min(imgtype *img, uint32 x, int w , uint32 *min)
 imgtype* utils_watershed(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 y=0, sq = w*(h-1), x, w1 = w-1, min, yx;
-	img[0] = 255;
+	//img[0] = 255;
 	y=0;
 	for(y=w; y < sq; y+=w) {
 		x = 0;
 		for(x=1; x < w1; x++){
-			min = 0;
 			yx = y+x;
-			check_min(img, yx, -1 , &min);
-			check_min(img, yx, -w , &min);
-			check_min(img, yx,  1 , &min);
-			check_min(img, yx,  w , &min);
-			check_min(img, yx, -1-w , &min);
-			check_min(img, yx,  1-w , &min);
-			check_min(img, yx,  w+1 , &min);
-			check_min(img, yx,  w-1 , &min);
-			if(min) { img1[min] = 255; img1[yx] = img[yx]; }
-			else if (img[yx] > 0 ) img1[yx] = 255;
+			if(img[yx]){
+				min = yx;
+				check_min(img, yx, -1 , &min);
+				check_min(img, yx, -w , &min);
+				check_min(img, yx,  1 , &min);
+				check_min(img, yx,  w , &min);
+				//check_min(img, yx, -1-w , &min);
+				//check_min(img, yx,  1-w , &min);
+				//check_min(img, yx,  w+1 , &min);
+				//check_min(img, yx,  w-1 , &min);
+				img1[min] = 0;
+				//if(min != yx ) img1[min] = 0;
+
+				//if(min) { img1[min] = 255; img1[yx] = img[yx]; }
+				//else if (img[yx] > 0 ) img1[yx] = 255;
+			}
 		}
 	}
 	return img1;
@@ -304,19 +341,19 @@ void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h
 	for(y=w; y < sq; y+=w) {
 		for(x=1; x < w1; x++){
 			yx = y+x;
-			//ind[yx] = img[yx] ? mc++ : (img[yx-1] ? zc++ : ind[yx-1]);
 			if(img[yx] == 0) {
 				if(img[yx-1] == 0 ) {
 					ind[yx] = ind[yx-1];
 				} else ind[yx] = zc++;
 
-				if (img[yx-w] == 0) {
+				if (img[yx-w] == 0 && img[yx-1] == 0 ) {
+					//if(img[yx-w-1]) ind[yx] = zc++;
 					if(ind[yx] != ind[yx-w]) {
-						if( ind[yx] > ind[yx-w]) arg[ind[yx]] = ind[yx-w];
-						else arg[ind[yx-w]] = ind[yx];
+						arg[ind[yx-w]] = ind[yx];
+						//if( ind[yx] > ind[yx-w]) arg[ind[yx]] = ind[yx-w];
+						//else arg[ind[yx-w]] = ind[yx];
 					}
-					ind[yx] = ind[yx-w];
-					//if(ind[yx-1] != ind[yx-w]) arg[ind[yx-w]] = ind[yx-1];
+					//ind[yx] = ind[yx-w];
 				}
 			} else {
 				//ind[yx] = mc++;
@@ -333,25 +370,78 @@ void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint3
 	for(y=w; y < sq; y+=w) {
 		for(x=1; x < w1; x++){
 			yx = y+x;
-			//printf("img[%d] = %d ind[%d] = %d arg[] = %d\n", yx, img[yx], yx, ind[yx], arg[ind[yx]]);
-			if(img[yx] == 0) {
-				//printf("ind[%d] = %d arg[] = %d\n", yx, ind[yx], arg[ind[yx]]);
-				//img[yx] = (arg[ind[yx]] = 0) ? 255 : img[yx];
-				for(tmp = arg[ind[yx]]; arg[tmp] != tmp; tmp = arg[tmp]);
-					//printf("yx = %d ind[yx] = %d arg[ind] = %d arg[arg[ind]] = %d  \n", yx, ind[yx], arg[ind[yx]], arg[tmp]);
-				ind[yx] = tmp;
-			}
-			/*
-			if(img[yx] == 0) {
-				ind[yx] = arg[ind[yx]];
-			} else {
+			min = yx;
+			if(img[yx] != 0) {
 				check_min(img, yx, -1 , &min);
 				check_min(img, yx, -w , &min);
 				check_min(img, yx,  1 , &min);
 				check_min(img, yx,  w , &min);
-				ind[yx] = min ? ind[min] : ind[yx-1];
+				arg[ind[yx]] = (min == yx) ? ind[yx] : ind[min];
 			}
-			*/
+		}
+	}
+}
+
+void utils_connect_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+{
+	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx, tmp;
+	//y=w;{
+	for(y=w; y < sq; y+=w) {
+		for(x=1; x < w1; x++){
+			yx = y+x;
+			//if(img[yx] == 0) {
+			for(tmp = arg[ind[yx]]; arg[tmp] != tmp; tmp = arg[tmp]);
+				//printf("yx = %d ind[yx] = %d arg[ind] = %d arg[arg[ind]] = %d  \n", yx, ind[yx], arg[ind[yx]], arg[tmp]);
+			ind[yx] = tmp;
+			//}
+		}
+	}
+}
+
+void utils_row_seg(imgtype *img, Row **rows, uint32 w, uint32 h, uint32 theresh)
+{
+	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
+	for(y=0, y1=0; y1 < h1; y+=w1, y1++) {
+		for(x=0; x < w; x+=2){
+			yx = y+x;
+			if(x){
+				if(abs(img[yx-2]  -img[yx]    ) > theresh ||
+						abs(img[yx-1]  -img[yx+1]  ) > theresh ||
+						abs(img[yx+w-2]-img[yx+w]  ) > theresh ||
+						abs(img[yx+w-1]-img[yx+w+1]) > theresh){
+					++rc;
+					rows[y1][rc].length = 1;
+					rows[y1][rc].x 		= x;
+					rows[y1][rc].r 		= img[yx];
+					rows[y1][rc].g1 	= img[yx+1];
+					rows[y1][rc].g2		= img[yx+w];
+					rows[y1][rc].b 		= img[yx+w+1];
+				} else {
+					rows[y1][rc].length++;
+					rows[y1][rc].r  	= (rows[y1][rc].r  + img[yx])>>1;
+					rows[y1][rc].g1 	= (rows[y1][rc].g1 + img[yx+1])>>1;
+					rows[y1][rc].g2		= (rows[y1][rc].g2 + img[yx+w])>>1;
+					rows[y1][rc].b 		= (rows[y1][rc].b  + img[yx+w+1])>>1;
+				}
+			} else {
+				rc = 0;
+				rows[y1][rc].length = 1;
+				rows[y1][rc].x 		= 0;
+				rows[y1][rc].r 		= img[yx];
+				rows[y1][rc].g1 	= img[yx+1];
+				rows[y1][rc].g2		= img[yx+w];
+				rows[y1][rc].b 		= img[yx+w+1];
+			}
+		}
+	}
+}
+
+void utils_region_seg(imgtype *img, Region *reg, Row **rows, uint32 w, uint32 h, uint32 theresh)
+{
+	uint32 y, h1 = h>>1, x;
+	for(y=0; y < h1; y++) {
+		for(x=0; x < w; ){
+			//row[y][x]
 		}
 	}
 }
@@ -360,10 +450,13 @@ void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, 
 {
 	uint32 x, y;
 	for(y=by; y < ly+by; y++) {
+		printf("%5d ", y);
 		for(x=bx; x < lx+bx; x++){
 			printf("%5d ", img[y*w+x]);
 		}
 		printf("\n");
+	//}for(y=by; y < ly+by; y++) {
+		printf("%5d ", y);
 		for(x=bx; x < lx+bx; x++){
 			printf("%5d ", ind[y*w+x]);
 		}
@@ -372,12 +465,12 @@ void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, 
 	printf("\n");
 }
 
-void utils_print_ind(uint32* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
+void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
 {
 	uint32 x, y;
 	for(y=by; y < ly; y++) {
 		for(x=bx; x < lx; x++){
-			printf("%5d ", img[y*w+x]);
+			printf("%3d ", img[y*w+x]);
 		}
 		printf("\n");
 	}
