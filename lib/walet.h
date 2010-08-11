@@ -150,27 +150,31 @@ typedef struct {
 	uchar		fb;				// Filters for wavelet transform
 } WaletHeader;
 
-
-typedef struct {
-	//void		*next;		//Pointer to the next row
-	uchar 		r;			//The red color
-	uchar 		g1;			//The green color
-	uchar 		g2;			//The green color
-	uchar 		b;			//The blue color
-	uint16		x;			//The start row on axis X
-	uint16 		length;		//The length of row
-} Row;
+//typedef struct Row;
 
 typedef struct {
 	uint16 		x;			//The top left point
 	uint16 		y;			//The top left point
-	uchar 		r;			//The red color
-	uchar 		g1;			//The green color
-	uchar 		g2;			//The green color
-	uchar 		b;			//The blue color
-	Row			*rows;		//The first row
+	uchar 		c[4];		//The colors
+	uint32		ac[4];		//The average colors
+	uint32 		nrows;		//The numbers of rows in the region
+	//uchar 		g1;			//The green color
+	//uchar 		g2;			//The green color
+	//uchar 		b;			//The blue color
+	//Row			*rows;		//The first row
 
 } Region;
+
+typedef struct {
+	Region		*reg;		//Pointer to the region
+	uchar 		c[4];			//The red color
+	//uchar 		g1;			//The green color
+	//uchar 		g2;			//The green color
+	//uchar 		b;			//The blue color
+	uint16		x;			//The start row on axis X
+	uint16 		length;		//The length of row
+} Row;
+
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
