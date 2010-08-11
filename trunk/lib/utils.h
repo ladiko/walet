@@ -23,6 +23,9 @@ void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  u
 void utils_connect_region(imgtype *img,uint32 *ind, uint32 *arg, uint32 w, uint32 h);
 uchar* utils_region_draw(uint32 *img, uchar *rgb, uint32 w, uint32 h);
 
+void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh);
+void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h);
+
 double 		utils_dist	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
 double 		utils_ape	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
 double 		utils_psnr	(imgtype *before, imgtype *after, uint32 dim, uint32 d);
