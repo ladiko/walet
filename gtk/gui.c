@@ -425,9 +425,11 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	//utils_bayer_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 2);
 
-	utils_row_seg(gw->gop->frames[0].img[0].img, (Row*)gw->gop->seg, gw->gop->arg, gw->gop->width, gw->gop->height, 5);
-	utils_row_draw( gw->gop->buf, (Row*)gw->gop->seg, gw->gop->arg, gw->gop->width, gw->gop->height);
+	utils_row_seg(gw->gop->frames[0].img[0].img, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 20);
+	utils_region_seg((Region*)gw->gop->reg, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 20);
 
+	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
+	utils_region_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
