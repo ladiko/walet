@@ -20,8 +20,9 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
-	gop->seg = (uint32 *)calloc(width*height, sizeof(uint32));
-	gop->arg = (uint32 *)calloc(width*height, sizeof(uint32));
+	gop->row = (uint32 *)calloc(width*height*2, sizeof(uint32));
+	gop->reg = (uint32 *)calloc(width*height, sizeof(uint32));
+	gop->col = (uint32 *)calloc(height, sizeof(uint32));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
@@ -69,8 +70,9 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 
 	//Temp buffer init
 	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
-	gop->seg = (uint32 *)calloc(width*height, sizeof(uint32));
-	gop->arg = (uint32 *)calloc(width*height, sizeof(uint32));
+	gop->row = (uint32 *)calloc(width*height*2, sizeof(uint32));
+	gop->reg = (uint32 *)calloc(width*height, sizeof(uint32));
+	gop->col = (uint32 *)calloc(height, sizeof(uint32));
 	gop->q = (int *)calloc(1<<(bpp+3), sizeof(int));
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");

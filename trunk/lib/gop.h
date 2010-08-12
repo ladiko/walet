@@ -17,7 +17,7 @@ typedef struct {
 	uint64			cur_stream_frame;	// The current stream frame
 
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
-	uint32 			*seg, *arg;		//Buffer for image segmentation
+	uint32 			*row, *reg, *col;		//Buffer for image segmentation
 	Frame			*frames;	//Pointer to frames array
 	Subband			*sub[3];	//Subband location and size structure
 	int 			*q;			//Quantization value array
