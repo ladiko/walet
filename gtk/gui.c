@@ -425,8 +425,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	//utils_bayer_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 2);
 
-	utils_row_seg(gw->gop->frames[0].img[0].img, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 20);
-	utils_region_seg((Region*)gw->gop->reg, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 20);
+	utils_row_seg(gw->gop->frames[0].img[0].img, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 2);
+	utils_region_seg((Region*)gw->gop->reg, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 3);
 
 	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
 	utils_region_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
@@ -435,7 +435,20 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
-
+	/*
+	color_seg(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, 4);
+	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
+	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
+	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+	*/
+	/*
+	filters_bayer_median_3x3(gw->gop->buf, gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, gw->gop->bg);
+	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
+	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
+	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+	*/
 	/*
 	utils_bayer_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 2);
 	new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);

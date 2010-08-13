@@ -21,6 +21,7 @@ void 		utils_steep_descent		(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, u
 void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);
 void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);
 void utils_connect_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h);
+void color_seg(imgtype *img, uint32 w, uint32 h, uint32 theresh);
 
 
 void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh);
