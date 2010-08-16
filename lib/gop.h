@@ -17,10 +17,17 @@ typedef struct {
 	uint64			cur_stream_frame;	// The current stream frame
 
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
-	uint32 			*row, *reg, *col;		//Buffer for image segmentation
+	//uint32 			*row, *reg, *col;		//Buffer for image segmentation
 	Frame			*frames;	//Pointer to frames array
 	Subband			*sub[3];	//Subband location and size structure
 	int 			*q;			//Quantization value array
+	//Segmentation
+	Row 			*row;		//The rows array
+	Region			*region;	//The region array
+	Chain			*chain;		//The chain array
+	uint32			*rinl;		//The rows in the horizontal line of image
+	uchar			*charr;		//The chain array
+	Row				**pr;		//The array of pointers to Row
 }	GOP;
 
 #ifdef __cplusplus
