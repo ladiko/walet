@@ -415,7 +415,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	GstStateChangeReturn ret;
 	GstState state;
 	uchar *buf;
-	uint32 i , sz = (gw->gop->width)*(gw->gop->height);
+	uint32 i , sz = (gw->gop->width)*(gw->gop->height), nreg;
 	//uint32 *arg = &gw->gop->seg[sz];
 
 	//utils_bayer_to_Y(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height);
@@ -425,11 +425,14 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	//utils_bayer_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 2);
 
-	utils_row_seg(gw->gop->frames[0].img[0].img, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 2);
-	utils_region_seg((Region*)gw->gop->reg, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height, 3);
+	utils_row_seg(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
+	nreg = utils_region_seg(gw->gop->region, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
 
-	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
-	utils_region_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->col, gw->gop->width, gw->gop->height);
+	utils_chain_costruct(gw->gop->region, gw->gop->row,  gw->gop->pr, gw->gop->rinl, gw->gop->width, gw->gop->height);
+
+	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
+	//utils_region_draw( gw->gop->buf, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
+	utils_region_draw1(gw->gop->buf, gw->gop->region, nreg, gw->gop->width, gw->gop->height);
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);

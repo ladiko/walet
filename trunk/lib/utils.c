@@ -451,12 +451,13 @@ void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uin
 	printf("Rows  = %d \n", rc);
 }
 
-void utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh)
+uint32 utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh)
 {
 	uint32 i, y, h1 = h>>1, x, rc, rcu, rcd;
 	for(rc=0; rc < col[0]; rc++){
 		rows[rc].reg = &reg[rc];
 		reg[rc].nrows = 1;
+		reg[rc].x = rows[rcd].x; reg[rc].y = 0;
 		reg[rc].ac[0] = rows[rc].c[0];
 		reg[rc].ac[1] = rows[rc].c[1];
 		reg[rc].ac[2] = rows[rc].c[2];
@@ -488,6 +489,7 @@ void utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, u
 				if(rows[rcu].x + rows[rcu].length > rows[rcd].x + rows[rcd].length) {
 					rows[rcd].reg = &reg[rc];
 					reg[rc].nrows = 1;
+					reg[rc].x = rows[rcd].x; reg[rc].y = y;
 					reg[rc].ac[0] = rows[rcd].c[0];
 					reg[rc].ac[1] = rows[rcd].c[1];
 					reg[rc].ac[2] = rows[rcd].c[2];
@@ -501,6 +503,7 @@ void utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, u
 				else {
 					rows[rcd].reg = &reg[rc];
 					reg[rc].nrows = 1;
+					reg[rc].x = rows[rcd].x; reg[rc].y = y;
 					reg[rc].ac[0] = rows[rcd].c[0];
 					reg[rc].ac[1] = rows[rcd].c[1];
 					reg[rc].ac[2] = rows[rcd].c[2];
@@ -532,24 +535,28 @@ void utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, u
 		reg[i].c[1] = reg[i].ac[1] / reg[i].nrows;
 		reg[i].c[2] = reg[i].ac[2] / reg[i].nrows;
 		reg[i].c[3] = reg[i].ac[3] / reg[i].nrows;
+		reg[i].rowc = 0;
 
 	}
 	printf("Regionts = %d\n", rc);
+	return rc;
 }
 
-void color_seg(imgtype *img, uint32 w, uint32 h, uint32 theresh)
+void utils_chain_costruct(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h)
 {
-	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
-	for(y=0, y1=0; y1 < h1; y+=w1, y1++) {
-		for(x=0; x < w; x+=2){
-			yx = y+x;
-			img[yx] 	= (img[yx]>>theresh)<<theresh;
-			img[yx+1] 	= (img[yx+1]>>theresh)<<theresh;
-			img[yx+w] 	= (img[yx+w]>>theresh)<<theresh;
-			img[yx+w+1] = (img[yx+w+1]>>theresh)<<theresh;
+	uint32 i, y, h1 = h>>1, x, rc=0, rcu, rcd, tmp=0;
+	for(rc=0; rc < col[h1]; rc++) {
+		if(rows[rc].reg->rowc){
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
+		}
+		else  {
+			rows[rc].reg->row = &pr[tmp];
+			tmp+=rows[rc].reg->nrows;
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
 		}
 	}
-
 }
 
 void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
@@ -585,6 +592,24 @@ void utils_region_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
 				//printf("x = %d rows[%d].x = %d rows[%d].length = %d ", x, rc, rows[rc].x, rc, rows[rc].length);
 				++rc;
 				//printf("x = %d rows[%d].x = %d rows[%d].length = %d ", x, rc, rows[rc].x, rc, rows[rc].length);
+			}
+		}
+	}
+}
+
+void utils_region_draw1(imgtype *img, Region *reg, uint32 nreg, uint32 w, uint32 h)
+{
+	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
+	for(rc=0; rc < nreg; rc++){
+		printf("%6d nrows = %d x = %d y = %d\n", rc, reg[rc].nrows, reg[rc].x, reg[rc].y);
+		for(y=0; y < reg[rc].nrows; y++){
+			for(x=reg[rc].row[y]->x; x < reg[rc].row[y]->x + reg[rc].row[y]->length; x+=2){
+				printf("rows  x = %d l = %d\n", reg[rc].row[y]->x, reg[rc].row[y]->length);
+				yx = ((y+reg[rc].y)*w<<1)+x;
+				img[yx] 	= reg[rc].c[0];
+				img[yx+1] 	= reg[rc].c[1];
+				img[yx+w] 	= reg[rc].c[2];
+				img[yx+w+1] = reg[rc].c[3];
 			}
 		}
 	}

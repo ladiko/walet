@@ -150,30 +150,36 @@ typedef struct {
 	uchar		fb;				// Filters for wavelet transform
 } WaletHeader;
 
-//typedef struct Row;
+typedef struct Row Row;
+typedef struct Region Region;
+typedef struct Chain Chain;
 
-typedef struct {
+struct Chain {
+	uint16 		x;			//The start point
+	uint16 		y;			//The start point
+	uint16 		length;		//The length of row
+	uchar		*dir;		//The array of chain direction
+	Region		*reg[2];	//The two pointers of the neighbor region
+};
+
+struct Region{
 	uint16 		x;			//The top left point
 	uint16 		y;			//The top left point
 	uchar 		c[4];		//The colors
 	uint32		ac[4];		//The average colors
 	uint32 		nrows;		//The numbers of rows in the region
-	//uchar 		g1;			//The green color
-	//uchar 		g2;			//The green color
-	//uchar 		b;			//The blue color
-	//Row			*rows;		//The first row
+	uint32		npix;		//The numbers of pixels in the region
+	uint32		rowc;		//The rows counter
+	Row			**row;		//The pointer to the rows arrey
+	Chain		**chain;	//The pointer to array of chains around region
+};
 
-} Region;
-
-typedef struct {
-	Region		*reg;		//Pointer to the region
-	uchar 		c[4];			//The red color
-	//uchar 		g1;			//The green color
-	//uchar 		g2;			//The green color
-	//uchar 		b;			//The blue color
+struct Row {
+	uchar 		c[4];		//The colors
 	uint16		x;			//The start row on axis X
 	uint16 		length;		//The length of row
-} Row;
+	Region		*reg;		//Pointer to the region
+};
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
