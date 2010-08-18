@@ -175,8 +175,9 @@ struct Region{
 };
 
 struct Row {
-	uchar 		c[4];		//The colors
 	uint16		x;			//The start row on axis X
+	uint16 		y;			//The start point
+	uchar 		c[4];		//The colors
 	uint16 		length;		//The length of row
 	Region		*reg;		//Pointer to the region
 };

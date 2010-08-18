@@ -428,10 +428,11 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_row_seg(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
 	nreg = utils_region_seg(gw->gop->region, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
 
-	utils_chain_costruct(gw->gop->region, gw->gop->row,  gw->gop->pr, gw->gop->rinl, gw->gop->width, gw->gop->height);
+	utils_region_fill(gw->gop->region, gw->gop->row,  gw->gop->pr, gw->gop->rinl, gw->gop->width, gw->gop->height);
 
 	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
 	//utils_region_draw( gw->gop->buf, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
+	for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
 	utils_region_draw1(gw->gop->buf, gw->gop->region, nreg, gw->gop->width, gw->gop->height);
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
