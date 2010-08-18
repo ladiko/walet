@@ -82,6 +82,7 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
 	gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
 	gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
+	gop->pr = (Row **)calloc(width*height>>1, sizeof(Row*));
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
 	//Frames init

@@ -421,7 +421,7 @@ void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uin
 					rows[rc].c[2] = ag2/(rows[rc].length>>1);
 					rows[rc].c[3] = ab/(rows[rc].length>>1);
 					++rc;
-					rows[rc].length = 2; rows[rc].x = x;
+					rows[rc].length = 2; rows[rc].x = x; rows[rc].y = y1;
 					rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
 					ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 				} else {
@@ -437,16 +437,12 @@ void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uin
 					rows[rc].c[3] = ab/(rows[rc].length>>1);
 				}
 				++rc;
-				rows[rc].length = 2; rows[rc].x = 0;
+				rows[rc].length = 2; rows[rc].x = 0; rows[rc].y = y1;
 				rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
 				ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 			}
 		}
-		//col[y1] = y1 ? rc - old : rc+1;
-		//tot += col[y1];
-		//old = rc;
 		col[y1] = rc+1;
-		//printf("col[%d] = %d ", y1, col[y1]);
 	}
 	printf("Rows  = %d \n", rc);
 }
@@ -467,26 +463,22 @@ uint32 utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h,
 		reg[rc].c[2] = rows[rc].c[2];
 		reg[rc].c[3] = rows[rc].c[3];
 	}
-	//printf("rc = %d\n", rc);
-	//for(y=1; y < 145; y++) {
 	for(y=1; y < h1; y++) {
 		rcd = col[y-1]; rcu = y==1 ? 0 : col[y-2];
 		//printf("     rc = %d rcd = %d rcu = %d \n", rc, col[y], col[y-1]);
 		//printf("      x = %d l = %d\n", rows[col[y]-1].x, rows[col[y]].length);
 		while(rcd < col[y])
 		{
-			//printf("%4d rc = %d rcu = %d rcd = %d rows[rcu+1].x = %d rows[rcd+1].x = %d \n"
-			//		, y, rc, rcu, rcd, rows[rcu].x + rows[rcu].length, rows[rcd].x + rows[rcd].length);
 
 			if( abs(rows[rcu].reg->c[0] - rows[rcd].c[0]) > theresh ||
 				abs(rows[rcu].reg->c[1] - rows[rcd].c[1]) > theresh ||
 				abs(rows[rcu].reg->c[2] - rows[rcd].c[2]) > theresh ||
 				abs(rows[rcu].reg->c[3] - rows[rcd].c[3]) > theresh)
-			//if( abs(((rows[rcu].reg->c[0] + rows[rcu].reg->c[1] + rows[rcu].reg->c[2] + rows[rcu].reg->c[3])>>2) -
-			//		((rows[rcd].c[0] + rows[rcd].c[1] + rows[rcd].c[2] + rows[rcd].c[3])>>2) ) > theresh )
 
 			{
-				if(rows[rcu].x + rows[rcu].length > rows[rcd].x + rows[rcd].length) {
+				//printf("> %4d rc = %d rcu = %d rcd = %d rows[rcu+1].x = %d rows[rcd+1].x = %d \n"
+				//		, y, rc, rcu, rcd, rows[rcu].x + rows[rcu].length, rows[rcd].x + rows[rcd].length);
+				if(rows[rcu].x + rows[rcu].length >= rows[rcd].x + rows[rcd].length) {
 					rows[rcd].reg = &reg[rc];
 					reg[rc].nrows = 1;
 					reg[rc].x = rows[rcd].x; reg[rc].y = y;
@@ -498,34 +490,25 @@ uint32 utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h,
 					reg[rc].c[1] = rows[rcd].c[1];
 					reg[rc].c[2] = rows[rcd].c[2];
 					reg[rc].c[3] = rows[rcd].c[3];
-					++rc; ++rcd;
-				} else if(rows[rcu].x + rows[rcu].length < rows[rcd].x + rows[rcd].length) ++rcu;
-				else {
-					rows[rcd].reg = &reg[rc];
-					reg[rc].nrows = 1;
-					reg[rc].x = rows[rcd].x; reg[rc].y = y;
-					reg[rc].ac[0] = rows[rcd].c[0];
-					reg[rc].ac[1] = rows[rcd].c[1];
-					reg[rc].ac[2] = rows[rcd].c[2];
-					reg[rc].ac[3] = rows[rcd].c[3];
-					reg[rc].c[0] = rows[rcd].c[0];
-					reg[rc].c[1] = rows[rcd].c[1];
-					reg[rc].c[2] = rows[rcd].c[2];
-					reg[rc].c[3] = rows[rcd].c[3];
-					++rc; ++rcd; ++rcu;
-				}
+					if(rows[rcu].x + rows[rcu].length == rows[rcd].x + rows[rcd].length) rcu++;
+					rc++; rcd++;
+				} else rcu++;
 			} else {
+				//printf("< %4d rc = %d rcu = %d rcd = %d rows[rcu+1].x = %d rows[rcd+1].x = %d \n"
+				//		, y, rc, rcu, rcd, rows[rcu].x + rows[rcu].length, rows[rcd].x + rows[rcd].length);
 				rows[rcd].reg = rows[rcu].reg;
 				//printf("pointer = %p\n", rows[rcu].reg);
-				++rows[rcd].reg->nrows;
+				rows[rcd].reg->nrows++;
 				rows[rcd].reg->ac[0] += rows[rcd].c[0];
 				rows[rcd].reg->ac[1] += rows[rcd].c[1];
 				rows[rcd].reg->ac[2] += rows[rcd].c[2];
 				rows[rcd].reg->ac[3] += rows[rcd].c[3];
 				++rcd;
 				if(rcd == col[y]) break;
-				if(rcu != col[y-1]-1) while(rows[rcu+1].x + rows[rcu+1].length <= rows[rcd].x ) ++rcu;
-
+				if(rcu != col[y-1]-1) while(rows[rcu].x + rows[rcu].length <= rows[rcd].x ) {
+					//printf(" rcu - rcd = %d\n", rows[rcu].x + rows[rcu].length - rows[rcd].x);
+					rcu++;
+				}
 			}
 		}
 	}
@@ -536,25 +519,49 @@ uint32 utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h,
 		reg[i].c[2] = reg[i].ac[2] / reg[i].nrows;
 		reg[i].c[3] = reg[i].ac[3] / reg[i].nrows;
 		reg[i].rowc = 0;
-
 	}
 	printf("Regionts = %d\n", rc);
 	return rc;
 }
 
-void utils_chain_costruct(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h)
+void utils_region_fill(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h)
 {
 	uint32 i, y, h1 = h>>1, x, rc=0, rcu, rcd, tmp=0;
-	for(rc=0; rc < col[h1]; rc++) {
+	//printf("col[h1] = %d ", col[h1-1]);
+	for(rc=0; rc < col[h1-1]; rc++) {
+		//printf("rowc = %d ", rows[rc].reg->rowc);
 		if(rows[rc].reg->rowc){
 			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
 			rows[rc].reg->rowc++;
 		}
 		else  {
 			rows[rc].reg->row = &pr[tmp];
+			//printf("prow = %p ", rows[rc].reg->row);
 			tmp+=rows[rc].reg->nrows;
 			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
 			rows[rc].reg->rowc++;
+			//printf(reg[rc].row[y])
+		}
+	}
+}
+
+void utils_chain_construct(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h)
+{
+	uint32 i, y, h1 = h>>1, x, rc=0, rcu, rcd, tmp=0;
+	//printf("col[h1] = %d ", col[h1-1]);
+	for(rc=0; rc < col[h1-1]; rc++) {
+		//printf("rowc = %d ", rows[rc].reg->rowc);
+		if(rows[rc].reg->rowc){
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
+		}
+		else  {
+			rows[rc].reg->row = &pr[tmp];
+			//printf("prow = %p ", rows[rc].reg->row);
+			tmp+=rows[rc].reg->nrows;
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
+			//printf(reg[rc].row[y])
 		}
 	}
 }
@@ -599,18 +606,23 @@ void utils_region_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
 
 void utils_region_draw1(imgtype *img, Region *reg, uint32 nreg, uint32 w, uint32 h)
 {
-	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
+	uint32 rowc, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
+	//rc = 97817; { //97848; {
+	//rc = 97848; {
+	//for(rc=0; rc < 97818; rc++){
 	for(rc=0; rc < nreg; rc++){
-		printf("%6d nrows = %d x = %d y = %d\n", rc, reg[rc].nrows, reg[rc].x, reg[rc].y);
-		for(y=0; y < reg[rc].nrows; y++){
-			for(x=reg[rc].row[y]->x; x < reg[rc].row[y]->x + reg[rc].row[y]->length; x+=2){
-				printf("rows  x = %d l = %d\n", reg[rc].row[y]->x, reg[rc].row[y]->length);
-				yx = ((y+reg[rc].y)*w<<1)+x;
+		//printf("%6d nrows = %d x = %d y = %d\n", rc, reg[rc].nrows, reg[rc].x, reg[rc].y);
+		if(reg[rc].nrows < 2){
+		for(rowc=0; rowc < reg[rc].nrows; rowc++){
+			//printf("p = %p\n", reg[rc].row);
+			for(x=reg[rc].row[rowc]->x; x < (reg[rc].row[rowc]->x + reg[rc].row[rowc]->length); x+=2){
+				yx = ((reg[rc].row[rowc]->y)*w<<1) + x;
 				img[yx] 	= reg[rc].c[0];
 				img[yx+1] 	= reg[rc].c[1];
 				img[yx+w] 	= reg[rc].c[2];
 				img[yx+w+1] = reg[rc].c[3];
 			}
+		}
 		}
 	}
 }
