@@ -199,5 +199,6 @@ struct Row {
 #include <rangecoder.h>
 #include <filters.h>
 #include <motion.h>
+#include <segmentation.h>
 
 #endif //_WALET_HH_
