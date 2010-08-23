@@ -24,6 +24,8 @@ void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h);
 void utils_region_fill(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h);
 void utils_region_draw1(imgtype *img, Region *reg, uint32 nreg, uint32 w, uint32 h);
 
+void utils_row_seg_double(imgtype *img, Row *rows, uint32 *col, imgtype *buf, uint32 w, uint32 h, uint32 theresh);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
