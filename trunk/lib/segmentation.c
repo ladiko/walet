@@ -110,6 +110,87 @@ void utils_row_seg_ver(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 	}
 }
 
+void utils_2d_seg(imgtype *img, uint32 w, uint32 h, uint32 theresh)
+{
+	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, y1, tot=0, ar=0, ag1=0, ag2=0, ab=0, old;
+	uint32 df1[4], df2[4], left=0;
+	y=0; y1=0;
+	for(x=2; x < w; x+=2){
+		yx = y+x;
+		if( abs(img[yx-2]	- img[yx]    ) < theresh ||
+			abs(img[yx-1] 	- img[yx+1]  ) < theresh ||
+			abs(img[yx+w-2]	- img[yx+w]  ) < theresh ||
+			abs(img[yx+w-1]	- img[yx+w+1]) < theresh)
+		{
+			img[yx] = img[yx-2];
+			img[yx+1] = img[yx-1];
+			img[yx+w] = img[yx+w-2];
+			img[yx+w+1] = img[yx+w-1];
+		}
+	}
+	for(y=w1, y1=1; y1 < h1; y+=w1, y1++) {
+		x=0;
+		yx = y+x;
+		if( abs(img[yx-w1]		- img[yx]    ) < theresh ||
+			abs(img[yx+1-w1] 	- img[yx+1]  ) < theresh ||
+			abs(img[yx+w-w1]	- img[yx+w]  ) < theresh ||
+			abs(img[yx+w+1-w1]	- img[yx+w+1]) < theresh)
+		{
+			img[yx] = img[yx-w1];
+			img[yx+1] = img[yx+1-w1];
+			img[yx+w] = img[yx+w-w1];
+			img[yx+w+1] = img[yx+w+1-w1];
+		}
+		for(x=2; x < w; x+=2){
+			yx = y+x;
+			df1[0] = abs(img[yx-2]	- img[yx]    );
+			df1[1] = abs(img[yx-1] 	- img[yx+1]  );
+			df1[2] = abs(img[yx+w-2]- img[yx+w]  );
+			df1[3] = abs(img[yx+w-1]- img[yx+w+1]);
+			df2[0] = abs(img[yx-w1]		- img[yx]    );
+			df2[1] = abs(img[yx+1-w1] 	- img[yx+1]  );
+			df2[2] = abs(img[yx+w-w1]	- img[yx+w]  );
+			df2[3] = abs(img[yx+w+1-w1]	- img[yx+w+1]);
+			left = 0;
+			left =  (df1[0] < theresh || df1[1] < theresh || df1[2] < theresh || df1[3] < theresh);
+			left += (df2[0] < theresh || df2[1] < theresh || df2[2] < theresh || df2[3] < theresh)<<1;
+
+			switch(left){
+				case 0 : break;
+				case 1 : {
+					img[yx] = img[yx-2];
+					img[yx+1] = img[yx-1];
+					img[yx+w] = img[yx+w-2];
+					img[yx+w+1] = img[yx+w-1];
+					break;
+				}
+				case 2 : {
+					img[yx] = img[yx-w1];
+					img[yx+1] = img[yx+1-w1];
+					img[yx+w] = img[yx+w-w1];
+					img[yx+w+1] = img[yx+w+1-w1];
+					break;
+				}
+				case 3 : {
+					if(df1[0]+df1[1]+df1[2]+df1[3] > df2[0]+df2[1]+df2[2]+df2[3]){
+						img[yx] = img[yx-w1];
+						img[yx+1] = img[yx+1-w1];
+						img[yx+w] = img[yx+w-w1];
+						img[yx+w+1] = img[yx+w+1-w1];
+					} else {
+						img[yx] = img[yx-2];
+						img[yx+1] = img[yx-1];
+						img[yx+w] = img[yx+w-2];
+						img[yx+w+1] = img[yx+w-1];
+
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
 void utils_row_seg_hor_left(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 {
 	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, y1, tot=0, ar=0, ag1=0, ag2=0, ab=0, old;
@@ -148,19 +229,19 @@ void utils_row_seg_hor_right(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 			yx = y+x;
 			if(x != w-1){
 				if( abs(ar	- img[yx]    ) > theresh ||
-					abs(ag1	- img[yx-1]  ) > theresh ||
+					abs(ag1	- img[yx+1]  ) > theresh ||
 					abs(ag2	- img[yx+w]  ) > theresh ||
-					abs(ab	- img[yx+w-1]) > theresh)
+					abs(ab	- img[yx+w+1]) > theresh)
 				{
-					ar = img[yx]; ag1 = img[yx-1]; ag2 = img[yx+w]; ab = img[yx+w-1];
+					ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 				} else{
 					img[yx] = img[yx+2];
-					img[yx-1] = img[yx+1];
+					img[yx+1] = img[yx+3];
 					img[yx+w] = img[yx+w+2];
-					img[yx+w-1] = img[yx+w+1];
+					img[yx+w+1] = img[yx+w+3];
 				}
 			} else {
-				ar = img[yx]; ag1 = img[yx-1]; ag2 = img[yx+w]; ab = img[yx+w-1];
+				ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 			}
 		}
 	}
@@ -184,14 +265,9 @@ void utils_row_seg1(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, ui
 					abs(rows[rc].c[2] - img[yx+w]  ) > theresh ||
 					abs(rows[rc].c[3] - img[yx+w+1]) > theresh)
 					{
-					//rows[rc].c[0] = ar/(rows[rc].length>>1);
-					//rows[rc].c[1] = ag1/(rows[rc].length>>1);
-					//rows[rc].c[2] = ag2/(rows[rc].length>>1);
-					//rows[rc].c[3] = ab/(rows[rc].length>>1);
 					++rc;
 					rows[rc].length = 2; rows[rc].x = x; rows[rc].y = y1;
 					rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
-					//ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 				} else {
 					rows[rc].length+=2;
 					img[yx] = img[yx-2];
@@ -199,20 +275,50 @@ void utils_row_seg1(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, ui
 					img[yx+w] = img[yx+w-2];
 					img[yx+w+1] = img[yx+w+1-2];
 
-					//ar += img[yx]; ag1 += img[yx+1]; ag2 += img[yx+w]; ab += img[yx+w+1];
-
 				}
 			} else {
-				//if(rc > -1){
-				//	rows[rc].c[0] = ar/(rows[rc].length>>1);
-				//	rows[rc].c[1] = ag1/(rows[rc].length>>1);
-				//	rows[rc].c[2] = ag2/(rows[rc].length>>1);
-				//	rows[rc].c[3] = ab/(rows[rc].length>>1);
-				//}
 				++rc;
 				rows[rc].length = 2; rows[rc].x = 0; rows[rc].y = y1;
 				rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
-				//ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
+			}
+		}
+		col[y1] = rc+1;
+	}
+	printf("Rows  = %d \n", rc);
+}
+
+void utils_row_seg2(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh)
+{
+	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, y1, tot=0, ar=0, ag1=0, ag2=0, ab=0, old;
+
+	int rc =-1;
+	col[0] = 0;
+	//rows[0].length = 1;
+	for(y=0, y1=0; y1 < h1; y+=w1, y1++) {
+		for(x=0; x < w; x+=2){
+			yx = y+x;
+			if(x){
+				//if( abs(((rows[rc].c[0]+rows[rc].c[1]+rows[rc].c[2]+rows[rc].c[3])>>2) -
+				//		((img[yx]+img[yx+1]+img[yx+w]+img[yx+w+1])>>2) ) > theresh )
+				if( abs(rows[rc].c[0] - img[yx]    ) > theresh ||
+					abs(rows[rc].c[1] - img[yx+1]  ) > theresh ||
+					abs(rows[rc].c[2] - img[yx+w]  ) > theresh ||
+					abs(rows[rc].c[3] - img[yx+w+1]) > theresh)
+					{
+					++rc;
+					rows[rc].length = 2; rows[rc].x = x; rows[rc].y = y1;
+					rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
+				} else {
+					rows[rc].length+=2;
+					img[yx] = img[yx-2];
+					img[yx+1] = img[yx+1-2];
+					img[yx+w] = img[yx+w-2];
+					img[yx+w+1] = img[yx+w+1-2];
+				}
+			} else {
+				++rc;
+				rows[rc].length = 2; rows[rc].x = 0; rows[rc].y = y1;
+				rows[rc].c[0] = img[yx]; rows[rc].c[1] = img[yx+1]; rows[rc].c[2] = img[yx+w]; rows[rc].c[3] = img[yx+w+1];
 			}
 		}
 		col[y1] = rc+1;
@@ -243,14 +349,10 @@ void utils_row_seg_double(imgtype *img, Row *rows, uint32 *col, imgtype *buf, ui
 					abs(ab	- img[yx+w+1]) > theresh)
 				{
 					ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
-					poi1[pc1].cr[0] = img[yx];
-					poi1[pc1].cr[1] = img[yx+1];
-					poi1[pc1].cr[2] = img[yx+w];
-					poi1[pc1].cr[2] = img[yx+w+1];
 					poi1[pc1].cl[0] = img[yx-2];
 					poi1[pc1].cl[1] = img[yx-1];
 					poi1[pc1].cl[2] = img[yx+w-2];
-					poi1[pc1].cl[2] = img[yx+w-1];
+					poi1[pc1].cl[3] = img[yx+w-1];
 					poi1[pc1].x = x;
 					pc1++;
 					//line1[x] = img[yx]; line1[x+1] = img[yx+1]; line1[x+w] = img[yx+w]; line1[x+w+1] = img[yx+w+1];
@@ -262,6 +364,12 @@ void utils_row_seg_double(imgtype *img, Row *rows, uint32 *col, imgtype *buf, ui
 				ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 				//line1[x] = img[yx]; line1[x+1] = img[yx+1]; line1[x+w] = img[yx+w]; line1[x+w+1] = img[yx+w+1];
 			}
+			poi1[pc1].cl[0] = ar;
+			poi1[pc1].cl[1] = ag1;
+			poi1[pc1].cl[2] = ag2;
+			poi1[pc1].cl[3] = ab;
+			poi1[pc1].x = w-1;
+			pc1++;
 		}
 		//Right to left scan
 		poi2 = &poi1[pc1];
@@ -269,43 +377,57 @@ void utils_row_seg_double(imgtype *img, Row *rows, uint32 *col, imgtype *buf, ui
 			yx = y+x;
 			if(x != w-1){
 				if( abs(ar	- img[yx]    ) > theresh ||
-					abs(ag1	- img[yx-1]  ) > theresh ||
+					abs(ag1	- img[yx+1]  ) > theresh ||
 					abs(ag2	- img[yx+w]  ) > theresh ||
-					abs(ab	- img[yx+w-1]) > theresh)
+					abs(ab	- img[yx+w+1]) > theresh)
 				{
-					ar = img[yx]; ag1 = img[yx-1]; ag2 = img[yx+w]; ab = img[yx+w-1];
-					poi2[pc2].cl[0] = img[yx];
-					poi2[pc2].cl[1] = img[yx+1];
-					poi2[pc2].cl[2] = img[yx+w];
-					poi2[pc2].cl[2] = img[yx+w+1];
-					poi2[pc2].cr[0] = img[yx-2];
-					poi2[pc2].cr[1] = img[yx-1];
-					poi2[pc2].cr[2] = img[yx+w-2];
-					poi2[pc2].cr[2] = img[yx+w-1];
-					poi2[pc2].x = x;
+					ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
+					poi2[pc2].cl[0] = img[yx+2];
+					poi2[pc2].cl[1] = img[yx+3];
+					poi2[pc2].cl[2] = img[yx+w+2];
+					poi2[pc2].cl[3] = img[yx+w+3];
+					poi2[pc2].x = x+2;
 					pc2++;
 					//line2[x] = img[yx]; line2[x-1] = img[yx-1]; line2[x+w] = img[yx+w]; line2[x+w-1] = img[yx+w-1];
 				} //else{
 					//line2[x] = img[yx+2]; line2[x-1] = img[yx+1]; line2[x+w] = img[yx+w+2]; line2[x+w-1] = img[yx+w+1];
 				//}
 			} else {
-				ar = img[yx]; ag1 = img[yx-1]; ag2 = img[yx+w]; ab = img[yx+w-1];
+				ar = img[yx]; ag1 = img[yx+1]; ag2 = img[yx+w]; ab = img[yx+w+1];
 				//line2[x] = img[yx]; line2[x-1] = img[yx-1]; line2[x+w] = img[yx+w]; line2[x+w-1] = img[yx+w-1];
 			}
+			poi2[pc2].cl[0] = ar;
+			poi2[pc2].cl[1] = ag1;
+			poi2[pc2].cl[2] = ag2;
+			poi2[pc2].cl[3] = ab;
+			poi2[pc2].x = 0;
+			pc2++;
 		}
 		//Rows segmentation
 		x=0; j = pc2-1;
-		for(i=0; rc < pc1; rc++){
+		for(i=0; i < pc1; i++){
 			 while(poi2[j].x < poi1[i].x-1)  j--;
 			 if(poi1[i].x - poi2[j].x < 2) {
 					rows[rc].x = x; x = poi1[i].x; rows[rc].length = poi1[i].x - rows[rc].x; rows[rc].y = y1;
-					rows[rc].c[0] = poi1[i].cl[0]; rows[rc].c[1] = poi1[i].cl[1]; rows[rc].c[2] = poi1[i].cl[2]; rows[rc].c[3] = poi1[i].cl[2];
+					//rows[rc].c[0] = poi1[i].cl[0];
+					//rows[rc].c[1] = poi1[i].cl[1];
+					//rows[rc].c[2] = poi1[i].cl[2];
+					//rows[rc].c[3] = poi1[i].cl[3];
+					rows[rc].c[0] = poi2[j].cl[0];
+					rows[rc].c[1] = poi2[j].cl[1];
+					rows[rc].c[2] = poi2[j].cl[2];
+					rows[rc].c[3] = poi2[j].cl[3];
+					//rows[rc].c[0] = (poi1[i].cl[0] + poi2[j].cl[0])>>1;
+					//rows[rc].c[1] = (poi1[i].cl[1] + poi2[j].cl[1])>>1;
+					//rows[rc].c[2] = (poi1[i].cl[2] + poi2[j].cl[2])>>1;
+					//rows[rc].c[3] = (poi1[i].cl[3] + poi2[j].cl[3])>>1;
 					rc++;
 			 }
 		}
-		col[y1] = rc+1;
+		col[y1] = rc;
+		printf("y = %4d pl = %d pr = %d %5d x = %d length = %d c0 = %d c1 = %d c2 = %d c3 = %d\n",
+				y1, pc1-1, pc2-1, rc-1, rows[rc-1].x, rows[rc-1].length, rows[rc-1].c[0], rows[rc-1].c[1], rows[rc-1].c[2], rows[rc-1].c[3]);
 	}
-
 	printf("Rows  = %d \n", rc);
 }
 
