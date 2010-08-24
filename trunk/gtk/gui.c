@@ -419,12 +419,14 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//uint32 *arg = &gw->gop->seg[sz];
 
 	//utils_row_seg_double(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->buf, gw->gop->width,  gw->gop->height, 10);
-	utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
+	//utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
+	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
+	utils_2d_reg_seg(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->width,  gw->gop->height, 3);
+
 	//utils_row_seg1(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 10);
 	//nreg = utils_region_seg1(gw->gop->region, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
 
 	//utils_region_fill(gw->gop->region, gw->gop->row,  gw->gop->prow, gw->gop->rinl, gw->gop->width, gw->gop->height);
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
 	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
 	//utils_region_draw( gw->gop->buf, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
