@@ -112,7 +112,7 @@ void utils_row_seg_ver(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 
 void utils_2d_seg(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 {
-	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, y1, tot=0, ar=0, ag1=0, ag2=0, ab=0, old;
+	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, y1;
 	uint32 df1[4], df2[4], left=0;
 	y=0; y1=0;
 	for(x=2; x < w; x+=2){
@@ -183,6 +183,133 @@ void utils_2d_seg(imgtype *img, uint32 w, uint32 h, uint32 theresh)
 						img[yx+w] = img[yx+w-2];
 						img[yx+w+1] = img[yx+w-1];
 
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+static inline uint32 check_right(imgtype *img, uint32 yx, uint32 w, uint32 theresh)
+{
+	return (abs(img[yx-2]	- img[yx]    ) < theresh ||
+			abs(img[yx-1] 	- img[yx+1]  ) < theresh ||
+			abs(img[yx+w-2]	- img[yx+w]  ) < theresh ||
+			abs(img[yx+w-1]	- img[yx+w+1]) < theresh);
+}
+
+static inline uint32 check_top(imgtype *img, uint32 yx, uint32 w, uint32 theresh)
+{
+	uint32 w1 = w<<1;
+	return (abs(img[yx-w1]		- img[yx]    ) < theresh ||
+			abs(img[yx+1-w1] 	- img[yx+1]  ) < theresh ||
+			abs(img[yx+w-w1]	- img[yx+w]  ) < theresh ||
+			abs(img[yx+w+1-w1]	- img[yx+w+1]) < theresh);
+}
+
+static inline new_row(Row *row, Region *reg, uint16 x, uint16 y)
+{
+	row->x = x; row->y = y; row->length = 1; row->reg = reg; reg->nrows++; //reg->row[reg->nrows] = row; reg->nrows++;
+}
+
+static inline new_region(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w)
+{
+	reg->ac[0] = img[yx]; reg->ac[1] = img[yx+1]; reg->ac[2] = img[yx+w]; reg->ac[3] = img[yx+w+1];
+	reg->nrows = 0; reg->npix = 1; //reg->row[reg->nrows] = row;
+}
+
+static inline add_pixel(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w)
+{
+	row->length++;
+	reg->ac[0] += img[yx]; reg->ac[1] += img[yx+1]; reg->ac[2] += img[yx+w]; reg->ac[3] += img[yx+w+1];
+	reg->npix++;
+}
+
+void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w, uint32 h, uint32 theresh)
+{
+	uint32 y, h1 = h*w, x, w1 = w<<1, yx;
+	uint32 df1[4], df2[4], left=0, regc =0, rowc = 0;
+	y=0;  x=0;
+	yx = y+x;
+	new_region(&reg[regc], &rows[rowc], img, yx, w);
+	new_row(&rows[rowc], &reg[regc], x, y);
+	ptrc[x] = &rows[rowc];
+	printf("Start\n");
+	for(x=2; x < w; x+=2){
+		yx = y+x;
+		if(check_right(img, yx, w, theresh))
+		{
+			img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+			add_pixel(&reg[regc], &rows[rowc], img, yx, w);
+			ptrc[x] = ptrc[x-2];
+		} else {
+			rowc++; regc++;
+			new_region(&reg[regc], &rows[rowc], img, yx, w);
+			new_row(&rows[rowc], &reg[regc], x, y);
+			ptrc[x] = &rows[rowc];
+		}
+	}
+	printf("rowc = %d regc = %d\n", rowc, regc);
+	for(y=w1; y < h1; y+=w1) {
+		x=0;
+		yx = y+x;
+		if(check_top(img, yx, w, theresh))
+		{
+			img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+			rowc++;
+			new_row(&rows[rowc], &reg[regc], x, y);
+			add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
+		} else {
+			rowc++; regc++;
+			new_region(&reg[regc], &rows[rowc], img, yx, w);
+			new_row(&rows[rowc], &reg[regc], x, y);
+			ptrc[x] = &rows[rowc];
+		}
+		for(x=2; x < w; x+=2){
+			yx = y+x;
+			df1[0] = abs(img[yx-2]	- img[yx]    );
+			df1[1] = abs(img[yx-1] 	- img[yx+1]  );
+			df1[2] = abs(img[yx+w-2]- img[yx+w]  );
+			df1[3] = abs(img[yx+w-1]- img[yx+w+1]);
+			df2[0] = abs(img[yx-w1]		- img[yx]    );
+			df2[1] = abs(img[yx+1-w1] 	- img[yx+1]  );
+			df2[2] = abs(img[yx+w-w1]	- img[yx+w]  );
+			df2[3] = abs(img[yx+w+1-w1]	- img[yx+w+1]);
+			left =  (df1[0] < theresh || df1[1] < theresh || df1[2] < theresh || df1[3] < theresh);
+			left += (df2[0] < theresh || df2[1] < theresh || df2[2] < theresh || df2[3] < theresh)<<1;
+
+			switch(left){
+				case 0 : {
+					rowc++; regc++;
+					new_region(&reg[regc], &rows[rowc], img, yx, w);
+					new_row(&rows[rowc], &reg[regc], x, y);
+					ptrc[x] = &rows[rowc];
+					break;
+				}
+				case 1 : {
+					img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+					add_pixel(ptrc[x-2]->reg, ptrc[x-2], img, yx, w);
+					ptrc[x] = ptrc[x-2];
+					break;
+				}
+				case 2 : {
+					img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+					rowc++;
+					new_row(&rows[rowc], &reg[regc], x, y);
+					add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
+					break;
+				}
+				case 3 : {
+					if(df1[0]+df1[1]+df1[2]+df1[3] < df2[0]+df2[1]+df2[2]+df2[3]){
+						img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+						add_pixel(ptrc[x-2]->reg, ptrc[x-2], img, yx, w);
+						ptrc[x] = ptrc[x-2];
+					} else {
+						img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+						rowc++;
+						new_row(&rows[rowc], &reg[regc], x, y);
+						add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
 					}
 					break;
 				}
