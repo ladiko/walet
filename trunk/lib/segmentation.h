@@ -18,13 +18,9 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-void utils_row_seg(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh);
-uint32 utils_region_seg(Region *reg, Row *rows, uint32 *col, uint32 w, uint32 h, uint32 theresh);
-void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h);
-void utils_region_fill(Region *reg, Row *rows, Row **pr, uint32 *col, uint32 w, uint32 h);
-void utils_region_draw1(imgtype *img, Region *reg, uint32 nreg, uint32 w, uint32 h);
-
-void utils_row_seg_double(imgtype *img, Row *rows, uint32 *col, imgtype *buf, uint32 w, uint32 h, uint32 theresh);
+void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs );
+void utils_rows_in_reg(Region *reg, Row *rows, Row **prow, uint32 nrows);
+void utils_region_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w);
 
 #ifdef __cplusplus
 }

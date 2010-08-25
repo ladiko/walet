@@ -208,25 +208,25 @@ static inline uint32 check_top(imgtype *img, uint32 yx, uint32 w, uint32 theresh
 			abs(img[yx+w+1-w1]	- img[yx+w+1]) < theresh);
 }
 
-static inline new_row(Row *row, Region *reg, uint16 x, uint16 y)
+static inline new_row(Row *row, Region *reg, uint16 x, uint32 y)
 {
-	row->x = x; row->y = y; row->length = 1; row->reg = reg; reg->nrows++; //reg->row[reg->nrows] = row; reg->nrows++;
+	row->x = x; row->y = y; row->length = 0; row->reg = reg; reg->nrows++; //reg->row[reg->nrows] = row; reg->nrows++;
 }
 
 static inline new_region(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w)
 {
-	reg->ac[0] = img[yx]; reg->ac[1] = img[yx+1]; reg->ac[2] = img[yx+w]; reg->ac[3] = img[yx+w+1];
-	reg->nrows = 0; reg->npix = 1; //reg->row[reg->nrows] = row;
+	reg->ac[0] = 0; reg->ac[1] = 0; reg->ac[2] = 0; reg->ac[3] = 0;
+	reg->nrows = 0; reg->npix = 0; reg->rowc = 0;//reg->row[reg->nrows] = row;
 }
 
 static inline add_pixel(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w)
 {
-	row->length++;
+	row->length += 2;
 	reg->ac[0] += img[yx]; reg->ac[1] += img[yx+1]; reg->ac[2] += img[yx+w]; reg->ac[3] += img[yx+w+1];
 	reg->npix++;
 }
 
-void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w, uint32 h, uint32 theresh)
+void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs )
 {
 	uint32 y, h1 = h*w, x, w1 = w<<1, yx;
 	uint32 df1[4], df2[4], left=0, regc =0, rowc = 0;
@@ -234,36 +234,40 @@ void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w
 	yx = y+x;
 	new_region(&reg[regc], &rows[rowc], img, yx, w);
 	new_row(&rows[rowc], &reg[regc], x, y);
+	add_pixel(&reg[regc], &rows[rowc], img, yx, w);
 	ptrc[x] = &rows[rowc];
-	printf("Start\n");
 	for(x=2; x < w; x+=2){
 		yx = y+x;
 		if(check_right(img, yx, w, theresh))
 		{
-			img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 			add_pixel(&reg[regc], &rows[rowc], img, yx, w);
 			ptrc[x] = ptrc[x-2];
+			img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 		} else {
+			//printf("%5d %p x = %d y = %d l = %d\n", rowc, &rows[rowc], rows[rowc].x, rows[rowc].y, rows[rowc].length);
 			rowc++; regc++;
 			new_region(&reg[regc], &rows[rowc], img, yx, w);
 			new_row(&rows[rowc], &reg[regc], x, y);
+			add_pixel(&reg[regc], &rows[rowc], img, yx, w);
 			ptrc[x] = &rows[rowc];
 		}
 	}
-	printf("rowc = %d regc = %d\n", rowc, regc);
+	//printf("%5d %p x = %d y = %d l = %d\n", rowc, &rows[rowc], rows[rowc].x, rows[rowc].y, rows[rowc].length);
 	for(y=w1; y < h1; y+=w1) {
 		x=0;
 		yx = y+x;
 		if(check_top(img, yx, w, theresh))
 		{
-			img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 			rowc++;
-			new_row(&rows[rowc], &reg[regc], x, y);
-			add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
+			new_row(&rows[rowc], ptrc[x]->reg, x, y);
+			add_pixel(ptrc[x]->reg, &rows[rowc], img, yx, w);
+			ptrc[x] = &rows[rowc];
+			img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 		} else {
 			rowc++; regc++;
 			new_region(&reg[regc], &rows[rowc], img, yx, w);
 			new_row(&rows[rowc], &reg[regc], x, y);
+			add_pixel(&reg[regc], &rows[rowc], img, yx, w);
 			ptrc[x] = &rows[rowc];
 		}
 		for(x=2; x < w; x+=2){
@@ -284,38 +288,95 @@ void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, uint32 w
 					rowc++; regc++;
 					new_region(&reg[regc], &rows[rowc], img, yx, w);
 					new_row(&rows[rowc], &reg[regc], x, y);
+					add_pixel(&reg[regc], &rows[rowc], img, yx, w);
 					ptrc[x] = &rows[rowc];
 					break;
 				}
 				case 1 : {
-					img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					add_pixel(ptrc[x-2]->reg, ptrc[x-2], img, yx, w);
 					ptrc[x] = ptrc[x-2];
+					img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
 				}
 				case 2 : {
-					img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					rowc++;
-					new_row(&rows[rowc], &reg[regc], x, y);
-					add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
+					new_row(&rows[rowc], ptrc[x]->reg, x, y);
+					add_pixel(ptrc[x]->reg, &rows[rowc], img, yx, w);
+					ptrc[x] = &rows[rowc];
+					img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					break;
 				}
 				case 3 : {
 					if(df1[0]+df1[1]+df1[2]+df1[3] < df2[0]+df2[1]+df2[2]+df2[3]){
-						img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 						add_pixel(ptrc[x-2]->reg, ptrc[x-2], img, yx, w);
 						ptrc[x] = ptrc[x-2];
+						img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					} else {
-						img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 						rowc++;
-						new_row(&rows[rowc], &reg[regc], x, y);
-						add_pixel(ptrc[x]->reg, ptrc[x], img, yx, w);
+						new_row(&rows[rowc], ptrc[x]->reg, x, y);
+						add_pixel(ptrc[x]->reg, &rows[rowc], img, yx, w);
+						ptrc[x] = &rows[rowc];
+						img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					}
 					break;
 				}
 			}
 		}
 	}
+	*nrows = rowc+1;
+	*nregs = regc+1;
+	printf("rowc = %d regc = %d\n", rowc, regc);
+	//return rowc;
+}
+
+void utils_rows_in_reg(Region *reg, Row *rows, Row **prow, uint32 nrows)
+{
+	uint32 rc, tmp=0;
+	//printf("col[h1] = %d ", col[h1-1]);
+	for(rc=0; rc < nrows; rc++) {
+		//printf("rowc = %d ", rows[rc].reg->rowc);
+		if(rows[rc].reg->rowc){
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
+		}
+		else  {
+			rows[rc].reg->row = &prow[tmp];
+			//printf("prow = %p ", rows[rc].reg->row);
+			tmp+=rows[rc].reg->nrows;
+			rows[rc].reg->row[rows[rc].reg->rowc] = &rows[rc];
+			rows[rc].reg->rowc++;
+			rows[rc].reg->ac[0] /= rows[rc].reg->npix;
+			rows[rc].reg->ac[1] /= rows[rc].reg->npix;
+			rows[rc].reg->ac[2] /= rows[rc].reg->npix;
+			rows[rc].reg->ac[3] /= rows[rc].reg->npix;
+
+			//printf(reg[rc].row[y])
+		}
+	}
+}
+
+void utils_region_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w)
+{
+	uint32 rowc, x, w1 = w<<1, yx, rc, count = 0 ;
+	//rc = 97817; { //97848; {
+	//rc = 0; {
+	for(rc=0; rc < nregs; rc++){
+	//for(rc=0; rc < 100; rc++){
+		//printf("%6d nrows = %d npix = %d x = %d y = %d\n", rc, reg[rc].nrows, reg[rc].npix ,reg[rc].row[0]->x, reg[rc].row[0]->y);
+		//if(reg[rc].npix < 5){ count++;
+		for(rowc=0; rowc < reg[rc].nrows; rowc++){
+			//printf("p = %p x = %d y = %d l = %d\n", reg[rc].row[rowc], reg[rc].row[rowc]->x, reg[rc].row[rowc]->y, reg[rc].row[rowc]->length);
+			for(x=reg[rc].row[rowc]->x; x < (reg[rc].row[rowc]->x + reg[rc].row[rowc]->length); x+=2){
+				yx = reg[rc].row[rowc]->y + x;
+				img[yx] 	= reg[rc].ac[0];
+				img[yx+1] 	= reg[rc].ac[1];
+				img[yx+w] 	= reg[rc].ac[2];
+				img[yx+w+1] = reg[rc].ac[3];
+			}
+		//}
+		}
+	}
+	printf("count = %d\n", count);
 }
 
 void utils_row_seg_hor_left(imgtype *img, uint32 w, uint32 h, uint32 theresh)
@@ -742,33 +803,6 @@ static inline uint32 check_region(Region *reg, Region *reg1)
 
 }
 
-void utils_region_neighbor(Row *rows, Region *reg, uint32 nreg, uint32 w, uint32 h)
-{
-	uint32 rowc, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
-	Row *prow;
-	for(rc=0; rc < nreg; rc++){
-		//printf("%6d nrows = %d x = %d y = %d\n", rc, reg[rc].nrows, reg[rc].x, reg[rc].y);
-		for(rowc=0; rowc < reg[rc].nrows; rowc++){
-			//printf("p = %p\n", reg[rc].row);
-			//Left neighborhood check
-			if(reg[rc].row[rowc]->x != 0) {
-				prow = reg[rc].row[rowc] - sizeof(Row);
-				if(reg[rc].nreg) {
-					//Check if this pointer already exist
-					if(check_region(&reg[rc], prow->reg)){
-						reg[rc].reg[reg[rc].nreg] = prow->reg;
-						reg[rc].nreg++;
-					}
-				}
-				else {
-					reg[rc].reg[reg[rc].nreg] = prow->reg;
-					reg[rc].nreg++;
-				}
-			}
-		}
-	}
-}
-
 void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
 {
 	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
@@ -788,7 +822,7 @@ void utils_row_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
 	}
 }
 
-void utils_region_draw(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
+void utils_region_draw2(imgtype *img, Row *rows, uint32 *col, uint32 w, uint32 h)
 {
 	uint32 y, h1 = h>>1, x, w1 = w<<1, yx, rc = 0, y1;
 	for(y=0, y1=0; y1 < h1; y+=w1, y1++) {
