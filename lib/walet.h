@@ -167,9 +167,9 @@ struct Region{
 	uint16 		y;			//The top left point
 	uchar 		c[4];		//The colors
 	uint32		ac[4];		//The average colors
-	uint16 		nrows;		//The numbers of rows in the region
+	uint32 		nrows;		//The numbers of rows in the region
 	uint32		npix;		//The numbers of pixels in the region
-	uint16		rowc;		//The rows counter
+	uint32		rowc;		//The rows counter
 	uchar		nreg;		//The numbers neighborhood regions
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
@@ -180,6 +180,7 @@ struct Row {
 	uint16		x;			//The start row on axis X
 	uint32 		y;			//The start point
 	uchar 		c[4];		//The colors
+	uint32		ac[4];		//The average colors
 	uint16 		length;		//The length of row
 	Region		*reg;		//Pointer to the region
 };
