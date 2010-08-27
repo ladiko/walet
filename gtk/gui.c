@@ -442,7 +442,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
 	for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	//utils_region_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
+	utils_region_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
 	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
 	//utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);

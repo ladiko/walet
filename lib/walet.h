@@ -163,8 +163,8 @@ struct Chain {
 };
 
 struct Region{
-	uint16 		x;			//The top left point
-	uint16 		y;			//The top left point
+	//uint16 		x;			//The top left point
+	//uint16 		y;			//The top left point
 	uchar 		c[4];		//The colors
 	uint32		ac[4];		//The average colors
 	uint32 		nrows;		//The numbers of rows in the region
@@ -179,8 +179,8 @@ struct Region{
 struct Row {
 	uint16		x;			//The start row on axis X
 	uint32 		y;			//The start point
-	uchar 		c[4];		//The colors
-	uint32		ac[4];		//The average colors
+	//uchar 		c[4];		//The colors
+	//uint32		ac[4];		//The average colors
 	uint16 		length;		//The length of row
 	Region		*reg;		//Pointer to the region
 };

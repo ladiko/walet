@@ -89,18 +89,34 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 1, 2, 0, 20, FR_5_3);
 		gw->walet_init = 1;
 	}
-	//Copy frame 0 to decoder pipeline
-	frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-	frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+	if(!strcmp("video/x-raw-rgb", gst_caps_to_string(caps))){
+		//Copy frame 0 to decoder pipeline
+		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-	new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-	utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
+		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-	utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
+		new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[1]);
 
+	} else if (!strcmp("video/x-raw-bayer", gst_caps_to_string(caps))){
+
+		//Copy frame 0 to decoder pipeline
+		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+
+		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
+
+		new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[1]);
+
+	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
 	//g_printf("The current state = %d ret = %d\n", state, ret);
 	//gst_element_set_state (gw->pipeline, GST_STATE_NULL);
