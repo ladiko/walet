@@ -12,6 +12,9 @@ uchar* 		utils_bayer_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 widt
 uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 width);
 imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
 imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+imgtype* 	utils_ppm_to_bayer		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+
+
 imgtype* 	utils_bayer_to_gradient	(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh);
 imgtype* 	utils_watershed			(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 imgtype* 	utils_kill_pix			(imgtype *img, imgtype *img1, uint32 w, uint32 h);

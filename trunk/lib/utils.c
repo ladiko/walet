@@ -218,6 +218,22 @@ imgtype* utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	return img1;
 }
 
+imgtype* utils_ppm_to_bayer(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, h1 = w*h, w1 = w<<1;
+
+	for(y=0; y < h1; y+=w1) {
+		for(x=0; x < w; x+=2){
+			yx = y+x;
+			img[yx] = img[yx*3];
+			img[yx+1] = img[(yx+1)*3+1];
+			img[yx+w] = img[(yx+w)*3+1];
+			img[yx+w+1] = img[(yx+w+1)*3+2];
+		}
+	}
+	return img1;
+}
+
 imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
