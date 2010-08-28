@@ -78,31 +78,45 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	//g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
 
 	str = gst_caps_get_structure (caps, 0);
-	g_print("%s\n", gst_caps_to_string (caps));
+	g_print("%s\n", gst_caps_to_string(caps));
 	ret  = gst_structure_get_int (str, "width"	, &width);
 	ret &= gst_structure_get_int (str, "height"	, &height);
 	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
+	uchar *buf = (uchar *)calloc(width*height, sizeof(uchar));
+
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
-		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 1, 2, 0, 20, FR_5_3);
+		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, 8, 1, 2, 0, 20, FR_5_3);
 		gw->walet_init = 1;
 	}
-	if(!strcmp("video/x-raw-rgb", gst_caps_to_string(caps))){
+	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
+	//printf("%d\n", strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17));
+	if(!strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15)){
 		//Copy frame 0 to decoder pipeline
-		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-		frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+		//frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
+		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+
 
 		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		utils_draw(GST_BUFFER_DATA(buffer), gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), buf, gw->gop->width, gw->gop->height);
+		frame_copy(gw->gop, 0, buf, NULL, NULL);
+
+		new_buffer (gw->orig[1], gw->gop->width, gw->gop->height);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-	} else if (!strcmp("video/x-raw-bayer", gst_caps_to_string(caps))){
+		new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
+
+
+	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 
 		//Copy frame 0 to decoder pipeline
 		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);

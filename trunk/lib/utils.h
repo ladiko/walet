@@ -10,9 +10,10 @@ extern "C"
 uchar* 		utils_subband_draw		(Image *img, uchar *rgb, ColorSpace color, uint32 steps);
 uchar* 		utils_bayer_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
 uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 width);
+uchar* 		utils_draw				(uchar *img, uchar *rgb, uint32 w, uint32 h);
 imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
 imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
-imgtype* 	utils_ppm_to_bayer		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+uchar* 		utils_ppm_to_bayer		(uchar *img, uchar *img1, uint32 w, uint32 h);
 
 
 imgtype* 	utils_bayer_to_gradient	(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh);
