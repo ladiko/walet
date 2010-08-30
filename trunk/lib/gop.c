@@ -24,11 +24,11 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height>>1, sizeof(Row));
 	gop->region = (Region *)calloc(width*height>>2, sizeof(Region));
-	gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
-	gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
-	gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
+	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
+	//gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
+	//gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
 	gop->prow = (Row **)calloc(width*height>>1, sizeof(Row*));
-	gop->preg = (Region **)calloc(width*height>>1, sizeof(Region*));
+	gop->preg = (Region **)calloc(width*height, sizeof(Region*));
 
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
@@ -80,11 +80,11 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height>>1, sizeof(Row));
 	gop->region = (Region *)calloc(width*height>>2, sizeof(Region));
-	gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
-	gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
-	gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
+	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
+	//gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
+	//gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
 	gop->prow = (Row **)calloc(width*height>>1, sizeof(Row*));
-	gop->preg = (Region **)calloc(width*height>>1, sizeof(Region*));
+	gop->preg = (Region **)calloc(width*height, sizeof(Region*));
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
 	//Frames init

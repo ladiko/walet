@@ -421,7 +421,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//utils_row_seg_double(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->buf, gw->gop->width,  gw->gop->height, 10);
 	//utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	utils_2d_reg_seg(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->width,  gw->gop->height, 3, &nrows, &nregs);
+	utils_2d_reg_seg(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->preg, gw->gop->width,  gw->gop->height, 3, &nrows, &nregs);
 	utils_rows_in_reg(gw->gop->region, gw->gop->row, gw->gop->prow, nrows);
 	//utils_reg_color(gw->gop->region, gw->gop->row, gw->gop->prow, nregs);
 
