@@ -24,9 +24,9 @@ typedef struct {
 	//Segmentation
 	Row 			*row;		//The rows array
 	Region			*region;	//The region array
-	Chain			*chain;		//The chain array
-	uint32			*rinl;		//The rows in the horizontal line of image
-	uchar			*charr;		//The chain array
+	//Chain			*chain;		//The chain array
+	//uint32			*rinl;		//The rows in the horizontal line of image
+	//uchar			*charr;		//The chain array
 	Row				**prow;		//The array of pointers to Rows
 	Region			**preg;		//The array of pointers to Regions
 }	GOP;

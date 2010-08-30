@@ -162,6 +162,11 @@ struct Chain {
 	Region		*reg[2];	//The two pointers of the neighbor region
 };
 
+struct Object {
+	uint16 		nreg;		//The number of region on oject
+	Region		**reg;		//Pointer to thr regions
+};
+
 struct Region{
 	//uint16 		x;			//The top left point
 	//uint16 		y;			//The top left point
@@ -170,7 +175,8 @@ struct Region{
 	uint32 		nrows;		//The numbers of rows in the region
 	uint32		npix;		//The numbers of pixels in the region
 	uint32		rowc;		//The rows counter
-	uchar		nreg;		//The numbers neighborhood regions
+	uint32		nnei;		//The numbers neighborhood regions
+	uint32		neic;		//The counter of neighborhood regions
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
 	//Chain		**chain;	//The pointer to array of chains around region
