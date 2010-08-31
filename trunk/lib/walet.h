@@ -152,19 +152,14 @@ typedef struct {
 
 typedef struct Row Row;
 typedef struct Region Region;
-typedef struct Chain Chain;
+typedef struct Object Object;
 
-struct Chain {
-	uint16 		x;			//The start point
-	uint16 		y;			//The start point
-	uint16 		length;		//The length of row
-	uchar		*dir;		//The array of chain direction
-	Region		*reg[2];	//The two pointers of the neighbor region
-};
-
-struct Object {
-	uint16 		nreg;		//The number of region on oject
-	Region		**reg;		//Pointer to thr regions
+struct Object{
+	uchar 		c[4];		//The colors
+	uint32 		nreg;		//Number of regions in the object
+	uint32 		regc;		//Number of regions in the object
+	uint32		npix;		//The numbers of pixels in the region
+	Region		**reg;		//Pointer to the regions included in object
 };
 
 struct Region{
@@ -179,6 +174,7 @@ struct Region{
 	uint32		neic;		//The counter of neighborhood regions
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
+	Object		*obj;		//the pointer to the object
 	//Chain		**chain;	//The pointer to array of chains around region
 };
 
