@@ -219,12 +219,10 @@ imgtype* utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
-			y2 = oe(a,y);
-			x2 = oe(b,x);
 			xwy = x + yw;
 			wy = (x + yw1);
 			//xwy3 = wy + wy + wy;
-			img1[wy] = 	(img[xwy    ] + img[xwy+1] + img[xwy+w] + img[xwy+w+1])>>2;
+			img1[wy] = 	(img[xwy ] + img[xwy+1] + img[xwy+w] + img[xwy+w+1])>>2;
 		}
 	}
 	return img1;

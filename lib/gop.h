@@ -24,6 +24,7 @@ typedef struct {
 	//Segmentation
 	Row 			*row;		//The rows array
 	Region			*region;	//The region array
+	Object			*obj;		//Object array
 	//Chain			*chain;		//The chain array
 	//uint32			*rinl;		//The rows in the horizontal line of image
 	//uchar			*charr;		//The chain array
