@@ -18,13 +18,12 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-void utils_2d_reg_seg(imgtype *img, Region *reg, Row *rows, Row **ptrc, Region	**preg, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs, uint32 *npreg);
-void utils_rows_in_reg(Region *reg, Row *rows, Row **prow, uint32 nrows);
-void utils_reg_color(Region *reg, Row *rows, Row **prow, uint32 nregs);
-void utils_region_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w);
-void utils_object_draw(imgtype *img, Object *obj, uint32 nobjs, uint32 w);
-void reg_neighborhood(Region *reg, Region **pnei, Region **preg, uint32 nreg, uint32 npreg);
-void utils_object_fill(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 *nobjs, uint32 theresh);
+void seg_regions(imgtype *img, Region *reg, Row *rows, Row **ptrc, Region	**preg, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs, uint32 *npreg);
+//void utils_reg_color(Region *reg, Row *rows, Row **prow, uint32 nregs);
+void seg_regions_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w);
+void seg_objects_draw(imgtype *img, Object *obj, uint32 nobjs, uint32 w);
+void seg_regions_neighbor(Region *reg, Region **pnei, Region **preg, uint32 nreg, uint32 npreg);
+void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 *nobjs, uint32 theresh);
 
 #ifdef __cplusplus
 }
