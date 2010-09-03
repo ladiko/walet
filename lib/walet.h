@@ -156,6 +156,7 @@ typedef struct Object Object;
 
 struct Object{
 	uchar 		c[4];		//The colors
+	uint32		ac[4];		//The average colors
 	uint32 		nregs;		//Number of regions in the object
 	uint32 		regc;		//Number of regions in the object
 	uint32		npixs;		//The numbers of pixels in the region
@@ -175,6 +176,7 @@ struct Region{
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
 	Object		*obj;		//the pointer to the object
+	//uint32		diff;
 	//Chain		**chain;	//The pointer to array of chains around region
 };
 
