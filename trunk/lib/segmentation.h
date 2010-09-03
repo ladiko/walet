@@ -29,5 +29,4 @@ void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 
 }
 #endif /* __cplusplus */
 
-
 #endif /* SEGMENTATION_H_ */

@@ -436,6 +436,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
 	//utils_region_draw1(gw->gop->buf, gw->gop->region, nreg, gw->gop->width, gw->gop->height);
 
+	for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
+	seg_regions_draw(gw->gop->frames[0].img[0].img, gw->gop->region, nregs, gw->gop->width);
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);

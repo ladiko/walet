@@ -1,6 +1,15 @@
 #include <walet.h>
 #include <stdio.h>
 
+static inline uint32 check1(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs((reg->c[0]-reg->c[1]) - (img[yx]-img[yx+1])),
+			c1 = abs((reg->c[0]-reg->c[2]) - (img[yx]-img[yx+w])),
+			c2 = abs((reg->c[0]-reg->c[3]) - (img[yx]-img[yx+w+1]));
+	*diff = c0 + c1 + c2;
+	return  c0 < theresh || c1 < theresh || c2 < theresh ;
+}
+
 static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
 {
 	uint32  c0 = abs(reg->c[0]	- img[yx]    ),
@@ -62,7 +71,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 		{
 			add_pixel(prow[x-2]->reg, prow[x-2], img, yx, w);
 			prow[x] = prow[x-2];
-			img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+			//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 		} else {
 			//printf("%5d %p x = %d y = %d l = %d\n", rowc, &row[rowc], row[rowc].x, row[rowc].y, row[rowc].length);
 			rowc++; regc++;
@@ -84,7 +93,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 			new_row(&row[rowc], prow[x]->reg, x, y);
 			add_pixel(prow[x]->reg, &row[rowc], img, yx, w);
 			prow[x] = &row[rowc];
-			img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+			//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 		} else {
 			rowc++; regc++;
 			new_region(&reg[regc], &row[rowc], img, yx, w);
@@ -117,7 +126,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 
 					top_neighborhood(&row[rowc], prow, preg, &pregc, x);
 					prow[x] = prow[x-2];
-					img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+					//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
 				}
 				case 2 : {
@@ -128,7 +137,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x);
 					top_neighborhood(&row[rowc], prow, preg, &pregc, x);
 					prow[x] = &row[rowc];
-					img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+					//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					break;
 				}
 				case 3 : {
@@ -137,7 +146,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 
 						top_neighborhood(&row[rowc], prow, preg, &pregc, x);
 						prow[x] = prow[x-2];
-						img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
+						//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					} else {
 						if(prow[x-2]->reg != prow[x]->reg){
 							rowc++;
@@ -153,7 +162,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 							top_neighborhood(&row[rowc], prow, preg, &pregc, x);
 							prow[x] = prow[x-2];
 						}
-						img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
+						//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					}
 					break;
 				}
@@ -242,10 +251,14 @@ void seg_regions_neighbor(Region *reg, Region **pnei, Region **preg, uint32 nreg
 
 static inline new_obj(Object *obj, Region *reg)
 {
-	obj->c[0] = reg->c[0];
-	obj->c[1] = reg->c[1];
-	obj->c[2] = reg->c[2];
-	obj->c[3] = reg->c[3];
+	//obj->c[0] = reg->c[0];
+	//obj->c[1] = reg->c[1];
+	//obj->c[2] = reg->c[2];
+	//obj->c[3] = reg->c[3];
+	obj->ac[0] = reg->c[0]*reg->npixs;
+	obj->ac[1] = reg->c[1]*reg->npixs;
+	obj->ac[2] = reg->c[2]*reg->npixs;
+	obj->ac[3] = reg->c[3]*reg->npixs;
 	obj->npixs = reg->npixs;
 	reg->obj = obj;
 	obj->nregs = 1;
@@ -254,10 +267,18 @@ static inline new_obj(Object *obj, Region *reg)
 
 static inline add_reg(Object *obj, Region *reg)
 {
-	obj->c[0] = (obj->c[0]*obj->npixs + reg->c[0]*reg->npixs)/(obj->npixs + reg->npixs);
-	obj->c[1] = (obj->c[1]*obj->npixs + reg->c[1]*reg->npixs)/(obj->npixs + reg->npixs);
-	obj->c[2] = (obj->c[2]*obj->npixs + reg->c[2]*reg->npixs)/(obj->npixs + reg->npixs);
-	obj->c[3] = (obj->c[3]*obj->npixs + reg->c[3]*reg->npixs)/(obj->npixs + reg->npixs);
+	//obj->c[0] = (obj->c[0]*obj->npixs + reg->c[0]*reg->npixs)/(obj->npixs + reg->npixs);
+	//obj->c[1] = (obj->c[1]*obj->npixs + reg->c[1]*reg->npixs)/(obj->npixs + reg->npixs);
+	//obj->c[2] = (obj->c[2]*obj->npixs + reg->c[2]*reg->npixs)/(obj->npixs + reg->npixs);
+	//obj->c[3] = (obj->c[3]*obj->npixs + reg->c[3]*reg->npixs)/(obj->npixs + reg->npixs);
+	obj->ac[0] += reg->c[0]*reg->npixs;
+	obj->ac[1] += reg->c[1]*reg->npixs;
+	obj->ac[2] += reg->c[2]*reg->npixs;
+	obj->ac[3] += reg->c[3]*reg->npixs;
+	//reg->c[0] = obj->c[0];
+	//reg->c[1] = obj->c[1];
+	//reg->c[2] = obj->c[2];
+	//reg->c[3] = obj->c[3];
 	obj->npixs += reg->npixs;
 	reg->obj = obj;
 	obj->nregs++;
@@ -271,20 +292,77 @@ static inline uint32 check_neighbor(Region *reg1, Region *reg2, uint32 theresh)
 			abs(reg1->c[3]	- reg2->c[3]) < theresh;
 }
 
+static inline uint32 check_neighbor1(Region *reg1, Region *reg2, uint32 theresh, uint32 col)
+{
+	return	(abs(reg1->c[0]	- reg2->c[0]) < theresh ||
+			 abs(reg1->c[1]	- reg2->c[1]) < theresh ||
+			 abs(reg1->c[2]	- reg2->c[2]) < theresh ||
+			 abs(reg1->c[3]	- reg2->c[3]) < theresh) &&
+			(abs((reg1->c[0]-reg1->c[1])-(reg2->c[0]-reg2->c[1])) < col ||
+			 abs((reg1->c[0]-reg1->c[2])-(reg2->c[0]-reg2->c[2])) < col ||
+			 abs((reg1->c[0]-reg1->c[3])-(reg2->c[0]-reg2->c[3])) < col);
+}
+
+static inline uint32 check_neighbor2(Region *reg1, Region *reg2, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs(reg1->c[0]	- reg2->c[0]),
+			c1 = abs(reg1->c[1] - reg2->c[1]),
+			c2 = abs(reg1->c[2]	- reg2->c[2]),
+			c3 = abs(reg1->c[3]	- reg2->c[3]);
+	*diff = c0 + c1 + c2 + c3;
+	return  c0 < theresh || c1 < theresh || c2 < theresh || c3 < theresh;
+}
+
+static inline uint32 check_neighbor3(Region *reg1, Region *reg2, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs((reg1->c[0] - reg1->c[1]) - (reg2->c[0] - reg2->c[1])),
+			c1 = abs((reg1->c[0] - reg1->c[2]) - (reg2->c[0] - reg2->c[2])),
+			c2 = abs((reg1->c[0] - reg1->c[3]) - (reg2->c[0] - reg2->c[3]));
+	*diff = c0 + c1 + c2;
+	return  c0 < theresh || c1 < theresh || c2 < theresh;
+}
+
 void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 *nobjs, uint32 theresh)
 {
-	uint32 j=0, i, oc=0, tmp = 0, ck;
+	uint32 j=0, i, oc=0, tmp = 0, ck, in, diff, min;
+	/*
 	new_obj(&obj[oc], &reg[j]); oc++;
-
 	for(j=1; j < nregs; j++){
+		ck = 0;
 		for(i=0; i < reg[j].nneis; i++){
-			ck = 0;
-			if(reg[j].reg[i]->obj != NULL && check_neighbor(&reg[j], reg[j].reg[i], theresh)){
+			//if(reg[j].reg[i]->obj != NULL && check_neighbor(&reg[j], reg[j].reg[i], theresh)){
+			if(reg[j].reg[i]->obj != NULL && check_neighbor1(&reg[j], reg[j].reg[i], theresh, 2)){
 				add_reg(reg[j].reg[i]->obj, &reg[j]); ck++;
 				break;
 			}
 		}
-		if(!ck)  new_obj(&obj[oc], &reg[j]); oc++;
+		if(!ck)  { new_obj(&obj[oc], &reg[j]); oc++;}
+	}*/
+
+	for(j=0; j < nregs; j++){
+		ck = 0;
+		min = 0;
+		if(reg[j].obj == NULL){
+			for(i=0; i < reg[j].nneis; i++){
+				if(check_neighbor2(&reg[j], reg[j].reg[i], theresh, &diff)) {
+					if(ck){
+						if(diff < min) { min = diff; in = i;}
+					} else {
+						in = i; min = diff;
+					}
+					ck++;
+				}
+			}
+			if(!ck)  { new_obj(&obj[oc], &reg[j]); oc++;}
+			else{
+				if(reg[j].reg[in]->obj == NULL){
+					new_obj(&obj[oc], &reg[j]);
+					add_reg(&obj[oc], reg[j].reg[in]); oc++;
+				} else {
+					add_reg(reg[j].reg[in]->obj, &reg[j]);
+				}
+			}
+		}
 	}
 	*nobjs = oc;
 	printf("Objects = %d\n", oc);
@@ -298,38 +376,31 @@ void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 
 			tmp += reg[j].obj->nregs;
 			reg[j].obj->reg[reg[j].obj->regc] = &reg[j];
 			reg[j].obj->regc++;
+			reg[j].obj->c[0] = reg[j].obj->ac[0] / reg[j].obj->npixs;
+			reg[j].obj->c[1] = reg[j].obj->ac[1] / reg[j].obj->npixs;
+			reg[j].obj->c[2] = reg[j].obj->ac[2] / reg[j].obj->npixs;
+			reg[j].obj->c[3] = reg[j].obj->ac[3] / reg[j].obj->npixs;
 		}
 	}
 }
 
 void seg_objects_draw(imgtype *img, Object *obj, uint32 nobjs, uint32 w)
 {
-	uint32 i, j;
+	uint32 i, j;//, tmp=0, tmp1=0;
 	//rc = 97817; { //97848; {
-	//i = 1; {
+	//i = 100; {
+	//for(i=0; i < 100; i++){
 	for(i=0; i < nobjs; i++){
+		//tmp+= obj[i].npixs;
 		//printf("obj = %p nregs = %d\n", &obj[i], obj[i].nregs);
+		//if(obj[i].nregs>30){
 		for(j=0; j < obj[i].nregs; j++){
+			//tmp1+= obj[i].reg[j]->npixs;
 			//printf("reg = %p \n", &obj[i].reg[j]);
 			region_draw(img, obj[i].reg[j], obj[i].c, w);
+			//region_draw(img, obj[i].reg[j], obj[i].reg[j]->c, w);
 		}
-	}
-	//printf("count = %d\n", count);
-}
-
-void utils_object_draw1(imgtype *img, Region *reg, uint32 nregs, uint32 w)
-{
-	uint32 rowc, x, w1 = w<<1, yx, rc, count = 0 ;
-	//rc = 97817; { //97848; {
-	//rc = 1000; {
-	for(rc=0; rc < nregs; rc++){
-	//for(rc=0; rc < 266; rc++){
-		//printf("%6d nrows = %5d npix = %5d x = %5d y = %5d c0 = %3d c1 = %3d c2 = %3d c3 = %3d\n",
-		//		rc, reg[rc].nrows, reg[rc].npix ,reg[rc].row[0]->x, reg[rc].row[0]->y, reg[rc].ac[0], reg[rc].ac[1], reg[rc].ac[2], reg[rc].ac[3] );
-		//if(reg[rc].npix < 4){ count++;
-			region_draw(img, &reg[rc], reg[rc].c, w);
-			//for(x=0; x < reg[rc].neic; x++) region_draw(img, reg[rc].reg[x], w);
 		//}
 	}
-	printf("count = %d\n", count);
+	//printf("objpix = %d regpix = %d\n", tmp, tmp1);
 }
