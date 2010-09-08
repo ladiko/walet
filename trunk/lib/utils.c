@@ -248,6 +248,68 @@ uchar* utils_ppm_to_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	return img1;
 }
 
+uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	uint32 i = 0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
+	uchar *p[4];
+	p[0] = img1; p[1] = &img1[h1>>2]; p[2] = &img1[h1>>1]; p[3] = &img1[(h1>>2)*3];
+
+	for(y=0; y < h1; y+=w1) {
+		for(x=0; x < w; x+=2){
+			yx = y+x;
+			//img1[yx] = 255;
+			//img1[yx+1] = 255;
+			//img1[yx+w] = 255;
+			//img1[yx+w+1] = 255;
+			p[0][i] = img[yx];
+			p[1][i] = img[yx+1];
+			p[2][i] = img[yx+w];
+			p[3][i] = img[yx+w+1];
+			i++;
+		}
+	}
+	return img1;
+}
+
+uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
+{
+	uint32 i=0, j=0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
+	uchar *p[4];
+	p[0] = img; p[1] = &img[h1>>2]; p[2] = &img[h1>>1]; p[3] = &img[(h1>>2)*3];
+
+
+	for(y=0; y < (h1>>1); y+=w) {
+		for(x=0; x < (w>>1); x++){
+			yx = y+x;
+			rgb[yx*3]     = p[0][i];
+			rgb[yx*3 + 1] = p[0][i];
+			rgb[yx*3 + 2] = p[0][i]; i++;
+		}
+		for(x=w>>1; x < w; x++){
+			yx = y+x;
+			rgb[yx*3]     = p[1][j];
+			rgb[yx*3 + 1] = p[1][j];
+			rgb[yx*3 + 2] = p[1][j]; j++;
+		}
+	}
+	i=0, j=0;
+	for(y=(h1>>1); y < h1; y+=w) {
+		for(x=0; x < (w>>1); x++){
+			yx = y+x;
+			rgb[yx*3]     = p[2][i];
+			rgb[yx*3 + 1] = p[2][i];
+			rgb[yx*3 + 2] = p[2][i]; i++;
+		}
+		for(x=w>>1; x < w; x++){
+			yx = y+x;
+			rgb[yx*3]     = p[3][j];
+			rgb[yx*3 + 1] = p[3][j];
+			rgb[yx*3 + 2] = p[3][j]; j++;
+		}
+	}
+	return rgb;
+}
+
 imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;

@@ -7,7 +7,7 @@ static inline uint32 check1(imgtype *img, Region *reg, uint32 yx, uint32 w, uint
 			c1 = abs((reg->c[0]-reg->c[2]) - (img[yx]-img[yx+w])),
 			c2 = abs((reg->c[0]-reg->c[3]) - (img[yx]-img[yx+w+1]));
 	*diff = c0 + c1 + c2;
-	return  c0 < theresh || c1 < theresh || c2 < theresh ;
+	return  c0 < theresh && c1 < theresh && c2 < theresh ;
 }
 
 static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
@@ -17,7 +17,28 @@ static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint3
 			c2 = abs(reg->c[2]	- img[yx+w]  ),
 			c3 = abs(reg->c[3]	- img[yx+w+1]);
 	*diff = c0 + c1 + c2 + c3;
-	return  c0 < theresh || c1 < theresh || c2 < theresh || c3 < theresh;
+	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
+}
+
+static inline uint32 check_left(imgtype *img, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs(img[yx-2] 		- img[yx]    ),
+			c1 = abs(img[yx-1]		- img[yx+1]  ),
+			c2 = abs(img[yx+w-2] 	- img[yx+w]  ),
+			c3 = abs(img[yx+w-1]	- img[yx+w+1]);
+	*diff = c0 + c1 + c2 + c3;
+	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
+}
+
+static inline uint32 check_top(imgtype *img, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32 w1 = w<<1;
+	uint32  c0 = abs(img[yx-w1] 	- img[yx]    ),
+			c1 = abs(img[yx+1-w1]	- img[yx+1]  ),
+			c2 = abs(img[yx+w-w1] 	- img[yx+w]  ),
+			c3 = abs(img[yx+w+1-w1]	- img[yx+w+1]);
+	*diff = c0 + c1 + c2 + c3;
+	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
 }
 
 static inline new_row(Row *row, Region *reg, uint16 x, uint32 y)
@@ -40,25 +61,36 @@ static inline add_pixel(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w
 	reg->npixs++;
 }
 
-static inline left_neighborhood(Row *row, Row **ptrc, Region **preg, uint32 *pregc, uint32 x)
+static inline left_neighborhood(Row *row, Row **prow, Region **preg, uint32 *pregc, uint32 x)
 {
-	preg[(*pregc)++] = ptrc[x-2]->reg;  ptrc[x-2]->reg->neic++;
+	preg[(*pregc)++] = prow[x-2]->reg;  prow[x-2]->reg->neic++;
 	preg[(*pregc)++] = row->reg;  row->reg->neic++;
 
 }
 
-static inline top_neighborhood(Row *row, Row **ptrc, Region **preg, uint32 *pregc, uint32 x)
+static inline top_neighborhood(Row *row, Row **prow, Region **preg, uint32 *pregc, uint32 x)
 {
-	if(row->reg != ptrc[x]->reg) {
-		preg[(*pregc)++] = ptrc[x]->reg;  ptrc[x]->reg->neic++;
+	if(row->reg != prow[x]->reg) {
+		preg[(*pregc)++] = prow[x]->reg;  prow[x]->reg->neic++;
 		preg[(*pregc)++] = row->reg;  row->reg->neic++;
 	}
+}
+
+static inline coner_detect(imgtype *img, uint32 yx, uint32 w, uint32 thresh)
+{
+	uint32 dif[6][4], w2 = w<<1;
+
+	dif[0][0] = abs(img[yx-2-w2] - img[yx-w2]);
+	dif[0][1] = abs(img[yx-1-w2] - img[yx+1-w2]);
+	dif[0][2] = abs(img[yx-2-w2+w] - img[yx+w-w2]);
+	dif[0][2] = abs(img[yx-1-w2+w] - img[yx+w+1-w2]);
 }
 
 void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs, uint32 *npreg)
 {
 	uint32 y, h1 = ((h>>1)<<1)*w, x, w1 = w<<1, yx;
 	uint32 df1[4], df2[4], left=0, regc =0, rowc = 0, pregc = 0, rc, tmp = 0, dfl, dft;
+	Row *prowt;
 	y=0; x=0;
 	yx = y+x;
 	new_region(&reg[regc], &row[rowc], img, yx, w);
@@ -67,6 +99,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 	prow[x] = &row[rowc];
 	for(x=2; x < w; x+=2){
 		yx = y+x;
+		//if(check_left(img, yx, w, theresh, &dfl))
 		if(check(img, prow[x-2]->reg, yx, w, theresh, &dfl))
 		{
 			add_pixel(prow[x-2]->reg, prow[x-2], img, yx, w);
@@ -87,6 +120,8 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 	for(y=w1; y < h1; y+=w1) {
 		x=0;
 		yx = y+x;
+		prowt = prow[x];
+		//if(check_top(img, yx, w, theresh, &dft))
 		if(check(img, prow[x]->reg, yx, w, theresh, &dft))
 		{
 			rowc++;
@@ -106,9 +141,11 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 		}
 		for(x=2; x < w; x+=2){
 			yx = y+x;
+			//left =  check_left(img, yx, w, theresh, &dfl);
+			//left += check_top(img, yx, w, theresh, &dft)<<1;
 			left =  check(img, prow[x-2]->reg, yx, w, theresh, &dfl);
 			left += check(img, prow[x]->reg, yx, w, theresh, &dft)<<1;
-
+			prowt = prow[x];
 			switch(left){
 				case 0 : {
 					rowc++; regc++;
@@ -310,7 +347,7 @@ static inline uint32 check_neighbor2(Region *reg1, Region *reg2, uint32 theresh,
 			c2 = abs(reg1->c[2]	- reg2->c[2]),
 			c3 = abs(reg1->c[3]	- reg2->c[3]);
 	*diff = c0 + c1 + c2 + c3;
-	return  c0 < theresh || c1 < theresh || c2 < theresh || c3 < theresh;
+	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
 }
 
 static inline uint32 check_neighbor3(Region *reg1, Region *reg2, uint32 theresh, uint32 *diff)
@@ -319,7 +356,7 @@ static inline uint32 check_neighbor3(Region *reg1, Region *reg2, uint32 theresh,
 			c1 = abs((reg1->c[0] - reg1->c[2]) - (reg2->c[0] - reg2->c[2])),
 			c2 = abs((reg1->c[0] - reg1->c[3]) - (reg2->c[0] - reg2->c[3]));
 	*diff = c0 + c1 + c2;
-	return  c0 < theresh || c1 < theresh || c2 < theresh;
+	return  c0 < theresh && c1 < theresh && c2 < theresh;
 }
 
 void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 *nobjs, uint32 theresh)
@@ -344,7 +381,7 @@ void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 
 		min = 0;
 		if(reg[j].obj == NULL){
 			for(i=0; i < reg[j].nneis; i++){
-				if(check_neighbor2(&reg[j], reg[j].reg[i], theresh, &diff)) {
+				if(check_neighbor3(&reg[j], reg[j].reg[i], theresh, &diff)) {
 					if(ck){
 						if(diff < min) { min = diff; in = i;}
 					} else {
