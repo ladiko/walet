@@ -421,10 +421,10 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//utils_row_seg_double(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->buf, gw->gop->width,  gw->gop->height, 10);
 	//utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->preg, gw->gop->width,  gw->gop->height, 5, &nrows, &nregs, &npregs);
+	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->preg, gw->gop->width,  gw->gop->height, 20, &nrows, &nregs, &npregs);
 	//utils_rows_in_reg(gw->gop->region, gw->gop->row, gw->gop->prow, nrows);
 	seg_regions_neighbor(gw->gop->region, &gw->gop->preg[npregs], gw->gop->preg, nregs, npregs);
-	seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg,  nregs, &nobjs, 5);
+	seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg,  nregs, &nobjs, 20);
 	//utils_reg_color(gw->gop->region, gw->gop->row, gw->gop->prow, nregs);
 
 	//utils_row_seg1(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 10);

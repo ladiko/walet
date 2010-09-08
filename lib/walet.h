@@ -153,6 +153,7 @@ typedef struct {
 typedef struct Row Row;
 typedef struct Region Region;
 typedef struct Object Object;
+typedef struct Coner Coner;
 
 struct Object{
 	uchar 		c[4];		//The colors
@@ -175,6 +176,7 @@ struct Region{
 	uint32		neic;		//The counter of neighborhood regions
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
+	Coner		**con;		//The pointer to the  coners array
 	Object		*obj;		//the pointer to the object
 	//uint32		diff;
 	//Chain		**chain;	//The pointer to array of chains around region
@@ -186,6 +188,15 @@ struct Row {
 	//uchar 		c[4];		//The colors
 	//uint32		ac[4];		//The average colors
 	uint16 		length;		//The length of row
+	Region		*reg;		//Pointer to the region
+};
+
+struct Coner {
+	uint16		x;			//The start row on axis X
+	uint32 		y;			//The start point
+	uchar 		c[4];		//The colors
+	//uint32		ac[4];		//The average colors
+	uint32 		diff;		//The different from neighborhood pixeles
 	Region		*reg;		//Pointer to the region
 };
 
