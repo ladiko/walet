@@ -23,6 +23,7 @@ typedef struct {
 	int 			*q;			//Quantization value array
 	//Segmentation
 	Row 			*row;		//The rows array
+	Corner 			*cor;		//The corners  array
 	Region			*region;	//The region array
 	Object			*obj;		//Object array
 	//Chain			*chain;		//The chain array

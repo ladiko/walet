@@ -41,9 +41,9 @@ static inline uint32 check_top(imgtype *img, uint32 yx, uint32 w, uint32 theresh
 	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
 }
 
-static inline new_row(Row *row, Region *reg, uint16 x, uint32 y)
+static inline new_row(Row *row, Region *reg, uint32 yx)
 {
-	row->x = x; row->y = y; row->length = 0; row->reg = reg; reg->nrows++; //reg->row[reg->nrows] = row; reg->nrows++;
+	row->yx = yx;  row->length = 0; row->reg = reg; reg->nrows++; //reg->row[reg->nrows] = row; reg->nrows++;
 	//row->ac[0] = 0; row->ac[1] = 0; row->ac[2] = 0; row->ac[3] = 0;
 }
 
@@ -76,27 +76,108 @@ static inline top_neighborhood(Row *row, Row **prow, Region **preg, uint32 *preg
 	}
 }
 
-static inline coner_detect(imgtype *img, uint32 yx, uint32 w, uint32 thresh)
+static inline new_corner(imgtype *img, Corner *cor, Region *reg, uint32 yx, uint32 w)
 {
-	uint32 dif[6][4], w2 = w<<1;
 
-	dif[0][0] = abs(img[yx-2-w2] - img[yx-w2]);
-	dif[0][1] = abs(img[yx-1-w2] - img[yx+1-w2]);
-	dif[0][2] = abs(img[yx-2-w2+w] - img[yx+w-w2]);
-	dif[0][2] = abs(img[yx-1-w2+w] - img[yx+w+1-w2]);
+	cor->yx = yx; cor->reg = reg;
+	cor->c[0] = img[yx]; cor->c[1] = img[yx+1]; cor->c[2] = img[yx+w]; cor->c[3] = img[yx+w+1];
+	//printf("yx = %d c0 = %d, c1 = %d c2 = %d c3 = %d\n", cor->yx, cor->c[0], cor->c[1], cor->c[2], cor->c[3]);
 }
 
-void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nregs, uint32 *npreg)
+static inline corner_detect(imgtype *img, Corner *cor, uint32 *corc, Region *reg0, Region *reg1, Region *reg2, Region *reg3,
+		uint32 yx, uint32 w, uint32 thresh)
+{
+	//  sdif[4]			 dif[6]  0
+	//|-----|-----|		|-----------|
+	//|  0  |  1  |		|			|
+	//|-----|-----|   3 |  			| 1
+	//|  2  |  3  |		|			|
+	//|-----|-----|		|-----------|
+	//						2
+
+	uint32 dif[6], sdif[4], w2 = w<<1, max = 0, in = 4, x;
+	Region *reg;
+
+	dif[0] 	= abs(img[yx-2-w2] 	- img[yx-w2])
+			+ abs(img[yx-1-w2] 	- img[yx+1-w2])
+			+ abs(img[yx-2-w] 	- img[yx-w])
+			+ abs(img[yx-1-w] 	- img[yx-w+1]);
+
+	dif[1] 	= abs(img[yx] 		- img[yx-w2])
+			+ abs(img[yx+1] 	- img[yx+1-w2])
+			+ abs(img[yx+w] 	- img[yx-w])
+			+ abs(img[yx+w+1] 	- img[yx-w+1]);
+
+	dif[2]	= abs(img[yx] 		- img[yx-2])
+			+ abs(img[yx+1] 	- img[yx-1])
+			+ abs(img[yx+w] 	- img[yx+w-2])
+			+ abs(img[yx+w+1] 	- img[yx+w-1]);
+
+	dif[3] 	= abs(img[yx-2-w2] 	- img[yx-2])
+			+ abs(img[yx-1-w2] 	- img[yx-1])
+			+ abs(img[yx-2-w] 	- img[yx+w-2])
+			+ abs(img[yx-1-w]  	- img[yx+w-1]);
+
+	dif[4] 	= abs(img[yx-2-w2] 	- img[yx])
+			+ abs(img[yx-1-w2] 	- img[yx+1])
+			+ abs(img[yx-2-w] 	- img[yx+w])
+			+ abs(img[yx-1-w]  	- img[yx+w+1]);
+
+	dif[5] 	= abs(img[yx-w2]	- img[yx-2])
+			+ abs(img[yx+1-w2]	- img[yx-1])
+			+ abs(img[yx-w] 	- img[yx+w-2])
+			+ abs(img[yx-w+1]  	- img[yx+w-1]);
+
+	sdif[0] = dif[0] + dif[3] + dif[4];
+	sdif[1] = dif[0] + dif[1] + dif[5];
+	sdif[2] = dif[2] + dif[3] + dif[5];
+	sdif[3] = dif[1] + dif[2] + dif[4];
+
+	//printf("sdif0 = %d sdif1 = %d sdif2 = %d sdif3 = %d &cor[*corc] = %p \n",sdif[0], sdif[1], sdif[2], sdif[3], &cor[*corc]);
+	//if(sdif[0] > thresh && reg0 != reg1 && reg0 != reg2) new_corner(img, &cor[(*corc)++], reg0, yx-w2-2, w);
+	//if(sdif[1] > thresh && reg1 != reg0 && reg1 != reg3) new_corner(img, &cor[(*corc)++], reg1, yx-w2  , w);
+	//if(sdif[2] > thresh && reg2 != reg0 && reg2 != reg3) new_corner(img, &cor[(*corc)++], reg2, yx     , w);
+	//if(sdif[3] > thresh && reg3 != reg1 && reg3 != reg2) new_corner(img, &cor[(*corc)++], reg3, yx-2   , w);
+	if(sdif[0] > thresh && reg0 != reg1 && reg0 != reg2) { max = sdif[0]; in = 0;}
+	if(sdif[1] > thresh && reg1 != reg0 && reg1 != reg3) if(sdif[1] > max) { max = sdif[1]; in = 1;}
+	if(sdif[2] > thresh && reg2 != reg0 && reg2 != reg3) if(sdif[2] > max) { max = sdif[2]; in = 2;}
+	if(sdif[3] > thresh && reg3 != reg1 && reg3 != reg2) if(sdif[3] > max) { in = 3;}
+
+	//printf("ind = %d ", in);
+	if(in == 0) { reg = reg0; x = yx-w2-2; }
+	if(in == 1) { reg = reg1; x = yx-w2  ; }
+	if(in == 2) { reg = reg2; x = yx-2   ; }
+	if(in == 3) { reg = reg3; x = yx     ; }
+
+	if(in != 4) new_corner(img, &cor[(*corc)++], reg, x, w);
+
+	//if(in == 0) new_corner(img, &cor[(*corc)++], reg0, yx-w2-2, w);
+	//if(in == 1) new_corner(img, &cor[(*corc)++], reg1, yx-w2  , w);
+	//if(in == 2) new_corner(img, &cor[(*corc)++], reg2, yx-2   , w);
+	//if(in == 3) new_corner(img, &cor[(*corc)++], reg3, yx     , w);
+
+	/*
+	switch(in) {
+		case 0 : { new_corner(img, &cor[(*corc)++], reg0, yx-w2-2, w); break;}
+		case 1 : { new_corner(img, &cor[(*corc)++], reg1, yx-w2  , w); break;}
+		case 2 : { new_corner(img, &cor[(*corc)++], reg2, yx-2   , w); break;}
+		case 3 : { new_corner(img, &cor[(*corc)++], reg3, yx     , w); break;}
+	}*/
+}
+
+void seg_regions(imgtype *img, Region *reg, Row *row, Corner *cor, Row **prow, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 corth,
+		uint32 *nrows, uint32 *nregs, uint32 *npreg, uint32 *ncors)
 {
 	uint32 y, h1 = ((h>>1)<<1)*w, x, w1 = w<<1, yx;
-	uint32 df1[4], df2[4], left=0, regc =0, rowc = 0, pregc = 0, rc, tmp = 0, dfl, dft;
+	uint32 df1[4], df2[4], left=0, regc =0, rowc = 0, corc = 0, pregc = 0, rc, tmp = 0, dfl, dft;
 	Row *prowt;
 	y=0; x=0;
 	yx = y+x;
 	new_region(&reg[regc], &row[rowc], img, yx, w);
-	new_row(&row[rowc], &reg[regc], x, y);
+	new_row(&row[rowc], &reg[regc], yx);
 	add_pixel(&reg[regc], &row[rowc], img, yx, w);
 	prow[x] = &row[rowc];
+	rowc++; regc++;
 	for(x=2; x < w; x+=2){
 		yx = y+x;
 		//if(check_left(img, yx, w, theresh, &dfl))
@@ -107,37 +188,36 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 			//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 		} else {
 			//printf("%5d %p x = %d y = %d l = %d\n", rowc, &row[rowc], row[rowc].x, row[rowc].y, row[rowc].length);
-			rowc++; regc++;
 			new_region(&reg[regc], &row[rowc], img, yx, w);
-			new_row(&row[rowc], &reg[regc], x, y);
+			new_row(&row[rowc], &reg[regc], yx);
 			add_pixel(&reg[regc], &row[rowc], img, yx, w);
 
 			left_neighborhood(&row[rowc], prow, preg, &pregc, x);
 			prow[x] = &row[rowc];
+			rowc++; regc++;
 		}
 	}
-	//printf("%5d %p x = %d y = %d l = %d\n", rowc, &row[rowc], row[rowc].x, row[rowc].y, row[rowc].length);
+	//printf("%5d %p yx = %d  l = %d\n", rowc, &row[rowc-1], row[rowc-1].yx, row[rowc-1].length);
 	for(y=w1; y < h1; y+=w1) {
 		x=0;
 		yx = y+x;
-		prowt = prow[x];
+		//prowt = prow[x];
 		//if(check_top(img, yx, w, theresh, &dft))
 		if(check(img, prow[x]->reg, yx, w, theresh, &dft))
 		{
-			rowc++;
-			new_row(&row[rowc], prow[x]->reg, x, y);
+			new_row(&row[rowc], prow[x]->reg, yx);
 			add_pixel(prow[x]->reg, &row[rowc], img, yx, w);
 			prow[x] = &row[rowc];
+			rowc++;
 			//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 		} else {
-			rowc++; regc++;
 			new_region(&reg[regc], &row[rowc], img, yx, w);
-			new_row(&row[rowc], &reg[regc], x, y);
+			new_row(&row[rowc], &reg[regc], yx);
 			add_pixel(&reg[regc], &row[rowc], img, yx, w);
 
 			top_neighborhood(&row[rowc], prow, preg, &pregc, x);
 			prow[x] = &row[rowc];
-
+			rowc++; regc++;
 		}
 		for(x=2; x < w; x+=2){
 			yx = y+x;
@@ -145,35 +225,38 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 			//left += check_top(img, yx, w, theresh, &dft)<<1;
 			left =  check(img, prow[x-2]->reg, yx, w, theresh, &dfl);
 			left += check(img, prow[x]->reg, yx, w, theresh, &dft)<<1;
-			prowt = prow[x];
 			switch(left){
 				case 0 : {
-					rowc++; regc++;
 					new_region(&reg[regc], &row[rowc], img, yx, w);
-					new_row(&row[rowc], &reg[regc], x, y);
+					new_row(&row[rowc], &reg[regc], yx);
 					add_pixel(&reg[regc], &row[rowc], img, yx, w);
+					corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, &reg[regc], yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x);
 					top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+					prowt = prow[x];
 					prow[x] = &row[rowc];
+					rowc++; regc++;
 					break;
 				}
 				case 1 : {
 					add_pixel(prow[x-2]->reg, prow[x-2], img, yx, w);
 
-					top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+					top_neighborhood(&row[rowc-1], prow, preg, &pregc, x);
 					prow[x] = prow[x-2];
 					//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
 				}
 				case 2 : {
-					rowc++;
-					new_row(&row[rowc], prow[x]->reg, x, y);
+					new_row(&row[rowc], prow[x]->reg, yx);
 					add_pixel(prow[x]->reg, &row[rowc], img, yx, w);
+					corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, prow[x]->reg, yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x);
 					top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+					prowt = prow[x];
 					prow[x] = &row[rowc];
+					rowc++;
 					//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					break;
 				}
@@ -181,22 +264,24 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 					if(dfl < dft){
 						add_pixel(prow[x-2]->reg, prow[x-2], img, yx, w);
 
-						top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+						top_neighborhood(&row[rowc-1], prow, preg, &pregc, x);
 						prow[x] = prow[x-2];
 						//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					} else {
 						if(prow[x-2]->reg != prow[x]->reg){
-							rowc++;
-							new_row(&row[rowc], prow[x]->reg, x, y);
+							new_row(&row[rowc], prow[x]->reg, yx);
 							add_pixel(prow[x]->reg, &row[rowc], img, yx, w);
+							corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, prow[x]->reg, yx, w, corth);
 
 							left_neighborhood(&row[rowc], prow, preg, &pregc, x);
 							top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+							prowt = prow[x];
 							prow[x] = &row[rowc];
+							rowc++;
 						} else {
 							add_pixel(prow[x-2]->reg, prow[x-2], img, yx, w);
 
-							top_neighborhood(&row[rowc], prow, preg, &pregc, x);
+							top_neighborhood(&row[rowc-1], prow, preg, &pregc, x);
 							prow[x] = prow[x-2];
 						}
 						//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
@@ -206,10 +291,11 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 			}
 		}
 	}
-	*nrows = rowc+1;
-	*nregs = regc+1;
+	*nrows = rowc;
+	*nregs = regc;
 	*npreg = pregc;
-	printf("rowc = %d regc = %d pregc = %d\n", rowc, regc, pregc);
+	*ncors = corc;
+	printf("rowc = %d regc = %d corc = %d pregc = %d\n", rowc, regc, corc, pregc);
 
 	for(rc=0; rc < *nrows; rc++) {
 		if(row[rc].reg->rowc){
@@ -231,14 +317,9 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Row **prow, Region **preg,
 
 static inline void region_draw(imgtype *img, Region *reg, uchar *c, uint32 w)
 {
-	uint32 rowc, yx, x;
+	uint32 rowc, yx;
 	for(rowc=0; rowc < reg->nrows; rowc++){
-		for(x=reg->row[rowc]->x; x < (reg->row[rowc]->x + reg->row[rowc]->length); x+=2){
-			yx = reg->row[rowc]->y + x;
-			//img[yx] 	= reg->ac[0];
-			//img[yx+1] 	= reg->ac[1];
-			//img[yx+w] 	= reg->ac[2];
-			//img[yx+w+1] = reg->ac[3];
+		for(yx=reg->row[rowc]->yx; yx < (reg->row[rowc]->yx + reg->row[rowc]->length); yx+=2){
 			img[yx] 	= c[0];
 			img[yx+1] 	= c[1];
 			img[yx+w] 	= c[2];
@@ -251,6 +332,22 @@ void seg_regions_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w)
 {
 	uint32 rowc, x, w1 = w<<1, yx, rc;
 	for(rc=0; rc < nregs; rc++) region_draw(img, &reg[rc], reg[rc].c, w);
+}
+
+void seg_corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w)
+{
+	uint32 i, w2 = w<<1;
+	for(i=0; i < ncors; i++) {
+		//img[cor[i].yx] 		= cor[i].c[0];
+		//img[cor[i].yx+1] 	= cor[i].c[1];
+		//img[cor[i].yx+w] 	= cor[i].c[2];
+		//img[cor[i].yx+w+1] 	= cor[i].c[3];
+		img[cor[i].yx] 		= 255;
+		img[cor[i].yx+1] 	= 255;
+		img[cor[i].yx+w] 	= 255;
+		img[cor[i].yx+w+1] 	= 255;
+
+	}
 }
 
 static inline uint32 check_reg(Region *reg1, Region *reg2)

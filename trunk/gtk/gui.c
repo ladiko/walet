@@ -415,16 +415,17 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	GstStateChangeReturn ret;
 	GstState state;
 	uchar *buf;
-	uint32 i , sz = (gw->gop->width)*(gw->gop->height), nregs, nrows, npregs, nobjs;
+	uint32 i , sz = (gw->gop->width)*(gw->gop->height), nregs, nrows, npregs, nobjs, ncors;
 	//uint32 *arg = &gw->gop->seg[sz];
 
 	//utils_row_seg_double(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->buf, gw->gop->width,  gw->gop->height, 10);
 	//utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->prow, gw->gop->preg, gw->gop->width,  gw->gop->height, 20, &nrows, &nregs, &npregs);
+	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
+			gw->gop->width,  gw->gop->height, 30, 100, &nrows, &nregs, &npregs, &ncors);
 	//utils_rows_in_reg(gw->gop->region, gw->gop->row, gw->gop->prow, nrows);
 	seg_regions_neighbor(gw->gop->region, &gw->gop->preg[npregs], gw->gop->preg, nregs, npregs);
-	seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg,  nregs, &nobjs, 20);
+	//seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg,  nregs, &nobjs, 20);
 	//utils_reg_color(gw->gop->region, gw->gop->row, gw->gop->prow, nregs);
 
 	//utils_row_seg1(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 10);
@@ -438,6 +439,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
 	seg_regions_draw(gw->gop->frames[0].img[0].img, gw->gop->region, nregs, gw->gop->width);
+	for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
@@ -445,12 +447,12 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
-	for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	seg_objects_draw(gw->gop->buf, gw->gop->obj, nobjs, gw->gop->width);
-	//seg_regions_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
+	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
+	//seg_objects_draw(gw->gop->buf, gw->gop->obj, nobjs, gw->gop->width);
+	//seg_objects_draw(gw->gop->buf, gw->gop->obj, nobjs, gw->gop->width);
+
+	seg_corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->width);
 	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
-	//utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 

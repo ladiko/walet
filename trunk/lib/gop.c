@@ -23,6 +23,7 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height>>1, sizeof(Row));
+	gop->cor = (Corner *)calloc(width*height>>1, sizeof(Corner));
 	gop->region = (Region *)calloc(width*height>>1, sizeof(Region));
 	gop->obj = (Object *)calloc(width*height>>1, sizeof(Object));
 	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
@@ -80,6 +81,7 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height>>1, sizeof(Row));
+	gop->cor = (Corner *)calloc(width*height>>1, sizeof(Corner));
 	gop->region = (Region *)calloc(width*height>>1, sizeof(Region));
 	gop->obj = (Object *)calloc(width*height>>1, sizeof(Object));
 	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
