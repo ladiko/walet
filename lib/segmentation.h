@@ -26,6 +26,8 @@ void seg_regions_neighbor(Region *reg, Region **pnei, Region **preg, uint32 nreg
 void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 *nobjs, uint32 theresh);
 void seg_corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w);
 
+void seg_color_quant(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 quant);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

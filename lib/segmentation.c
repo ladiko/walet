@@ -315,6 +315,7 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Corner *cor, Row **prow, R
 	}
 }
 
+
 static inline void region_draw(imgtype *img, Region *reg, uchar *c, uint32 w)
 {
 	uint32 rowc, yx;
@@ -537,4 +538,20 @@ void seg_objects_draw(imgtype *img, Object *obj, uint32 nobjs, uint32 w)
 		//}
 	}
 	//printf("objpix = %d regpix = %d\n", tmp, tmp1);
+}
+
+
+void seg_color_quant(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 quant)
+{
+	uint32 y, x, yx, w1 = w<<1, h1 = ((h>>1)<<1)*w, half = ((1<<quant)>>1);
+	for(y=0; y < h1; y+=w1) {
+		for(x=0; x < w; x+=2){
+			yx = y+x;
+			img1[yx]		= ((img[yx]		>>quant)<<quant) + half;
+			img1[yx+1]		= ((img[yx+1]	>>quant)<<quant) + half;
+			img1[yx+w]		= ((img[yx+w]	>>quant)<<quant) + half;
+			img1[yx+w+1]	= ((img[yx+w+1]	>>quant)<<quant) + half;
+
+		}
+	}
 }
