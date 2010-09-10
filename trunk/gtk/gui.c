@@ -418,40 +418,28 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint32 i , sz = (gw->gop->width)*(gw->gop->height), nregs, nrows, npregs, nobjs, ncors;
 	//uint32 *arg = &gw->gop->seg[sz];
 
-	//utils_row_seg_double(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->buf, gw->gop->width,  gw->gop->height, 10);
-	//utils_2d_seg(gw->gop->frames[0].img[0].img, gw->gop->width,  gw->gop->height, 3);
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
+	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
+
+	// Regions segmentation
+	/*
 	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
 			gw->gop->width,  gw->gop->height, 30, 100, &nrows, &nregs, &npregs, &ncors);
-	//utils_rows_in_reg(gw->gop->region, gw->gop->row, gw->gop->prow, nrows);
 	seg_regions_neighbor(gw->gop->region, &gw->gop->preg[npregs], gw->gop->preg, nregs, npregs);
-	//seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg,  nregs, &nobjs, 20);
-	//utils_reg_color(gw->gop->region, gw->gop->row, gw->gop->prow, nregs);
+	//for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
+	seg_regions_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
 
-	//utils_row_seg1(gw->gop->frames[0].img[0].img, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 10);
-	//nreg = utils_region_seg1(gw->gop->region, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height, 5);
-
-	//utils_region_fill(gw->gop->region, gw->gop->row,  gw->gop->prow, gw->gop->rinl, gw->gop->width, gw->gop->height);
-	//utils_row_draw( gw->gop->buf, (Row*)gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
-	//utils_region_draw( gw->gop->buf, gw->gop->row, gw->gop->rinl, gw->gop->width, gw->gop->height);
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	//utils_region_draw1(gw->gop->buf, gw->gop->region, nreg, gw->gop->width, gw->gop->height);
-
-	for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
-	seg_regions_draw(gw->gop->frames[0].img[0].img, gw->gop->region, nregs, gw->gop->width);
-	for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
 
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
-	//utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
+	*/
+	// Corner  draw
+	//seg_corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->width);
+	//new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
+	//utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	//gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	//seg_objects_draw(gw->gop->buf, gw->gop->obj, nobjs, gw->gop->width);
-	//seg_objects_draw(gw->gop->buf, gw->gop->obj, nobjs, gw->gop->width);
-
-	seg_corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->width);
+	seg_color_quant(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, 4);
 	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
@@ -459,83 +447,6 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
 	printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
 	printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
-	/*
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = 0;
-	//utils_row_seg_hor_left(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, 10);
-	utils_row_seg_hor_right(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, 10);
-	utils_row_seg_ver(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, 10);
-	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
-	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	//utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
-
-	/*
-	color_seg(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, 4);
-	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
-	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
-	*/
-	/*
-	filters_bayer_median_3x3(gw->gop->buf, gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height, gw->gop->bg);
-	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
-	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
-	*/
-	/*
-	utils_bayer_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 2);
-	new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
-	*/
-	/*
-	utils_bayer_to_gradient(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, gw->gop->bg, 3);
-	new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width-1, gw->gop->height-1);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
-	*/
-	/*
-	filters_median_3x3(gw->gop->buf, gw->gop->frames[0].img[0].img, gw->gop->width-1, gw->gop->height-1);
-	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
-	utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width-1, gw->gop->height-1);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
-	//utils_watershed	(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width-1, gw->gop->height-1);
-	//for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = gw->gop->buf[i];
-	//for(i=0; i< sz; i++) gw->gop->arg[i] = i;
-
-	//utils_watershed	(gw->gop->buf, gw->gop->frames[0].img[0].img,  gw->gop->width, gw->gop->height);
-
-	//utils_min_region(gw->gop->buf, gw->gop->seg, gw->gop->arg, gw->gop->width-1, gw->gop->height-1);
-	//utils_steep_descent(gw->gop->buf, gw->gop->seg, gw->gop->arg, gw->gop->width-1, gw->gop->height-1);
-	//utils_connect_region(gw->gop->buf, gw->gop->seg, gw->gop->arg, gw->gop->width-1, gw->gop->height-1);
-
-	//utils_print_ind(gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height,  0, 0,  30, 30);
-
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->buf[i] ? 255 : 0;
-	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->buf[i]<<3;
-	//for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = gw->gop->frames[0].img[0].img[i]<<2;
-	//new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-	//utils_region_draw(gw->gop->seg, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width-1, gw->gop->height-1);
-	//utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-	//gtk_widget_queue_draw(gw->drawingarea[0]);
-	/*
-	utils_kill_pix	(gw->gop->buf, gw->gop->buf, gw->gop->width-1, gw->gop->height-1);
-	for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->buf[i] ? 255 : 0;
-	new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width-1, gw->gop->height-1);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
-	*/
-	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
-	//g_printf("The current state = %d ret = %d\n", state, ret);
-	//gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
-
-	//motion_contour(&gw->gop->frames[0].img[0], gw->gop->color, gw->gop->steps, buf);
-	//new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
-	//utils_subband_draw(&gw->gop->frames[0].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
-	//gtk_widget_queue_draw(gw->drawingarea[3]);
 
 }
 

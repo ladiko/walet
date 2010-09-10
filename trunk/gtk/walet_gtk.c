@@ -115,6 +115,11 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
+		utils_bayer_to_4color(buf, (uchar*)gw->gop->buf, gw->gop->width, gw->gop->height);
+		new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
+		utils_4color_draw((uchar*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
+		gtk_widget_queue_draw(gw->drawingarea[3]);
+
 
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 
