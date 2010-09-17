@@ -421,9 +421,9 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
 
 	// Regions segmentation
-	/*
+
 	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
-			gw->gop->width,  gw->gop->height, 30, 100, &nrows, &nregs, &npregs, &ncors);
+			gw->gop->width,  gw->gop->height, 20, 100, &nrows, &nregs, &npregs, &ncors);
 	seg_regions_neighbor(gw->gop->region, &gw->gop->preg[npregs], gw->gop->preg, nregs, npregs);
 	//for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
 	seg_regions_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
@@ -432,18 +432,18 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[3], gw->gop->width-1, gw->gop->height-1);
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
-	// Corner  draw
-	//seg_corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->width);
-	//new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
-	//utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-	//gtk_widget_queue_draw(gw->drawingarea[0]);
 
+	// Corner  draw
+	seg_corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->width);
+	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
+	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+	/*
 	seg_color_quant(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height, 4);
 	new_buffer (gw->orig[0], gw->gop->width-1, gw->gop->height-1);
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
-
+	*/
 	printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
 	printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
 	printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
