@@ -15,6 +15,8 @@ void filters_bayer_gradient			(imgtype *img, imgtype *img1, uint32 w, uint32 h, 
 void filters_gradient				(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 thresh);
 void filters_edge_detector			(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 
+void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h);
+
 
 #ifdef __cplusplus
 }
