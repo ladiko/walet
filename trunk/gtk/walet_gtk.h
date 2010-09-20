@@ -77,7 +77,7 @@ typedef struct  {
 	//Gstreamer structures
 	GMainLoop *loop;
 	GstBus *bus;
-	GstElement *pipeline, *src, *dec, *fakesink, *pgmdec;
+	GstElement *pipeline, *msrc, *src, *dec, *fakesink, *pgmdec;
 
 } GtkWalet;
 

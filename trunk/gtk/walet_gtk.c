@@ -212,12 +212,13 @@ int main (int argc, char *argv[])
 	gst_object_unref  (gw->bus);
 
 	gw->src 		= gst_element_factory_make("filesrc", "source");
+	gw->msrc 		= gst_element_factory_make("multifilesrc", "source");
 	gw->dec 		= gst_element_factory_make("decodebin2", "decoder");
 	gw->pgmdec		= gst_element_factory_make("pgmdec", "decoder");
 	gw->fakesink 	= gst_element_factory_make("fakesink", "sink");
 	//appsink		= gst_element_factory_make(("appsink","appsink");
 
-	if(!(gw->src && gw->dec && gw->fakesink && gw->pgmdec)){
+	if(!(gw->src && gw->msrc && gw->dec && gw->fakesink && gw->pgmdec)){
 		g_critical("Could not create pipeline elements");
 		return FALSE;
 	}
