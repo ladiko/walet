@@ -74,6 +74,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	GstStateChangeReturn ret;
 	GstState state;
 	gint width, height, bpp;
+	uchar *p[4];
+
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
+
 
 	//g_printf("cb_handoff buffer = %p  size = %d\n", GST_BUFFER_DATA(buffer), GST_BUFFER_SIZE (buffer));
 
@@ -115,9 +121,9 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
-		utils_bayer_to_4color(buf, (uchar*)gw->gop->buf, gw->gop->width, gw->gop->height);
+		utils_bayer_to_4color(buf, (uchar*)gw->gop->buf, p, gw->gop->width, gw->gop->height);
 		new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
-		utils_4color_draw((uchar*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
+		utils_4color_draw((uchar*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), p, gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 
@@ -135,10 +141,23 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		utils_bayer_to_4color(GST_BUFFER_DATA(buffer), (uchar*)gw->gop->frames[1].img[0].img, gw->gop->width, gw->gop->height);
+		utils_bayer_to_4color(GST_BUFFER_DATA(buffer), (uchar*)gw->gop->frames[1].img[0].img, p, gw->gop->width, gw->gop->height);
 		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
-		utils_4color_draw((uchar*)gw->gop->frames[1].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height);
+		utils_4color_draw((uchar*)gw->gop->frames[1].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), p, gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
+
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		filter_median(p[3], (uchar*)gw->gop->buf, gw->gop->width>>1, gw->gop->height>>1);
+		filter_median(p[2], (uchar*)gw->gop->buf, gw->gop->width>>1, gw->gop->height>>1);
+		filter_median(p[1], (uchar*)gw->gop->buf, gw->gop->width>>1, gw->gop->height>>1);
+		filter_median(p[0], (uchar*)gw->gop->buf, gw->gop->width>>1, gw->gop->height>>1);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Median filter time  = %f\n", (double)(end-start)/1000000.);
+
+
+		new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
+		utils_4color_draw((uchar*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), p, gw->gop->width, gw->gop->height);
+		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);

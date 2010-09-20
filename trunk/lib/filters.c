@@ -5,6 +5,51 @@
 #include <string.h>
 #include <math.h>
 
+static  inline uchar*  sort_3(uchar *s)
+{
+	uchar tmp;
+	if(s[0] > s[1]) { tmp = s[1]; s[1] = s[0]; s[0] = tmp; }
+	if(s[1] > s[2]) { tmp = s[2]; s[2] = s[1]; s[1] = tmp; }
+	return s;
+}
+
+static  inline uchar  max_3(uchar s0, uchar s1, uchar s2)
+{
+	return (s0 > s1) ? (s0 > s2 ? s0 : s2) : (s1 > s2 ? s1 : s2);
+}
+
+static  inline uchar  min_3(uchar s0, uchar s1, uchar s2)
+{
+	return (s0 > s1) ? (s1 > s2 ? s2 : s1) : (s0 > s2 ? s2 : s0);
+}
+
+static  inline uchar  median_3(uchar s0, uchar s1, uchar s2)
+{
+	return (s2 > s1) ? (s1 > s0 ? s1 : (s2 > s0 ? s0 : s2))
+					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
+}
+
+void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
+	uchar s[3][3];
+	for(y=w; y < sq; y+=w){
+		x = 1; i = 2;
+		yx = y + x;
+		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
+		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
+		sort_3(s[0]); sort_3(s[1]);
+		for(; x < w1; x++){
+			yx = y + x;
+			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
+			sort_3(s[i]);
+			img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
+								median_3(s[0][1], s[1][1], s[2][1]),
+								min_3   (s[0][2], s[1][2], s[2][2]));
+			i = (i == 2) ? 0 : i+1;
+		}
+	}
+}
 
 static inline int median_fast(imgtype *s, uint32 thresh)
 ///	\fn static inline int median_filter_3x3(imgtype *s)

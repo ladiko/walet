@@ -391,8 +391,10 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 {
+
 	if(gw->gop == NULL ) return;
 	if(frame_median_filter(gw->gop, gw->gop->cur_gop_frame)){
+
 		new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
 		//utils_bayer_to_Y(gw->gop->frames[0].img[0].img, gw->gop->frames[0].img[0].img, gw->gop->width, gw->gop->height);
 		//utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width-1, gw->gop->height-1);

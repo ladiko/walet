@@ -248,10 +248,10 @@ uchar* utils_ppm_to_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	return img1;
 }
 
-uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uint32 w, uint32 h)
+uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uchar **p, uint32 w, uint32 h)
 {
 	uint32 i = 0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
-	uchar *p[4];
+	//uchar *p[4];
 	p[0] = img1; p[1] = &img1[h1>>2]; p[2] = &img1[h1>>1]; p[3] = &img1[(h1>>2)*3];
 
 	for(y=0; y < h1; y+=w1) {
@@ -271,10 +271,10 @@ uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uint32 w, uint32 h)
 	return img1;
 }
 
-uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
+uchar* utils_4color_draw(uchar *img, uchar *rgb, uchar **p, uint32 w, uint32 h)
 {
 	uint32 i=0, j=0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
-	uchar *p[4];
+	//uchar *p[4];
 	p[0] = img; p[1] = &img[h1>>2]; p[2] = &img[h1>>1]; p[3] = &img[(h1>>2)*3];
 
 
