@@ -188,7 +188,7 @@ static inline corner_detect1(imgtype *img, Corner *cor, uint32 *corc, Region *re
 
 static inline corner_detect(imgtype *img, Corner *cor, uint32 *corc, Row **prow0, Row **prow1, Row **prow2, uint32 yx, uint32 w, uint32 thresh)
 {
-	uint32 w2 = w<<1, c = 0;
+	uint32 c = 0;
 	if(prow1[2]->reg == prow0[0]->reg) c++;
 	if(prow1[2]->reg == prow0[2]->reg) c++;
 	if(prow1[2]->reg == prow0[4]->reg) c++;
@@ -197,7 +197,7 @@ static inline corner_detect(imgtype *img, Corner *cor, uint32 *corc, Row **prow0
 	if(prow1[2]->reg == prow2[0]->reg) c++;
 	if(prow1[2]->reg == prow2[2]->reg) c++;
 	if(prow1[2]->reg == prow2[4]->reg) c++;
-	if(c < 4) new_corner(img, &cor[(*corc)++], prow1[2]->reg, yx, w);
+	if(c < 1) new_corner(img, &cor[(*corc)++], prow1[2]->reg, yx, w);
 }
 
 void seg_regions(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 corth,
