@@ -228,15 +228,23 @@ uint32 frame_median_filter(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
+
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, IDWT | FRAME_COPY)){
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 		image_median_filter(&frame->img[0], gop->color, gop->bg, gop->buf);
 		if(gop->color != GREY  && gop->color != BAYER) {
 			image_median_filter(&frame->img[1], gop->color, gop->bg, gop->buf);
 			image_median_filter(&frame->img[2], gop->color, gop->bg, gop->buf);
 		}
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Median filter time  = %f\n", (double)(end-start)/1000000.);
+
 		frame->state |= MEDIAN_FILTER;
 		return 1;
 	} else return 0;
