@@ -31,6 +31,14 @@ static  inline uchar  median_3(uchar s0, uchar s1, uchar s2)
 
 void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
+	// s[0]  s[1]  s[2]
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	//|     | yx  |     |
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
 	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
 	uchar s[3][3];
 	for(y=w; y < sq; y+=w){

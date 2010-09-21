@@ -2,7 +2,7 @@
 #include <stdio.h>
 uint32 q = 4;
 
-static inline uint32 check1(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+static inline uint32 check2(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
 {
 	uint32 	c0 = ((img[yx]>>q)<<q) - reg->c[0],
 			c1 = ((img[yx+1]>>q)<<q) - reg->c[1],
@@ -12,7 +12,7 @@ static inline uint32 check1(imgtype *img, Region *reg, uint32 yx, uint32 w, uint
 	return  !c0 && !c1  && !c2  && !c3;
 }
 
-static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+static inline uint32 check1(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
 {
 	uint32  c0 = abs(reg->c[0]	- img[yx]    ),
 			c1 = abs(reg->c[1] 	- img[yx+1]  ),
@@ -20,6 +20,16 @@ static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint3
 			c3 = abs(reg->c[3]	- img[yx+w+1]);
 	*diff = c0 + c1 + c2 + c3;
 	return  c0 < theresh && c1 < theresh && c2 < theresh && c3 < theresh;
+}
+
+static inline uint32 check(imgtype *img, Region *reg, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs(reg->c[0]	- img[yx]    ),
+			c1 = abs(reg->c[1] 	- img[yx+1]  ),
+			c2 = abs(reg->c[2]	- img[yx+w]  ),
+			c3 = abs(reg->c[3]	- img[yx+w+1]);
+	*diff = c0 + c1 + c2 + c3;
+	return  !(c0 > theresh && c1 > theresh && c2 > theresh && c3 > theresh);
 }
 
 static inline uint32 check_left(imgtype *img, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
@@ -621,6 +631,31 @@ void seg_color_quant(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 qua
 			img1[yx+w]		= (img[yx+w]	& mask) + half;
 			img1[yx+w+1]	= (img[yx+w+1]	& mask) + half;
 
+		}
+	}
+}
+
+
+void seg_coners(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors, uint32 color)
+{
+	uint32 c, x, y, yx, h1 = h*w-w, w1 = w-1, i=0, d, diff=0;
+	*ncors = 0;
+	for(y=w; y < h1; y+=w){
+		for(x=1; x < w1; x++){
+			c = 0;
+			if(d = abs(img[yx] - img[yx-w-1])	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx-w]	) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx-w+1]) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx-1]	) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx+1]	) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx+w-1]) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx+w]	) 	> theresh) { c++; diff+=d; }
+			if(d = abs(img[yx] - img[yx+w+1]) 	> theresh) { c++; diff+=d; }
+			if(c > 3) {
+				cor[(*ncors)++].yx = yx;
+				cor[(*ncors)++].diff = diff;
+				cor[(*ncors)++].c[color] = img[yx];
+			}
 		}
 	}
 }

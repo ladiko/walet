@@ -425,7 +425,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	// Regions segmentation
 
 	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
-			gw->gop->width,  gw->gop->height, 20, 100, &nrows, &nregs, &npregs, &ncors);
+			gw->gop->width,  gw->gop->height, 5, 100, &nrows, &nregs, &npregs, &ncors);
 	seg_regions_neighbor(gw->gop->region, &gw->gop->preg[npregs], gw->gop->preg, nregs, npregs);
 	//for(i=0; i< sz; i++) gw->gop->frames[0].img[0].img[i] = 0;
 	seg_regions_draw(gw->gop->buf, gw->gop->region, nregs, gw->gop->width);
