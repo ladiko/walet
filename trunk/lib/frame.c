@@ -17,10 +17,23 @@ void frames_init(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 w = gop->width, h = gop->height ;
+	uint32 i, j, w = gop->width, h = gop->height ;
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
+	for(i=0; i < 4; i++){
+		frame->p[i].width  = w>>1;
+		frame->p[i].height = h>>1;
+		frame->p[i].pic = (uchar *)calloc(frame->p[i].width*frame->p[i].height, sizeof(uchar));
+	}
+
+	for(j=0; j < 4; j++){
+		for(i=0; i < 4; i++){
+			frame->pic[i][j].width  = w>>(j+1);
+			frame->pic[i][j].height = h>>(j+1);
+			frame->pic[i][j].pic = (uchar *)calloc(frame->pic[i][j].width*frame->pic[i][j].height, sizeof(uchar));
+		}
+	}
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
 		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
@@ -292,8 +305,31 @@ void frame_segmetation(GOP *gop, uint32 fr)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
+	uint32 i, j, ncors=0, beg, diff, k;
 	Image *im = &gop->frames[fr].img[0];
+	Frame *frm = &gop->frames[fr];
 	if(gop->color == BAYER){
+		utils_bayer_to_4color(im->img, im->width, im->height,
+				frm->p[0].pic, frm->p[1].pic, frm->p[2].pic, frm->p[3].pic);
+		for(i=0; i < 4; i++) filter_median(frm->p[i].pic, frm->pic[i][0].pic, frm->p[i].width, frm->p[i].height);
+
+		for(j=1; j < 4; j++){
+			for(i=0; i < 4; i++){
+				utils_resize_2x(frm->pic[i][j-1].pic, frm->pic[i][j].pic, frm->pic[i][j-1].width, frm->pic[i][j-1].height);
+			}
+		}
+		//j=0;{
+		for(j=0; j < 4; j++){
+			//i=0;{
+			for(i=0; i < 4; i++){
+				beg = ncors;
+				seg_coners(frm->pic[i][j].pic, gop->cor, frm->pic[i][j].width, frm->pic[i][j].height, 10, &ncors, i);
+				diff = ncors - beg;
+				for(k=beg; k < ncors; k++)  frm->pic[i][j].pic[gop->cor[k].yx] = 255;
+				printf("i = %d j = %d ncors = %d Corners = %d\n",i, j, ncors, diff);
+			}
+		}
+		printf("Corners = %d\n",ncors);
 	}
 }
 

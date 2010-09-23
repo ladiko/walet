@@ -4,6 +4,8 @@
 
 typedef struct{
 	Image 	img[3];	//Pointer to image
+	Picture p[4];
+	Picture pic[4][4]; 	// Scaled image for each color
 	uint32 	size;	//The number of pixels.
 	imgtype *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame
@@ -37,6 +39,8 @@ void 	frame_decompress	(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
 void 	frame_white_balance		(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma);
 uint32 	frame_median_filter		(GOP *gop, uint32 fr);
 uint32 	frame_subband_median_filter	(GOP *gop, uint32 fr);
+
+void 	frame_segmetation	(GOP *gop, uint32 fr);
 
 #ifdef __cplusplus
 }

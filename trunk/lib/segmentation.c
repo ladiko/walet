@@ -639,22 +639,25 @@ void seg_color_quant(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 qua
 void seg_coners(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors, uint32 color)
 {
 	uint32 c, x, y, yx, h1 = h*w-w, w1 = w-1, i=0, d, diff=0;
-	*ncors = 0;
+	//*ncors = 0;
 	for(y=w; y < h1; y+=w){
 		for(x=1; x < w1; x++){
-			c = 0;
-			if(d = abs(img[yx] - img[yx-w-1])	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx-w]	) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx-w+1]) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx-1]	) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx+1]	) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx+w-1]) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx+w]	) 	> theresh) { c++; diff+=d; }
-			if(d = abs(img[yx] - img[yx+w+1]) 	> theresh) { c++; diff+=d; }
-			if(c > 3) {
-				cor[(*ncors)++].yx = yx;
-				cor[(*ncors)++].diff = diff;
-				cor[(*ncors)++].c[color] = img[yx];
+			yx = y + x;
+			c = 0; diff=0;
+			d = abs(img[yx] - img[yx-w-1]); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx-w]	 ); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx-w+1]); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx-1]	 ); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx+1]	 ); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx+w-1]); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx+w]	 ); if(d > theresh) { c++; diff+=d; }
+			d = abs(img[yx] - img[yx+w+1]); if(d > theresh) { c++; diff+=d; }
+			if(c >= 4 && c <= 7) {
+				cor[*ncors].yx = yx;
+				cor[*ncors].diff = diff;
+				cor[*ncors].c[color] = img[yx];
+				(*ncors)++;
+				//img[yx] = 255;
 			}
 		}
 	}

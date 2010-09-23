@@ -32,8 +32,9 @@ typedef char       			int8;
 typedef unsigned int       	uint32;
 typedef unsigned short int 	uint16;
 typedef unsigned long long 	uint64;
-typedef short int           int16;
-typedef short int			imgtype;
+//typedef short int           int16;
+//typedef short int			imgtype;
+typedef uchar			imgtype;
 #endif
 
 typedef enum {
@@ -199,6 +200,12 @@ struct Corner {
 	uint32 		diff;		//The different from neighborhood pixeles
 	Region		*reg;		//Pointer to the region
 };
+
+typedef struct {
+	uint16 width;
+	uint16 height;
+	uchar *pic;
+} Picture;
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
