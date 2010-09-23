@@ -248,11 +248,11 @@ uchar* utils_ppm_to_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	return img1;
 }
 
-uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uchar **p, uint32 w, uint32 h)
+void utils_bayer_to_4color(uchar *img, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3)
 {
 	uint32 i = 0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
 	//uchar *p[4];
-	p[0] = img1; p[1] = &img1[h1>>2]; p[2] = &img1[h1>>1]; p[3] = &img1[(h1>>2)*3];
+	//p[0] = img1; p[1] = &img1[h1>>2]; p[2] = &img1[h1>>1]; p[3] = &img1[(h1>>2)*3];
 
 	for(y=0; y < h1; y+=w1) {
 		for(x=0; x < w; x+=2){
@@ -261,60 +261,87 @@ uchar* utils_bayer_to_4color(uchar *img, uchar *img1, uchar **p, uint32 w, uint3
 			//img1[yx+1] = 255;
 			//img1[yx+w] = 255;
 			//img1[yx+w+1] = 255;
-			p[0][i] = img[yx];
-			p[1][i] = img[yx+1];
-			p[2][i] = img[yx+w];
-			p[3][i] = img[yx+w+1];
+			p0[i] = img[yx];
+			p1[i] = img[yx+1];
+			p2[i] = img[yx+w];
+			p3[i] = img[yx+w+1];
 			i++;
 		}
 	}
-	return img1;
 }
 
-uchar* utils_4color_draw(uchar *img, uchar *rgb, uchar **p, uint32 w, uint32 h)
+uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3)
 {
 	uint32 i=0, j=0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
 	//uchar *p[4];
-	p[0] = img; p[1] = &img[h1>>2]; p[2] = &img[h1>>1]; p[3] = &img[(h1>>2)*3];
+	//p[0] = img; p[1] = &img[h1>>2]; p[2] = &img[h1>>1]; p[3] = &img[(h1>>2)*3];
 
 
 	for(y=0; y < (h1>>1); y+=w) {
 		for(x=0; x < (w>>1); x++){
 			yx = y+x;
-			rgb[yx*3]     = p[0][i];
-			rgb[yx*3 + 1] = p[0][i];
-			rgb[yx*3 + 2] = p[0][i]; i++;
+			rgb[yx*3]     = p0[i];
+			rgb[yx*3 + 1] = p0[i];
+			rgb[yx*3 + 2] = p0[i]; i++;
 		}
 		for(x=w>>1; x < w; x++){
 			yx = y+x;
-			rgb[yx*3]     = p[1][j];
-			rgb[yx*3 + 1] = p[1][j];
-			rgb[yx*3 + 2] = p[1][j]; j++;
+			rgb[yx*3]     = p1[j];
+			rgb[yx*3 + 1] = p1[j];
+			rgb[yx*3 + 2] = p1[j]; j++;
 		}
 	}
 	i=0, j=0;
 	for(y=(h1>>1); y < h1; y+=w) {
 		for(x=0; x < (w>>1); x++){
 			yx = y+x;
-			rgb[yx*3]     = p[2][i];
-			rgb[yx*3 + 1] = p[2][i];
-			rgb[yx*3 + 2] = p[2][i]; i++;
+			rgb[yx*3]     = p2[i];
+			rgb[yx*3 + 1] = p2[i];
+			rgb[yx*3 + 2] = p2[i]; i++;
 		}
 		for(x=w>>1; x < w; x++){
 			yx = y+x;
-			rgb[yx*3]     = p[3][j];
-			rgb[yx*3 + 1] = p[3][j];
-			rgb[yx*3 + 2] = p[3][j]; j++;
+			rgb[yx*3]     = p3[j];
+			rgb[yx*3 + 1] = p3[j];
+			rgb[yx*3 + 2] = p3[j]; j++;
 		}
 	}
 	return rgb;
 }
 
+uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Picture *p1,  Picture *p2,  Picture *p3)
+{
+	uint32 i=0, sx, sy;
+	drawrect(rgb, p0[0].pic, 0			, 0 							, p0[0].width, p0[0].height, w, 0);
+	drawrect(rgb, p0[1].pic, p0[0].width, 0 							, p0[1].width, p0[1].height, w, 0);
+	drawrect(rgb, p0[2].pic, p0[0].width, p0[1].height				 	, p0[2].width, p0[2].height, w, 0);
+	drawrect(rgb, p0[3].pic, p0[0].width, p0[1].height+p0[2].height 	, p0[3].width, p0[3].height, w, 0);
+
+	sx = p0[0].width + p0[1].width;
+	drawrect(rgb, p1[0].pic, sx			, 0 							, p1[0].width, p1[0].height, w, 0);
+	drawrect(rgb, p1[1].pic, p1[0].width+sx, 0 							, p1[1].width, p1[1].height, w, 0);
+	drawrect(rgb, p1[2].pic, p1[0].width+sx, p1[1].height				, p1[2].width, p1[2].height, w, 0);
+	drawrect(rgb, p1[3].pic, p1[0].width+sx, p1[1].height+p1[2].height 	, p1[3].width, p1[3].height, w, 0);
+
+	sy = p0[0].height;
+	drawrect(rgb, p1[0].pic, 0			, sy 							, p1[0].width, p1[0].height, w, 0);
+	drawrect(rgb, p1[1].pic, p1[0].width, sy 							, p1[1].width, p1[1].height, w, 0);
+	drawrect(rgb, p1[2].pic, p1[0].width, p1[1].height+sy				, p1[2].width, p1[2].height, w, 0);
+	drawrect(rgb, p1[3].pic, p1[0].width, p1[1].height+p1[2].height+sy 	, p1[3].width, p1[3].height, w, 0);
+
+	drawrect(rgb, p1[0].pic, sx			, sy 							, p1[0].width, p1[0].height, w, 0);
+	drawrect(rgb, p1[1].pic, p1[0].width+sx, sy 							, p1[1].width, p1[1].height, w, 0);
+	drawrect(rgb, p1[2].pic, p1[0].width+sx, p1[1].height+sy				, p1[2].width, p1[2].height, w, 0);
+	drawrect(rgb, p1[3].pic, p1[0].width+sx, p1[1].height+p1[2].height+sy 	, p1[3].width, p1[3].height, w, 0);
+
+	return rgb;
+}
+
 void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
-	uint32 x, y, yx, h1 = h*w, w2 = w<<1, i=0;
+	uint32 x, y, yx, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), i=0;
 	for(y=0; y < h1; y+=w2){
-		for(x=0; x < w; x+=2){
+		for(x=0; x < w1; x+=2){
 			yx = y + x;
 			img1[i++] = (img[yx] + img[yx+1] + img[yx+w] + img[yx+w+1])>>2;
 		}
