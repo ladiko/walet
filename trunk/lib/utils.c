@@ -170,6 +170,54 @@ uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid
 	return rgb;
 }
 
+uchar* utils_draw_bayer(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
+/*! \fn void bayer_to_rgb(uchar *rgb)
+	\brief DWT picture transform.
+  	\param	rgb 	The pointer to rgb array.
+*/
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	uint32 y, x, yx, yw, yx3, i, sq = w*h - w, w1 = w-1;
+	switch(bay){
+		case BGGR :
+			for(yw=w, y=1; yw < sq; y++, yw+=w){
+				for(x=1; x < w1; x++){
+					yx = yw + x;
+					yx3 = yx*3;
+					rgb[yx3  ] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+								 (!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+					rgb[yx3+1] = ((y&1 && !(x&1)) || (!(y&1) && x&1)) ? (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2 : img[yx];
+					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+								 (x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+				}
+			}
+		//case GRBG :
+		//case GBRG :
+		case RGGB :
+			for(yw=w, y=1; yw < sq; y++, yw+=w){
+				for(x=1; x < w1; x++){
+					yx = yw + x;
+					yx3 = yx*3;
+					rgb[yx3  ] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+					(x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+					rgb[yx3+1] = ((y&1 && !(x&1)) || (!(y&1) && x&1)) ? (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2 : img[yx];
+					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+					(!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+				}
+			}
+	}
+	return rgb;
+}
+
 uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
@@ -344,6 +392,21 @@ void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 		for(x=0; x < w1; x+=2){
 			yx = y + x;
 			img1[i++] = (img[yx] + img[yx+1] + img[yx+w] + img[yx+w+1])>>2;
+		}
+	}
+}
+
+void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, yx1, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
+	for(y=0; y < h1; y+=w2){
+		for(x=0; x < w1; x+=2){
+			yx = y + x;
+			yx1 = yx>>1;
+			img1[yx1] 		= (img[yx] 		+ img[yx+2] 	+ img[yx+w2] 		+ img[yx+w2+2])>>2;
+			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+3] 	+ img[yx+w2+1] 		+ img[yx+w2+3])>>2;
+			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+2+w] 	+ img[yx+w2+w] 		+ img[yx+w2+2+w])>>2;
+			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+3+w]	+ img[yx+w2+w+1]	+ img[yx+w2+3+w])>>2;
 		}
 	}
 }

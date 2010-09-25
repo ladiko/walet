@@ -59,6 +59,57 @@ void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
+void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	// s[0]  s[1]  s[2]
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	//|     | yx  |     |
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	uint32 y, x, yx, i, w2 = w<<1, sq = w*h - w2, w1 = w-2;
+	uchar s0[3][3], s1[3][3], s2[3][3], s3[3][3];
+	for(y=w2; y < sq; y+=w2){
+		x = 2; i = 2;
+		yx = y + x;
+		s0[0][0] = img[yx-2-w2]; s0[0][1] = img[yx-2]; s0[0][2] = img[yx-2+w2];
+		s0[1][0] = img[yx-2   ]; s0[1][1] = img[yx  ]; s0[1][2] = img[yx+2  ];
+		sort_3(s0[0]); sort_3(s0[1]);
+		s1[0][0] = img[yx-1-w2]; s1[0][1] = img[yx-1]; s1[0][2] = img[yx-1+w2];
+		s1[1][0] = img[yx-1   ]; s1[1][1] = img[yx+1]; s1[1][2] = img[yx+3   ];
+		sort_3(s1[0]); sort_3(s1[1]);
+		s2[0][0] = img[yx-2-w]; s2[0][1] = img[yx-2+w]; s2[0][2] = img[yx-2+w2+w];
+		s2[1][0] = img[yx-2+w]; s2[1][1] = img[yx+w  ]; s2[1][2] = img[yx+2+w   ];
+		sort_3(s2[0]); sort_3(s2[1]);
+		s3[0][0] = img[yx-1-w]; s3[0][1] = img[yx-1+w]; s3[0][2] = img[yx-1+w2+w];
+		s3[1][0] = img[yx-1+w]; s3[1][1] = img[yx+w+1]; s3[1][2] = img[yx+3+w   ];
+		sort_3(s3[0]); sort_3(s3[1]);
+		for(; x < w1; x++){
+			yx = y + x;
+			s0[i][0] = img[yx+2-w2]; s0[i][1] = img[yx+2]; 		s0[i][2] = img[yx+2+w2]; 	sort_3(s0[i]);
+			s1[i][0] = img[yx+3-w2]; s1[i][1] = img[yx+3]; 		s1[i][2] = img[yx+3+w2]; 	sort_3(s1[i]);
+			s2[i][0] = img[yx+2-w ]; s2[i][1] = img[yx+2+w]; 	s2[i][2] = img[yx+2+w2+w]; 	sort_3(s2[i]);
+			s3[i][0] = img[yx+3-w ]; s3[i][1] = img[yx+3+w]; 	s3[i][2] = img[yx+3+w2+w]; 	sort_3(s3[i]);
+
+			img1[yx] 		= median_3(	max_3   (s0[0][0], s0[1][0], s0[2][0]),
+										median_3(s0[0][1], s0[1][1], s0[2][1]),
+										min_3   (s0[0][2], s0[1][2], s0[2][2]));
+			img1[yx+1] 		= median_3(	max_3   (s1[0][0], s1[1][0], s1[2][0]),
+										median_3(s1[0][1], s1[1][1], s1[2][1]),
+										min_3   (s1[0][2], s1[1][2], s1[2][2]));
+			img1[yx+w] 		= median_3(	max_3   (s2[0][0], s2[1][0], s2[2][0]),
+										median_3(s2[0][1], s2[1][1], s2[2][1]),
+										min_3   (s2[0][2], s2[1][2], s2[2][2]));
+			img1[yx+w+1]	= median_3(	max_3   (s3[0][0], s3[1][0], s3[2][0]),
+										median_3(s3[0][1], s3[1][1], s3[2][1]),
+										min_3   (s3[0][2], s3[1][2], s3[2][2]));
+			i = (i == 2) ? 0 : i+1;
+		}
+	}
+}
+
 static inline int median_fast(imgtype *s, uint32 thresh)
 ///	\fn static inline int median_filter_3x3(imgtype *s)
 ///	\brief The not optimal algorithm finding median element.

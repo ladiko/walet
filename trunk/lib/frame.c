@@ -323,7 +323,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 			//i=0;{
 			for(i=0; i < 4; i++){
 				beg = ncors;
-				seg_coners(frm->pic[i][j].pic, gop->cor, frm->pic[i][j].width, frm->pic[i][j].height, 10, &ncors, i);
+				seg_coners(frm->pic[i][j].pic, gop->cor, frm->pic[i][j].width, frm->pic[i][j].height, 20, &ncors, i);
 				diff = ncors - beg;
 				for(k=beg; k < ncors; k++)  frm->pic[i][j].pic[gop->cor[k].yx] = 255;
 				printf("i = %d j = %d ncors = %d Corners = %d\n",i, j, ncors, diff);

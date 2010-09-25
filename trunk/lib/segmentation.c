@@ -662,3 +662,59 @@ void seg_coners(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uin
 		}
 	}
 }
+
+static inline uint32 check_color_3x3_1(uchar *img, uint32 yx, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32 c=0, d;
+	*diff = 0;
+	d = abs(img[yx] - img[yx-w-1]); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx-w]	 ); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx-w+1]); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx-1]	 ); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx+1]	 ); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx+w-1]); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx+w]	 ); diff+=d; if(d > theresh) c++;
+	d = abs(img[yx] - img[yx+w+1]); diff+=d; if(d > theresh) c++;
+	//*diff = (*diff)>>3;
+	return c;
+}
+
+static inline uint32 check_color_3x3(uchar *img, uint32 yx, uint32 yx1, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32 c=0, d;
+	*diff = 0;
+	d = abs(img[yx] 	- img[yx1]); 		diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+1] 	- img[yx1+1]); 		diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+w] 	- img[yx1+w]); 		diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+1+w] - img[yx1+1+w]);	diff+=d; if(d > theresh) c++;
+	//*diff = (*diff)>>3;
+	return c;
+}
+
+void seg_coners_bayer(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors, uint32 color)
+{
+	uint32 c, x, y, yx, w2 = w<<1, h1 = h*w-w2, w1 = w-2, i=0, d, diff;
+	//*ncors = 0;
+	for(y=w2; y < h1; y+=w2){
+		for(x=2; x < w1; x++){
+			yx = y + x;
+			c  = check_color_3x3(img, yx, yx-w2-2, 	w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx-w2,   	w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx-w2+2, 	w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx-2,		w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx+2,		w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx+w2-2,	w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx+w2,	w, theresh, &diff);
+			c += check_color_3x3(img, yx, yx+w2+2,	w, theresh, &diff);
+			diff = diff>>4;
+			if(c >= 4 && c <= 7) {
+				cor[*ncors].yx = yx;
+				cor[*ncors].diff = diff;
+				cor[*ncors].c[color] = img[yx];
+				(*ncors)++;
+				//img[yx] = 255;
+			}
+		}
+	}
+}
+
