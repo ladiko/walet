@@ -207,9 +207,43 @@ uchar* utils_draw_bayer(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid
 				for(x=1; x < w1; x++){
 					yx = yw + x;
 					yx3 = yx*3;
-					rgb[yx3  ] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+					rgb[yx3  ] = (!(x&1) && !(y&1)) ? img[yx] : ((x&1 && y&1) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
 					(x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
-					rgb[yx3+1] = ((y&1 && !(x&1)) || (!(y&1) && x&1)) ? (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2 : img[yx];
+					rgb[yx3+1] = ((!(x&1) && y&1) || ( x&1 && !(y&1))) ? img[yx] : (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2;
+					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+					(!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+				}
+			}
+	}
+	return rgb;
+}
+
+uchar* utils_draw_scale_color(uchar *rgb, imgtype *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay)
+/*! \fn void bayer_to_rgb(uchar *rgb)
+	\brief DWT picture transform.
+  	\param	rgb 	The pointer to rgb array.
+*/
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	uint32 y, x, yx, yw, yx3, i, sq = w*h - w, w1 = w-1, h1 = h-1;
+	switch(bay){
+		case RGGB :
+			for(y=1; y < h1; y++){
+				for(x=1; x < w1; x++){
+					yx = y*w+x;
+					yx3 = ((y+h0)*wp + x + w0)*3;
+					rgb[yx3  ] = (!(x&1) && !(y&1)) ? img[yx] : ((x&1 && y&1) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
+					(x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+					rgb[yx3+1] = ((!(x&1) && y&1) || ( x&1 && !(y&1))) ? img[yx] : (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2;
 					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
 					(!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
 				}
@@ -385,6 +419,28 @@ uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Pic
 	return rgb;
 }
 
+uchar* utils_bayer_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+{
+	uint32 i=0, sx, sy;
+	drawrect(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 0);
+	drawrect(rgb, p[1].pic, p[0].width, 0 							, p[1].width, p[1].height, w, 0);
+	drawrect(rgb, p[2].pic, p[0].width, p[1].height				 	, p[2].width, p[2].height, w, 0);
+	drawrect(rgb, p[3].pic, p[0].width, p[1].height+p[2].height 	, p[3].width, p[3].height, w, 0);
+
+	return rgb;
+}
+
+uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+{
+
+	utils_draw_scale_color(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 3);
+	utils_draw_scale_color(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w, 3);
+	utils_draw_scale_color(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w, 3);
+	utils_draw_scale_color(rgb, p[3].pic, p[0].width, p[1].height+p[2].height 	, p[3].width, p[3].height, w, 3);
+
+	return rgb;
+}
+
 void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), i=0;
@@ -398,15 +454,16 @@ void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 
 void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
-	uint32 x, y, yx, yx1, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
+	uint32 x, y, yx, yx1, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
-		for(x=0; x < w1; x+=2){
+		for(x=0; x < w1; x+=4){
 			yx = y + x;
-			yx1 = yx>>1;
+			yx1 = (y>>2) + (x>>1);
 			img1[yx1] 		= (img[yx] 		+ img[yx+2] 	+ img[yx+w2] 		+ img[yx+w2+2])>>2;
 			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+3] 	+ img[yx+w2+1] 		+ img[yx+w2+3])>>2;
 			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+2+w] 	+ img[yx+w2+w] 		+ img[yx+w2+2+w])>>2;
 			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+3+w]	+ img[yx+w2+w+1]	+ img[yx+w2+3+w])>>2;
+			//if(yx1 >= wn*(h>>1)) printf(" ind = %d\n", yx1);
 		}
 	}
 }

@@ -75,18 +75,18 @@ void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 		x = 2; i = 2;
 		yx = y + x;
 		s0[0][0] = img[yx-2-w2]; s0[0][1] = img[yx-2]; s0[0][2] = img[yx-2+w2];
-		s0[1][0] = img[yx-2   ]; s0[1][1] = img[yx  ]; s0[1][2] = img[yx+2  ];
+		s0[1][0] = img[yx-w2  ]; s0[1][1] = img[yx  ]; s0[1][2] = img[yx+w2  ];
 		sort_3(s0[0]); sort_3(s0[1]);
 		s1[0][0] = img[yx-1-w2]; s1[0][1] = img[yx-1]; s1[0][2] = img[yx-1+w2];
-		s1[1][0] = img[yx-1   ]; s1[1][1] = img[yx+1]; s1[1][2] = img[yx+3   ];
+		s1[1][0] = img[yx+1-w2]; s1[1][1] = img[yx+1]; s1[1][2] = img[yx+1+w2];
 		sort_3(s1[0]); sort_3(s1[1]);
 		s2[0][0] = img[yx-2-w]; s2[0][1] = img[yx-2+w]; s2[0][2] = img[yx-2+w2+w];
-		s2[1][0] = img[yx-2+w]; s2[1][1] = img[yx+w  ]; s2[1][2] = img[yx+2+w   ];
+		s2[1][0] = img[yx-w  ]; s2[1][1] = img[yx+w  ]; s2[1][2] = img[yx+w2+w  ];
 		sort_3(s2[0]); sort_3(s2[1]);
 		s3[0][0] = img[yx-1-w]; s3[0][1] = img[yx-1+w]; s3[0][2] = img[yx-1+w2+w];
-		s3[1][0] = img[yx-1+w]; s3[1][1] = img[yx+w+1]; s3[1][2] = img[yx+3+w   ];
+		s3[1][0] = img[yx+1-w]; s3[1][1] = img[yx+1+w]; s3[1][2] = img[yx+1+w2+w];
 		sort_3(s3[0]); sort_3(s3[1]);
-		for(; x < w1; x++){
+		for(; x < w1; x+=2){
 			yx = y + x;
 			s0[i][0] = img[yx+2-w2]; s0[i][1] = img[yx+2]; 		s0[i][2] = img[yx+2+w2]; 	sort_3(s0[i]);
 			s1[i][0] = img[yx+3-w2]; s1[i][1] = img[yx+3]; 		s1[i][2] = img[yx+3+w2]; 	sort_3(s1[i]);

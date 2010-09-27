@@ -21,6 +21,13 @@ void frames_init(GOP *gop, uint32 fr)
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
+	for(j=0; j < 4; j++){
+		frame->pic[j].width  = w>>j;
+		frame->pic[j].height = h>>j;
+		frame->pic[j].pic = (uchar *)calloc(frame->pic[j].width*frame->pic[j].height, sizeof(uchar));
+
+	}
+	/*
 	for(i=0; i < 4; i++){
 		frame->p[i].width  = w>>1;
 		frame->p[i].height = h>>1;
@@ -33,7 +40,7 @@ void frames_init(GOP *gop, uint32 fr)
 			frame->pic[i][j].height = h>>(j+1);
 			frame->pic[i][j].pic = (uchar *)calloc(frame->pic[i][j].width*frame->pic[i][j].height, sizeof(uchar));
 		}
-	}
+	}*/
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
 		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
@@ -305,10 +312,27 @@ void frame_segmetation(GOP *gop, uint32 fr)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	uint32 i, j, ncors=0, beg, diff, k;
+	uint32 j, ncors=0, beg, diff, k, sq = gop->width*gop->height;
 	Image *im = &gop->frames[fr].img[0];
 	Frame *frm = &gop->frames[fr];
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
+
+
 	if(gop->color == BAYER){
+		//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		//filter_median_bayer(im->img, frm->pic[0].pic, frm->pic[0].width, frm->pic[0].height);
+		//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		//printf("Median filter time      = %f\n", (double)(end-start)/1000000.);
+		//for(j=0; j < sq; j++) frm->pic[0].pic[j] = im->img[j];
+		gop->frames[fr].pic[0].pic = gop->frames[fr].img[0].img;
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		for(j=1; j < 4; j++) utils_resize_bayer_2x(frm->pic[j-1].pic, frm->pic[j].pic, frm->pic[j-1].width, frm->pic[j-1].height);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Resize filter time      = %f\n", (double)(end-start)/1000000.);
+
+		/*
 		utils_bayer_to_4color(im->img, im->width, im->height,
 				frm->p[0].pic, frm->p[1].pic, frm->p[2].pic, frm->p[3].pic);
 		for(i=0; i < 4; i++) filter_median(frm->p[i].pic, frm->pic[i][0].pic, frm->p[i].width, frm->p[i].height);
@@ -328,7 +352,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 				for(k=beg; k < ncors; k++)  frm->pic[i][j].pic[gop->cor[k].yx] = 255;
 				printf("i = %d j = %d ncors = %d Corners = %d\n",i, j, ncors, diff);
 			}
-		}
+		}*/
 		printf("Corners = %d\n",ncors);
 	}
 }
