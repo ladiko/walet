@@ -21,6 +21,13 @@ void frames_init(GOP *gop, uint32 fr)
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
+
+	frame->rgb[0].width  = w>>1;
+	frame->rgb[0].height = h>>1;
+	frame->rgb[0].pic = (uchar *)calloc(frame->rgb[0].width*frame->rgb[0].height*3, sizeof(uchar));
+	frame->rgb[1].width  = w>>2;
+	frame->rgb[1].height = h>>2;
+	frame->rgb[1].pic = (uchar *)calloc(frame->rgb[1].width*frame->rgb[1].height*3, sizeof(uchar));
 	for(j=0; j < 4; j++){
 		frame->pic[j].width  = w>>j;
 		frame->pic[j].height = h>>j;
@@ -321,16 +328,12 @@ void frame_segmetation(GOP *gop, uint32 fr)
 
 
 	if(gop->color == BAYER){
-		//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		//filter_median_bayer(im->img, frm->pic[0].pic, frm->pic[0].width, frm->pic[0].height);
-		//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		//printf("Median filter time      = %f\n", (double)(end-start)/1000000.);
-		//for(j=0; j < sq; j++) frm->pic[0].pic[j] = im->img[j];
-		gop->frames[fr].pic[0].pic = gop->frames[fr].img[0].img;
+
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		for(j=1; j < 4; j++) utils_resize_bayer_2x(frm->pic[j-1].pic, frm->pic[j].pic, frm->pic[j-1].width, frm->pic[j-1].height);
+		seg_coners_rgb(frm->rgb[0].pic, gop->cor, frm->rgb[0].width, frm->rgb[0].height, 4, &ncors);
+		//for(j=0; j < 4; j++) seg_coners_bayer(frm->pic[j].pic, gop->cor, frm->pic[j].width, frm->pic[j].height, 5, &ncors);
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Resize filter time      = %f\n", (double)(end-start)/1000000.);
+		printf("Corner finding time      = %f\n", (double)(end-start)/1000000.);
 
 		/*
 		utils_bayer_to_4color(im->img, im->width, im->height,

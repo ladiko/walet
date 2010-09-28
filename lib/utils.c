@@ -468,6 +468,36 @@ void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
+void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, h1 = ((h>>1)<<1)*w*3, w2 = (w<<1)*3, w1 = ((w>>1)<<1)*3, i=0;
+	for(y=0; y < h1; y+=w2){
+		for(x=0; x < w1; x+=6){
+			yx = y + x;
+			img1[i++] = img[yx];
+			img1[i++] =	img[yx+1];
+			img1[i++] =	img[yx+2];
+		}
+	}
+}
+
+void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, yx3, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
+	for(y=0; y < h1; y+=w2){
+		for(x=0; x < w1; x+=2){
+			yx = y + x;
+			yx3 = ((y>>2) + (x>>1))*3;
+			rgb[yx3] 	= img[yx];
+			rgb[yx3+1] 	= (img[yx+1] 	+ img[yx+w])>>1;
+			rgb[yx3+2] 	= img[yx+w+1];
+		}
+	}
+
+}
+
+
+
 
 
 imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)

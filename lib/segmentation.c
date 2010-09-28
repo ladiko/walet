@@ -410,7 +410,7 @@ void seg_regions_draw(imgtype *img, Region *reg, uint32 nregs, uint32 w)
 
 void seg_corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w)
 {
-	uint32 i, w2 = w<<1;
+	uint32 i;
 	for(i=0; i < ncors; i++) {
 		//img[cor[i].yx] 		= cor[i].c[0];
 		//img[cor[i].yx+1] 	= cor[i].c[1];
@@ -682,21 +682,23 @@ static inline uint32 check_color_3x3_1(uchar *img, uint32 yx, uint32 w, uint32 t
 static inline uint32 check_color_3x3(uchar *img, uint32 yx, uint32 yx1, uint32 w, uint32 theresh, uint32 *diff)
 {
 	uint32 c=0, d;
-	*diff = 0;
-	d = abs(img[yx] 	- img[yx1]); 		diff+=d; if(d > theresh) c++;
-	d = abs(img[yx+1] 	- img[yx1+1]); 		diff+=d; if(d > theresh) c++;
-	d = abs(img[yx+w] 	- img[yx1+w]); 		diff+=d; if(d > theresh) c++;
-	d = abs(img[yx+1+w] - img[yx1+1+w]);	diff+=d; if(d > theresh) c++;
+	//*diff = 0;
+	d = abs(img[yx] 	- img[yx1]); 		*diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+1] 	- img[yx1+1]); 		*diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+w] 	- img[yx1+w]); 		*diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+1+w] - img[yx1+1+w]);	*diff+=d; if(d > theresh) c++;
+	//printf("diff = %d\n", *diff);
 	//*diff = (*diff)>>3;
-	return c;
+	return c > 2 ? 1 : 0;
 }
 
-void seg_coners_bayer(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors, uint32 color)
+void seg_coners_bayer(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors)
 {
-	uint32 c, x, y, yx, w2 = w<<1, h1 = h*w-w2, w1 = w-2, i=0, d, diff;
-	//*ncors = 0;
+	uint32 c, x, y, yx, w2 = w<<1, h1 = h*w-w2, w1 = w-2, i=0, d, diff, tmp;
+	tmp = *ncors;
 	for(y=w2; y < h1; y+=w2){
-		for(x=2; x < w1; x++){
+		for(x=2; x < w1; x+=2){
+			diff = 0;
 			yx = y + x;
 			c  = check_color_3x3(img, yx, yx-w2-2, 	w, theresh, &diff);
 			c += check_color_3x3(img, yx, yx-w2,   	w, theresh, &diff);
@@ -706,15 +708,79 @@ void seg_coners_bayer(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theres
 			c += check_color_3x3(img, yx, yx+w2-2,	w, theresh, &diff);
 			c += check_color_3x3(img, yx, yx+w2,	w, theresh, &diff);
 			c += check_color_3x3(img, yx, yx+w2+2,	w, theresh, &diff);
-			diff = diff>>4;
-			if(c >= 4 && c <= 7) {
+			diff = diff>>5;
+			//printf("diff = %d ", diff);
+			if(c == 5) {
+			//if((c == 5 || c == 4)) {
+			//if(diff > 15) {
 				cor[*ncors].yx = yx;
 				cor[*ncors].diff = diff;
-				cor[*ncors].c[color] = img[yx];
+				cor[*ncors].c[0] = img[yx];
+				cor[*ncors].c[1] = img[yx+1];
+				cor[*ncors].c[2] = img[yx+w];
+				cor[*ncors].c[3] = img[yx+1+w];
 				(*ncors)++;
 				//img[yx] = 255;
 			}
 		}
 	}
+	seg_corners_draw(img, &cor[tmp], *ncors - tmp, w);
 }
 
+
+static inline uint32 check_color(uchar *img, uint32 yx, uint32 yx1, uint32 w, uint32 theresh, uint32 *diff)
+{
+	uint32 c=0, d;
+	//*diff = 0;
+	d = abs(img[yx] 	- img[yx1]); 		*diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+1] 	- img[yx1+1]); 		*diff+=d; if(d > theresh) c++;
+	d = abs(img[yx+2] 	- img[yx1+2]); 		*diff+=d; if(d > theresh) c++;
+	//printf("diff = %d\n", *diff);
+	//*diff = (*diff)>>3;
+	return c > 2 ? 1 : 0;
+}
+
+static void corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w)
+{
+	uint32 i;
+	for(i=0; i < ncors; i++) {
+		img[cor[i].yx] 		= 255;
+		img[cor[i].yx+1] 	= 255;
+		img[cor[i].yx+2] 	= 255;
+	}
+}
+
+
+void seg_coners_rgb(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors)
+{
+	uint32 c, x, y, yx, diff, w3 = w*3, sq = h*w3-w3, w31 = w3-3;
+	for(y=w3; y < sq; y+=w3){
+		for(x=3; x < w31; x+=3){
+			//if(yx > sq) printf("yx = %d ", yx);
+			diff = 0;
+			yx = y + x;
+			c  = check_color(img, yx, yx-w3-3, 	w, theresh, &diff);
+			c += check_color(img, yx, yx-w3,   	w, theresh, &diff);
+			c += check_color(img, yx, yx-w3+3, 	w, theresh, &diff);
+			c += check_color(img, yx, yx-3,		w, theresh, &diff);
+			c += check_color(img, yx, yx+3,		w, theresh, &diff);
+			c += check_color(img, yx, yx+w-3,	w, theresh, &diff);
+			c += check_color(img, yx, yx+w3,	w, theresh, &diff);
+			c += check_color(img, yx, yx+w3+3,	w, theresh, &diff);
+			diff = diff>>5;
+			//printf("diff = %d ", diff);
+			if(c == 5) {
+			//if((c == 5 || c == 4)) {
+			//if(diff > 15) {
+				cor[*ncors].yx = yx;
+				cor[*ncors].diff = diff;
+				cor[*ncors].c[0] = img[yx];
+				cor[*ncors].c[1] = img[yx+1];
+				cor[*ncors].c[2] = img[yx+2];
+				(*ncors)++;
+				//img[yx] = 255;
+			}
+		}
+	}
+	corners_draw(img, cor, *ncors, w);
+}

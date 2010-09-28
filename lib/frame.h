@@ -4,7 +4,7 @@
 
 typedef struct{
 	Image 	img[3];	//Pointer to image
-	//Picture p[4];
+	Picture rgb[2];
 	//Picture pic[4][4]; 	// Scaled image for each color
 	Picture pic[4]; 	// Scaled image for each color
 	uint32 	size;	//The number of pixels.
