@@ -150,8 +150,6 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		frame_segmetation(gw->gop, fn);
-
 		//utils_bayer_to_4color(GST_BUFFER_DATA(buffer), (uchar*)gw->gop->frames[1].img[0].img, p, gw->gop->width, gw->gop->height);
 		/*
 		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
@@ -172,15 +170,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 		*/
 
-		w = (gw->gop->frames[0].pic[0].width  + gw->gop->frames[0].pic[1].width);
-		h = gw->gop->frames[0].pic[0].height;
-		new_buffer (gw->orig[2], w, h);
-		utils_bayer_scale_draw(gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, gw->gop->frames[0].pic);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
+		//w = (gw->gop->frames[0].pic[0].width  + gw->gop->frames[0].pic[1].width);
+		//h = gw->gop->frames[0].pic[0].height;
+		//new_buffer (gw->orig[2], w, h);
+		//utils_bayer_scale_draw(gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, gw->gop->frames[0].pic);
+		//gtk_widget_queue_draw(gw->drawingarea[2]);
 
-		new_buffer (gw->orig[3], w, h);
-		utils_color_scale_draw(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, gw->gop->frames[0].pic);
-		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 		/*
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;

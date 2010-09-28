@@ -27,6 +27,8 @@ void seg_objects(Object *obj, Region *reg,  Region **preg, uint32 nregs, uint32 
 void seg_corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w);
 
 void seg_color_quant(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 quant);
+void seg_coners_bayer(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors);
+void seg_coners_rgb(uchar *img, Corner *cor, uint32 w, uint32 h, uint32 theresh, uint32 *ncors);
 
 #ifdef __cplusplus
 }
