@@ -12,7 +12,7 @@ uchar* 		utils_bayer_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 widt
 uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 width);
 uchar* 		utils_draw				(uchar *img, uchar *rgb, uint32 w, uint32 h);
 imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
-imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+//imgtype* 	utils_bayer_to_Y		(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 uchar* 		utils_ppm_to_bayer		(uchar *img, uchar *img1, uint32 w, uint32 h);
 //uchar*		utils_bayer_to_4color	(uchar *img, uchar *img1, uchar **p, uint32 w, uint32 h);
 void 		utils_bayer_to_4color	(uchar *img, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3);
@@ -26,6 +26,8 @@ uchar* utils_bayer_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
 uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
 void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h);
 void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h);
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
+void util_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h);
 
 imgtype* 	utils_bayer_to_gradient	(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh);
 imgtype* 	utils_watershed			(imgtype *img, imgtype *img1, uint32 w, uint32 h);

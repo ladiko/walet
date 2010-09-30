@@ -22,32 +22,17 @@ void frames_init(GOP *gop, uint32 fr)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
 
-	frame->rgb[0].width  = w>>1;
-	frame->rgb[0].height = h>>1;
-	frame->rgb[0].pic = (uchar *)calloc(frame->rgb[0].width*frame->rgb[0].height*3, sizeof(uchar));
-	frame->rgb[1].width  = w>>2;
-	frame->rgb[1].height = h>>2;
-	frame->rgb[1].pic = (uchar *)calloc(frame->rgb[1].width*frame->rgb[1].height*3, sizeof(uchar));
 	for(j=0; j < 4; j++){
-		frame->pic[j].width  = w>>j;
-		frame->pic[j].height = h>>j;
-		frame->pic[j].pic = (uchar *)calloc(frame->pic[j].width*frame->pic[j].height, sizeof(uchar));
-
-	}
-	/*
-	for(i=0; i < 4; i++){
-		frame->p[i].width  = w>>1;
-		frame->p[i].height = h>>1;
-		frame->p[i].pic = (uchar *)calloc(frame->p[i].width*frame->p[i].height, sizeof(uchar));
+		frame->rgb[j].width  = w>>(j+1);
+		frame->rgb[j].height = h>>(j+1);
+		frame->rgb[j].pic = (uchar *)calloc(frame->rgb[j].width*frame->rgb[j].height*3, sizeof(uchar));
 	}
 
-	for(j=0; j < 4; j++){
-		for(i=0; i < 4; i++){
-			frame->pic[i][j].width  = w>>(j+1);
-			frame->pic[i][j].height = h>>(j+1);
-			frame->pic[i][j].pic = (uchar *)calloc(frame->pic[i][j].width*frame->pic[i][j].height, sizeof(uchar));
-		}
-	}*/
+	for(j=0; j < 2; j++){
+		frame->y[j].width  = w>>1;
+		frame->y[j].height = h>>1;
+		frame->y[j].pic = (uchar *)calloc(frame->y[j].width*frame->y[j].height, sizeof(uchar));
+	}
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
 		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
@@ -328,35 +313,23 @@ void frame_segmetation(GOP *gop, uint32 fr)
 
 
 	if(gop->color == BAYER){
-
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		seg_coners_rgb(frm->rgb[0].pic, gop->cor, frm->rgb[0].width, frm->rgb[0].height, 4, &ncors);
-		//for(j=0; j < 4; j++) seg_coners_bayer(frm->pic[j].pic, gop->cor, frm->pic[j].width, frm->pic[j].height, 5, &ncors);
+		util_bayer_to_rgb(im->img, frm->rgb[0].pic, gop->width, gop->height);
+		for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic,frm->rgb[j-1].width, frm->rgb[j-1].height);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Resize time time      = %f\n", (double)(end-start)/1000000.);
+		/*
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		for(j=0; j < 4; j++) {
+			ncors=0;
+			seg_coners_rgb(frm->rgb[j].pic, gop->cor, frm->rgb[j].width, frm->rgb[j].height, 4, &ncors);
+			printf("%d corners = %d\n", j, ncors);
+		}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Corner finding time      = %f\n", (double)(end-start)/1000000.);
 
-		/*
-		utils_bayer_to_4color(im->img, im->width, im->height,
-				frm->p[0].pic, frm->p[1].pic, frm->p[2].pic, frm->p[3].pic);
-		for(i=0; i < 4; i++) filter_median(frm->p[i].pic, frm->pic[i][0].pic, frm->p[i].width, frm->p[i].height);
-
-		for(j=1; j < 4; j++){
-			for(i=0; i < 4; i++){
-				utils_resize_2x(frm->pic[i][j-1].pic, frm->pic[i][j].pic, frm->pic[i][j-1].width, frm->pic[i][j-1].height);
-			}
-		}
-		//j=0;{
-		for(j=0; j < 4; j++){
-			//i=0;{
-			for(i=0; i < 4; i++){
-				beg = ncors;
-				seg_coners(frm->pic[i][j].pic, gop->cor, frm->pic[i][j].width, frm->pic[i][j].height, 20, &ncors, i);
-				diff = ncors - beg;
-				for(k=beg; k < ncors; k++)  frm->pic[i][j].pic[gop->cor[k].yx] = 255;
-				printf("i = %d j = %d ncors = %d Corners = %d\n",i, j, ncors, diff);
-			}
-		}*/
 		printf("Corners = %d\n",ncors);
+		*/
 	}
 }
 
