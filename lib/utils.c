@@ -295,14 +295,14 @@ imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 bits)
 	return img1;
 }
 
-imgtype* utils_bayer_to_Y(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+imgtype* utils_bayer_to_Y1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
 	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
 		for(x=0; x < w1; x++){
 			xwy = x + yw;
-			wy = (x + yw1);
+			wy = x + yw1;
 			//xwy3 = wy + wy + wy;
 			img1[wy] = 	(img[xwy ] + img[xwy+1] + img[xwy+w] + img[xwy+w+1])>>2;
 		}
@@ -441,6 +441,30 @@ uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 
+static inline void drawrect_rgb(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
+{
+	uint32 x, y, tmp;
+	for(y=0; y < h; y++ ){
+		for(x=0; x < w; x++){
+			rgb[3*((y+h0)*w1+w0+x)  ] = im[3*(y*w+x)  ];
+			rgb[3*((y+h0)*w1+w0+x)+1] = im[3*(y*w+x)+1];
+			rgb[3*((y+h0)*w1+w0+x)+2] = im[3*(y*w+x)+2];
+		}
+	}
+}
+
+
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+{
+
+	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].width, p[0].height, w);
+	drawrect_rgb(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w);
+	drawrect_rgb(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w);
+	drawrect_rgb(rgb, p[3].pic, p[0].width, p[1].height+p[2].height , p[3].width, p[3].height, w);
+
+	return rgb;
+}
+
 void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), i=0;
@@ -493,7 +517,18 @@ void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
 			rgb[yx3+2] 	= img[yx+w+1];
 		}
 	}
+}
 
+void util_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
+{
+	uint32 x, x1, y, y1, yx, yx1, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), w3 = w>>1;
+	for(y=0, y1=0; y < h1; y+=w2, y1+=w3){
+		for(x=0, x1=0; x < w1; x+=2, x1++){
+			yx = y + x;
+			yx1 = y1 + x1;
+			img1[yx1] 	= (img[yx] + img[yx+1] + img[yx+w] + img[yx+w+1])>>2;
+		}
+	}
 }
 
 

@@ -406,10 +406,43 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 {
+	uint32 h, w;
+	imgtype *pic, *pic1;
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
 	if(gw->gop == NULL ) return;
-	printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
-	printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
-	printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
+
+	w = gw->gop->frames[0].y[0].width;
+	h = gw->gop->frames[0].y[0].height;
+	pic  = gw->gop->frames[0].y[0].pic;
+	pic1 = gw->gop->frames[0].y[1].pic;
+
+	//util_bayer_to_Y(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height);
+	util_bayer_to_Y(gw->gop->frames[0].img[0].img, pic, gw->gop->width, gw->gop->height);
+
+	new_buffer (gw->orig[2], w, h);
+	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
+	utils_grey_draw(pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	//filter_median(gw->gop->buf, pic, w, h);
+	seg_morph_gradient(pic, pic1, w, h);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Gradient time      = %f\n", (double)(end-start)/1000000.);
+
+
+	//filter_median(pic1, gw->gop->buf, w, h);
+	new_buffer (gw->orig[3], w, h);
+	utils_grey_draw(pic1, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
+	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
+	//printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
+	//printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
 }
 
 void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -417,7 +450,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	GstStateChangeReturn ret;
 	GstState state;
 	uchar *buf;
-	uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs, nrows, npregs, nobjs, ncors, fn=0, w, h;
+	uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs, nrows, npregs, nobjs, ncors, fn=0, w, h, sn;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
@@ -427,14 +460,6 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//uint32 *arg = &gw->gop->seg[sz];
 
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
-
-
-	gw->gop->frames[fn].pic[0].pic = gw->gop->frames[fn].img[0].img;
-	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	for(j=1; j < 4; j++) utils_resize_bayer_2x(frm->pic[j-1].pic, frm->pic[j].pic, frm->pic[j-1].width, frm->pic[j-1].height);
-	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Resize filter time      = %f\n", (double)(end-start)/1000000.);
-
 
 	/*
 	seg_regions(gw->gop->frames[0].img[0].img, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
@@ -448,7 +473,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 	*/
-
+	/*
 	util_bayer_to_rgb(gw->gop->frames[0].img[0].img, gw->gop->frames[0].rgb[0].pic, gw->gop->width, gw->gop->height);
 
 	new_buffer (gw->orig[2], gw->gop->frames[0].rgb[0].width, gw->gop->frames[0].rgb[0].height);
@@ -460,6 +485,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[3], gw->gop->frames[0].rgb[1].width, gw->gop->frames[0].rgb[1].height);
 	utils_draw(gw->gop->frames[0].rgb[1].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb),gw->gop->frames[0].rgb[1].width, gw->gop->frames[0].rgb[1].height);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
+	*/
 	// Corner  draw
 	/*
 	w = (gw->gop->frames[fn].pic[0].width  + gw->gop->frames[fn].pic[1].width);
@@ -471,6 +497,35 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	*/
 	// Regions segmentation
 	frame_segmetation(gw->gop, fn);
+	w = (gw->gop->frames[fn].rgb[0].width  + gw->gop->frames[fn].rgb[1].width);
+	h = gw->gop->frames[fn].rgb[0].height;
+
+	new_buffer (gw->orig[2], w, h);
+	utils_rgb_scale_draw(gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, gw->gop->frames[0].rgb);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
+
+	sn = 1;
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	seg_regions(gw->gop->frames[0].rgb[sn].pic, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
+			gw->gop->frames[0].rgb[sn].width,  gw->gop->frames[0].rgb[sn].height, 8, 100, &nrows, &nregs, &npregs, &ncors);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Segmentation time time      = %f\n", (double)(end-start)/1000000.);
+
+	seg_coners_rgb(gw->gop->frames[0].rgb[sn].pic, gw->gop->cor, gw->gop->frames[0].rgb[sn].width, gw->gop->frames[0].rgb[sn].height, 10, &ncors);
+	printf("Corners  = %d\n", ncors);
+
+	//for(i=0; i< gw->gop->frames[0].rgb[0].width*gw->gop->frames[0].rgb[0].height; i++) gw->gop->buf[i] = 0;
+	seg_regions_draw(gw->gop->buf, gw->gop->region, nregs);
+	corners_draw(gw->gop->buf, gw->gop->cor, ncors, gw->gop->frames[0].rgb[sn].width);
+
+	//new_buffer (gw->orig[3], gw->gop->frames[0].rgb[0].width, gw->gop->frames[0].rgb[0].height);
+	//utils_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb),gw->gop->frames[0].rgb[0].width, gw->gop->frames[0].rgb[0].height);
+	//gtk_widget_queue_draw(gw->drawingarea[3]);
+
+	new_buffer (gw->orig[3], gw->gop->frames[0].rgb[sn].width, gw->gop->frames[0].rgb[sn].height);
+	utils_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb),gw->gop->frames[0].rgb[sn].width, gw->gop->frames[0].rgb[sn].height);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+
 
 	//new_buffer (gw->orig[3], gw->gop->width>>1, gw->gop->height>>1);
 	//utils_draw(gw->gop->frames[0].rgb[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb),gw->gop->width>>1, gw->gop->height>>1);
@@ -494,9 +549,9 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 	*/
-	printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
-	printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
-	printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
+	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
+	//printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
+	//printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width*gw->gop->height, 1));
 
 }
 
