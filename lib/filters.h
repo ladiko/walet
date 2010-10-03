@@ -17,6 +17,7 @@ void filters_edge_detector			(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 
 void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h);
 void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h);
+void filter_average(uchar *img, uchar *img1, uint32 w, uint32 h, uint32 thresh);
 
 
 #ifdef __cplusplus

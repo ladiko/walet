@@ -110,6 +110,27 @@ void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
+static inline uchar filter(uchar *img, uint32 yx, uint32 w, uint32 thresh)
+{
+	uint32 sum;
+	sum = 	(img[yx-w-1] + img[yx-w  ] + img[yx-w+1] +
+			 img[yx-1  ] + img[yx    ] + img[yx+1  ] +
+			 img[yx+w-1] + img[yx+w  ] + img[yx+w+1])>>3;
+	return sum > thresh ? sum : 0;
+}
+
+void filter_average(uchar *img, uchar *img1, uint32 w, uint32 h, uint32 thresh)
+{
+	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			img1[yx] = filter(img, yx, w, thresh);
+		}
+	}
+}
+
+
 static inline int median_fast(imgtype *s, uint32 thresh)
 ///	\fn static inline int median_filter_3x3(imgtype *s)
 ///	\brief The not optimal algorithm finding median element.
