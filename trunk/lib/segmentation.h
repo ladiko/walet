@@ -18,7 +18,9 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-void seg_regions(imgtype *img, Region *reg, Row *row, Corner *cor, Row **prow, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 corth,
+void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **prow, Region **preg, uint32 w, uint32 h, uint32 theresh, uint32 corth,
+		uint32 *nrows, uint32 *nregs, uint32 *npreg, uint32 *ncors);
+void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor, Row **pro, Region **preg, uchar *dir, uint32 w, uint32 h, uint32 theresh, uint32 corth,
 		uint32 *nrows, uint32 *nregs, uint32 *npreg, uint32 *ncors);
 void seg_regions_draw(imgtype *img, Region *reg, uint32 nregs);
 void seg_objects_draw(imgtype *img, Object *obj, uint32 nobjs, uint32 w);
