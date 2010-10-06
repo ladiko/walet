@@ -804,7 +804,7 @@ static inline void set_dir(imgtype *img, uchar *dir, uint32 x, uint32 y, uint32 
 	uint32 yx, min, w1 = w-1, h1 = h1-1;
 	yx = y*w + x;
 	if(!img[yx]) { *dir = 0; return; }
-	min = img[yx]; *dir = 0;
+	min = img[yx]; *dir = 1;
 	if(x) 		if(img[yx-1] < min) { min = img[yx-1]; *dir = 1; }
 	if(y) 		if(img[yx-w] < min) { min = img[yx-w]; *dir = 2; }
 	if(x != w1) if(img[yx+1] < min) { min = img[yx+1]; *dir = 3; }
@@ -813,14 +813,14 @@ static inline void set_dir(imgtype *img, uchar *dir, uint32 x, uint32 y, uint32 
 
 static inline uint32 check_left(uchar dir1, uchar dir2)
 {
-	if(!dir2 || !dir1) return 1;
+	if(!dir2 && !dir1) return 1;
 	if((dir1 == 1 && dir2 == 3) || (dir1 == 2 && dir2 == 4) || (dir1 == 4 && dir2 == 2)) return 0;
 	else return 1;
 }
 
 static inline uint32 check_top(uchar dir1, uchar dir2)
 {
-	if(!dir2 || !dir1) return 1;
+	if(!dir2 && !dir1) return 1;
 	if((dir1 == 2 && dir2 == 4) || (dir1 == 1 && dir2 == 3) || (dir1 == 3 && dir2 == 1)) return 0;
 	else return 1;
 }
@@ -1264,16 +1264,45 @@ static inline uint32 maxd_3x3(imgtype *img, uint32 yx, uint32 w)
 	return max;
 }
 
-void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 thresh)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, dif;
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
 			yx = y + x;
-			dif = img[yx] - min_3x3(img, yx, w);
-			//dif = max_3x3(img, yx, w) - min_3x3(img, yx, w);
+			//dif = img[yx] - min_3x3(img, yx, w);
+			dif = max_3x3(img, yx, w) - min_3x3(img, yx, w);
 			//dif = maxd_3x3(img, yx, w);
-			img1[yx] = dif > 0 ? dif : 0;
+			img1[yx] = dif > thresh ? dif : 0;
 		}
 	}
 }
+
+void seg_fall_for(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
+	for(x=0; x<sq; x++) img1[x] = img[x];
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(!img[yx]) img1[yx] = 0;
+			else {
+				//img1[yx] = 255;
+				min = img[yx]; dir = 0;
+				if(x) 		if(img[yx-1] < min) { min = img[yx-1]; dir = 1; }
+				if(y) 		if(img[yx-w] < min) { min = img[yx-w]; dir = 2; }
+				if(x != w1) if(img[yx+1] < min) { min = img[yx+1]; dir = 3; }
+				if(y != h1) if(img[yx+w] < min) { dir = 4; }
+				switch(dir){
+					case 0 : { img1[yx  ] = 0; break; }
+					case 1 : { img1[yx-1] = 0; break; }
+					case 2 : { img1[yx-w] = 0; break; }
+					case 3 : { img1[yx+1] = 0; break; }
+					case 4 : { img1[yx+w] = 0; break; }
+				}
+			}
+		}
+	}
+}
+
+
