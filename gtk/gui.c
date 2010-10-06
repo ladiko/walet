@@ -406,7 +406,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	uint32 h, w;
+	uint32 h, w, x, y;
 	imgtype *pic, *pic1;
 	clock_t start, end;
 	double time=0., tmp;
@@ -428,8 +428,8 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	filter_median(gw->gop->buf, pic, w, h);
-	//seg_morph_gradient(pic, pic1, w, h);
-	seg_morph_gradient(pic, gw->gop->buf, w, h);
+	//seg_morph_gradient(pic, pic1, w, h, 5);
+	seg_morph_gradient(pic, gw->gop->buf, w, h, 0);
 	filter_average(gw->gop->buf, pic1,  w, h, 3);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Gradient time      = %f\n", (double)(end-start)/1000000.);
@@ -441,7 +441,18 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 
+	for(y=0; y<100; y++){
+		for(x=0; x<60; x++){
+			printf("%2d ", pic1[y*w+x]);
+		}
+		printf("\n");
+	}
 	//filter_average(pic1, gw->gop->buf, w, h, 3);
+	seg_fall_for(pic1, gw->gop->buf, w, h);
+	new_buffer (gw->orig[3], w, h);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
 
 	//new_buffer (gw->orig[3], w, h);
 	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
