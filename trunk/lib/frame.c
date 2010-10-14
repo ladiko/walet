@@ -21,18 +21,31 @@ void frames_init(GOP *gop, uint32 fr)
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
-
+	//RGB scale images
 	for(j=0; j < 4; j++){
 		frame->rgb[j].width  = w>>(j+1);
 		frame->rgb[j].height = h>>(j+1);
 		frame->rgb[j].pic = (uchar *)calloc(frame->rgb[j].width*frame->rgb[j].height*3, sizeof(uchar));
 	}
-
-	for(j=0; j < 2; j++){
-		frame->y[j].width  = w>>1;
-		frame->y[j].height = h>>1;
-		frame->y[j].pic = (uchar *)calloc(frame->y[j].width*frame->y[j].height, sizeof(uchar));
+	//Y component scale images
+	for(j=0; j < 4; j++){
+		frame->Y[j].width  = w>>(j+1);
+		frame->Y[j].height = h>>(j+1);
+		frame->Y[j].pic = (uchar *)calloc(frame->Y[j].width*frame->Y[j].height, sizeof(uchar));
 	}
+	//Gradient of  scaled images
+	for(j=0; j < 4; j++){
+		frame->grad[j].width  = w>>(j+1);
+		frame->grad[j].height = h>>(j+1);
+		frame->grad[j].pic = (uchar *)calloc(frame->grad[j].width*frame->grad[j].height, sizeof(uchar));
+	}
+	//Contours of scaled images
+	for(j=0; j < 4; j++){
+		frame->con[j].width  = w>>(j+1);
+		frame->con[j].height = h>>(j+1);
+		frame->con[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
+	}
+
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
 		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
@@ -315,21 +328,21 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 		util_bayer_to_rgb(im->img, frm->rgb[0].pic, gop->width, gop->height);
-		for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic,frm->rgb[j-1].width, frm->rgb[j-1].height);
-		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Resize time time      = %f\n", (double)(end-start)/1000000.);
-		/*
-		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		for(j=0; j < 4; j++) {
-			ncors=0;
-			seg_coners_rgb(frm->rgb[j].pic, gop->cor, frm->rgb[j].width, frm->rgb[j].height, 4, &ncors);
-			printf("%d corners = %d\n", j, ncors);
-		}
-		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Corner finding time      = %f\n", (double)(end-start)/1000000.);
+		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
+		util_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
+		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
+		//Scaling images
+		for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
+		for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
 
-		printf("Corners = %d\n",ncors);
-		*/
+		//for(j=0; j < 4; j++) seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 0);
+		for(j=0; j < 4; j++) {
+			seg_morph_gradient(frm->Y[j].pic, gop->buf, frm->Y[j].width, frm->Y[j].height, 0);
+			filter_average(gop->buf, frm->grad[j].pic,  frm->grad[j].width, frm->grad[j].height, 3);
+		}
+		for(j=0; j < 4; j++) seg_fall_forest(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Contour time      = %f\n", (double)(end-start)/1000000.);
 	}
 }
 

@@ -48,6 +48,18 @@ static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint3
 	}
 }
 
+static inline void drawrect_rgb(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
+{
+	uint32 x, y, tmp;
+	for(y=0; y < h; y++ ){
+		for(x=0; x < w; x++){
+			rgb[3*((y+h0)*w1+w0+x)  ] = im[3*(y*w+x)  ];
+			rgb[3*((y+h0)*w1+w0+x)+1] = im[3*(y*w+x)+1];
+			rgb[3*((y+h0)*w1+w0+x)+2] = im[3*(y*w+x)+2];
+		}
+	}
+}
+
 uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps)
 //For vizualisation only
 {
@@ -269,8 +281,8 @@ uchar* utils_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
 	int j, dim = h*w*3;
 	for(j= 0; j < dim; j+=3){
 		rgb[j]     = img[j];
-		rgb[j + 1] = img[j+1];
-		rgb[j + 2] = img[j+2];
+		rgb[j+1] = img[j+1];
+		rgb[j+2] = img[j+2];
 		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
 	}
 	return rgb;
@@ -419,13 +431,24 @@ uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Pic
 	return rgb;
 }
 
-uchar* utils_bayer_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 {
 	uint32 i=0, sx, sy;
 	drawrect(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 0);
 	drawrect(rgb, p[1].pic, p[0].width, 0 							, p[1].width, p[1].height, w, 0);
 	drawrect(rgb, p[2].pic, p[0].width, p[1].height				 	, p[2].width, p[2].height, w, 0);
 	drawrect(rgb, p[3].pic, p[0].width, p[1].height+p[2].height 	, p[3].width, p[3].height, w, 0);
+
+	return rgb;
+}
+
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+{
+
+	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].width, p[0].height, w);
+	drawrect_rgb(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w);
+	drawrect_rgb(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w);
+	drawrect_rgb(rgb, p[3].pic, p[0].width, p[1].height+p[2].height , p[3].width, p[3].height, w);
 
 	return rgb;
 }
@@ -441,29 +464,6 @@ uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 
-static inline void drawrect_rgb(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
-{
-	uint32 x, y, tmp;
-	for(y=0; y < h; y++ ){
-		for(x=0; x < w; x++){
-			rgb[3*((y+h0)*w1+w0+x)  ] = im[3*(y*w+x)  ];
-			rgb[3*((y+h0)*w1+w0+x)+1] = im[3*(y*w+x)+1];
-			rgb[3*((y+h0)*w1+w0+x)+2] = im[3*(y*w+x)+2];
-		}
-	}
-}
-
-
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
-{
-
-	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].width, p[0].height, w);
-	drawrect_rgb(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w);
-	drawrect_rgb(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w);
-	drawrect_rgb(rgb, p[3].pic, p[0].width, p[1].height+p[2].height , p[3].width, p[3].height, w);
-
-	return rgb;
-}
 
 void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 {

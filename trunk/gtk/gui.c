@@ -391,7 +391,6 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-
 	if(gw->gop == NULL ) return;
 	if(frame_median_filter(gw->gop, gw->gop->cur_gop_frame)){
 
@@ -406,58 +405,45 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	uint32 h, w, x, y;
+	uint32 h, w, x, y, fn = 0;
 	imgtype *pic, *pic1;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
 	if(gw->gop == NULL ) return;
 
-	w = gw->gop->frames[0].y[0].width;
-	h = gw->gop->frames[0].y[0].height;
-	pic  = gw->gop->frames[0].y[0].pic;
-	pic1 = gw->gop->frames[0].y[1].pic;
+	//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	frame_segmetation(gw->gop, fn);
+	//filter_average(gw->gop->buf, pic1,  w, h, 3);
+	//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	//printf("Gradient time      = %f\n", (double)(end-start)/1000000.);
 
-	util_bayer_to_Y(gw->gop->frames[0].img[0].img, gw->gop->buf, gw->gop->width, gw->gop->height);
-	//util_bayer_to_Y(gw->gop->frames[0].img[0].img, pic, gw->gop->width, gw->gop->height);
+	w = (gw->gop->frames[fn].rgb[0].width  + gw->gop->frames[fn].rgb[1].width);
+	h = gw->gop->frames[fn].rgb[0].height;
 
-	//new_buffer (gw->orig[2], w, h);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
-	//utils_grey_draw(pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
-	//gtk_widget_queue_draw(gw->drawingarea[2]);
+	new_buffer (gw->orig[0], w, h);
+	utils_rgb_scale_draw(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h, gw->gop->frames[0].rgb);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	filter_median(gw->gop->buf, pic, w, h);
-	//seg_morph_gradient(pic, pic1, w, h, 5);
-	seg_morph_gradient(pic, gw->gop->buf, w, h, 0);
-	filter_average(gw->gop->buf, pic1,  w, h, 3);
-	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Gradient time      = %f\n", (double)(end-start)/1000000.);
+	new_buffer (gw->orig[1], w, h);
+	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, gw->gop->frames[0].Y);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
 
-
-	//filter_median(pic1, gw->gop->buf, w, h);
 	new_buffer (gw->orig[2], w, h);
-	utils_grey_draw(pic1, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, gw->gop->frames[0].grad);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 
-	for(y=0; y<100; y++){
-		for(x=0; x<60; x++){
-			printf("%2d ", pic1[y*w+x]);
-		}
-		printf("\n");
-	}
-	//filter_average(pic1, gw->gop->buf, w, h, 3);
-	seg_fall_for(pic1, gw->gop->buf, w, h);
 	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, gw->gop->frames[0].con);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
-	//new_buffer (gw->orig[3], w, h);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	//utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	//gtk_widget_queue_draw(gw->drawingarea[3]);
+	//for(y=0; y<100; y++){
+	//	for(x=0; x<60; x++){
+	//		printf("%2d ", pic1[y*w+x]);
+	//	}
+	//	printf("\n");
+	//}
+	//filter_average(pic1, gw->gop->buf, w, h, 3);
 
 
 	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
@@ -478,12 +464,6 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	Frame *frm = &gw->gop->frames[fn];
 	imgtype *pic, *pic1;
 
-	w = gw->gop->frames[0].y[0].width;
-	h = gw->gop->frames[0].y[0].height;
-	pic  = gw->gop->frames[0].y[0].pic;
-	pic1 = gw->gop->frames[0].y[1].pic;
-
-
 	//uint32 *arg = &gw->gop->seg[sz];
 
 	//for(i=0; i< sz; i++) gw->gop->buf[i] = gw->gop->frames[0].img[0].img[i];
@@ -500,6 +480,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_bayer_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 	*/
+
 	/*
 	util_bayer_to_rgb(gw->gop->frames[0].img[0].img, gw->gop->frames[0].rgb[0].pic, gw->gop->width, gw->gop->height);
 
