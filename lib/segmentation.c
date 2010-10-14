@@ -1278,10 +1278,11 @@ void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 
 	}
 }
 
-void seg_fall_for(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
-	for(x=0; x<sq; x++) img1[x] = img[x];
+	//for(x=0; x<sq; x++) img1[x] = img[x];
+	for(x=0; x < sq; x++) img1[x] = 255;
 	for(y=0; y < h; y++){
 		for(x=0; x < w; x++){
 			yx = y*w + x;
@@ -1304,5 +1305,3 @@ void seg_fall_for(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 		}
 	}
 }
-
-
