@@ -317,7 +317,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	uint32 j, ncors=0, beg, diff, k, sq = gop->width*gop->height;
+	uint32 j, i, ncors=0, beg, diff, k, sq = gop->width*gop->height;
 	Image *im = &gop->frames[fr].img[0];
 	Frame *frm = &gop->frames[fr];
 	clock_t start, end;
@@ -337,10 +337,17 @@ void frame_segmetation(GOP *gop, uint32 fr)
 
 		//for(j=0; j < 4; j++) seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 0);
 		for(j=0; j < 4; j++) {
-			seg_morph_gradient(frm->Y[j].pic, gop->buf, frm->Y[j].width, frm->Y[j].height, 0);
-			filter_average(gop->buf, frm->grad[j].pic,  frm->grad[j].width, frm->grad[j].height, 3);
+			seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 3);
+
+			//seg_morph_gradient(frm->Y[j].pic, gop->buf, frm->Y[j].width, frm->Y[j].height, 0);
+			//filter_average(gop->buf, frm->grad[j].pic,  frm->grad[j].width, frm->grad[j].height, 0);
 		}
-		for(j=0; j < 4; j++) seg_fall_forest(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
+		//for(j=0; j < 4; j++) seg_fall_forest(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
+		//for(j=0; j < 4; j++) seg_remove_pix(frm->con[j].pic, frm->grad[j].pic, frm->grad[j].width, frm->grad[j].height);
+		for(j=0; j < 4; j++) {
+			seg_remove_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
+			for(i=0; i< frm->Y[j].width*frm->Y[j].height; i++) if(frm->con[j].pic[i]) frm->grad[j].pic[i] = frm->con[j].pic[i];
+		}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Contour time      = %f\n", (double)(end-start)/1000000.);
 	}
@@ -351,7 +358,7 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 ///	\brief	Write frame in file.
 ///	\param	gop			The pointer to the GOP structure.
 ///	\param	fr			The frame number.
-//	\param	filename	The file name.
+///	\param	filename	The file name.
 ///	\retval				The size of file.
 {
     //FILE *wl;
