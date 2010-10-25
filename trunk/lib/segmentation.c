@@ -1264,6 +1264,20 @@ static inline uint32 maxd_3x3(imgtype *img, uint32 yx, uint32 w)
 	return max;
 }
 
+static inline uint32 diff(imgtype *img, uint32 yx, uint32 w)
+{
+	uint32 dif=0;
+	dif += abs(img[yx-w-1] - img[yx]);
+	dif += abs(img[yx-w  ] - img[yx]);
+	dif += abs(img[yx-w+1] - img[yx]);
+	dif += abs(img[yx-1  ] - img[yx]);
+	dif += abs(img[yx+1  ] - img[yx]);
+	dif += abs(img[yx+w-1] - img[yx]);
+	dif += abs(img[yx+w  ] - img[yx]);
+	dif += abs(img[yx+w+1] - img[yx]);
+	return dif>>3;
+}
+
 void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 thresh)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, dif;
@@ -1271,8 +1285,8 @@ void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 
 		for(x=1; x < w1; x++){
 			yx = y + x;
 			//dif = img[yx] - min_3x3(img, yx, w);
-			dif = max_3x3(img, yx, w) - min_3x3(img, yx, w);
-			//dif = maxd_3x3(img, yx, w);
+			//dif = max_3x3(img, yx, w) - min_3x3(img, yx, w);
+			dif = diff(img, yx, w);
 			img1[yx] = dif > thresh ? dif : 0;
 		}
 	}
@@ -1301,6 +1315,85 @@ void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 					case 3 : { img1[yx+1] = 0; break; }
 					case 4 : { img1[yx+w] = 0; break; }
 				}
+			}
+		}
+	}
+}
+
+void seg_remove_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
+	//for(x=0; x < sq; x++) img1[x] = 0;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(img[yx]) {
+				max = img[yx];
+				if(	img[yx-w-1] < max &&
+					img[yx-w  ] < max &&
+					img[yx-w+1] < max &&
+					img[yx-1  ] < max &&
+					img[yx+1  ] < max &&
+					img[yx+w-1] < max &&
+					img[yx+w  ] < max &&
+					img[yx+w+1] < max) img1[yx] = 255;
+			}
+		}
+	}
+}
+
+void seg_remove_pix1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
+	for(x=0; x < sq; x++) img1[x] = 0;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(img[yx]) {
+				max = 0;
+				if(img[yx-w-1]) max++;
+				if(img[yx-w  ]) max++;
+				if(img[yx-w+1]) max++;
+				if(img[yx-1  ]) max++;
+				if(img[yx+1  ]) max++;
+				if(img[yx+w-1]) max++;
+				if(img[yx+w  ]) max++;
+				if(img[yx+w+1]) max++;
+
+				if(max > 2) img1[yx] = 255;
+			}
+		}
+	}
+}
+
+void seg_remove_pix2(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
+	for(x=0; x < sq; x++) img1[x] = 0;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(img[yx]){
+				if(img[yx-w] && img[yx+w]) {
+					if		(img[yx-w-1] && img[yx-1] && img[yx+w-1]) img1[yx] = 255;
+					else if	(img[yx-w+1] && img[yx+1] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx-w-1] && img[yx-1] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx-w-1] && img[yx+1] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx-w+1] && img[yx-1] && img[yx+w-1]) img1[yx] = 255;
+					else if	(img[yx-w+1] && img[yx+1] && img[yx+w-1]) img1[yx] = 255;
+				}
+				else if(img[yx-1] && img[yx+1]) {
+					if		(img[yx-w-1] && img[yx-w] && img[yx-w+1]) img1[yx] = 255;
+					else if	(img[yx+w-1] && img[yx+w] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx-w-1] && img[yx-w] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx-w-1] && img[yx+w] && img[yx+w+1]) img1[yx] = 255;
+					else if	(img[yx+w-1] && img[yx-w] && img[yx-w+1]) img1[yx] = 255;
+					else if	(img[yx+w-1] && img[yx+w] && img[yx-w+1]) img1[yx] = 255;
+				}
+				else if(img[yx-1] && img[yx-w] && img[yx-w-1]) img1[yx] = 255;
+				else if(img[yx+1] && img[yx-w] && img[yx-w+1]) img1[yx] = 255;
+				else if(img[yx+1] && img[yx+w] && img[yx+w+1]) img1[yx] = 255;
+				else if(img[yx-1] && img[yx+w] && img[yx+w-1]) img1[yx] = 255;
 			}
 		}
 	}
