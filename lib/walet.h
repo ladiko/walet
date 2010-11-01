@@ -161,7 +161,7 @@ struct Object{
 	uint32		ac[4];		//The average colors
 	uint32 		nregs;		//Number of regions in the object
 	uint32 		regc;		//Number of regions in the object
-	uint32		npixs;		//The numbers of pixels in the region
+	uint32		npixs;		//The numbers of pixels in the object
 	Region		**reg;		//Pointer to the regions included in object
 };
 
@@ -173,7 +173,7 @@ struct Region{
 	uint32 		nrows;		//The numbers of rows in the region
 	uint32		npixs;		//The numbers of pixels in the region
 	uint32		rowc;		//The rows counter
-	uint32		nneis;		//The numbers neighborhood regions
+	uint32		nneis;		//The numbers of neighborhood regions
 	uint32		neic;		//The counter of neighborhood regions
 	Row			**row;		//The pointer to the rows array
 	Region		**reg;		//The pointer to the  neighborhood regions array
