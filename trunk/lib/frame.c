@@ -347,6 +347,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		for(j=0; j < 4; j++) {
 			seg_remove_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
 			for(i=0; i< frm->Y[j].width*frm->Y[j].height; i++) if(frm->con[j].pic[i]) frm->grad[j].pic[i] = frm->con[j].pic[i];
+			//seg_connect_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
 		}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Contour time      = %f\n", (double)(end-start)/1000000.);

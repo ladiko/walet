@@ -36,6 +36,7 @@ void corners_draw(imgtype *img, Corner *cor, uint32 ncors, uint32 w);
 void seg_morph_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 thresh);
 void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 void seg_remove_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void seg_connect_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 
 #ifdef __cplusplus
 }
