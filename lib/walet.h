@@ -187,10 +187,13 @@ struct Row {
 	uint32 		yx;			//The start point
 	//uint16		x;			//The start row on axis X
 	//uint32 		y;			//The start point
-	//uchar 		c[4];		//The colors
+	uchar 		c[3];		//The colors
 	//uint32		ac[4];		//The average colors
 	uint16 		length;		//The length of row
 	Region		*reg;		//Pointer to the region
+	Row			**rown;		//The pointer to the  neighborhood row array
+	uint32 		nrown;		//Number of neighborhood rows
+	uint32 		rownc;		//Counter of neighborhood rows
 };
 
 struct Corner {

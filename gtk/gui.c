@@ -515,8 +515,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	w = gw->gop->frames[fn].rgb[sn].width;
 	h = gw->gop->frames[fn].rgb[sn].height;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	seg_regions_rgb(gw->gop->frames[0].rgb[sn].pic, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
-			w,  h, 8, 100, &nrows, &nregs, &npregs, &ncors);
+	//seg_regions_rgb(gw->gop->frames[0].rgb[sn].pic, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
+	//		w,  h, 8, 100, &nrows, &nregs, &npregs, &ncors);
 	//seg_regions(gw->gop->frames[fn].rgb[0].pic, pic1, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg, gw->gop->buf,
 	//		w, h, 8, 100, &nrows, &nregs, &npregs, &ncors);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
@@ -524,12 +524,12 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	for(i=0; i < w*h*3; i++) gw->gop->buf[i] = 0;
 
-	seg_regions_draw(gw->gop->buf, gw->gop->region, nregs);
+	//seg_regions_draw(gw->gop->buf, gw->gop->region, nregs);
 	new_buffer (gw->orig[2], w, h);
 	utils_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 
-	seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg, nregs, &nobjs, 32);
+	//seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg, nregs, &nobjs, 32);
 
 	//new_buffer (gw->orig[3], gw->gop->width>>1, gw->gop->height>>1);
 	//utils_draw(gw->gop->frames[0].rgb[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb),gw->gop->width>>1, gw->gop->height>>1);

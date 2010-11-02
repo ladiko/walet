@@ -377,7 +377,6 @@ void seg_regions(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro, Re
 	}
 }
 
-
 static inline void region_draw(imgtype *img, Region *reg, uchar *c, uint32 w)
 {
 	uint32 rowc, yx;
@@ -817,7 +816,7 @@ static inline void set_dir(imgtype *img, uchar *dir, uint32 x, uint32 y, uint32 
 	if(x != w1) if(img[yx+1] < min) { min = img[yx+1]; *dir = 3; }
 	if(y != h1) if(img[yx+w] < min) { min = img[yx+w]; *dir = 4; }
 }
-
+/*
 static inline uint32 check_left(uchar dir1, uchar dir2)
 {
 	if(!dir2 && !dir1) return 1;
@@ -886,17 +885,23 @@ static inline add_pixel(Region *reg, Row *row, imgtype *img, uint32 yx, uint32 w
 
 static inline left_neighborhood(Row *row, Row **prow, Region **preg, uint32 *pregc, uint32 x)
 {
-	preg[(*pregc)++] = prow[x-1]->reg;  prow[x-1]->reg->neic++;
-	preg[(*pregc)++] = row->reg;  row->reg->neic++;
+	preg[(*pregc)++] = prow[x-1]->reg; prow[x-1]->reg->neic++;
+	preg[(*pregc)++] = row->reg; row->reg->neic++;
 
 }
 
-static inline top_neighborhood(Row *row, Row **prow, Region **preg, uint32 *pregc, uint32 x)
+static inline top_neighborhood(Row *row, Row **prow, Row **prow1, Region **preg, uint32 *pregc, uint32 x)
 {
-	if(row->reg != prow[x]->reg) {
-		preg[(*pregc)++] = prow[x]->reg;  prow[x]->reg->neic++;
-		preg[(*pregc)++] = row->reg;  row->reg->neic++;
-	}
+	if(prow[x-1]->reg != prow[x]->reg)
+		if(prow[x-1]->reg != prow1[x]->reg) {
+			preg[(*pregc)++] = prow1[x]->reg; prow1[x]->reg->neic++;
+			preg[(*pregc)++] = row->reg; row->reg->neic++;
+		}
+	if(prow1[x]->reg != row->reg)
+		if(prow1[x-1]->reg != prow1[x]->reg){
+			preg[(*pregc)++] = prow1[x]->reg; prow1[x]->reg->neic++;
+			preg[(*pregc)++] = row->reg; row->reg->neic++;
+		}
 }
 
 void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor, Row **pro, Region **preg, uchar *dir, uint32 w, uint32 h, uint32 theresh, uint32 corth,
@@ -926,7 +931,6 @@ void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor
 			add_pixel(prow[x-1]->reg, prow[x-1], img, yx, w);
 			prow[x] = prow[x-1];
 			//printf("%5d %p yx = %d l = %d\n", rowc-1, &row[rowc-1], row[rowc-1].yx, row[rowc-1].length);
-			//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 		} else {
 			new_region(&reg[regc], &row[rowc], img, yx, w);
 			new_row(&row[rowc], &reg[regc], yx);
@@ -954,13 +958,12 @@ void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor
 			add_pixel(prow1[x]->reg, &row[rowc], img, yx, w);
 			prow[x] = &row[rowc];
 			rowc++;
-			//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 		} else {
 			new_region(&reg[regc], &row[rowc], img, yx, w);
 			new_row(&row[rowc], &reg[regc], yx);
 			add_pixel(&reg[regc], &row[rowc], img, yx, w);
 
-			top_neighborhood(&row[rowc], prow1, preg, &pregc, x);
+			top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x);
 			prow[x] = &row[rowc];
 			rowc++; regc++;
 		}
@@ -980,7 +983,7 @@ void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor
 					//corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, &reg[regc], yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x);
-					top_neighborhood(&row[rowc], prow1, preg, &pregc, x);
+					top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x);
 					prowt = prow[x];
 					prow[x] = &row[rowc];
 					rowc++; regc++;
@@ -990,9 +993,8 @@ void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor
 				case 1 : {
 					add_pixel(prow[x-1]->reg, prow[x-1], img, yx, w);
 
-					top_neighborhood(&row[rowc-1], prow1, preg, &pregc, x);
+					top_neighborhood(&row[rowc-1], prow, prow1, preg, &pregc, x);
 					prow[x] = prow[x-1];
-					//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
 				}
 				case 2 : {
@@ -1002,20 +1004,18 @@ void seg_regions(imgtype *img, imgtype *grad, Region *reg, Row *row, Corner *cor
 					//corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, prow[x]->reg, yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x);
-					top_neighborhood(&row[rowc], prow1, preg, &pregc, x);
+					top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x);
 					prowt = prow[x];
 					prow[x] = &row[rowc];
 					rowc++;
-					//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
 					break;
 				}
 				case 3 : {
 					//printf("prow[x-2]->reg = %p prow1[x]->reg = %p\n", prow[x-2]->reg, prow1[x]->reg);
 					add_pixel(prow[x-1]->reg, prow[x-1], img, yx, w);
 
-					top_neighborhood(&row[rowc-1], prow1, preg, &pregc, x);
+					top_neighborhood(&row[rowc-1], prow, prow1, preg, &pregc, x);
 					prow[x] = prow[x-1];
-					//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
 				}
 			}
@@ -1110,7 +1110,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 			new_row(&row[rowc], &reg[regc], yx);
 			add_pixel(&reg[regc], &row[rowc], img, yx, w);
 
-			top_neighborhood(&row[rowc], prow1, preg, &pregc, x1);
+			top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x1);
 			prow[x1] = &row[rowc];
 			rowc++; regc++;
 		}
@@ -1133,7 +1133,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 					//corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, &reg[regc], yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x1);
-					top_neighborhood(&row[rowc], prow1, preg, &pregc, x1);
+					top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x1);
 					prowt = prow[x1];
 					prow[x1] = &row[rowc];
 					rowc++; regc++;
@@ -1143,7 +1143,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 				case 1 : {
 					add_pixel(prow[x1-1]->reg, prow[x1-1], img, yx, w);
 
-					top_neighborhood(&row[rowc-1], prow1, preg, &pregc, x1);
+					top_neighborhood(&row[rowc-1], prow, prow1, preg, &pregc, x1);
 					prow[x1] = prow[x1-1];
 					//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					break;
@@ -1155,7 +1155,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 					//corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, prow[x]->reg, yx, w, corth);
 
 					left_neighborhood(&row[rowc], prow, preg, &pregc, x1);
-					top_neighborhood(&row[rowc], prow1, preg, &pregc, x1);
+					top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x1);
 					prowt = prow[x1];
 					prow[x1] = &row[rowc];
 					rowc++;
@@ -1167,7 +1167,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 					if(dfl < dft){
 						add_pixel(prow[x1-1]->reg, prow[x1-1], img, yx, w);
 
-						top_neighborhood(&row[rowc-1], prow1, preg, &pregc, x1);
+						top_neighborhood(&row[rowc-1], prow, prow1, preg, &pregc, x1);
 						prow[x1] = prow[x1-1];
 						//img[yx] = img[yx-2]; img[yx+1] = img[yx-1]; img[yx+w] = img[yx+w-2]; img[yx+w+1] = img[yx+w-1];
 					} else {
@@ -1178,14 +1178,14 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 							//corner_detect(img, cor, &corc, prowt->reg, prow[x]->reg, prow[x-2]->reg, prow[x]->reg, yx, w, corth);
 
 							left_neighborhood(&row[rowc], prow, preg, &pregc, x1);
-							top_neighborhood(&row[rowc], prow1, preg, &pregc, x1);
+							top_neighborhood(&row[rowc], prow, prow1, preg, &pregc, x1);
 							prowt = prow[x1];
 							prow[x1] = &row[rowc];
 							rowc++;
 						} else {
 							add_pixel(prow[x1-1]->reg, prow[x1-1], img, yx, w);
 
-							top_neighborhood(&row[rowc-1], prow1, preg, &pregc, x1);
+							top_neighborhood(&row[rowc-1], prow, prow1, preg, &pregc, x1);
 							prow[x1] = prow[x1-1];
 						}
 						//img[yx] = img[yx-w1]; img[yx+1] = img[yx+1-w1]; img[yx+w] = img[yx+w-w1]; img[yx+w+1] = img[yx+w+1-w1];
@@ -1223,7 +1223,7 @@ void seg_regions_rgb(imgtype *img, Region *reg, Row *row, Corner *cor, Row **pro
 		}
 	}
 }
-
+*/
 static inline void region_draw(imgtype *img, Region *reg, uchar *c)
 {
 	uint32 rowc, yx;
@@ -1439,4 +1439,118 @@ void seg_connect_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 		}
 	}
 }
+
+
+static inline new_row(Row *row, imgtype *img, uint32 yx)
+{
+	row->yx = yx;  row->length = 0; row->nrown = 0;
+	row->c[0] = img[yx]; row->c[0] = img[yx+1]; row->c[0] = img[yx+2];
+}
+
+static inline add_pixel(Row *row)
+{
+	row->length += 3;
+}
+
+static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
+{
+	uint32  c0 = abs(row->c[0]	- img[yx]    ),
+			c1 = abs(row->c[1] 	- img[yx+1]  ),
+			c2 = abs(row->c[2]	- img[yx+2]  );
+	*diff = c0 + c1 + c2;
+	return  !(c0 > theresh && c1 > theresh && c2 > theresh);
+}
+
+static inline left_neighborhood(Row *row, Row *row1, Row **prow, uint32 *nprows)
+{
+	prow[(*nprows)++] = row1; row1->nrown++;
+	prow[(*nprows)++] = row ; row ->nrown++;
+
+}
+
+static inline top_neighborhood(Row **prow1, Row *row1, Row **prow, uint32 *nprows, uint32 x)
+{
+	if(prow1[x-1] != prow1[x]){
+		prow[(*nprows)++] = row1; row1->nrown++;
+		prow[(*nprows)++] = prow1[x] ; prow1[x] ->nrown++;
+	}
+}
+
+void seg_row_rgb(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nprows)
+{
+	uint32 i=0, j=1, y, h3 = h*w*3, x, x1, w3 = w*3, yx, w6 = w3<<1;
+	//uint32 df1[4], df2[4], left=0, regc =0, rowc = 0, corc = 0, pregc = 0, rc, tmp = 0, dfl, dft;
+	uint32 dfl, dft, cu = 0;
+	//uint32 q = 5;
+	//Row **pr[2], **pr1, **pr2;
+	Row **prow, **prow1, **prow2, **prow3, **tmp;
+	prow = prow4; prow1 = &prow4[w]; prow2 = &prow4[w<<1];
+	*nrows = 0; *nprows = 0;
+
+	y=0; x=0;
+	yx = y+x;
+	new_row(&row[*nrows], img, yx);
+	add_pixel(&row[*nrows]);
+	prow[x] = &row[*nrows];
+	*nrows++;
+	for(x=3, x1=1; x < w3; x+=3, x1++){
+		yx = y+x;
+		if(check(img, prow[x1-1], yx, theresh, &dfl))
+		{
+			add_pixel(prow[x1-1]);
+			prow[x1] = prow[x1-1];
+		} else {
+			new_row(&row[*nrows], img, yx);
+			add_pixel(&row[*nrows]);
+
+			left_neighborhood(prow[x1-1], &row[*nrows], prow2, nprows);
+			prow[x1] = &row[*nrows];
+			*nrows++;
+		}
+	}
+	for(y=w3; y < h3; y+=w3) {
+		x=0; x1=0;
+		yx = y+x;
+		tmp = prow; prow = prow1; prow1 = tmp;
+
+		new_row(&row[*nrows], img, yx);
+		add_pixel(&row[*nrows]);
+		prow[x] = &row[*nrows];
+		*nrows++;
+		for(x=3, x1=1; x < w3; x+=3, x1++){
+			yx = y+x;
+			if(check(img, prow[x1-1], yx, theresh, &dfl))
+			{
+				add_pixel(prow[x1-1]);
+				top_neighborhood(prow1, &row[*nrows], prow2, nprows, x1);
+
+				prow[x1] = prow[x1-1];
+			} else {
+				new_row(&row[*nrows], img, yx);
+				add_pixel(&row[*nrows]);
+
+				left_neighborhood(prow[x1-1], &row[*nrows], prow2, nprows);
+				prow[x1] = &row[*nrows];
+				*nrows++;
+			}
+		}
+	}
+	printf("nrows = %d nprows = %d \n", *nrows, *nprows);
+	prow3 = &prow2[*nprows];
+
+	for(i=0; i < *nprows; i+=2){
+		if(!prow2[i]->rownc){
+			prow2[i]->rown = &prow3[cu];
+			cu += prow2[i]->nrown;
+		}
+		prow2[i]->rown[prow2[i]->rownc++] = prow2[i+1];
+		if(!prow2[i+1]->rownc){
+			prow2[i+1]->rown = &prow3[cu];
+			cu += prow2[i+1]->nrown;
+		}
+		prow2[i+1]->rown[prow2[i+1]->rownc++] = prow2[i];
+	}
+
+}
+
 
