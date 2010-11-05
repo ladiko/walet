@@ -456,7 +456,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	GstStateChangeReturn ret;
 	GstState state;
 	uchar *buf;
-	uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs=0, nrows=0, npregs=0, nobjs=0, ncors, fn=0, w, h, sn;
+	uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs=0, nrows=0, npregs=0, nobjs=0, nprows=0, ncors, fn=0, w, h, sn;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
@@ -515,19 +515,40 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	w = gw->gop->frames[fn].rgb[sn].width;
 	h = gw->gop->frames[fn].rgb[sn].height;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	seg_row	(gw->gop->frames[0].Y[sn].pic, gw->gop->row, gw->gop->prow, w, h, 4, &nrows, &nprows);
 	//seg_regions_rgb(gw->gop->frames[0].rgb[sn].pic, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
 	//		w,  h, 8, 100, &nrows, &nregs, &npregs, &ncors);
 	//seg_regions(gw->gop->frames[fn].rgb[0].pic, pic1, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg, gw->gop->buf,
 	//		w, h, 8, 100, &nrows, &nregs, &npregs, &ncors);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("Segmentation time time      = %f\n", (double)(end-start)/1000000.);
+	printf("Row segmentation time = %f\n", (double)(end-start)/1000000.);
+
 
 	for(i=0; i < w*h*3; i++) gw->gop->buf[i] = 0;
+	seg_row_draw(gw->gop->buf, gw->gop->row, nrows);
 
-	//seg_regions_draw(gw->gop->buf, gw->gop->region, nregs);
+	//seg_regions_draw(gw->gop->buf, gw->gop->region, nrows);
 	new_buffer (gw->orig[2], w, h);
-	utils_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
+
+	new_buffer (gw->orig[3], w, h);
+	utils_grey_draw(gw->gop->frames[0].Y[sn].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+
+	for(i=0; i < w*h; i++) gw->gop->buf[i] = 0;
+	seg_reg(gw->gop->region, gw->gop->row, gw->gop->prow, &nregs, nrows, 4);
+
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Region segmentation time = %f\n", (double)(end-start)/1000000.);
+
+	seg_region_draw(gw->gop->buf, gw->gop->region, nregs);
+	new_buffer (gw->orig[0], w, h);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+
 
 	//seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg, nregs, &nobjs, 32);
 

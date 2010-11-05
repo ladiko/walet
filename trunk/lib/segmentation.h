@@ -38,6 +38,11 @@ void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 void seg_remove_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 void seg_connect_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 
+void seg_row_rgb	(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nprows);
+void seg_row_rgb_draw	(imgtype *img, Row *row, uint32 nrows);
+void seg_reg(Region *reg, Row *row, Row **prow, uint32 *nregs, uint32 nrows, uint32 theresh);
+void seg_region_draw(imgtype *img, Region *reg, uint32 nregs);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

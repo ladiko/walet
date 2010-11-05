@@ -1441,22 +1441,23 @@ void seg_connect_pix(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 }
 
 
-static inline new_row(Row *row, imgtype *img, uint32 yx)
+static inline new_row_rgb(Row *row, imgtype *img, uint32 yx)
 {
-	row->yx = yx;  row->length = 0; row->nrown = 0;
-	row->c[0] = img[yx]; row->c[0] = img[yx+1]; row->c[0] = img[yx+2];
+	row->yx = yx;  row->length = 0; row->nrown = 0; row->reg = NULL;
+	row->c[0] = img[yx]; row->c[1] = img[yx+1]; row->c[2] = img[yx+2];
+	//printf("i0 = %d i1 = %d i2 = %d\n", img[yx], img[yx+1], img[yx+2]);
 }
 
 static inline add_pixel(Row *row)
 {
-	row->length += 3;
+	row->length += 1;
 }
 
-static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
+static inline uint32 check_rgb(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
 {
-	uint32  c0 = abs(row->c[0]	- img[yx]    ),
-			c1 = abs(row->c[1] 	- img[yx+1]  ),
-			c2 = abs(row->c[2]	- img[yx+2]  );
+	uint32  c0 = abs(row->c[0]	- img[yx]  ),
+			c1 = abs(row->c[1] 	- img[yx+1]),
+			c2 = abs(row->c[2]	- img[yx+2]);
 	*diff = c0 + c1 + c2;
 	return  !(c0 > theresh && c1 > theresh && c2 > theresh);
 }
@@ -1464,15 +1465,21 @@ static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, ui
 static inline left_neighborhood(Row *row, Row *row1, Row **prow, uint32 *nprows)
 {
 	prow[(*nprows)++] = row1; row1->nrown++;
-	prow[(*nprows)++] = row ; row ->nrown++;
+	prow[(*nprows)++] = row ; row->nrown++;
 
 }
 
 static inline top_neighborhood(Row **prow1, Row *row1, Row **prow, uint32 *nprows, uint32 x)
 {
+	prow[(*nprows)++] = row1; row1->nrown++;
+	prow[(*nprows)++] = prow1[x] ; prow1[x]->nrown++;
+}
+
+static inline top_neighborhood_check(Row **prow1, Row *row1, Row **prow, uint32 *nprows, uint32 x)
+{
 	if(prow1[x-1] != prow1[x]){
 		prow[(*nprows)++] = row1; row1->nrown++;
-		prow[(*nprows)++] = prow1[x] ; prow1[x] ->nrown++;
+		prow[(*nprows)++] = prow1[x] ; prow1[x]->nrown++;
 	}
 }
 
@@ -1489,49 +1496,51 @@ void seg_row_rgb(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32
 
 	y=0; x=0;
 	yx = y+x;
-	new_row(&row[*nrows], img, yx);
+	new_row_rgb(&row[*nrows], img, yx);
 	add_pixel(&row[*nrows]);
 	prow[x] = &row[*nrows];
-	*nrows++;
+	(*nrows)++;
 	for(x=3, x1=1; x < w3; x+=3, x1++){
 		yx = y+x;
-		if(check(img, prow[x1-1], yx, theresh, &dfl))
+		if(check_rgb(img, prow[x1-1], yx, theresh, &dfl))
 		{
 			add_pixel(prow[x1-1]);
 			prow[x1] = prow[x1-1];
 		} else {
-			new_row(&row[*nrows], img, yx);
+			//printf("yx = %d\n", yx);
+			new_row_rgb(&row[*nrows], img, yx);
 			add_pixel(&row[*nrows]);
 
 			left_neighborhood(prow[x1-1], &row[*nrows], prow2, nprows);
 			prow[x1] = &row[*nrows];
-			*nrows++;
+			(*nrows)++;
 		}
 	}
+	printf("nrows = %d\n", *nrows);
 	for(y=w3; y < h3; y+=w3) {
 		x=0; x1=0;
 		yx = y+x;
 		tmp = prow; prow = prow1; prow1 = tmp;
 
-		new_row(&row[*nrows], img, yx);
+		new_row_rgb(&row[*nrows], img, yx);
 		add_pixel(&row[*nrows]);
 		prow[x] = &row[*nrows];
-		*nrows++;
+		(*nrows)++;
 		for(x=3, x1=1; x < w3; x+=3, x1++){
 			yx = y+x;
-			if(check(img, prow[x1-1], yx, theresh, &dfl))
+			if(check_rgb(img, prow[x1-1], yx, theresh, &dfl))
 			{
 				add_pixel(prow[x1-1]);
 				top_neighborhood(prow1, &row[*nrows], prow2, nprows, x1);
 
 				prow[x1] = prow[x1-1];
 			} else {
-				new_row(&row[*nrows], img, yx);
+				new_row_rgb(&row[*nrows], img, yx);
 				add_pixel(&row[*nrows]);
 
 				left_neighborhood(prow[x1-1], &row[*nrows], prow2, nprows);
 				prow[x1] = &row[*nrows];
-				*nrows++;
+				(*nrows)++;
 			}
 		}
 	}
@@ -1553,4 +1562,197 @@ void seg_row_rgb(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32
 
 }
 
+void seg_row_rgb_draw(imgtype *img, Row *row, uint32 nrows)
+{
+	uint32 i, yx;
+	for(i=0; i < nrows; i++){
+		//if(reg->npixs < 10)
+		for(yx=row[i].yx; yx < (row[i].yx + row[i].length); yx+=3){
+			img[yx] 	= row[i].c[0];
+			img[yx+1] 	= row[i].c[1];
+			img[yx+2] 	= row[i].c[2];
+		}
+	}
+}
 
+
+static inline new_row(Row *row, imgtype *img, uint32 yx)
+{
+	row->yx = yx;  row->length = 0; row->nrown = 0; row->reg = NULL;
+	row->c[0] = img[yx];
+	//printf("i0 = %d i1 = %d i2 = %d\n", img[yx], img[yx+1], img[yx+2]);
+}
+
+static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
+{
+	*diff = abs(row->c[0] - img[yx]);
+	return  !(*diff > theresh);
+}
+
+void seg_row(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nprows)
+{
+	uint32 i=0, j=1, y, h2 = h*w, x, yx;
+	uint32 dfl, dft, cu = 0;
+	Row **prow, **prow1, **prow2, **prow3, **tmp;
+	prow = prow4; prow1 = &prow4[w]; prow2 = &prow4[w<<1];
+	*nrows = 0; *nprows = 0;
+
+	y=0; x=0;
+	yx = y+x;
+	new_row(&row[*nrows], img, yx);
+	add_pixel(&row[*nrows]);
+	prow[x] = &row[*nrows];
+	(*nrows)++;
+	for(x=1; x < w; x++){
+		yx = y+x;
+		if(check(img, prow[x-1], yx, theresh, &dfl))
+		{
+			add_pixel(prow[x-1]);
+			prow[x] = prow[x-1];
+		} else {
+			//printf("yx = %d\n", yx);
+			new_row(&row[*nrows], img, yx);
+			add_pixel(&row[*nrows]);
+
+			left_neighborhood(prow[x-1], &row[*nrows], prow2, nprows);
+			prow[x] = &row[*nrows];
+			(*nrows)++;
+		}
+	}
+	for(y=w; y < h2; y+=w) {
+		x=0;
+		yx = y+x;
+		tmp = prow; prow = prow1; prow1 = tmp;
+
+		new_row(&row[*nrows], img, yx);
+		add_pixel(&row[*nrows]);
+		top_neighborhood(prow1, &row[*nrows], prow2, nprows, x);
+		prow[x] = &row[*nrows];
+		(*nrows)++;
+		for(x=1; x < w; x++){
+			yx = y+x;
+			if(check(img, prow[x-1], yx, theresh, &dfl))
+			{
+				add_pixel(prow[x-1]);
+				top_neighborhood_check(prow1, &row[*nrows], prow2, nprows, x);
+
+				prow[x] = prow[x-1];
+			} else {
+				new_row(&row[*nrows], img, yx);
+				add_pixel(&row[*nrows]);
+
+				left_neighborhood(prow[x-1], &row[*nrows], prow2, nprows);
+				top_neighborhood(prow1, &row[*nrows], prow2, nprows, x);
+				prow[x] = &row[*nrows];
+				(*nrows)++;
+			}
+		}
+	}
+	printf("nrows = %d nprows = %d \n", *nrows, *nprows);
+	prow3 = &prow2[*nprows];
+
+	for(i=0; i < *nprows; i+=2){
+		if(!prow2[i]->rownc){
+			prow2[i]->rown = &prow3[cu];
+			cu += prow2[i]->nrown;
+		}
+		prow2[i]->rown[prow2[i]->rownc++] = prow2[i+1];
+		if(!prow2[i+1]->rownc){
+			prow2[i+1]->rown = &prow3[cu];
+			cu += prow2[i+1]->nrown;
+		}
+		prow2[i+1]->rown[prow2[i+1]->rownc++] = prow2[i];
+	}
+
+}
+
+void seg_row_draw(imgtype *img, Row *row, uint32 nrows)
+{
+	uint32 i, yx;
+	//uint32 tmp;
+	for(i=0; i < nrows; i++){
+		//if(reg->npixs < 10)
+		for(yx=row[i].yx; yx < (row[i].yx + row[i].length); yx++){
+			img[yx] 	= row[i].c[0];
+			//tmp++;
+		}
+	}
+	//printf("Rows = %d \n", tmp);
+}
+
+static inline new_region(Region *reg, Row *row)
+{
+	reg->c[0] = row->c[0]; reg->c[1] = row->c[1]; reg->c[2] = row->c[2];
+	reg->nrows = 0; reg->rowc = 0; reg->npixs = 0; reg->neic = 0; reg->nneis = 0; reg->obj = NULL;
+}
+
+
+static inline add_row(Region *reg, Row *row)
+{
+	reg->npixs += row->length; row->reg = reg;  reg->nrows++;
+}
+
+void seg_reg(Region *reg, Row *row, Row **prow, uint32 *nregs, uint32 nrows, uint32 theresh)
+{
+	uint32 j = 0, i, diff, min, ck, in, tmp;
+	*nregs = 0;
+	new_region(&reg[*nregs], &row[j]);
+	add_row	  (&reg[*nregs], &row[j]);
+	//for(i=0; i < nrows; i++) printf("%d ", row[i].nrown);
+	//printf("%5d nrown = %d\n", j, row[j].nrown);
+	for(j=1; j < nrows; j++){
+		//printf("%5d nrown = %d\n", j, row[j].nrown);
+		min = 0; ck = 0 ;
+		for(i=0; i < row[j].nrown; i++){
+			//printf("reg = %p\n", row[j].rown[i]->reg);
+			if(row[j].rown[i]->reg != NULL){
+				diff = abs(row[j].rown[i]->c[0] - row[j].c[0]);
+				if(diff < theresh) {
+					if(min) {
+						if(diff < min) { min = diff; in = i;}
+					} else { diff = min; in = i; }
+					ck++;
+				}
+			}
+		}
+		//printf("ck = %d\n", ck);
+		if(ck) 	add_row(row[j].rown[in]->reg, &row[j]);
+		else {
+			(*nregs)++;
+			new_region(&reg[*nregs], &row[j]);
+			add_row	  (&reg[*nregs], &row[j]);
+		}
+	}
+
+	printf("Regions = %d\n", *nregs);
+	for(j=0; j < nrows; j++){
+		if(row[j].reg->rowc){
+			row[j].reg->row[row[j].reg->rowc] = &row[j];
+			row[j].reg->rowc++;
+
+		} else {
+			row[j].reg->row = &prow[tmp];
+			tmp += row[j].reg->nrows;
+			row[j].reg->row[row[j].reg->rowc] = &row[j];
+			row[j].reg->rowc++;
+		}
+	}
+}
+
+void seg_region_draw(imgtype *img, Region *reg, uint32 nregs)
+{
+	uint32 i, j, yx;
+	//uint32	tmp=0;
+	for(j=0; j < nregs; j++){
+		//if(reg[j].nrows > 5)
+		for(i=0; i < reg[j].nrows; i++){
+			//if(reg->npixs < 10)
+			for(yx=reg[j].row[i]->yx; yx < (reg[j].row[i]->yx + reg[j].row[i]->length); yx++){
+				img[yx] = reg[j].c[0];
+				//img[yx] = reg[j].row[i]->c[0];
+				//tmp++;
+			}
+		}
+	}
+	//printf("Rows = %d \n", tmp);
+}

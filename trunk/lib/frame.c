@@ -332,25 +332,25 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		util_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		//Scaling images
-		for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
-		for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
+		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
+		//for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
 
 		//for(j=0; j < 4; j++) seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 0);
-		for(j=0; j < 4; j++) {
-			seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 3);
+		//for(j=0; j < 4; j++) {
+			//seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 3);
 
 			//seg_morph_gradient(frm->Y[j].pic, gop->buf, frm->Y[j].width, frm->Y[j].height, 0);
 			//filter_average(gop->buf, frm->grad[j].pic,  frm->grad[j].width, frm->grad[j].height, 0);
-		}
+		//}
 		//for(j=0; j < 4; j++) seg_fall_forest(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
 		//for(j=0; j < 4; j++) seg_remove_pix(frm->con[j].pic, frm->grad[j].pic, frm->grad[j].width, frm->grad[j].height);
-		for(j=0; j < 4; j++) {
-			seg_remove_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
-			for(i=0; i< frm->Y[j].width*frm->Y[j].height; i++) if(frm->con[j].pic[i]) frm->grad[j].pic[i] = frm->con[j].pic[i];
+		//for(j=0; j < 4; j++) {
+			//seg_remove_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
+			//for(i=0; i< frm->Y[j].width*frm->Y[j].height; i++) if(frm->con[j].pic[i]) frm->grad[j].pic[i] = frm->con[j].pic[i];
 			//seg_connect_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
-		}
+		//}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Contour time      = %f\n", (double)(end-start)/1000000.);
+		printf("Median time      = %f\n", (double)(end-start)/1000000.);
 	}
 }
 
