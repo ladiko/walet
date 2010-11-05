@@ -168,7 +168,7 @@ struct Object{
 struct Region{
 	//uint16 		x;			//The top left point
 	//uint16 		y;			//The top left point
-	uchar 		c[4];		//The colors
+	uchar 		c[3];		//The colors
 	uint32		ac[4];		//The average colors
 	uint32 		nrows;		//The numbers of rows in the region
 	uint32		npixs;		//The numbers of pixels in the region
