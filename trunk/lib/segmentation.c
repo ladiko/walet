@@ -1576,6 +1576,13 @@ void seg_row_rgb_draw(imgtype *img, Row *row, uint32 nrows)
 }
 
 
+static inline new_row1(Row *row, imgtype *img, uint32 yx, uint32 theresh)
+{
+	row->yx = yx;  row->length = 0; row->nrown = 0; row->reg = NULL;
+	row->c[0] = ((img[yx]>>theresh)<<theresh);
+	//printf("i0 = %d i1 = %d i2 = %d\n", img[yx], img[yx+1], img[yx+2]);
+}
+
 static inline new_row(Row *row, imgtype *img, uint32 yx)
 {
 	row->yx = yx;  row->length = 0; row->nrown = 0; row->reg = NULL;
@@ -1583,10 +1590,16 @@ static inline new_row(Row *row, imgtype *img, uint32 yx)
 	//printf("i0 = %d i1 = %d i2 = %d\n", img[yx], img[yx+1], img[yx+2]);
 }
 
-static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
+static inline uint32 check1(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
 {
 	*diff = abs(row->c[0] - img[yx]);
 	return  !(*diff > theresh);
+}
+
+static inline uint32 check(imgtype *img, Row *row, uint32 yx, uint32 theresh, uint32 *diff)
+{
+	*diff = abs(row->c[0] - ((img[yx]>>theresh)<<theresh));
+	return  !(*diff);
 }
 
 void seg_row(imgtype *img, Row *row, Row **prow4, uint32 w, uint32 h, uint32 theresh, uint32 *nrows, uint32 *nprows)
