@@ -19,7 +19,7 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->fb			= fb;
 
 	//Temp buffer init
-	gop->buf = (imgtype *)calloc(width*height, sizeof(imgtype));
+	gop->buf = (imgtype *)calloc(width*height*3, sizeof(imgtype));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height, sizeof(Row));
@@ -78,7 +78,7 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->fb			= fb;
 
 	//Temp buffer init
-	gop->buf = (imgtype *)calloc(width*height<<1, sizeof(imgtype));
+	gop->buf = (imgtype *)calloc(width*height*3, sizeof(imgtype));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
 	gop->row = (Row *)calloc(width*height, sizeof(Row));
