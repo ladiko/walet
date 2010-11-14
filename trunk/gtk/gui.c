@@ -515,7 +515,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	w = gw->gop->frames[fn].rgb[sn].width;
 	h = gw->gop->frames[fn].rgb[sn].height;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	seg_row	(gw->gop->frames[0].Y[sn].pic, gw->gop->row, gw->gop->prow, w, h, 4, &nrows, &nprows);
+	seg_row	(gw->gop->frames[0].Y[sn].pic, gw->gop->row, gw->gop->prow, w, h, 3, &nrows, &nprows);
 	//seg_regions_rgb(gw->gop->frames[0].rgb[sn].pic, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg,
 	//		w,  h, 8, 100, &nrows, &nregs, &npregs, &ncors);
 	//seg_regions(gw->gop->frames[fn].rgb[0].pic, pic1, gw->gop->region, gw->gop->row, gw->gop->cor, gw->gop->prow, gw->gop->preg, gw->gop->buf,
@@ -536,10 +536,11 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw(gw->gop->frames[0].Y[sn].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
+	/*
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
 	for(i=0; i < w*h; i++) gw->gop->buf[i] = 0;
-	seg_reg(gw->gop->region, gw->gop->row, gw->gop->prow, &nregs, nrows, 4);
+	seg_reg(gw->gop->region, gw->gop->row, gw->gop->prow, &nregs, nrows, 2);
 
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Region segmentation time = %f\n", (double)(end-start)/1000000.);
@@ -548,7 +549,28 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[0], w, h);
 	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
+	*/
 
+	//for(i=0; i < w*h; i++) gw->gop->buf[i] = gw->gop->frames[0].Y[sn].pic[i];
+	for(i=0; i < w*h; i++) gw->gop->frames[0].rgb[sn].pic[i] = 0;
+	seg_grad(gw->gop->frames[0].Y[sn].pic, gw->gop->frames[0].rgb[sn].pic, w, h, 2);
+
+	for(i=0; i < w*h*9; i++) gw->gop->buf[i] = 0;
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+
+	//seg_reg(gw->gop->region, gw->gop->row, gw->gop->prow, &nregs, nrows, 2);
+	seg_corn_edge(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, w, h, 2);
+
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Corner and Edge detection time = %f\n", (double)(end-start)/1000000.);
+
+	new_buffer (gw->orig[0], w*3, h*3);
+	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w*3, h*3);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+
+	new_buffer (gw->orig[1], w, h);
+	utils_grey_draw(gw->gop->frames[0].rgb[sn].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
 
 	//seg_objects(gw->gop->obj, gw->gop->region, gw->gop->preg, nregs, &nobjs, 32);
 
