@@ -45,6 +45,8 @@ void seg_region_draw(imgtype *img, Region *reg, uint32 nregs);
 
 void seg_corn_edge(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th);
 void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th);
+void seg_rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th);
+void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th);
 
 #ifdef __cplusplus
 }

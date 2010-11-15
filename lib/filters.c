@@ -126,6 +126,8 @@ void filter_average(uchar *img, uchar *img1, uint32 w, uint32 h, uint32 thresh)
 		for(x=1; x < w1; x++){
 			yx = y + x;
 			img1[yx] = filter(img, yx, w, thresh);
+			//if(img[yx]) img1[yx] = filter(img, yx, w, thresh);
+			//else img1[yx] = 0;
 		}
 	}
 }

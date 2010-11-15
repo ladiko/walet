@@ -1880,19 +1880,44 @@ static inline void rainfalling(imgtype *img, imgtype *img1, uint32 x, uint32 y, 
 						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = 255;	img1[yx1+6*w+2] = max;
 						img1[yx1+6*w+1+3*w] = 255; img1[yx1+6*w+1+6*w] = 255;}
 		*/
-		if(in == 1){ 	img1[yx1+3*w] = 255; 	img1[yx1+3*w+1] = 255;
-						img1[yx1+3*w-1] = 255; 	img1[yx1+3*w-2] = 255; }
+		if(in == 1){ 	img1[yx1+3*w] = 125; 	img1[yx1+3*w+1] = 255;
+						img1[yx1+3*w-1] = 125; 	img1[yx1+3*w-2] = 65; }
 
-		if(in == 2){ 	img1[yx1+1    ] = 255;
+		if(in == 2){ 	img1[yx1+1    ] = 125;
 						img1[yx1+3*w+1] = 255;
-						img1[yx1+1-3*w] = 255;  img1[yx1+1-6*w] = 255;}
+						img1[yx1+1-3*w] = 125;  img1[yx1+1-6*w] = 65;}
 
-		if(in == 3){ 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = 255;
-						img1[yx1+3*w+3] = 255;	img1[yx1+3*w+4] = 255;}
+		if(in == 3){ 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = 125;
+						img1[yx1+3*w+3] = 125;	img1[yx1+3*w+4] = 65;}
 
 		if(in == 4){ 	img1[yx1+3*w+1] = 255;
-						img1[yx1+6*w+1] = 255;
-						img1[yx1+6*w+1+3*w] = 255; img1[yx1+6*w+1+6*w] = 255;}
+						img1[yx1+6*w+1] = 125;
+						img1[yx1+6*w+1+3*w] = 125; img1[yx1+6*w+1+6*w] = 65;}
+	}
+}
+
+static inline void rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
+{
+	uint32 g[4], min, max, in, yx, yx1;
+	yx = y*w+x;
+
+	if(img[yx]) {
+		//if(img[yx-1] || img[yx-w] || img[yx+1] || img[yx+w]){
+		min = img[yx]; in = 0;
+		if(min > img[yx-1]) { min = img[yx-1]; in = 1;}
+		if(min > img[yx-w]) { min = img[yx-w]; in = 2;}
+		if(min > img[yx+1]) { min = img[yx+1]; in = 3;}
+		if(min > img[yx+w]) { min = img[yx+w]; in = 4;}
+		//img1[yx] = max<<th;
+		//max = img[yx];
+		if(in == 0) { img1[yx]   = 0; img2[yx] = 0; }
+		if(in == 1) { img1[yx-1] = 0; img2[yx] = 1; }
+		if(in == 2) { img1[yx-w] = 0; img2[yx] = 2; }
+		if(in == 3) { img1[yx+1] = 0; img2[yx] = 3; }
+		if(in == 4) { img1[yx+w] = 0; img2[yx] = 4; }
+
+	} else {
+		img1[yx] = 0; img2[yx] = 0;
 	}
 }
 
@@ -1905,6 +1930,19 @@ void seg_corn_edge(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 			//yx = y + x;
 			//check_corn(img, img1, x, y, w, h, th);
 			rainfalling(img, img1, x, y, w, h, th);
+		}
+	}
+}
+
+void seg_rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
+	//for(y=w; y < sq; y+=w){
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			//yx = y + x;
+			//check_corn(img, img1, x, y, w, h, th);
+			rain(img, img1, img2, x, y, w, h, th);
 		}
 	}
 }
@@ -1927,4 +1965,39 @@ void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 		}
 	}
 }
+
+static inline void remove_pix(imgtype *img, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
+{
+	uint32 g[4], min, max, in, yx, yx1;
+	yx = y*w+x;
+
+	if(img[yx]) {
+		//printf("img[%d] = %d",yx, img[yx]);
+		//if(in == 0) { img1[yx]   = 0; img2[yx] = 0; }
+		//if((img2[yx] == 1) && !img[yx+1]) img[yx] = 0;
+		//if((img2[yx] == 2) && !img[yx+w]) img[yx] = 0;
+		//if((img2[yx] == 3) && !img[yx-1]) img[yx] = 0;
+		//if((img2[yx] == 4) && !img[yx-w]) img[yx] = 0;
+
+		if(img2[yx] == 1) { if(img2[yx+1] != 3) img[yx] = 0;}
+		else if(img2[yx] == 2) { if(img2[yx+w] != 4) img[yx] = 0;}
+		else if(img2[yx] == 3) { if(img2[yx-1] != 1) img[yx] = 0;}
+		else if(img2[yx] == 4) { if(img2[yx-w] != 2) img[yx] = 0;}
+
+	}
+}
+
+void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
+	//for(y=w; y < sq; y+=w){
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			//yx = y + x;
+			//check_corn(img, img1, x, y, w, h, th);
+			remove_pix(img, img2, x, y, w, h, th);
+		}
+	}
+}
+
 
