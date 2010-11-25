@@ -22,15 +22,17 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->buf = (imgtype *)calloc(width*height*3, sizeof(imgtype));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
+	/*
 	gop->row = (Row *)calloc(width*height, sizeof(Row));
 	gop->cor = (Corner *)calloc(width*height, sizeof(Corner));
 	gop->region = (Region *)calloc(width*height, sizeof(Region));
 	gop->obj = (Object *)calloc(width*height, sizeof(Object));
-	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
-	//gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
-	//gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
 	gop->prow = (Row **)calloc(width*height<<1, sizeof(Row*));
-	gop->preg = (Region **)calloc(width*height, sizeof(Region*));
+	gop->preg = (Region **)calloc(width*height, sizeof(Region*));*/
+
+	gop->edge = (Edge *)calloc(width*height, sizeof(Edge));
+	gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
+
 
 	//printf("d_bits = %d\n", 1<<(bpp+3));
 	printf("Buffer init\n");
@@ -81,15 +83,17 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->buf = (imgtype *)calloc(width*height*3, sizeof(imgtype));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	//The memory for segmentation
+	/*
 	gop->row = (Row *)calloc(width*height, sizeof(Row));
 	gop->cor = (Corner *)calloc(width*height, sizeof(Corner));
 	gop->region = (Region *)calloc(width*height, sizeof(Region));
 	gop->obj = (Object *)calloc(width*height, sizeof(Object));
-	//gop->chain = (Chain *)calloc(width*height<<1, sizeof(Chain));
-	//gop->rinl = (uint32 *)calloc(height, sizeof(uint32));
-	//gop->charr = (uchar *)calloc(width*height<<1, sizeof(uchar));
 	gop->prow = (Row **)calloc(width*height, sizeof(Row*));
-	gop->preg = (Region **)calloc(width*height, sizeof(Region*));
+	gop->preg = (Region **)calloc(width*height, sizeof(Region*));*/
+
+	gop->edge = (Edge *)calloc(width*height, sizeof(Edge));
+	gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
+
 	printf("Buffer init\n");
 	//Frames init
 	gop->frames = (Frame *)calloc(gop_size, sizeof(Frame));

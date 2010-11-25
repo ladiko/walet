@@ -155,6 +155,23 @@ typedef struct Row Row;
 typedef struct Region Region;
 typedef struct Object Object;
 typedef struct Corner Corner;
+typedef struct Edge Edge;
+typedef struct Edgelet Edgelet;
+
+struct Edge {
+	uint32 	yx;		//The start point
+	uint32	len;	//The length of edge
+	uint32	pow;	//The power of edge
+	uint32	nedgl;	//The numbers of Edgelets in the Edge
+	Edgelet *edgl;	//The pointer to Edgelet array
+};
+
+struct Edgelet {
+	uint32 	yx;		//The start point
+	uchar 	len;	//The length of edgelet
+	uint32	pow;	//The power of edgelet
+	uint32	dir;	//The direction 00 - left; 01 - top; 10 - right; 11 - bottom; max 16 dor per Edgelet
+};
 
 struct Object{
 	uchar 		c[4];		//The colors
