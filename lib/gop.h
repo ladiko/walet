@@ -26,11 +26,11 @@ typedef struct {
 	Corner 			*cor;		//The corners  array
 	Region			*region;	//The region array
 	Object			*obj;		//Object array
-	//Chain			*chain;		//The chain array
-	//uint32			*rinl;		//The rows in the horizontal line of image
-	//uchar			*charr;		//The chain array
 	Row				**prow;		//The array of pointers to Rows
 	Region			**preg;		//The array of pointers to Regions
+
+	Edge			*edge;
+	Edgelet			*edgel;
 }	GOP;
 
 #ifdef __cplusplus

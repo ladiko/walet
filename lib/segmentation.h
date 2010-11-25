@@ -43,10 +43,12 @@ void seg_row_rgb_draw	(imgtype *img, Row *row, uint32 nrows);
 void seg_reg(Region *reg, Row *row, Row **prow, uint32 *nregs, uint32 nrows, uint32 theresh);
 void seg_region_draw(imgtype *img, Region *reg, uint32 nregs);
 
-void seg_corn_edge(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th);
-void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th);
+void seg_corn_edge(imgtype *img, imgtype *img1, imgtype *img2,uint32 w, uint32 h, uint32 th);
+void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th);
 void seg_rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th);
 void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th);
+void seg_check_corner(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th);
 
 #ifdef __cplusplus
 }

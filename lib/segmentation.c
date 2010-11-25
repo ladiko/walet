@@ -1845,41 +1845,35 @@ static inline void check_corn(imgtype *img, imgtype *img1, uint32 x, uint32 y, u
 
 }
 
-static inline void rainfalling(imgtype *img, imgtype *img1, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
+static inline void rainfalling1(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
 {
 	uint32 g[4], min, max, in, yx, yx1;
 	yx = y*w+x;
 
-	if(img[yx-1] || img[yx-w] || img[yx+1] || img[yx+w]){
-		min = img[yx]; in = 0;
-		if(min > img[yx-1]) { min = img[yx-1]; in = 1;}
-		if(min > img[yx-w]) { min = img[yx-w]; in = 2;}
-		if(min > img[yx+1]) { min = img[yx+1]; in = 3;}
-		if(min > img[yx+w]) { min = img[yx+w]; in = 4;}
-		//img1[yx] = max<<th;
-		max = img[yx];
+	if(img[yx]){
+		max = img[yx]; in = img2[yx];
 		yx1 = y*w*9 + x*3;
-		/*
-		if(in == 1){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
-						img1[yx1+3*w] = 255; 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = max;
-						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max;
-						img1[yx1+3*w-1] = 255; 	img1[yx1+3*w-2] = 255; }
+
+		if(in == 0){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
+						img1[yx1+3*w] = 255; 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = 255;
+						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max; }
+						//img1[yx1+3*w-1] = 255; 	img1[yx1+3*w-2] = 255; }
+
+		if(in == 1){ 	img1[yx1    ] = 255; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
+						img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = 255;	img1[yx1+3*w+2] = max;
+						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = 255;}
+						//img1[yx1+1-3*w] = 255;  img1[yx1+1-6*w] = 255;}
 
 		if(in == 2){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = 255;	img1[yx1+2    ] = max;
-						img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = 255;	img1[yx1+3*w+2] = max;
-						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max;
-						img1[yx1+1-3*w] = 255;  img1[yx1+1-6*w] = 255;}
-
-		if(in == 3){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
-						img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = 255;
-						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max;
-						img1[yx1+3*w+3] = 255;	img1[yx1+3*w+4] = 255;}
-
-		if(in == 4){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
 						img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = max;
-						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = 255;	img1[yx1+6*w+2] = max;
-						img1[yx1+6*w+1+3*w] = 255; img1[yx1+6*w+1+6*w] = 255;}
-		*/
+						img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = 255;	img1[yx1+6*w+2] = max;}
+						//img1[yx1+3*w+3] = 255;	img1[yx1+3*w+4] = 255;}
+
+		if(in == 3){ 	img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = 255;
+						img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = 255; 	img1[yx1+3*w+2] = max;
+						img1[yx1+6*w] = 255; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max;}
+						//img1[yx1+6*w+1+3*w] = 255; img1[yx1+6*w+1+6*w] = 255;}
+		/*
 		if(in == 1){ 	img1[yx1+3*w] = 125; 	img1[yx1+3*w+1] = 255;
 						img1[yx1+3*w-1] = 125; 	img1[yx1+3*w-2] = 65; }
 
@@ -1893,6 +1887,7 @@ static inline void rainfalling(imgtype *img, imgtype *img1, uint32 x, uint32 y, 
 		if(in == 4){ 	img1[yx1+3*w+1] = 255;
 						img1[yx1+6*w+1] = 125;
 						img1[yx1+6*w+1+3*w] = 125; img1[yx1+6*w+1+6*w] = 65;}
+		*/
 	}
 }
 
@@ -1900,7 +1895,7 @@ static inline void rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, ui
 {
 	uint32 g[4], min, max, in, yx, yx1;
 	yx = y*w+x;
-
+	/*
 	if(img[yx]) {
 		//if(img[yx-1] || img[yx-w] || img[yx+1] || img[yx+w]){
 		min = img[yx]; in = 0;
@@ -1918,18 +1913,127 @@ static inline void rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, ui
 
 	} else {
 		img1[yx] = 0; img2[yx] = 0;
+	}*/
+	if(img[yx]) {
+		/*
+		if(img1[yx] == 0){
+			if(img[yx-1] > img[yx+1]) img2[yx+1] = 0;
+			else img2[yx-1] = 0;
+		}
+		if(img1[yx] == 1){
+			if(img[yx-w-1] > img[yx+w+1]) img2[yx+w+1] = 0;
+			else img2[yx-w-1] = 0;
+		}
+		if(img1[yx] == 2){
+			if(img[yx-w] > img[yx+w]) img2[yx+w] = 0;
+			else img2[yx-w] = 0;
+		}
+		if(img1[yx] == 3){
+			if(img[yx-w+1] > img[yx+w-1]) img2[yx+w-1] = 0;
+			else img2[yx-w+1] = 0;
+		}*/
+		min = img[yx]; in = 0;
+		if(min > img[yx-1]) { min = img[yx-1]; in = 1;}
+		if(min > img[yx-w]) { min = img[yx-w]; in = 2;}
+		if(min > img[yx+1]) { min = img[yx+1]; in = 3;}
+		if(min > img[yx+w]) { min = img[yx+w]; in = 4;}
+
+		//if(in == 0) img2[yx]   = 0;
+		if(in == 1) img2[yx-1] = 0;
+		if(in == 2) img2[yx-w] = 0;
+		if(in == 3) img2[yx+1] = 0;
+		if(in == 4) img2[yx+w] = 0;
+
+	} else img2[yx] = 0;
+}
+
+static inline void canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
+{
+	uint32 g[4], min, max, in, yx, yx1;
+	yx = y*w+x;
+
+	if(img[yx]) {
+		if(img1[yx] == 0){
+			if((img[yx] > img[yx-1]) && (img[yx] > img[yx+1])) img2[yx] = img[yx];
+			else img2[yx] = 0;
+		}
+		if(img1[yx] == 1){
+			if((img[yx] > img[yx-w-1]) && (img[yx] > img[yx+w+1])) img2[yx] = img[yx];
+			else img2[yx] = 0;
+		}
+		if(img1[yx] == 2){
+			if((img[yx] > img[yx-w]) && (img[yx] > img[yx+w])) img2[yx] = img[yx];
+			else img2[yx] = 0;
+		}
+		if(img1[yx] == 3){
+			if((img[yx] > img[yx-w+1]) && (img[yx] > img[yx+w-1])) img2[yx] = img[yx];
+			else img2[yx] = 0;
+		}
+	} else img2[yx] = 0;
+}
+
+static inline void edge(imgtype *img, imgtype *img1,  uint32 x, uint32 y, uint32 w, uint32 h)
+{
+	uint32 g[4], min, max, in, yx, yx1;
+	yx = y*w+x;
+
+	if(img[yx]){
+		max = img[yx];
+		yx1 = y*w*9 + x*3;
+
+		img1[yx1    ] = max; 	img1[yx1+1    ] = max;	img1[yx1+2    ] = max;
+		img1[yx1+3*w] = max; 	img1[yx1+3*w+1] = max; 	img1[yx1+3*w+2] = max;
+		img1[yx1+6*w] = max; 	img1[yx1+6*w+1] = max;	img1[yx1+6*w+2] = max;
 	}
 }
 
-void seg_corn_edge(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
+static inline void corner(imgtype *img, imgtype *img1,  uint32 x, uint32 y, uint32 w, uint32 h)
+{
+	uint32 g[4], min, m, in, yx, yx1, n;
+	yx = y*w+x;
+
+	if(img[yx]){
+		m = img[yx];
+		yx1 = y*w*9 + 3*w + x*3 + 1;
+		n = yx1-21*w;
+		img1[n-7]=m; img1[n-6]=m; img1[n-5]=m; img1[n-4]=m; img1[n-3]=m; img1[n-2]=m; img1[n-1]=m; img1[n]=m;
+		img1[n+1]=m; img1[n+2]=m; img1[n+3]=m; img1[n+4]=m; img1[n+5]=m; img1[n+6]=m; img1[n+7]=m;
+		n = yx1-18*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1-15*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1-12*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1-9*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1-6*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1-3*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1     ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+3*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+6*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+9*w ; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+12*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+15*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+18*w; img1[n-7]=m; img1[n+7]=m;
+		n = yx1+21*w;
+		img1[n-7]=m; img1[n-6]=m; img1[n-5]=m; img1[n-4]=m; img1[n-3]=m; img1[n-2]=m; img1[n-1]=m; img1[n]=m;
+		img1[n+1]=m; img1[n+2]=m; img1[n+3]=m; img1[n+4]=m; img1[n+5]=m; img1[n+6]=m; img1[n+7]=m;
+
+	}
+}
+
+void seg_corn_edge(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
 	//for(y=w; y < sq; y+=w){
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			//yx = y + x;
-			//check_corn(img, img1, x, y, w, h, th);
-			rainfalling(img, img1, x, y, w, h, th);
+			//rainfalling(img, img1, img2, x, y, w, h, th);
+			edge(img, img2, x, y, w, h);
+		}
+	}
+	for(y=2; y < h-2; y++){
+		for(x=2; x < w-2; x++){
+			//yx = y + x;
+			//rainfalling(img, img1, img2, x, y, w, h, th);
+			corner(img1, img2, x, y, w, h);
 		}
 	}
 }
@@ -1947,7 +2051,50 @@ void seg_rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 	}
 }
 
-void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
+void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
+	//for(y=w; y < sq; y+=w){
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			//yx = y + x;
+			//check_corn(img, img1, x, y, w, h, th);
+			canny(img, img1, img2, x, y, w, h, th);
+		}
+	}
+}
+
+void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	/// | |x| |      | | | |      |x| | |      | | |x|
+	/// | |x| |      |x|x|x|      | |x| |      | |x| |
+	/// | |x| |      | | | |      | | |x|      |x| | |
+	///  g[2]         g[0]         g[1]         g[3]
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+	//for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			//g[0] = abs(img[yx-1  ] - img[yx+1  ])>>th;
+			//g[1] = abs(img[yx-1-w] - img[yx+1+w])>>th;
+			//g[2] = abs(img[yx-w  ] - img[yx+w  ])>>th;
+			//g[3] = abs(img[yx+1-w] - img[yx-1+w])>>th;
+			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			max = g[0]; in = 0;
+			if(max < g[1]) { max = g[1]; in = 1;}
+			if(max < g[2]) { max = g[2]; in = 2;}
+			if(max < g[3]) { max = g[3]; in = 3;}
+			//img1[yx] = max<<th; img2[yx] = in;
+			img1[yx] = max>>th ? max : 0; img2[yx] = in;
+		}
+	}
+}
+
+void seg_grad1(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
 	uint32 g[2];
@@ -2000,4 +2147,81 @@ void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th)
 	}
 }
 
+static inline uint32 check_corner(imgtype *img, uint32 yx, uint32 w)
+// |g[1]|    |g[2]|    |g[3]|
+// --------------------------
+// |    |g[1]|g[2]|g[3]|    |
+// --------------------------
+// |g[0]|g[0]|    |g[4]|g[4]|
+// --------------------------
+// |    |g[7]|g[6]|g[5]|    |
+// --------------------------
+// |g[7]|    |g[6]|    |g[5]|
+// --------------------------
 
+{
+	uint32 g[8], w2 = w<<1, con = 0;
+	int i;
+
+	if(img[yx-1] && img[yx-2]) 	g[0] = (img[yx-1] + img[yx-2])>>1;
+	else g[0] = 0;
+	if(img[yx-w] && img[yx-w2]) g[2] = (img[yx-w] + img[yx-w2])>>1;
+	else g[2] = 0;
+	if(img[yx+1] && img[yx+2]) 	g[4] = (img[yx+1] + img[yx+2])>>1;
+	else g[4] = 0;
+	if(img[yx+w] && img[yx+w2]) g[6] = (img[yx+w] + img[yx+w2])>>1;
+	else g[6] = 0;
+	if(img[yx-w-1] && img[yx-w2-2]) g[1] = (img[yx-w-1] + img[yx-w2-2])>>1;
+	else g[1] = 0;
+	if(img[yx-w+1] && img[yx-w2+2]) g[3] = (img[yx-w+1] + img[yx-w2+2])>>1;
+	else g[3] = 0;
+	if(img[yx+w+1] && img[yx+w2+2]) g[5] = (img[yx+w+1] + img[yx+w2+2])>>1;
+	else g[5] = 0;
+	if(img[yx+w-1] && img[yx+w2-2]) g[7] = (img[yx+w-1] + img[yx+w2-2])>>1;
+	else g[7] = 0;
+	for(i=0; i < 8; i++){
+		if(g[i]){
+			if(g[(i+1)&7]) { con = 1; break;}
+			if(g[(i+2)&7]) { con = 1; break;}
+			if(g[(i-1)&7]) { con = 1; break;}
+			if(g[(i+2)&7]) { con = 1; break;}
+		}
+	}
+	return con ? (g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7])>>1 : 0;
+}
+
+void seg_check_corner(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx,  w2 = w<<1, sq = w*h-w2, w1 = w-2;
+	for(y=w2; y < sq; y+=w){
+		for(x=2; x < w1; x++){
+			yx = y + x;
+			img1[yx] = check_corner(img, yx, w);
+		}
+	}
+}
+
+static inline void edgelet_new(Edge *edge, Edgelet *edgel, imgtype *img, uint32 yx, uint32 *nedg, uint32 *nedgl)
+{
+	edgel[*nedgl].len = 0; edgel[*nedgl].pow = 0; edgel[*nedgl].dir = 0;  edgel[*nedgl].yx = yx;
+	(*nedgl)++;
+}
+
+static inline void edge_new(Edge *edge, Edgelet *edgel, imgtype *img, uint32 yx, uint32 *nedg, uint32 *nedgl)
+{
+	edge[*nedg].len = 0; edge[*nedg].pow = 0; edge[*nedg].nedgl = 0;  edge[*nedg].yx = yx;
+
+}
+
+static inline check_left(imgtype *img, uint32 yx)
+{
+
+}
+
+void seg_edges(Edge *edge, Edgelet *edgel, imgtype *img, uint32 w, uint32 h)
+{
+	uint32 x;
+	for(x=1; x < w; x++){
+
+	}
+}

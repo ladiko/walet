@@ -554,38 +554,49 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	//for(i=0; i < w*h; i++) gw->gop->buf[i] = gw->gop->frames[0].Y[sn].pic[i];
 	for(i=0; i < w*h; i++) gw->gop->frames[0].rgb[sn].pic[i] = 0;
-	seg_grad(gw->gop->frames[0].Y[sn].pic, gw->gop->frames[0].rgb[sn].pic, w, h, 3);
-	//filter_average(gw->gop->frames[0].rgb[sn].pic, gw->gop->frames[0].Y[sn].pic, w, h, 0);
+	seg_grad(gw->gop->frames[0].Y[sn].pic, gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, w, h, 3);
 
 	new_buffer (gw->orig[0], w, h);
-	//utils_grey_draw(gw->gop->frames[0].Y[sn].pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
 	utils_grey_draw(gw->gop->frames[0].rgb[sn].pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-	for(i=0; i < w*h*9; i++) gw->gop->buf[i] = 0;
-	seg_corn_edge(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, w, h, 2);
+	filter_average(gw->gop->frames[0].rgb[sn].pic, gw->gop->frames[0].Y[sn].pic, w, h, 4);
 
-	new_buffer (gw->orig[1], w*3, h*3);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w*3, h*3);
+	new_buffer (gw->orig[1], w, h);
+	utils_grey_draw(gw->gop->frames[0].Y[sn].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
-	for(i=0; i < w*h; i++) gw->gop->buf[i] = 255;
-	seg_rain(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, &gw->gop->buf[w*h], w, h, 2);
+	//for(i=0; i < w*h; i++) gw->gop->buf[i] = 255;
+	seg_canny(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, &gw->gop->buf[w*h], w, h, 2);
 
 	new_buffer (gw->orig[2], w, h);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
+	utils_grey_draw(&gw->gop->buf[w*h], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 
-	seg_remove(gw->gop->buf, &gw->gop->buf[w*h], w, h, 2);
-	//seg_remove(gw->gop->buf, &gw->gop->buf[w*h], w, h, 2);
-	//seg_remove(gw->gop->buf, &gw->gop->buf[w*h], w, h, 2);
+
+	for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] = gw->gop->frames[0].rgb[sn].pic[i];
+	seg_rain(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, &gw->gop->buf[w*h<<1], w, h, 2);
 
 	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	utils_grey_draw(&gw->gop->buf[w*h<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
+	//for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] -= gw->gop->buf[(w*h)+i];
+	//new_buffer (gw->orig[1], w, h);
+	//utils_grey_draw(&gw->gop->buf[(w*h<<1)], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
+	//gtk_widget_queue_draw(gw->drawingarea[1]);
+
+	//for(i=0; i < w*h*9; i++) gw->gop->buf[(w*h<<1)+i] = 0;
+	//seg_corn_edge(&gw->gop->buf[w*h], gw->gop->buf, &gw->gop->buf[(w*h<<1)], w, h, 2);
+
+	//new_buffer (gw->orig[1], w*3, h*3);
+	//utils_grey_draw(&gw->gop->buf[(w*h<<1)], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w*3, h*3);
+	//gtk_widget_queue_draw(gw->drawingarea[1]);
+
 
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Corner and Edge detection time = %f\n", (double)(end-start)/1000000.);
