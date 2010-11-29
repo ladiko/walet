@@ -30,8 +30,10 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->prow = (Row **)calloc(width*height<<1, sizeof(Row*));
 	gop->preg = (Region **)calloc(width*height, sizeof(Region*));*/
 
-	gop->edge = (Edge *)calloc(width*height, sizeof(Edge));
-	gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
+	gop->edg = (Edge *)calloc(width*height, sizeof(Edge));
+	gop->pix = (Pixel *)calloc(width*height, sizeof(Pixel));
+	gop->pedg = (Edge **)calloc(width, sizeof(Edge*));
+	//gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
 
 
 	//printf("d_bits = %d\n", 1<<(bpp+3));
@@ -91,8 +93,10 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->prow = (Row **)calloc(width*height, sizeof(Row*));
 	gop->preg = (Region **)calloc(width*height, sizeof(Region*));*/
 
-	gop->edge = (Edge *)calloc(width*height, sizeof(Edge));
-	gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
+	gop->edg = (Edge *)calloc(width*height, sizeof(Edge));
+	gop->pix = (Pixel *)calloc(width*height, sizeof(Pixel));
+	gop->pedg = (Edge **)calloc(width, sizeof(Edge*));
+	//gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
 
 	printf("Buffer init\n");
 	//Frames init
