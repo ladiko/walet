@@ -157,20 +157,32 @@ typedef struct Object Object;
 typedef struct Corner Corner;
 typedef struct Edge Edge;
 typedef struct Edgelet Edgelet;
+typedef struct Pixel Pixel;
+
+struct Pixel {
+	 uint32		yx;		//YX coordinate
+	 uchar		dir;	////The direction 00 - left; 01 - top; 10 - right; 11 - bottom;
+	 //uint16		y;		//Y coordinate
+	 imgtype	img;		//The pixel value
+	 Edge 		*edg;	//Pointer to the edge included pixel
+};
 
 struct Edge {
 	uint32 	yx;		//The start point
 	uint32	len;	//The length of edge
+	uint32 	pixc;	//Pixel counter
 	uint32	pow;	//The power of edge
-	uint32	nedgl;	//The numbers of Edgelets in the Edge
-	Edgelet *edgl;	//The pointer to Edgelet array
+	//uint32	nedgl;	//The numbers of Edgelets in the Edge
+	//Edgelet *edgl;	//The pointer to Edgelet array
+	uchar	*dir;	//The pointer to direction array
+	Edge	*edg;	//The pointer to connected edge
 };
 
 struct Edgelet {
 	uint32 	yx;		//The start point
 	uchar 	len;	//The length of edgelet
 	uint32	pow;	//The power of edgelet
-	uint32	dir;	//The direction 00 - left; 01 - top; 10 - right; 11 - bottom; max 16 dor per Edgelet
+	uint32	dir;	//The direction 00 - left; 01 - top; 10 - right; 11 - bottom; max 16 dot per Edgelet
 };
 
 struct Object{

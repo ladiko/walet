@@ -2089,7 +2089,7 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			if(max < g[2]) { max = g[2]; in = 2;}
 			if(max < g[3]) { max = g[3]; in = 3;}
 			//img1[yx] = max<<th; img2[yx] = in;
-			img1[yx] = max>>th ? max : 0; img2[yx] = in;
+			img1[yx] = max>>th ? (max >= 255 ? 254 : max): 0; img2[yx] = in;
 		}
 	}
 }
@@ -2201,27 +2201,120 @@ void seg_check_corner(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	}
 }
 
-static inline void edgelet_new(Edge *edge, Edgelet *edgel, imgtype *img, uint32 yx, uint32 *nedg, uint32 *nedgl)
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline void edge_new(Edge *edg, uint32 yx)
 {
-	edgel[*nedgl].len = 0; edgel[*nedgl].pow = 0; edgel[*nedgl].dir = 0;  edgel[*nedgl].yx = yx;
-	(*nedgl)++;
+	//(*nedg)++;
+	edg->len = 0; edg->pow = 0; edg->yx = yx; edg->pixc = 0;
 }
 
-static inline void edge_new(Edge *edge, Edgelet *edgel, imgtype *img, uint32 yx, uint32 *nedg, uint32 *nedgl)
+static inline void add_pix(Edge *edg, Pixel *pix, imgtype *img, uint32 yx)
 {
-	edge[*nedg].len = 0; edge[*nedg].pow = 0; edge[*nedg].nedgl = 0;  edge[*nedg].yx = yx;
-
+	//(*npix)++;
+	edg->len++; edg->pow += img[yx];
+	pix->yx = yx; pix->img = img[yx]; pix->edg = edg;
 }
 
-static inline check_left(imgtype *img, uint32 yx)
+void seg_edges1(Edge *edg, Pixel *pix, Edge **pedg, uchar *dir, imgtype *img, uint32 w, uint32 h)
 {
+	uint32 x = 0, y = 0, yx, h2 = h*w, tmp=0;
+	int nedg = 0, npix = 0;
+	//Pixel **ppix0 = ppix, **ppix1 = &ppix[w];
+	uchar mask = 3;
 
-}
-
-void seg_edges(Edge *edge, Edgelet *edgel, imgtype *img, uint32 w, uint32 h)
-{
-	uint32 x;
+	yx = 0;
+	if(img[0]){
+		edge_new(&edg[nedg], yx);
+		add_pix(&edg[nedg], &pix[npix],img, yx);
+		pedg[x] = &edg[nedg];
+		nedg++; npix++;
+	}
+	y = 0;
 	for(x=1; x < w; x++){
+		yx = x + y;
+		if(img[yx]){
+			if(img[yx-1]){
+				add_pix(pedg[x-1], &pix[npix],img, yx);
+				pedg[x] = pedg[x-1];
+				npix++;
+			} else {
+				edge_new(&edg[nedg], yx);
+				add_pix(&edg[nedg], &pix[npix],img, yx);
+				pedg[x] = &edg[nedg];
+				nedg++; npix++;
+			}
+		}
+	}
+	for(y=w; y < h2; y+=w){
+		yx = y;
+		if(img[yx]){
+			if(img[yx-w]){
+				add_pix(pedg[x], &pix[npix],img, yx);
+				npix++;
+			} else {
+				edge_new(&edg[nedg], yx);
+				add_pix(&edg[nedg], &pix[npix],img, yx);
+				pedg[x] = &edg[nedg];
+				nedg++; npix++;
+			}
+		}
+		for(x=1; x < w; x++){
+			yx = y + x;
+			if(img[yx]){
+				if(img[yx-1]){
+					add_pix(pedg[x-1], &pix[npix],img, yx);
+					pedg[x] = pedg[x-1];
+					npix++;
+				} else if(img[yx-w]){
+					add_pix(pedg[x], &pix[npix],img, yx);
+					npix++;
+				} else {
+					edge_new(&edg[nedg], yx);
+					add_pix(&edg[nedg], &pix[npix],img, yx);
+					pedg[x] = &edg[nedg];
+					nedg++; npix++;
+				}
+			}
+		}
+	}
 
+	printf("nedg = %d npix = %d\n", nedg, npix);
+	for(x=0; x < npix; x++){
+		if(!pix[x].edg->pixc){
+			pix[x].edg->dir[pix[x].edg->pixc>>2] += (pix[x].dir<<(pix[x].edg->pixc & mask));
+			pix[x].edg->pixc++;
+		} else {
+			pix[x].edg->pow /= pix[x].edg->len;
+			pix[x].edg->dir = &dir[tmp];
+			pix[x].edg->dir[0] = pix[x].dir;
+			tmp += ((pix[x].edg->len>>2) + 1);
+			pix[x].edg->pixc++;
+		}
+	}
+}
+
+void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, uchar *dir, imgtype *img, uint32 w, uint32 h)
+{
+	uint32 x = 0, y = 0, yx, h2 = h*w-w, w1 = w-1, tmp=0;
+	int nedg = 0, npix = 0;
+	//Pixel **ppix0 = ppix, **ppix1 = &ppix[w];
+	uchar mask = 3;
+	for(y=w; y < h2; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			if(img[yx] && img[yx]!=255){
+				edge_new(&edg[nedg], yx);
+				add_pix(&edg[nedg], &pix[npix],img, yx);
+				if(img[yx+1]){
+
+				}
+				if(img[yx+w]){
+
+				}
+			}
+		}
 	}
 }

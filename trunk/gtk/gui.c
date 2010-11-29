@@ -576,13 +576,14 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw(&gw->gop->buf[w*h], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 
+	seg_edges(gw->gop->edg, gw->gop->pix, gw->gop->pedg, &gw->gop->buf[w*h], &gw->gop->buf[w*h<<1], w, h);
 
-	for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] = gw->gop->frames[0].rgb[sn].pic[i];
-	seg_rain(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, &gw->gop->buf[w*h<<1], w, h, 2);
+	//for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] = gw->gop->frames[0].rgb[sn].pic[i];
+	//seg_rain(gw->gop->frames[0].rgb[sn].pic, gw->gop->buf, &gw->gop->buf[w*h<<1], w, h, 2);
 
-	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(&gw->gop->buf[w*h<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
+	//new_buffer (gw->orig[3], w, h);
+	//utils_grey_draw(&gw->gop->buf[w*h<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	//gtk_widget_queue_draw(gw->drawingarea[3]);
 
 
 	//for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] -= gw->gop->buf[(w*h)+i];

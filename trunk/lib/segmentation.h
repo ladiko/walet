@@ -50,6 +50,9 @@ void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th);
 void seg_check_corner(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th);
 
+
+void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, uchar *dir,imgtype *img, uint32 w, uint32 h);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
