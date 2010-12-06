@@ -1947,7 +1947,7 @@ static inline void rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, ui
 	} else img2[yx] = 0;
 }
 
-static inline void canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h, uint32 th)
+static inline void canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, uint32 y, uint32 w, uint32 h)
 {
 	uint32 g[4], min, max, in, yx, yx1;
 	yx = y*w+x;
@@ -1957,18 +1957,18 @@ static inline void canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 x, u
 			if((img[yx] > img[yx-1]) && (img[yx] > img[yx+1])) img2[yx] = img[yx];
 			else img2[yx] = 0;
 		}
-		if(img1[yx] == 1){
-			if((img[yx] > img[yx-w-1]) && (img[yx] > img[yx+w+1])) img2[yx] = img[yx];
-			else img2[yx] = 0;
-		}
+		//if(img1[yx] == 1){
+		//	if((img[yx] > img[yx-w-1]) && (img[yx] > img[yx+w+1])) img2[yx] = img[yx];
+		//	else img2[yx] = 0;
+		//}
 		if(img1[yx] == 2){
 			if((img[yx] > img[yx-w]) && (img[yx] > img[yx+w])) img2[yx] = img[yx];
 			else img2[yx] = 0;
 		}
-		if(img1[yx] == 3){
-			if((img[yx] > img[yx-w+1]) && (img[yx] > img[yx+w-1])) img2[yx] = img[yx];
-			else img2[yx] = 0;
-		}
+		//if(img1[yx] == 3){
+		//	if((img[yx] > img[yx-w+1]) && (img[yx] > img[yx+w-1])) img2[yx] = img[yx];
+		//	else img2[yx] = 0;
+		//}
 	} else img2[yx] = 0;
 }
 
@@ -2051,7 +2051,7 @@ void seg_rain(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 	}
 }
 
-void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, dif;
 	//for(y=w; y < sq; y+=w){
@@ -2059,7 +2059,7 @@ void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, u
 		for(x=1; x < w1; x++){
 			//yx = y + x;
 			//check_corn(img, img1, x, y, w, h, th);
-			canny(img, img1, img2, x, y, w, h, th);
+			canny(img, img1, img2, x, y, w, h);
 		}
 	}
 }
@@ -2076,18 +2076,14 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 	//for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y + x;
-			//g[0] = abs(img[yx-1  ] - img[yx+1  ])>>th;
-			//g[1] = abs(img[yx-1-w] - img[yx+1+w])>>th;
-			//g[2] = abs(img[yx-w  ] - img[yx+w  ])>>th;
-			//g[3] = abs(img[yx+1-w] - img[yx-1+w])>>th;
 			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
-			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+			//g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
-			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			//g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 			max = g[0]; in = 0;
-			if(max < g[1]) { max = g[1]; in = 1;}
+			//if(max < g[1]) { max = g[1]; in = 1;}
 			if(max < g[2]) { max = g[2]; in = 2;}
-			if(max < g[3]) { max = g[3]; in = 3;}
+			//if(max < g[3]) { max = g[3]; in = 3;}
 			//img1[yx] = max<<th; img2[yx] = in;
 			img1[yx] = max>>th ? (max >= 255 ? 254 : max): 0; img2[yx] = in;
 		}
@@ -2305,6 +2301,11 @@ static inline uint32 is_begin(imgtype *img, uint32 yx, uint32 w )
 		if(img[yx-w]) is++;
 		if(img[yx+1]) is++;
 		if(img[yx+w]) is++;
+
+		if(img[yx-1-w]) is++;
+		if(img[yx+1-w]) is++;
+		if(img[yx-1+w]) is++;
+		if(img[yx+1+w]) is++;
 	}
 	return is == 1 ? 1 : 0;
 }
@@ -2317,6 +2318,11 @@ static inline int direction(imgtype *img, uint32 yx, uint32 yx1, uint32 w )
 	if(img[yx-w] && ((yx-w) != yx1)) if(img[yx-w]!=255) in = -w;
 	if(img[yx+1] && ((yx+1) != yx1)) if(img[yx+1]!=255) in =  1;
 	if(img[yx+w] && ((yx+w) != yx1)) if(img[yx+w]!=255) in =  w;
+
+	if(img[yx-1-w] && ((yx-1-w) != yx1)) if(img[yx-1-w]!=255) in = -1-w;
+	if(img[yx+1-w] && ((yx+1-w) != yx1)) if(img[yx+1-w]!=255) in =  1-w;
+	if(img[yx-1+w] && ((yx-1+w) != yx1)) if(img[yx-1+w]!=255) in = -1+w;
+	if(img[yx+1+w] && ((yx+1+w) != yx1)) if(img[yx+1+w]!=255) in =  1+w;
 	//printf("img0 = %d img1 = %d img2 = %d img4 = %d \n", img[yx-1], img[yx-w], img[yx+1], img[yx+w]);
 	//printf("new = %d new1 = %d dir = %d\n",yx, yx1, in);
 	//printf("yx = %d yx1 = %d\n", yx, yx1);

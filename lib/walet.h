@@ -147,7 +147,7 @@ typedef struct {
 	uchar 		steps;  		// Steps of DWT
 	uchar		gop_size;		// GOP size
 	uchar		rates;			// Frame rates
-	uchar		comp;			// Compression in times to original image if 1 - lossless
+	uchar		comp;			// Compression in times to original image if 1 - lossless 0-without any compression raw bayer format
 	uchar		fb;				// Filters for wavelet transform
 } WaletHeader;
 

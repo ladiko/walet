@@ -62,6 +62,11 @@ uchar* YUV420p_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 w, 
 //extern void fill_rect_hor(imgmv *pic,  Vector size,  Vector rec_left_top,  Vector rec_right_bot,  Vector line);
 //extern void fill_rect_ver(imgmv *pic,  Vector size,  Vector rec_left_top,  Vector rec_right_bot,  Vector line);
 
+
+uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, imgtype **img);
+void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h);
+void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32 h);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
