@@ -327,10 +327,10 @@ void frame_segmetation(GOP *gop, uint32 fr)
 
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		util_bayer_to_rgb(im->img, frm->rgb[0].pic, gop->width, gop->height);
-		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		util_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
+		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
+		seg_canny(frm->grad[0].pic, gop->buf, frm->con[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//Scaling images
 		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
 		//for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
@@ -350,7 +350,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 			//seg_connect_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
 		//}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Median time      = %f\n", (double)(end-start)/1000000.);
+		printf("Segmentation time      = %f\n", (double)(end-start)/1000000.);
 	}
 }
 

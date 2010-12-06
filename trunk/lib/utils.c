@@ -1448,3 +1448,71 @@ uchar* YUV420p_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 w, 
 	}
 	return rgb;
 }
+
+uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, imgtype **img)
+{
+    //FILE *wl;
+    uchar line[100];
+    uint32 byts;
+
+	wl = fopen(filename, "rb");
+    if(wl == NULL) {
+    	printf("Can't open file %s\n", filename);
+    	return 0;
+    }
+	//byts = fscanf(wl, "%s%s%s%s%s%s%s", line[0], line[1], line[2], line[3], line[4], line[5], line[6]);
+	byts = fscanf(wl, "%s", line);
+	if (strcmp(line, "P6") != 0) {
+		printf ("It's not PPM file");
+		return 0;
+	}
+	byts = fscanf(wl, "%s", line);
+	if(line[0] == '#'){
+		fgets(line, 100, wl);
+	} else {
+		*w = atoi(line);
+		byts = fscanf(wl, "%s", line); *h = atoi(line);
+		byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+	}
+
+	byts = fscanf(wl, "%s", line); *w = atoi(line);
+	byts = fscanf(wl, "%s", line); *h = atoi(line);
+	byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+	printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
+	fgetc(wl);
+
+	*img = (imgtype *)calloc((*w)*(*h)*(*bpp)*3, sizeof(imgtype));
+	byts = fread(*img, sizeof(imgtype), (*w)*(*h)*(*bpp)*3,  wl);
+	if(byts != (*w)*(*h)*(*bpp)*3){ printf("Image read error\n");}
+	//printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp)*3);
+    fclose(wl);
+	//fclose(wl);
+	return byts;
+}
+
+void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h)
+{
+	uint32 w1 = w<<1, h1 = h<<1, w3 = w*3, x, x1, y, y1, yx, yx1;
+	for(y=0, y1=0; y < h1; y+=2, y1++){
+		for(x=0, x1=0; x < w1; x+=2, x1+=3){
+			yx = y*w1 + x;
+			yx1 = y1*w3 + x1;
+			bay[yx] = rgb[yx1];
+			bay[yx+1] = rgb[yx1+1];
+			bay[yx+w1] = rgb[yx1+1];
+			bay[yx+w1+1] = rgb[yx1+2];
+		}
+	}
+}
+
+void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32 h)
+{
+	uint32 sq = w*h, x, y, yx;
+	for(y=0; y < sq; y+=w){
+		for(x=0; x < w; x++){
+			yx = y + x;
+			sub[yx] = abs(img2[yx] - img1[yx]);
+		}
+	}
+
+}

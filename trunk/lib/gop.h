@@ -29,6 +29,10 @@ typedef struct {
 	Row				**prow;		//The array of pointers to Rows
 	Region			**preg;		//The array of pointers to Regions
 
+	Picture			subs;		//Images Substruction
+	Picture			grad;		//Images gradient of substruction
+	Picture			con;		//Images contur of substruction
+
 	Edge			*edg;		//The array of edges
 	Pixel			*pix;		//The array of pixeles
 	Edge			**pedg;		//The array of pointers to Edge
