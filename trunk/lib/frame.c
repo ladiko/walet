@@ -331,6 +331,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
 		seg_canny(frm->grad[0].pic, gop->buf, frm->con[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_edges(gop->edg, gop->pix, gop->pedg, frm->con[0].pic, frm->con[0].width, frm->con[0].height);
 		//Scaling images
 		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
 		//for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);

@@ -465,7 +465,7 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	for(x=0; x < gw->gop->subs.width*gw->gop->subs.height; x++){
 		if(gw->gop->frames[0].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
-		if(gw->gop->frames[1].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
+		//if(gw->gop->frames[1].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
 	}
 
 	new_buffer (gw->orig[1],gw->gop->subs.width, gw->gop->subs.height);

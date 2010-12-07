@@ -2329,13 +2329,12 @@ static inline int direction(imgtype *img, uint32 yx, uint32 yx1, uint32 w )
 	return in;
 }
 
-void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, uchar *dir, imgtype *img, uint32 w, uint32 h)
+void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h2 = h*w-w, w1 = w-1, tmp=0, i;
 	int nedg = 0, npix = 0, d, new, new1;
 	uchar mask = 3;
 	for(y=w; y < h2; y+=w){
-	//for(y=w; y < 239*w; y+=w){
 		for(x=1; x < w1; x++){
 			yx = y + x;
 			//printf("img[%d] = %d\n", yx, img[yx]);
@@ -2346,7 +2345,6 @@ void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, uchar *dir, imgtype *img, uin
 				add_pix (&edg[nedg], &pix[npix], img, yx); npix++; img[yx] = 255;
 				new1 = yx; new = yx;
 				while(1){
-				//for(i=0; i<10;i++){
 					d = direction(img, new, new1, w);
 					if(!d) break;
 					new1 = new; new = new + d;
