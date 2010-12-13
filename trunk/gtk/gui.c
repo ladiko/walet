@@ -586,6 +586,10 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw(gw->gop->frames[nf].con[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
+	new_buffer (gw->orig[0], w, h);
+	utils_grey_draw(gw->gop->frames[nf].pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+
 
 	//for(i=0; i < w*h; i++) gw->gop->buf[(w*h<<1)+i] -= gw->gop->buf[(w*h)+i];
 	//new_buffer (gw->orig[1], w, h);
