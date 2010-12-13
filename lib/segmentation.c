@@ -2307,7 +2307,7 @@ static inline uint32 is_begin(imgtype *img, uint32 yx, uint32 w )
 		if(img[yx-1+w]) is++;
 		if(img[yx+1+w]) is++;
 	}
-	return is == 1 ? 1 : 0;
+	return (is == 1 || is == 3) ? 1 : 0;
 }
 
 static inline int direction(imgtype *img, uint32 yx, uint32 yx1, uint32 w )
@@ -2355,4 +2355,45 @@ void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, imgtype *img, uint32 w, uint3
 		}
 	}
 	printf("nedg = %d npix = %d\n", nedg, npix);
+}
+
+void seg_cluster(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1, is = 0, npix = 0;
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			if(img[yx]){
+				if(	img[yx-1] 	<= img[yx]) {
+					if(img1[yx-1] == 255) goto no;
+				} else goto no;
+				if(	img[yx-w]	<= img[yx]){
+					if(img1[yx-w] == 255) goto no;
+				} else goto no;
+				if(	img[yx+1] 	<= img[yx]){
+					if(img1[yx+1] == 255) goto no;
+				} else goto no;
+				if(	img[yx+w] 	<= img[yx]){
+					if(img1[yx+w] == 255) goto no;
+				} else goto no;
+				if(	img[yx-1-w] <= img[yx]){
+					if(img1[yx-1-w] == 255) goto no;
+				} else goto no;
+				if(	img[yx+1-w] <= img[yx]){
+					if(img1[yx+1-w] == 255) goto no;
+				} else goto no;
+				if(	img[yx-1+w] <= img[yx]){
+					if(img1[yx-1+w] == 255) goto no;
+				} else goto no;
+				if(	img[yx+1+w] <= img[yx]){
+					if(img1[yx+1+w] == 255) goto no;
+				} else goto no;
+
+				img1[yx] = 255; npix++;//goto yes;
+				//no:			img1[yx] = 0;
+no:				img1[yx] = img1[yx];
+			}
+		}
+	}
+	printf("Numbers of pixels  = %d\n", npix);
 }

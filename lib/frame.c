@@ -45,6 +45,12 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->con[j].height = h>>(j+1);
 		frame->con[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
 	}
+	//Pixels of scaled images
+	for(j=0; j < 4; j++){
+		frame->pix[j].width  = w>>(j+1);
+		frame->pix[j].height = h>>(j+1);
+		frame->pix[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
+	}
 
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
@@ -332,6 +338,11 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
 		seg_canny(frm->grad[0].pic, gop->buf, frm->con[0].pic, frm->grad[0].width, frm->grad[0].height);
 		seg_edges(gop->edg, gop->pix, gop->pedg, frm->con[0].pic, frm->con[0].width, frm->con[0].height);
+		seg_cluster(frm->grad[0].pic, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+
+		filter_average(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height, 0);
+		seg_cluster(frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);
+
 		//Scaling images
 		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
 		//for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
