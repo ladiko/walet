@@ -2085,6 +2085,7 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			if(max < g[2]) { max = g[2]; in = 2;}
 			//if(max < g[3]) { max = g[3]; in = 3;}
 			//img1[yx] = max<<th; img2[yx] = in;
+			max = (g[0] + g[2])>>1;
 			img1[yx] = max>>th ? (max >= 255 ? 254 : max): 0; img2[yx] = in;
 		}
 	}
@@ -2357,7 +2358,14 @@ void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, imgtype *img, uint32 w, uint3
 	printf("nedg = %d npix = %d\n", nedg, npix);
 }
 
-void seg_cluster(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+static inline void new_pix(Pixel *pix, imgtype img, uint32 yx)
+{
+
+	pix->yx = yx; pix->img = img;
+}
+
+
+void seg_cluster( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1, is = 0, npix = 0;
 	for(y=w; y < sq; y+=w){
@@ -2389,11 +2397,55 @@ void seg_cluster(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 					if(img1[yx+1+w] == 255) goto no;
 				} else goto no;
 
-				img1[yx] = 255; npix++;//goto yes;
+				img1[yx] = 255;
+				new_pix(&pix[npix], img[yx], yx);
+				npix++;//goto yes;
 				//no:			img1[yx] = 0;
 no:				img1[yx] = img1[yx];
 			}
 		}
 	}
 	printf("Numbers of pixels  = %d\n", npix);
+}
+
+
+static inline uint32 is_pix(imgtype *img, uint32 yx)
+//Check for pixel
+{
+	return img[yx] == 255 ? 1 : 0;
+}
+
+static inline int max_8(imgtype *img, uint32 yx, uint32 w, int in1)
+//Check for pixel
+{
+	uint32 max = 0, yxmw = yx-w, yxpw = yx+w;
+	int in = 0;
+
+	if(in1 != -1  ) if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+	if(in1 != -1-w) if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+	if(in1 !=   -w) if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+	if(in1 !=  1-w) if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+	if(in1 !=  1  ) if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+	if(in1 !=  1+w) if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+	if(in1 !=    w) if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+	if(in1 != -1+w) if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+	return in;
+}
+
+void seg_line(Pixel *pix, uint32 npix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1, is = 0, nline = 0;
+	int d;
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			if(img[yx] == 255){
+				d = 0;
+				while(1){
+					d = max_8(img, yx, w, d);
+				}
+			}
+		}
+	}
+	printf("Numbers of lines  = %d\n", nline);
 }
