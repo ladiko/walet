@@ -2371,7 +2371,7 @@ void seg_cluster( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
 			yx = y + x;
-			if(img[yx]){
+			if(img[yx] && img1[yx] != 255){
 				if(	img[yx-1] 	<= img[yx]) {
 					if(img1[yx-1] == 255) goto no;
 				} else goto no;
@@ -2415,12 +2415,77 @@ static inline uint32 is_pix(imgtype *img, uint32 yx)
 	return img[yx] == 255 ? 1 : 0;
 }
 
-static inline int max_8(imgtype *img, uint32 yx, uint32 w, int in1)
+static inline int dir(imgtype *img, uint32 yx, uint32 w, int in1)
 //Check for pixel
 {
-	uint32 max = 0, yxmw = yx-w, yxpw = yx+w;
+	uint32 max = 0;
 	int in = 0;
-
+/*Fix it optimization*/
+	if(in1 != -1  ){
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		goto end;
+	}
+	if(in1 != -1-w){
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		goto end;
+	}
+	if(in1 !=   -w){
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		goto end;
+	}
+	if(in1 !=  1-w){
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		goto end;
+	}
+	if(in1 !=  1  ){
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		goto end;
+	}
+	if(in1 !=  1+w){
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		goto end;
+	}
+	if(in1 !=    w){
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		goto end;
+	}
+	if(in1 != -1+w){
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		goto end;
+	}
+	/*
 	if(in1 != -1  ) if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
 	if(in1 != -1-w) if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
 	if(in1 !=   -w) if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
@@ -2429,7 +2494,26 @@ static inline int max_8(imgtype *img, uint32 yx, uint32 w, int in1)
 	if(in1 !=  1+w) if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
 	if(in1 !=    w) if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
 	if(in1 != -1+w) if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+	*/
+end:
 	return in;
+}
+
+static inline uint32  local_max(imgtype *img, imgtype *img1, uint32 yx, uint32 w)
+//Check if the pixel is a local maximum
+{
+	/*Fix it optimization*/
+	if(img1[yx-1] 	!= 255) if(img[yx-1]	>= img[yx])  goto no;
+	if(img1[yx-w] 	!= 255) if(img[yx-w] 	>= img[yx])  goto no;
+	if(img1[yx+1] 	!= 255) if(img[yx+1] 	>= img[yx])  goto no;
+	if(img1[yx+w] 	!= 255) if(img[yx+w] 	>= img[yx])  goto no;
+	if(img1[yx-1-w] != 255) if(img[yx-1-w] 	>= img[yx])  goto no;
+	if(img1[yx+1-w] != 255) if(img[yx+1-w] 	>= img[yx])  goto no;
+	if(img1[yx-1+w] != 255) if(img[yx-1+w]	>= img[yx])  goto no;
+	if(img1[yx+1+w] != 255) if(img[yx+1+w] 	>= img[yx])  goto no;
+	return 1;
+no:
+	return 0;
 }
 
 void seg_line(Pixel *pix, uint32 npix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
@@ -2439,10 +2523,14 @@ void seg_line(Pixel *pix, uint32 npix, imgtype *img, imgtype *img1, uint32 w, ui
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
 			yx = y + x;
-			if(img[yx] == 255){
-				d = 0;
-				while(1){
-					d = max_8(img, yx, w, d);
+			if(img[yx]){
+				if(local_max(img, img1, yx, w)){
+					d = 0;
+					while(1){
+						if(!(d = dir(img, yx, w, -d))) break;
+						yx = yx + d;
+						img1[yx] = 255;
+					}
 				}
 			}
 		}

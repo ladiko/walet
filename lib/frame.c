@@ -343,7 +343,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		seg_cluster(gop->pix, frm->grad[0].pic, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		//filter_average(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height, 0);
-		//seg_cluster(frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);
+		//seg_cluster(gop->pix, frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);
 
 		//Scaling images
 		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
