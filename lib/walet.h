@@ -165,6 +165,7 @@ struct Pixel {
 	 //uint16		y;		//Y coordinate
 	 imgtype	img;		//The pixel value
 	 Edge 		*edg;	//Pointer to the edge included pixel
+	 Pixel *pix[2];		//Pointer to next pixels
 };
 
 struct Edge {
