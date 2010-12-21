@@ -339,9 +339,9 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
 		seg_canny(frm->grad[0].pic, gop->buf, frm->con[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_edges(gop->edg, gop->pix, gop->pedg, frm->con[0].pic, frm->con[0].width, frm->con[0].height);
+		//seg_edges(gop->edg, gop->pix, gop->pedg, frm->con[0].pic, frm->con[0].width, frm->con[0].height);
 		seg_cluster(gop->pix, frm->grad[0].pic, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_line(gop->pix, frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_line(gop->pix, frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		//filter_average(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height, 0);
 		//seg_cluster(gop->pix, frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);

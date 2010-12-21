@@ -2086,7 +2086,7 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			//if(max < g[3]) { max = g[3]; in = 3;}
 			//img1[yx] = max<<th; img2[yx] = in;
 			max = (g[0] + g[2])>>1;
-			img1[yx] = max>>th ? (max >= 255 ? 254 : max): 0; img2[yx] = in;
+			img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0; img2[yx] = in;
 		}
 	}
 }
@@ -2364,6 +2364,51 @@ static inline void new_pix(Pixel *pix, imgtype img, uint32 yx)
 	pix->yx = yx; pix->img = img; pix->pix[0] = NULL; pix->pix[1] = NULL;
 }
 
+static inline uint32 loc_max(imgtype *img, imgtype *img1, uint32 yx, uint32 w)
+{
+	if(	img[yx-1] 	<= img[yx]) {
+		if(img1[yx-1] == 255) goto no;
+	} else goto no;
+	if(	img[yx-w]	<= img[yx]){
+		if(img1[yx-w] == 255) goto no;
+	} else goto no;
+	if(	img[yx+1] 	<= img[yx]){
+		if(img1[yx+1] == 255) goto no;
+	} else goto no;
+	if(	img[yx+w] 	<= img[yx]){
+		if(img1[yx+w] == 255) goto no;
+	} else goto no;
+	if(	img[yx-1-w] <= img[yx]){
+		if(img1[yx-1-w] == 255) goto no;
+	} else goto no;
+	if(	img[yx+1-w] <= img[yx]){
+		if(img1[yx+1-w] == 255) goto no;
+	} else goto no;
+	if(	img[yx-1+w] <= img[yx]){
+		if(img1[yx-1+w] == 255) goto no;
+	} else goto no;
+	if(	img[yx+1+w] <= img[yx]){
+		if(img1[yx+1+w] == 255) goto no;
+	} else goto no;
+	return 1;
+no:
+	return 0;
+}
+
+static inline uint32 loc_max1(imgtype *img, uint32 yx, uint32 w)
+{
+	if(img[yx-1] 	> img[yx]) goto no;
+	if(img[yx-w]	> img[yx]) goto no;
+	if(img[yx+1] 	> img[yx]) goto no;
+	if(img[yx+w] 	> img[yx]) goto no;
+	if(img[yx-1-w]  > img[yx]) goto no;
+	if(img[yx+1-w]  > img[yx]) goto no;
+	if(img[yx-1+w]  > img[yx]) goto no;
+	if(img[yx+1+w]  > img[yx]) goto no;
+	return 1;
+no:
+	return 0;
+}
 
 void seg_cluster( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
@@ -2371,37 +2416,17 @@ void seg_cluster( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
 			yx = y + x;
-			if(img[yx] && img1[yx] != 255){
-				if(	img[yx-1] 	<= img[yx]) {
-					if(img1[yx-1] == 255) goto no;
-				} else goto no;
-				if(	img[yx-w]	<= img[yx]){
-					if(img1[yx-w] == 255) goto no;
-				} else goto no;
-				if(	img[yx+1] 	<= img[yx]){
-					if(img1[yx+1] == 255) goto no;
-				} else goto no;
-				if(	img[yx+w] 	<= img[yx]){
-					if(img1[yx+w] == 255) goto no;
-				} else goto no;
-				if(	img[yx-1-w] <= img[yx]){
-					if(img1[yx-1-w] == 255) goto no;
-				} else goto no;
-				if(	img[yx+1-w] <= img[yx]){
-					if(img1[yx+1-w] == 255) goto no;
-				} else goto no;
-				if(	img[yx-1+w] <= img[yx]){
-					if(img1[yx-1+w] == 255) goto no;
-				} else goto no;
-				if(	img[yx+1+w] <= img[yx]){
-					if(img1[yx+1+w] == 255) goto no;
-				} else goto no;
-
-				img1[yx] = 255;
-				//new_pix(&pix[npix], img[yx], yx);
-				npix++;//goto yes;
-				//no:			img1[yx] = 0;
-no:				img1[yx] = img1[yx];
+			if(img[yx]){
+				//if(loc_max1(img, yx, w)){
+				//	img[yx] = 0; img1[yx] = 255; npix++;
+				//}
+			//if(img[yx] && img1[yx] != 255){
+				if(loc_max1(img, yx, w)){
+				//if(loc_max(img, img1, yx, w)){
+					img1[yx] = 255; npix++;
+				} //else {
+				//	img1[yx] = img1[yx];
+				//}
 			}
 		}
 	}
@@ -2560,20 +2585,20 @@ void seg_line( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 				img[yx] = 0;
 					//for(i=0; i<50; i++){
 				while(1){
-					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
-					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
-					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					//printf("yx = %d d = %d\n", yx, d);
+					printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+					printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+					printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+					printf("yx = %d d = %d\n", yx, d);
 						//if(!d) break;
 					yx = yx + d;
 						//if(img[yx] == 255 || !img[yx]) break;
 					img1[yx] = 255;
-					//img[yx] = 0;
-					if(img[yx] == 0) break;
+					img[yx] = 0;
+					//if(img[yx] == 0) break;
 					//if(check_max(img1, yx, w)) break;
 					//if(img[yx] == 255 || img[yx] == 0) break;
 					if(img[yx] == 255) {
-						img[yx] = 0;
+						//img[yx] = 0;
 						new_pix(&pix[npix], img[yx], yx); npix++;
 						break;
 						//d = -d;
@@ -2582,7 +2607,6 @@ void seg_line( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 					//}
 					d = dir(img, yx, w, -d);
 					img[yx] = 0;
-
 				}
 					/*
 					yx = yx1;
