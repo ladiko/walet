@@ -11,6 +11,8 @@ typedef struct{
 	Picture pix[4];		// The clustering pixels
 	//Picture y[2]; 	//y[0] Y component y[1] gradient
 	//Picture pic[4]; 	// Scaled image for each color
+
+	Pixel	**pixs;		//The array of the pixeles pointers
 	uint32 	size;	//The number of pixels.
 	imgtype *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame
