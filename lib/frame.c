@@ -52,7 +52,7 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->pix[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
 	}
 	//Pointers to pixels array
-	frame->pixs = (Pixel **)calloc(frame->con[0].width*frame->con[0].height, sizeof(Pixel *));
+	frame->pixs = (Pixel *)calloc(frame->con[0].width*frame->con[0].height, sizeof(Pixel));
 
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
