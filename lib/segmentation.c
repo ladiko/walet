@@ -2499,9 +2499,9 @@ no:
 	return 1;
 }
 
-static inline void new_pix(Pixel *pix, imgtype img)
+static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
 {
-	pix->img = img; pix->nnei = 0;
+	pix->img = img; pix->nnei = 0; pix->x = x; pix->y = y;
 }
 
 static inline void new_line(Pixel *pix, Pixel *pix1)
@@ -2510,15 +2510,16 @@ static inline void new_line(Pixel *pix, Pixel *pix1)
 	pix1->pix[pix1->nnei] = pix; pix1->nnei++;
 }
 
-void seg_line( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_line(Pixel *pix, uint32 *npix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
-	uint32 y, x, yx, yx1, i, sq = w*h - w, w1 = w-1, is = 0, nline = 0, npix = 0;
+	uint32 y, y1, x, yx, yx1, i, sq = w*h - w, w1 = w-1, is = 0, nline = 0;
 	int d, d1;
-	for(y=w; y < sq; y+=w){
+	*npix = 0;
+	for(y=1, y1=w; y1 < sq; y++, y1+=w){
 		for(x=1; x < w1; x++){
-			yx = y + x;
+			yx = y1 + x;
 			if(img[yx] == 255 && !pix[yx].nnei){
-				new_pix(&pix[yx], img[yx]); npix++;
+				new_pix(&pix[yx], img[yx], x, y); (*npix)++;
 				d  = dir(img, yx, w, 0);
 				//d1 = dir(img, yx, w, d);
 				yx1 = yx;
@@ -2534,7 +2535,7 @@ void seg_line( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 							new_line(&pix[yx1], &pix[yx]); nline++;
 							break;
 						} else {
-							new_pix(&pix[yx], img[yx]); npix++;
+							new_pix(&pix[yx], img[yx], x, y); (*npix)++;
 							new_line(&pix[yx1], &pix[yx]); nline++;
 							yx1 = yx;
 						}
@@ -2557,6 +2558,47 @@ void seg_line( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 			}
 		}
 	}
-	printf("Numbers of pixels  = %d\n", npix);
+	printf("Numbers of pixels  = %d\n", *npix);
 	printf("Numbers of lines   = %d\n", nline);
+}
+
+static inline void draw_line(imgtype *img, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 w, uchar col)
+{
+	int dx = x2 - x1, dy = y2 - y1, xs, ys;
+	uint32 i, j, st, stx, sty, dxa = abs(dx), dya = abs(dy);
+	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
+	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
+
+	if(dxa >= dya){
+		st = dxa;
+		for(i=0,j=0; i < dxa; i++, j+=dya){
+			if(j > st){
+				st += dxa;
+				y1 += sty;
+			}
+			img[y1*w + x1] = col;
+			x1 += stx;
+		}
+	} else {
+		st = dya;
+		for(i=0,j=0; i < dya; i++, j+=dxa){
+			if(j > st){
+				st += dya;
+				x1 += stx;
+			}
+			img[y1*w + x1] = col;
+			y1 += sty;
+		}
+	}
+}
+
+void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
+{
+	uint32 i, j;
+	for(i=0; i < npix; i++){
+		if(pix[i].nnei) printf("%6d x = %4d y = %4d nnei = %d\n", i, pix[i].x, pix[i].y, pix[i].nnei);
+		for(j=0; j < pix[i].nnei; j++){
+			draw_line(img, pix[i].x, pix[i].y, pix[i].pix[j]->x, pix[i].pix[j]->y, w, 255);
+		}
+	}
 }
