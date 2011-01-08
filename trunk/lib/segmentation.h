@@ -50,7 +50,8 @@ void seg_remove(imgtype *img, imgtype *img2, uint32 w, uint32 h, uint32 th);
 void seg_check_corner(imgtype *img, imgtype *img1, uint32 w, uint32 h);
 void seg_canny(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h);
 void seg_local_max( Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h);
-void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void seg_line(Pixel *pix, uint32 *npix, imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h);
 
 
 void seg_edges(Edge *edg, Pixel *pix, Edge **pedg, imgtype *img, uint32 w, uint32 h);
