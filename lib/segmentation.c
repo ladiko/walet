@@ -2217,7 +2217,7 @@ static inline void add_pix(Edge *edg, Pixel *pix, imgtype *img, uint32 yx)
 {
 	//(*npix)++;
 	edg->len++; edg->pow += img[yx];
-	pix->img = img[yx]; //pix->yx = yx; pix->edg = edg;
+	//pix->img = img[yx]; //pix->yx = yx; pix->edg = edg;
 }
 
 static inline uint32 is_begin(imgtype *img, uint32 yx, uint32 w )
@@ -2437,13 +2437,13 @@ end:
 
 static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
 {
-	pix->img = img; pix->nnei = 0; pix->d = 0; pix->x = x; pix->y = y;
+	pix->nnei = 0; pix->d = 0; pix->x = x; pix->y = y; //pix->img = img;
 }
 
 static inline void new_line(Pixel *pix, Pixel *pix1)
 {
 	pix->pix[pix->nnei] = pix1; pix->nnei++;
-	pix1->pix[pix1->nnei] = pix; pix1->nnei++;
+	//pix1->pix[pix1->nnei] = pix; pix1->nnei++;
 }
 
 void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
@@ -2480,22 +2480,24 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	for(y=1, y1=w; y1 < sq; y++, y1+=w){
 		for(x=1; x < w1; x++){
 			yx = y1 + x;
-			if(img[yx] == 255 && pix[yx].nnei == 0){
+			if(img[yx] == 255 && pix[yx].d == 0){
 				d  = dir(img, yx, w, 0);
 				d1 = dir(img, yx, w, d);
 				yx1 = yx;
 				while(1){
 					yx = yx + d;
-					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
-					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
-					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					//printf("yx = %d d = %d\n", yx, d);
+					printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+					printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+					printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+					printf("yx = %d d = %d\n", yx, d);
 					if(img[yx] == 0) break;
 					if(img[yx] == 255){
 						//if(pix[yx].pix[0] == &pix[yx1]) break;
 						//new_pix(&pix[yx], img[yx], x, y); (*npix)++;
-						new_line(&pix[yx1], &pix[yx]); nline++;
-						pix[yx].d = d;
+						if(yx1 != yx) {
+							new_line(&pix[yx1], &pix[yx]); nline++;
+							pix[yx].d = pix[yx].d ? 100 : d;
+						}
 						//yx1 = yx;
 						break;
 					}
@@ -2505,43 +2507,47 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 				yx = yx1;
 				while(1){
 					yx = yx + d;
-					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
-					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
-					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					//printf("yx = %d d = %d\n", yx, d);
+					printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+					printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+					printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+					printf("yx = %d d = %d\n", yx, d);
 					if(img[yx] == 0) break;
 					if(img[yx] == 255){
 						//if(pix[yx].pix[0] == &pix[yx1]) break;
 						//new_pix(&pix[yx], img[yx], x, y); (*npix)++;
-						new_line(&pix[yx1], &pix[yx]); nline++;
-						pix[yx].d = d;
+						if(yx1 != yx) {
+							new_line(&pix[yx1], &pix[yx]); nline++;
+							pix[yx].d = pix[yx].d ? 100 : d;
+						}
 						//yx1 = yx;
 						break;
 					}
 					d = dir(img, yx, w, -d);
 				}
-			}/* else if(img[yx] == 255 && pix[yx].nnei == 1) {
-				d  = pix[yx].d;
+			} else if(img[yx] == 255 && pix[yx].d && pix[yx].d != 100) {
+				d = dir(img, yx, w, -pix[yx].d);
+				//d = pix[yx].d;
 				yx1 = yx;
 				while(1){
 					yx = yx + d;
-					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
-					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
-					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					//printf("yx = %d d = %d\n", yx, d);
+					printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+					printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+					printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+					printf("yx = %d d = %d\n", yx, d);
 					if(img[yx] == 0) break;
 					if(img[yx] == 255){
 						//if(pix[yx].pix[0] == &pix[yx1]) break;
 						//new_pix(&pix[yx], img[yx], x, y); (*npix)++;
-						new_line(&pix[yx1], &pix[yx]); nline++;
-						pix[yx].d = d;
+						if(yx1 != yx) {
+							new_line(&pix[yx1], &pix[yx]); nline++;
+							pix[yx].d = pix[yx].d ? 100 : d;
+						}
 						//yx1 = yx;
 						break;
 					}
 					d = dir(img, yx, w, -d);
 				}
-
-			}*/
+			}
 		}
 	}
 	//printf("Numbers of pixels  = %d\n", *npix);

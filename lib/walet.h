@@ -166,7 +166,7 @@ struct Pixel {
 	 //uchar		dir;	////The direction 00 - left; 01 - top; 10 - right; 11 - bottom;
 	 uchar		nnei;	//Number of neighborhood
 	 //uint16		y;		//Y coordinate
-	 imgtype	img;		//The pixel value
+	 //imgtype	img;		//The pixel value
 	 //Edge 		*edg;	//Pointer to the edge included pixel
 	 Pixel 		*pix[8];		//Pointer to next pixels
 };
