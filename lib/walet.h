@@ -160,8 +160,8 @@ typedef struct Edgelet Edgelet;
 typedef struct Pixel Pixel;
 
 struct Pixel {
-	 uint32		x;		//X coordinate
-	 uint32		y;		//Y coordinate
+	 uint16		x;		//X coordinate
+	 uint16		y;		//Y coordinate
 	 int		d;		//Direction of first neighborhood
 	 //uchar		dir;	////The direction 00 - left; 01 - top; 10 - right; 11 - bottom;
 	 uchar		out;	//If 0 - end pint if 1 - vector
@@ -170,7 +170,7 @@ struct Pixel {
 	 //imgtype	img;		//The pixel value
 	 //Edge 		*edg;	//Pointer to the edge included pixel
 	 //Pixel 		*vec;		//Pointer to next pixels
-	 Pixel 		*pix[4];	//Pointer to next pixels
+	 Pixel 		*pix[10];	//Pointer to next pixels
 	 uchar		pow;		//Line power
 };
 
