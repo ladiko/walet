@@ -278,8 +278,8 @@ static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
 static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow)
 {
 	//Pixel *pix2;
-	pix->out[pix->nout] = pix1; pix->pow[pix->nout] = pow; pix->nout++;
-	pix1->in[pix->nin] = pix; pix1->nin++;
+	pix->out = pix1;   pix->nout++; pix->pow = pow; //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
+	pix1->nin++;//pix1->in[pix->nin] = pix;
 	//pix->dif[0] = pix->x - pix1->x;  pix->dif[1] = pix->y - pix1->y;
 	/*
 	if(pix1->nout == 1 && pix->nout == 1) {
@@ -370,28 +370,26 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
 					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
 					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					if(yx > 2073600) break;
+					//if(yx > 2073600) break;
+					if(!img[yx]) break;
 					min = img[yx] < min ? img[yx] : min;
 					if(img[yx] == 254){
 						new_pix(&pix[yx1], img[yx1], x1, y1); npix++;
+						if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
 						//printf("1 npix = %d x = %d y = %d yx = %d nout = %d nin = %d\n", npix, x1, y1, yx1, pix[yx1].nout, pix[yx1].nin);
 						new_line(&pix[yx1], &pix[yx], min); nline++;
-						printf("1 nout = %d nin = %d x = %d y = %d\n",  pix[yx].nout, pix[yx].nin, pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+						//printf("1 nout = %d nin = %d  x = %d y = %d\n",  pix[yx].nout, pix[yx].nin, pix[yx1].out[0]->x, pix[yx1].out[0]->y);
 						//printf("1 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
 						break;
 					}
 					if(img[yx] == 255){
-						if(yx == yx1) {
-							new_pix(&pix[yx1], img[yx1], x1, y1); npix++;
-							img[yx1] = 254;
-							break;
-						}
+						img[yx1] = 254;
+						if(yx == yx1) break;
 						new_pix(&pix[yx1], img[yx1], x1, y1); npix++;
 						//printf("2 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x1, y1, yx1, pix[yx1].nout, pix[yx1].nin);
 						difx = xp - x1; dify = yp - y1;
 						yx2 = yx;
 						x2 = xp; y2 = yp;
-						img[yx1] = 254;
 						pc++; break;
 					}
 					dir1(img, w, yx, -dx, -dy, &dx, &dy);
@@ -407,28 +405,36 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 						//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
 						//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
 						//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-						if(yx > 2073600) break;
+						//if(yx > 2073600) break;
+						if(!img[yx]) {
+							new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+							new_line(&pix[yx1], &pix[yx2], min); nline++;
+							break;
+						}
 						min = img[yx] < min ? img[yx] : min;
 						if(img[yx] == 254) {
 							difx1 = difx; dify1 = dify;
 							difx = xp - x2; dify = yp - y2;
 							if(is_in_line(difx, dify, difx1, dify1)) {
+								if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
 								new_line(&pix[yx1], &pix[yx], min); nline++;
-								printf("2 x = %d y = %d\n",  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+								//printf("2 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
 								//printf("2 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
 							} else {
 								new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+								if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
 								//printf("3 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x2, y2, yx2, pix[yx2].nout, pix[yx2].nin);
 								new_line(&pix[yx1], &pix[yx2], min); nline++;
 								new_line(&pix[yx2], &pix[yx], min); nline++;
-								printf("3 x = %d y = %d\n",  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
-								printf("4 x = %d y = %d\n",  pix[yx2].out[0]->x, pix[yx2].out[0]->y);
+								//printf("3 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+								//printf("4 nout = %d nin = %d  x = %d y = %d\n", pix[yx2].nout, pix[yx2].nin,  pix[yx2].out[0]->x, pix[yx2].out[0]->y);
 								//printf("3 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  x2, y2, yx1 - y1*w - x1, yx2 - y2*w - x2);
 								//printf("4 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x2, y2,  xp, yp, yx2 - y2*w - x2, yx - yp*w - xp);
 							}
 							break;
 						}
 						if(img[yx] == 255){
+							img[yx2] = 254;
 							if(yx != yx2) {
 								difx1 = difx; dify1 = dify;
 								difx = xp - x2; dify = yp - y2;
@@ -436,10 +442,10 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 									yx2 = yx; x2 = xp; y2 = yp;
 								} else {
 									new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
-									img[yx2] = 254;
+									//img[yx2] = 254;
 									//printf("4 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x2, y2, yx2, pix[yx2].nout, pix[yx2].nin);
 									new_line(&pix[yx1], &pix[yx2], min); nline++;
-									printf("5 x = %d y = %d\n",  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+									//printf("5 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
 									//printf("5 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  x2, y2, yx1 - y1*w - x1, yx2 - y2*w - x2);
 									yx1 = yx2; yx2 = yx;
 									x1 = x2; y1 = y2;
@@ -447,10 +453,10 @@ void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 								}
 							} else {
 								new_pix(&pix[yx], img[yx], xp, yp); npix++;
-								img[yx] = 254;
+								//img[yx] = 254;
 								//printf("5 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, xp, xp, yx, pix[yx].nout, pix[yx].nin);
 								new_line(&pix[yx1], &pix[yx], min); nline++;
-								printf("6 x = %d y = %d\n",  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+								//printf("6 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
 								//printf("6 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
 								break;
 							}
@@ -568,12 +574,17 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	for(i=0; i < w*h; i++){
 		//if(pix[i].nnei > 4){
 			if(pix[i].nout) {
+				if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
+				draw_line(img, pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, w, pix[i].pow);
+				nline++;
 				//for(k=0; k < pix[i].nnei; k++) printf("pix[%d].pix[%d] x = %d y = %d\n", i, k, pix[i].pix[k]->x, pix[i].pix[k]->y);
+				/*
 				for(j=0; j < pix[i].nout; j++) {
 					//printf("%6d x = %4d y = %4d nout = %d nin = %d x = %d y = %d\n", i, pix[i].x, pix[i].y, pix[i].nout, pix[i].nin, pix[i].out[j]->x, pix[i].out[j]->y);
 					draw_line(img, pix[i].x, pix[i].y, pix[i].out[j]->x, pix[i].out[j]->y, w, pix[i].pow[j]);
+					//draw_line(img, pix[i].x, pix[i].y, pix[i].out[j]->x, pix[i].out[j]->y, w, 100);
 					nline++;
-				}
+				}*/
 				//printf("%6d x = %4d y = %4d nnei = %d pow = %d\n", i, pix[i].x, pix[i].y, pix[i].nnei, pix[i].pow);
 			}
 			//for(j=0; j < pix[i].nnei; j++){
