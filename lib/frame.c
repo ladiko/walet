@@ -21,6 +21,8 @@ void frames_init(GOP *gop, uint32 fr)
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
+
+	frame->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
 	//RGB scale images
 	for(j=0; j < 4; j++){
 		frame->rgb[j].width  = w>>(j+1);
@@ -39,20 +41,21 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->grad[j].height = h>>(j+1);
 		frame->grad[j].pic = (uchar *)calloc(frame->grad[j].width*frame->grad[j].height, sizeof(uchar));
 	}
+	/*
 	//Contours of scaled images
 	for(j=0; j < 4; j++){
 		frame->con[j].width  = w>>(j+1);
 		frame->con[j].height = h>>(j+1);
 		frame->con[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
-	}
+	}*/
 	//Pixels of scaled images
 	for(j=0; j < 4; j++){
 		frame->pix[j].width  = w>>(j+1);
 		frame->pix[j].height = h>>(j+1);
-		frame->pix[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
+		frame->pix[j].pic = (uchar *)calloc(frame->pix[j].width*frame->pix[j].height, sizeof(uchar));
 	}
 	//Pointers to pixels array
-	frame->pixs = (Pixel *)calloc(frame->con[0].width*frame->con[0].height, sizeof(Pixel));
+	//frame->pixs = (Pixel *)calloc(frame->pix[0].width*frame->pix[0].height, sizeof(Pixel));
 
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
@@ -341,9 +344,9 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
-		seg_local_max(gop->pix, &npix, frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_line(gop->pix,  frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_draw_lines(gop->pix, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		//filter_average(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height, 0);
 		//seg_cluster(gop->pix, frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);
