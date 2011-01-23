@@ -35,15 +35,15 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->prow = (Row **)calloc(width*height, sizeof(Row*));
 	gop->preg = (Region **)calloc(width*height, sizeof(Region*));*/
 
-	gop->edg = (Edge *)calloc(width*height, sizeof(Edge));
-	gop->pix = (Pixel *)calloc(width*height, sizeof(Pixel));
-	gop->pedg = (Edge **)calloc(width, sizeof(Edge*));
+	//gop->edg = (Edge *)calloc(width*height, sizeof(Edge));
+	//gop->pix = (Pixel *)calloc(width*height, sizeof(Pixel));
+	//gop->pedg = (Edge **)calloc(width, sizeof(Edge*));
 	//gop->edgel = (Edgelet *)calloc(width*height, sizeof(Edgelet));
 
 	printf("Buffer init\n");
 	//Frames init
 	gop->frames = (Frame *)calloc(gop_size, sizeof(Frame));
-	printf("Frames  create\n");
+	printf("Frames  create %d\n", gop_size);
 	for(i=0; i<gop_size; i++) frames_init(gop, i);
 	printf("Frames  init\n");
 

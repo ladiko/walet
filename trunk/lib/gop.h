@@ -34,7 +34,7 @@ typedef struct {
 	Picture			con;		//Images contur of substruction
 
 	Edge			*edg;		//The array of edges
-	Pixel			*pix;		//The array of pixeles
+	//Pixel			*pix;		//The array of pixeles
 	Edge			**pedg;		//The array of pointers to Edge
 	Edgelet			*edgel;
 }	GOP;

@@ -33,7 +33,7 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 	}
 }
 
-static inline uint32 loc_max(imgtype *img, imgtype *img1, uint32 yx, uint32 w)
+static inline uint32 loc_max(imgtype *img, uint32 yx, uint32 w)
 {
 	uint32 in = 0;
 	if(img[yx]){
@@ -314,7 +314,7 @@ static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow)
 	}*/
 }
 
-void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, i, sq = w*h - w, w1 = w-1, is = 0;
 	(*npix) = 0;
@@ -323,7 +323,7 @@ void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, imgtype *img1, uint3
 			yx = y1 + x;
 			//if(img[yx] && img[yx]!= 255){
 			if(img[yx]){
-				if(loc_max(img, img1, yx, w)){
+				if(loc_max(img, yx, w)){
 					//new_pix(&pix[yx], img[yx], x, y);
 					(*npix)++;
 					img[yx] = 255;
@@ -344,7 +344,7 @@ static inline uint32 is_in_line(int dx, int dy, int dx1, int dy1)
 	return 0;
 }
 
-void seg_line(Pixel *pix, imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, y1, y2, yp, x, x1, x2, xp, yx, yx1, yx2, yx3, i, w1 = w-1, h1 = h-1,  nline = 0, min, npix = 0, pc;
 	int d, d1, difx, difx1, dify, dify1, dx, dy, dx1, dy1;
