@@ -22,11 +22,73 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 			max = g[0]; in = 2;
-			if(max < g[1]) { max = g[1]; in = 3;}
-			if(max < g[2]) { max = g[2]; in = 0;}
-			if(max < g[3]) { max = g[3]; in = 1;}
+			if(max < g[1]) { max = g[1]; in = 3; }
+			if(max < g[2]) { max = g[2]; in = 0; }
+			if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] +g[2] + g[3])>>2;
 			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0; img2[yx] = in;
+			//img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
+			img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
+		}
+	}
+}
+
+void seg_grad1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	/// | |x| |      | | | |      |x| | |      | | |x|
+	/// | |x| |      |x|x|x|      | |x| |      | |x| |
+	/// | |x| |      | | | |      | | |x|      |x| | |
+	///  g[2]         g[0]         g[1]         g[3]
+	/// Direction
+	///   n=0          n=2         n=3          n=1
+	/// | | | |      | ||| |      | | |/|      |\| | |
+	/// |-|-|-|      | ||| |      | |/| |      | |\| |
+	/// | | | |      | ||| |      |/| | |      | | |\|
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			max = (	abs(img[yx-1-w] - img[yx-w  ]) +
+					abs(img[yx-w  ] - img[yx-w+1]) +
+					abs(img[yx-w+1] - img[yx+1  ]) +
+					abs(img[yx+1  ] - img[yx+1+w]) +
+					abs(img[yx+1+w] - img[yx+w  ]) +
+					abs(img[yx+w  ] - img[yx+w-1]) +
+					abs(img[yx+w-1] - img[yx-1  ]) +
+					abs(img[yx-1  ] - img[yx-1-w])
+					//abs(img[yx    ] - img[yx-1  ]) +
+					//abs(img[yx    ] - img[yx-w  ]) +
+					//abs(img[yx    ] - img[yx+1  ]) +
+					//abs(img[yx    ] - img[yx+w  ])
+					) >> 2;
+			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
+			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
+		}
+	}
+}
+
+void seg_grad2(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	/// | |x| |      | | | |      |x| | |      | | |x|
+	/// | |x| |      |x|x|x|      | |x| |      | |x| |
+	/// | |x| |      | | | |      | | |x|      |x| | |
+	///  g[2]         g[0]         g[1]         g[3]
+	/// Direction
+	///   n=0          n=2         n=3          n=1
+	/// | | | |      | ||| |      | | |/|      |\| | |
+	/// |-|-|-|      | ||| |      | |/| |      | |\| |
+	/// | | | |      | ||| |      |/| | |      | | |\|
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, gv, gh, max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			//Vertical sobel gradient
+			gv = abs(img[yx-1-w] + (img[yx-1  ]<<1) + img[yx-1+w] - img[yx+1-w] - (img[yx+1  ]<<1) - img[yx+1+w])>>2;
+			//Horizontal sobel gradient
+			gh = abs(img[yx-1-w] + (img[yx-w  ]<<1) + img[yx+1-w] - img[yx-1+w] - (img[yx+w  ]<<1) - img[yx+1+w])>>2;
+			max = gv + gh;
 			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
 			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
 		}
@@ -346,8 +408,8 @@ static inline uint32 is_in_line(int dx, int dy, int dx1, int dy1)
 
 void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 {
-	uint32 y, y1, y2, yp, x, x1, x2, xp, yx, yx1, yx2, yx3, i, w1 = w-1, h1 = h-1,  nline = 0, min, npix = 0, pc;
-	int d, d1, difx, difx1, dify, dify1, dx, dy, dx1, dy1;
+	uint32 y, y1, y2, y3, yp, x, x1, x2, x3, xp, yx, yx1, yx2, yx3, i, w1 = w-1, h1 = h-1,  nline = 0, min, npix = 0, pc;
+	int d, d1, difx, difx1, dify, dify1, dx, dy, dx1, dy1, min1, min2;
 	for(y=1; y < h1; y++){
 	//for(y=1; y < 2; y++){
 		for(x=1; x < w1; x++){
@@ -355,12 +417,14 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 			yx = y*w + x;
 			if(img[yx] == 255){
 				pc = 0;
-				yx1 = yx; yx3 = yx;
+				yx1 = yx;
+				yx3 = yx;
 				x1 = x; y1 = y;
 				xp = x; yp = y;
+				x3 = x; y3 = y;
 				//x2 = x; y2 = y;
 				dir1(img, w,  yx, 0,  0,  &dx,  &dy);
-				//dir1(img, w, dx, dy, &dx1, &dy1);
+				dir1(img, w,  yx, dx, dy, &dx1, &dy1);
 				min = img[yx];
 				while(1){
 					//printf("yx1 = %6d yx2 = %6d yx = %6d x1 = %4d x2 = %4d xp = %4d y1 = %4d y2 = %4d yp = %4d\n",
@@ -434,7 +498,8 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 							break;
 						}
 						if(img[yx] == 255){
-							img[yx2] = 254;
+							//img[yx2] = 254;
+							img[yx] = 254;
 							if(yx != yx2) {
 								difx1 = difx; dify1 = dify;
 								difx = xp - x2; dify = yp - y2;
@@ -450,6 +515,7 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 									yx1 = yx2; yx2 = yx;
 									x1 = x2; y1 = y2;
 									x2 = xp; y2 = yp;
+
 								}
 							} else {
 								new_pix(&pix[yx], img[yx], xp, yp); npix++;
@@ -462,6 +528,107 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 							}
 						}
 						dir1(img, w, yx, -dx, -dy, &dx, &dy);
+					}
+					pc = 0;
+					yx = yx3;
+					x = x3; y = y3;
+					x1 = x3; y1 = y3;
+					dx = dx1; dy = dy1;
+					min = img[yx];
+					while(1){
+						yx = yx + dy*w + dx; xp = xp + dx; yp = yp + dy;
+						if(!img[yx]) break;
+						min = img[yx] < min ? img[yx] : min;
+						if(img[yx] == 254){
+							if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
+							//printf("1 npix = %d x = %d y = %d yx = %d nout = %d nin = %d\n", npix, x1, y1, yx1, pix[yx1].nout, pix[yx1].nin);
+							new_line(&pix[yx], &pix[yx1], min); nline++;
+							//printf("1 nout = %d nin = %d  x = %d y = %d\n",  pix[yx].nout, pix[yx].nin, pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+							//printf("1 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
+							break;
+						}
+						if(img[yx] == 255){
+							img[yx1] = 254;
+							if(yx == yx1) break;
+							//printf("2 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x1, y1, yx1, pix[yx1].nout, pix[yx1].nin);
+							difx = xp - x1; dify = yp - y1;
+							yx2 = yx;
+							x2 = xp; y2 = yp;
+							pc++; break;
+						}
+						dir1(img, w, yx, -dx, -dy, &dx, &dy);
+					}
+
+					if(pc){
+						dir1(img, w, yx, -dx, -dy, &dx, &dy);
+						while(1){
+							//printf("yx1 = %6d yx2 = %6d yx = %6d x1 = %4d x2 = %4d xp = %4d y1 = %4d y2 = %4d yp = %4d\n",
+							//		yx1, yx2, yx, x2, x1, xp, y2, y1, yp);
+							yx = yx + dy*w + dx; xp = xp + dx; yp = yp + dy;
+							//printf("yx = %d dx = %d dx = %d\n", yx, dx, dy);
+							//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+							//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+							//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+							//if(yx > 2073600) break;
+							if(!img[yx]) {
+								new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+								new_line(&pix[yx2], &pix[yx1], min); nline++;
+								break;
+							}
+							min = img[yx] < min ? img[yx] : min;
+							if(img[yx] == 254) {
+								difx1 = difx; dify1 = dify;
+								difx = xp - x2; dify = yp - y2;
+								if(is_in_line(difx, dify, difx1, dify1)) {
+									if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
+									new_line(&pix[yx], &pix[yx1], min); nline++;
+									//printf("2 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+									//printf("2 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
+								} else {
+									new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+									if(!pix[yx].x && !pix[yx].x) {  new_pix(&pix[yx], img[yx], xp, yp); npix++; }
+									//printf("3 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x2, y2, yx2, pix[yx2].nout, pix[yx2].nin);
+									new_line(&pix[yx2], &pix[yx1], min); nline++;
+									new_line(&pix[yx], &pix[yx2], min); nline++;
+									//printf("3 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+									//printf("4 nout = %d nin = %d  x = %d y = %d\n", pix[yx2].nout, pix[yx2].nin,  pix[yx2].out[0]->x, pix[yx2].out[0]->y);
+									//printf("3 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  x2, y2, yx1 - y1*w - x1, yx2 - y2*w - x2);
+									//printf("4 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x2, y2,  xp, yp, yx2 - y2*w - x2, yx - yp*w - xp);
+								}
+								break;
+							}
+							if(img[yx] == 255){
+								//img[yx2] = 254;
+								img[yx] = 254;
+								if(yx != yx2) {
+									difx1 = difx; dify1 = dify;
+									difx = xp - x2; dify = yp - y2;
+									if(is_in_line(difx, dify, difx1, dify1)) {
+										yx2 = yx; x2 = xp; y2 = yp;
+									} else {
+										new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+										//img[yx2] = 254;
+										//printf("4 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, x2, y2, yx2, pix[yx2].nout, pix[yx2].nin);
+										new_line(&pix[yx2], &pix[yx1], min); nline++;
+										//printf("5 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+										//printf("5 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  x2, y2, yx1 - y1*w - x1, yx2 - y2*w - x2);
+										yx1 = yx2; yx2 = yx;
+										x1 = x2; y1 = y2;
+										x2 = xp; y2 = yp;
+
+									}
+								} else {
+									new_pix(&pix[yx], img[yx], xp, yp); npix++;
+									//img[yx] = 254;
+									//printf("5 npix = %d x = %d y = %d yx = %d nout = %d nin = %d \n", npix, xp, xp, yx, pix[yx].nout, pix[yx].nin);
+									new_line(&pix[yx], &pix[yx1], min); nline++;
+									//printf("6 nout = %d nin = %d  x = %d y = %d\n", pix[yx1].nout, pix[yx1].nin,  pix[yx1].out[0]->x, pix[yx1].out[0]->y);
+									//printf("6 nline = %6d x1 = %4d y1 = %4d x2 = %4d y2 = %3d dif = %1d dif1 = %1d\n", nline, x1, y1,  xp, yp, yx1 - y1*w - x1, yx - yp*w - xp);
+									break;
+								}
+							}
+							dir1(img, w, yx, -dx, -dy, &dx, &dy);
+						}
 					}
 				}
 			}
@@ -587,23 +754,6 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 				}*/
 				//printf("%6d x = %4d y = %4d nnei = %d pow = %d\n", i, pix[i].x, pix[i].y, pix[i].nnei, pix[i].pow);
 			}
-			//for(j=0; j < pix[i].nnei; j++){
-			//	draw_line(img, pix[i].x, pix[i].y, pix[i].pix[j+1]->x, pix[i].pix[j+1]->y, w, pix[i].pix[j+1]->pow);
-				//draw_line(img, pix[i].x, pix[i].y, pix[i].pix[j+1]->x, pix[i].pix[j+1]->y, w, 255);
-			//	printf("pix[%d].pix[%d] x = %d y = %d pow = %d\n", i, j, pix[i].pix[j+1]->x, pix[i].pix[j+1]->y, pix[i].pix[j+1]->pow);
-			//}
-		//}
-		/*
-		if(pix[i].nnei) {
-			//printf("%6d x = %4d y = %4d nnei = %d\n", i, pix[i].x, pix[i].y, pix[i].nnei);
-			//for(k=0; k < pix[i].nnei; k++) printf("pix[%d].pix[%d] x = %d y = %d\n", i, k, pix[i].pix[k]->x, pix[i].pix[k]->y);
-
-			for(j=0; j < pix[i].nnei; j++){
-				draw_line(img, pix[i].x, pix[i].y, pix[i].pix[j]->x, pix[i].pix[j]->y, w, pix[i].pow[j]);
-				//draw_line(img, pix[i].x, pix[i].y, pix[i].pix[j]->x, pix[i].pix[j]->y, w, 255);
-			}
-		}*/
-
 	}
 	for(i=0; i < w*h; i++)
 		//if(pix[i].draw && (pix[i].nout || pix[i].nin)) {
@@ -614,4 +764,18 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	}
 	printf("Numbers of pixels  = %d\n", pixs);
 	printf("Numbers of lines   = %d\n", nline);
+}
+
+
+void seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1;
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			yx = y*w + x;
+			if(img[yx] == 254){
+
+			}
+		}
+	}
 }
