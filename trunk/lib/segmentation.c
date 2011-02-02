@@ -484,52 +484,110 @@ static inline uint32 length(int dx, int dy)
 	return 32;
 }
 
-
 void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, y1, y2, y3, yp, x, x1, x2, x3, xp, yx, yx1, yx2, yx3, i, w1 = w-1, h1 = h-1,  nline = 0, min, npix = 0, pc;
-	int d, d1, difx, difx1, dify, dify1, dx, dy, dx1, dy1, min1, min2, len;
+	int d = 0, d1, difx, difx1, dify, dify1, dx, dy, dx1, dy1, dx2, dy2, min1, min2, len;
 	for(y=1; y < h1; y++){
 	//for(y=1; y < 2; y++){
 		for(x=1; x < w1; x++){
 		//for(x=1; x < 4; x++){
 			yx = y*w + x;
-			if(img[yx] == 255){
-				new_pix(&pix[yx], img[yx], x, y); npix++;
-				len = 0;
-				xp = x; yp = y;
-				x1 = x; y1 = y;
-				yx1 = yx;
-				dir1(img, w,  yx, 0,  0,  &dx,  &dy);
-				//dir1(img, w,  yx, dx, dy, &dx1, &dy1);
-				min = img[yx];
-				while(1){
-					len += length(dx, dy);
-					yx = yx + dy*w + dx; xp = xp + dx; yp = yp + dy;
-					//printf("yx = %d dx = %d dx = %d\n", yx, dx, dy);
-					//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
-					//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
-					//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
-					if(!img[yx]) {
-						//printf("Zero\n");
-						break;
+			if(img[yx] && img[yx] != 255){
+				if(loc_max(img, yx, w)){
+					//if(img[yx] == 255){
+					img[yx] = 255;
+					//new_pix(&pix[yx], img[yx], x, y); npix++;
+					len = 0;
+					xp = x; yp = y;
+					x1 = x; y1 = y;
+					yx1 = yx;
+					dir1(img, w,  yx, 0,  0,  &dx,  &dy);
+					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
+					min = img[yx];
+					while(1){
+						len += length(dx, dy);
+						x2 = xp; y2 = yp; yx2 = yx; //dx2 = dx; dy2 = dy;
+						yx = yx + dy*w + dx; xp = xp + dx; yp = yp + dy;
+						//printf("yx = %d dx = %d dy = %d\n", yx, dx, dy);
+						//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+						//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+						//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+						if(!img[yx]) {
+							//printf("Zero\n");
+							break;
+						}
+						if(img[yx] == 255) {
+							//printf("254\n");
+							break;
+						}
+						min = img[yx] < min ? img[yx] : min;
+						//img[yx] = 255;
+						if(is_new_line(x1, y1, xp, yp, len, 20)){
+							/*
+							new_pix(&pix[yx], img[yx], xp, yp); npix++;
+							new_line(&pix[yx1], &pix[yx], min); nline++;
+							x1 = xp; y1 = yp;
+							yx1 = yx;
+							min = img[yx];
+							len = 0;
+							*/
+							new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+							//new_line(&pix[yx1], &pix[yx2], min); nline++;
+							xp = x1; yp = x1;
+							yx = yx1;
+							//x1 = x2; y1 = y2;
+							//yx1 = yx2;
+							dx = dx1; dy = dy1;
+							yx1 = yx2; x1 = x2; y1 = y2;
+							//min = img[yx2];
+							//len = 0;
+						} else {
+							img[yx] = 255;
+							dir1(img, w, yx, -dx, -dy, &dx, &dy);
+						}
 					}
-					if(img[yx] == 254) {
-						//printf("254\n");
-						break;
+					while(1){
+						len += length(dx, dy);
+						x2 = xp; y2 = yp; yx2 = yx; //dx2 = dx; dy2 = dy;
+						yx = yx + dy*w + dx; xp = xp + dx; yp = yp + dy;
+						//printf("yx = %d dx = %d dy = %d\n", yx, dx, dy);
+						//printf("%3d %3d %3d \n", img[yx-1-w], img[yx-w], img[yx+1-w]);
+						//printf("%3d %3d %3d \n", img[yx-1  ], img[yx  ], img[yx+1  ]);
+						//printf("%3d %3d %3d \n", img[yx-1+w], img[yx+w], img[yx+1+w]);
+						if(!img[yx]) {
+							//printf("Zero\n");
+							break;
+						}
+						if(img[yx] == 255) {
+							//printf("254\n");
+							break;
+						}
+						min = img[yx] < min ? img[yx] : min;
+						//img[yx] = 255;
+						if(is_new_line(x2, y2, xp, yp, len, 20)){
+							/*
+							new_pix(&pix[yx], img[yx], xp, yp); npix++;
+							new_line(&pix[yx1], &pix[yx], min); nline++;
+							x1 = xp; y1 = yp;
+							yx1 = yx;
+							min = img[yx];
+							len = 0;
+							*/
+							new_pix(&pix[yx2], img[yx2], x2, y2); npix++;
+							new_line(&pix[yx2], &pix[yx1], min); nline++;
+							xp = x1; yp = x1;
+							yx = yx1;
+							//x1 = x2; y1 = y2;
+							//yx1 = yx2;
+							dx = dx1; dy = dy1;
+							min = img[yx2];
+							len = 0;
+						} else {
+							img[yx] = 255;
+							dir1(img, w, yx, -dx, -dy, &dx, &dy);
+						}
 					}
-					min = img[yx] < min ? img[yx] : min;
-					img[yx] = 254;
-					if(is_new_line(x1, y1, xp, yp, len, 32)){
-						//printf("min = %d\n", min);
-						new_pix(&pix[yx], img[yx], xp, yp); npix++;
-						new_line(&pix[yx1], &pix[yx], min); nline++;
-						x1 = xp; y1 = yp;
-						yx1 = yx;
-						min = img[yx];
-						len = 0;
-					}
-					dir1(img, w, yx, -dx, -dy, &dx, &dy);
 				}
 			}
 		}
