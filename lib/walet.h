@@ -177,7 +177,7 @@ struct Pixel {
 	 uchar			pow;
 	 //Pixel 		*out[4];	//Pointer to next pixels
 	 //Pixel 		*in[4];		//Pointer to next pixels
-	 //uchar		pow[4];		//Line power
+	 // uchar		pow[4];		//Line power
 };
 
 struct Edge {
