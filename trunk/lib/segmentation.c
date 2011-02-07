@@ -466,25 +466,35 @@ static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uin
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy;
      	min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) {
-			new_pix(&pix[yx], img[yx], x, y);
-			if(dir) new_line(&pix[yx1], &pix[yx], min);
-			else	new_line(&pix[yx], &pix[yx1], min);
-			*xo = x; *yo = y; *yxo = yx;
+			if(c > 0){
+				new_pix(&pix[yx1], img[yx1], x1, y1);
+				new_pix(&pix[yx], img[yx], x, y);
+				new_line(&pix[yx1], &pix[yx], min);
+				//if(dir) new_line(&pix[yx1], &pix[yx], min);
+				//else	new_line(&pix[yx], &pix[yx1], min);
+				*xo = x; *yo = y; *yxo = yx;
+			}
 			img[yx] = 255;
 			return 0;
 		}
 		if(img[yx] == 255) {
-			if(!pix[yx].x && !pix[yx].y) new_pix(&pix[yx], img[yx], x, y);
-			if(dir) new_line(&pix[yx1], &pix[yx], min);
-			else	new_line(&pix[yx], &pix[yx1], min);
-			*xo = x; *yo = y; *yxo = yx;
-			img[yx] = 255;
+			if(yx != yx1 && c > 0){
+				if(!pix[yx].x && !pix[yx].y) new_pix(&pix[yx], img[yx], x, y);
+				new_pix(&pix[yx1], img[yx1], x1, y1);
+				new_line(&pix[yx1], &pix[yx], min);
+				//if(dir) new_line(&pix[yx1], &pix[yx], min);
+				//else	new_line(&pix[yx], &pix[yx1], min);
+				*xo = x; *yo = y; *yxo = yx;
+				img[yx] = 255;
+			}
 			return 0;
 		}
 		if(is_new_line(x1, y1, x, y, len, 20) && c > 1){
 			new_pix(&pix[yx], img[yx], x, y);
-			if(dir) new_line(&pix[yx1], &pix[yx], min);
-			else	new_line(&pix[yx], &pix[yx1], min);
+			new_pix(&pix[yx1], img[yx1], x1, y1);
+			new_line(&pix[yx1], &pix[yx], min);
+			//if(dir) new_line(&pix[yx1], &pix[yx], min);
+			//else	new_line(&pix[yx], &pix[yx1], min);
 			*xo = x; *yo = y; *yxo = yx;
 			img[yx] = 255;
 			return 1;
@@ -517,9 +527,9 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 				if(loc_max(img, yx, w)){
 					yx1 = yx; x1 = x; y1 = y;
 					yx2 = yx; x2 = x; y2 = y;
-					new_pix(&pix[yx], img[yx], x, y); npix++;
+					//new_pix(&pix[yx], img[yx], x, y); npix++;
 					dir1(img, w,  yx,   0,   0, &dx1, &dy1);
-					dir1(img, w,  yx, dx1, dy1, &dx2, &dy2);
+					//dir1(img, w,  yx, dx1, dy1, &dx2, &dy2);
 					while (find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1)) { npix++; nline++; }
 					//while (find_line(pix, img, x2, y2, yx2, &x1, &y1, &yx1, w, dx2, dy2, 0)) { npix++; nline++; }
 				}
@@ -566,8 +576,9 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	for(i=0; i < w*h; i++){
 		//if(pix[i].nnei > 4){
 			//if(pix[i].nout) {
-			if(pix[i].pow == 255) {
-				//if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
+			//if(pix[i].pow == 255) {
+			if(pix[i].nout) {
+				if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
 				//printf("x = %d y = %d x1 = %d y1 = %d pow = %d\n", pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, pix[i].pow);
 				draw_line(img, pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, w, pix[i].pow);
 				//if(pix[i].pow == 255) printf("pow = %d\n", pix[i].pow);
@@ -585,7 +596,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 			}
 	}
 	for(i=0; i < w*h; i++){
-		if(pix[i].nout > 1){
+		if(pix[i].nout){
 			img[i] = 255;
 			pixs++;
 		}
