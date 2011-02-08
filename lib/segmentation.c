@@ -26,7 +26,7 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			if(max < g[1]) { max = g[1]; in = 3; }
 			if(max < g[2]) { max = g[2]; in = 0; }
 			if(max < g[3]) { max = g[3]; in = 1; }
-			max = (g[0] + g[1] +g[2] + g[3])>>2;
+			max = (g[0] + g[1] + g[2] + g[3])>>2;
 			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0; img2[yx] = in;
 			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
 			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
@@ -461,44 +461,44 @@ static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uin
 	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, min, c = 0;
 	min = img[yx];
     while(1){
-    	img[yx] = 255;
      	len += length(dx, dy);
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy;
      	min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) {
 			if(c > 0){
-				new_pix(&pix[yx1], img[yx1], x1, y1);
-				new_pix(&pix[yx], img[yx], x, y);
+				if(!pix[yx1].x && !pix[yx1].y)  { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
+				new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 				new_line(&pix[yx1], &pix[yx], min);
 				//if(dir) new_line(&pix[yx1], &pix[yx], min);
 				//else	new_line(&pix[yx], &pix[yx1], min);
 				*xo = x; *yo = y; *yxo = yx;
 			}
-			img[yx] = 255;
+			img[yx] = 254;
 			return 0;
 		}
-		if(img[yx] == 255) {
+		if(img[yx] == 255 || img[yx] == 254) {
 			if(yx != yx1 && c > 0){
-				if(!pix[yx].x && !pix[yx].y) new_pix(&pix[yx], img[yx], x, y);
-				new_pix(&pix[yx1], img[yx1], x1, y1);
+				if(!pix[yx].x && !pix[yx].y) { new_pix(&pix[yx], img[yx], x, y); img[yx] = 255; }
+				if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255; }
 				new_line(&pix[yx1], &pix[yx], min);
 				//if(dir) new_line(&pix[yx1], &pix[yx], min);
 				//else	new_line(&pix[yx], &pix[yx1], min);
 				*xo = x; *yo = y; *yxo = yx;
-				img[yx] = 255;
 			}
+			img[yx] = 254;
 			return 0;
 		}
 		if(is_new_line(x1, y1, x, y, len, 20) && c > 1){
-			new_pix(&pix[yx], img[yx], x, y);
-			new_pix(&pix[yx1], img[yx1], x1, y1);
+			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
+			if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
 			new_line(&pix[yx1], &pix[yx], min);
 			//if(dir) new_line(&pix[yx1], &pix[yx], min);
 			//else	new_line(&pix[yx], &pix[yx1], min);
 			*xo = x; *yo = y; *yxo = yx;
-			img[yx] = 255;
+			//img[yx] = 255;
 			return 1;
 		}
+		img[yx] = 254;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
 		c++;
     }
@@ -516,11 +516,11 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 //     dy2     dy      dy2
 //
 {
-	uint32 y, y1, y2, y3, y11, y22, yp, x, x1, x2, x3, x11, x22, xp, yx, yx1, yx2, yx3, yx11, yx22, i, w1 = w-1, h1 = h-1,  nline = 0, min, npix = 0, pc;
+	uint32 y, y1, y2, y3, y11, y22, yp, x, x1, x2, x3, x11, x22, xp, yx, yx1, yx2, yx3, yx11, yx22, i, w1 = w-3, h1 = h-3,  nline = 0, min, npix = 0, pc;
 	int d = 0, d1, dif, dif1, dif2, dx, dy, dx1, dy1, dx2, dy2, min1, min2, len, len1, len2, st, s;
-	for(y=1; y < h1; y++){
+	for(y=3; y < h1; y++){
 	//for(y=1; y < 2; y++){
-		for(x=1; x < w1; x++){
+		for(x=3; x < w1; x++){
 		//for(x=1; x < 4; x++){
 			yx = y*w + x;
 			if(img[yx] && img[yx] != 255){
@@ -596,7 +596,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 			}
 	}
 	for(i=0; i < w*h; i++){
-		if(pix[i].nout){
+		if(pix[i].nout || pix[i].nin){
 			img[i] = 255;
 			pixs++;
 		}
@@ -606,14 +606,41 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of lines   = %d\n", nline);
 }
 
+
+static inline uint32 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *img2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
+{
+	uint32 x, y, yx, yx1 = y1*w + x1, min = 0xFFFF, sad;
+	int ax = (x - st) < 0 ? 0 : x - st;
+	int ay = (y - st) < 0 ? 0 : y - st;
+	int bx = (x + st) > w ? w : x + st;
+	int by = (y + st) > h ? h : y + st;
+	for(y=ay; y < by; x++){
+		for(x=ax; x < bx; x++){
+			yx = y*w + x;
+			if(img2[yx] == 255){
+				sad = 	abs(img1[yx1-1  ] - img2[yx-1  ]) +
+						abs(img1[yx1-1-w] - img2[yx-1-w]) +
+						abs(img1[yx1  -w] - img2[yx  -w]) +
+						abs(img1[yx1+1-w] - img2[yx+1-w]) +
+						abs(img1[yx1+1  ] - img2[yx+1  ]) +
+						abs(img1[yx1+1+w] - img2[yx+1+w]) +
+						abs(img1[yx1  +w] - img2[yx  +w]) +
+						abs(img1[yx1-1+w] - img2[yx-1+w]);
+				if(sad < min) {min = sad; *xo = x; *yo = y; }
+			}
+		}
+	}
+	return min;
+}
+
 void seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
-	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1;
+	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1, xo, yo;
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
-			if(img[yx] == 254){
-
+			if(img[yx] == 255){
+				block_match(img, x, y, img1, &xo, &yo, w, h, 8);
 			}
 		}
 	}
