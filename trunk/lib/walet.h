@@ -162,22 +162,10 @@ typedef struct Pixel Pixel;
 struct Pixel {
 	 uint16		x;		//X coordinate
 	 uint16		y;		//Y coordinate
-	 //int		dif[2];	// dif[0] = x - pix[0]->x  dif[1] = y - pix[0]->y
-	 //int		d;		//Direction of first neighborhood
-	 //uchar		end;
-	 //uchar		draw;
-	 //uchar		dir;	////The direction 00 - left; 01 - top; 10 - right; 11 - bottom;
 	 uchar		nout;	//If 0 - end pint if 1 - vector
 	 uchar		nin;	//Number of neighborhood
-	 //uint16		y;		//Y coordinate
-	 //imgtype	img;		//The pixel value
-	 //Edge 		*edg;	//Pointer to the edge included pixel
-	 //Pixel 		*vec;		//Pointer to next pixels
 	 Pixel 			*out;
 	 uchar			pow;
-	 //Pixel 		*out[4];	//Pointer to next pixels
-	 //Pixel 		*in[4];		//Pointer to next pixels
-	 // uchar		pow[4];		//Line power
 };
 
 struct Edge {
