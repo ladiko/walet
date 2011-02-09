@@ -162,6 +162,8 @@ typedef struct Pixel Pixel;
 struct Pixel {
 	 uint16		x;		//X coordinate
 	 uint16		y;		//Y coordinate
+	 char		vx;		//The motion vector
+	 char		vy;		//The motion vector
 	 uchar		nout;	//If 0 - end pint if 1 - vector
 	 uchar		nin;	//Number of neighborhood
 	 Pixel 			*out;

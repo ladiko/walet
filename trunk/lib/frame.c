@@ -375,6 +375,31 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	}
 }
 
+void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
+///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
+///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+{
+	uint32 j, i, ncors=0, beg, diff, k, sq = gop->width*gop->height;
+	Frame *frm1 = &gop->frames[fr1];
+	Frame *frm2 = &gop->frames[fr2];
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
+	uint32 npix;
+
+
+	if(gop->color == BAYER){
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+
+		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Frame match time = %f\n", (double)(end-start)/1000000.);
+	}
+}
+
 uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Write frame in file.

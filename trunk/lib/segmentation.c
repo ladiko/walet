@@ -609,15 +609,22 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 
 static inline uint32 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *img2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
 {
-	uint32 x, y, yx, yx1 = y1*w + x1, min = 0xFFFF, sad;
-	int ax = (x - st) < 0 ? 0 : x - st;
-	int ay = (y - st) < 0 ? 0 : y - st;
-	int bx = (x + st) > w ? w : x + st;
-	int by = (y + st) > h ? h : y + st;
-	for(y=ay; y < by; x++){
+	int x, y, yx, yx1 = y1*w + x1, min = 0xFFFF, sad, npix = 0;
+	int ax = x1 - st, ay = y1 - st, bx = x1 + st, by = y1 + st;
+	//int ax = (x1 - st) < 0 ? 0 : x1 - st;
+	//int ay = (y1 - st) < 0 ? 0 : y1 - st;
+	//int bx = (x1 + st) > w ? w : x1 + st;
+	//int by = (y1 + st) > h ? h : y1 + st;
+	if(ax <= 0) ax = 1;
+	if(ay <= 0) ay = 1;
+	if(bx >= w) bx = w-1;
+	if(by >= h) by = h-1;
+	//printf("ax = %d bx = %d ay = %d by = %d x = %d y = %d\n",ax, bx, ay, by, x1, y1);
+	for(y=ay; y < by; y++){
 		for(x=ax; x < bx; x++){
 			yx = y*w + x;
-			if(img2[yx] == 255){
+			//printf("x1 = %d y1 = %d  \n", x, y);
+			if(img2[yx] > 253){
 				sad = 	abs(img1[yx1-1  ] - img2[yx-1  ]) +
 						abs(img1[yx1-1-w] - img2[yx-1-w]) +
 						abs(img1[yx1  -w] - img2[yx  -w]) +
@@ -627,21 +634,25 @@ static inline uint32 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *
 						abs(img1[yx1  +w] - img2[yx  +w]) +
 						abs(img1[yx1-1+w] - img2[yx-1+w]);
 				if(sad < min) {min = sad; *xo = x; *yo = y; }
+				npix++;
 			}
 		}
 	}
+	printf("npix = %d min = %d x = %d y = %d x1 = %d y1 = %d\n", npix, min, x1, y1, *xo, *yo);
 	return min;
 }
 
 void seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
-	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1, xo, yo;
+	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1, xo, yo, npix = 0;
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] == 255){
 				block_match(img, x, y, img1, &xo, &yo, w, h, 8);
+				npix++;
 			}
 		}
 	}
+	printf("seg_compare npix = %d\n", npix);
 }
