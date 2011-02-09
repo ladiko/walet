@@ -48,6 +48,7 @@ uint32 	frame_median_filter		(GOP *gop, uint32 fr);
 uint32 	frame_subband_median_filter	(GOP *gop, uint32 fr);
 
 void 	frame_segmetation	(GOP *gop, uint32 fr);
+void 	frame_match			(GOP *gop, uint32 fr1, uint32 fr2);
 
 #ifdef __cplusplus
 }

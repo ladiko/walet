@@ -454,78 +454,9 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	struct timeval tv;
 	if(gw->gop == NULL ) return;
 
-	utils_subtract(gw->gop->frames[0].Y[0].pic, gw->gop->frames[1].Y[0].pic, gw->gop->subs.pic, gw->gop->subs.width, gw->gop->subs.height);
-	printf("w = %d h = %d\n", gw->gop->subs.width, gw->gop->subs.height);
+	frame_match(gw->gop, 0, 1);
 
-	new_buffer (gw->orig[0],gw->gop->subs.width, gw->gop->subs.height);
-	utils_grey_draw(gw->gop->subs.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->subs.width, gw->gop->subs.height);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
-
-	//for(x=0; x < gw->gop->subs.width*gw->gop->subs.height; x++){
-	//	if(gw->gop->frames[0].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
-		//if(gw->gop->frames[1].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
-	//}
-
-	new_buffer (gw->orig[1],gw->gop->subs.width, gw->gop->subs.height);
-	utils_grey_draw(gw->gop->subs.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->subs.width, gw->gop->subs.height);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
-	/*
-	seg_grad(gw->gop->subs.pic, gw->gop->grad.pic, gw->gop->buf, gw->gop->subs.width, gw->gop->subs.height, 3);
-
-	new_buffer (gw->orig[1],gw->gop->subs.width, gw->gop->subs.height);
-	utils_grey_draw(gw->gop->grad.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->subs.width, gw->gop->subs.height);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
-
-	seg_canny(gw->gop->grad.pic, gw->gop->buf, gw->gop->con.pic, gw->gop->subs.width, gw->gop->subs.height);
-
-	new_buffer (gw->orig[2],gw->gop->subs.width, gw->gop->subs.height);
-	utils_grey_draw(gw->gop->con.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->subs.width, gw->gop->subs.height);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
-
-	for(x=0; x < gw->gop->subs.width*gw->gop->subs.height; x++){
-		gw->gop->con.pic[x] = abs (gw->gop->con.pic[x] - gw->gop->frames[0].con[0].pic[x]);
-		gw->gop->con.pic[x] = abs (gw->gop->con.pic[x] - gw->gop->frames[1].con[0].pic[x]);
-		//if(gw->gop->frames[1].con[0].pic[x]) gw->gop->subs.pic[x] = 255;
-	}
-
-	new_buffer (gw->orig[3],gw->gop->subs.width, gw->gop->subs.height);
-	utils_grey_draw(gw->gop->con.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->subs.width, gw->gop->subs.height);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
-
-	//gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	//frame_segmetation(gw->gop, fn);
-	//filter_average(gw->gop->buf, pic1,  w, h, 3);
-	//gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	//printf("Gradient time      = %f\n", (double)(end-start)/1000000.);
-	/*
-	w = (gw->gop->frames[fn].Y[0].width  + gw->gop->frames[fn].Y[1].width);
-	h = gw->gop->frames[fn].Y[0].height;
-
-	new_buffer (gw->orig[0], w, h);
-	utils_rgb_scale_draw(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h, gw->gop->frames[0].rgb);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
-
-	new_buffer (gw->orig[1], w, h);
-	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, gw->gop->frames[0].Y);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
-
-	new_buffer (gw->orig[2], w, h);
-	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, gw->gop->frames[0].grad);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
-
-	new_buffer (gw->orig[3], w, h);
-	utils_scale_draw(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, gw->gop->frames[0].con);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
-	//for(y=0; y<100; y++){
-	//	for(x=0; x<60; x++){
-	//		printf("%2d ", pic1[y*w+x]);
-	//	}
-	//	printf("\n");
-	//}
-	//filter_average(pic1, gw->gop->buf, w, h, 3);
-
+	//seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 
 	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
 	//printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->width*gw->gop->height, 1));
