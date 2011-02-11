@@ -447,14 +447,34 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	uint32 h, w, x, y, fn = 0;
+	uint32 h, w, x, y, fn = 0, npix;
 	imgtype *pic, *pic1;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
+	Frame *frm1 = &gw->gop->frames[0];
+	Frame *frm2 = &gw->gop->frames[1];
+
 	if(gw->gop == NULL ) return;
 
+	w = gw->gop->frames[0].Y[0].width;
+	h = gw->gop->frames[0].Y[0].height;
+
+
 	frame_match(gw->gop, 0, 1);
+
+	new_buffer (gw->orig[1], w, h);
+	seg_draw_pix(frm1->pixs, npix, frm1->grad[0].pic, w, h);
+	seg_draw_pix(frm1->pixs, npix, frm2->grad[0].pic, w, h);
+	seg_draw_pix(frm1->pixs, npix, frm1->pix[0].pic, w, h);
+	seg_draw_pix(frm2->pixs, npix, frm1->grad[0].pic, w, h);
+	seg_draw_pix(frm2->pixs, npix, frm2->grad[0].pic, w, h);
+	seg_draw_pix(frm2->pixs, npix, frm1->pix[0].pic, w, h);
+	utils_color_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
+	utils_color_draw(frm2->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1);
+	utils_color_draw(frm1->pix[0].pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 2);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
+	///utils_grey_draw(gw->gop->frames[0].pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
 
 	//seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w, uint32 h)
 

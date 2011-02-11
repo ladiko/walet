@@ -606,10 +606,23 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of lines   = %d\n", nline);
 }
 
-
-static inline uint32 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *img2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
+void seg_draw_pix(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 {
-	int x, y, yx, yx1 = y1*w + x1, min = 0xFFFF, sad, npix = 0;
+	uint32 i, j, k, pixs = 0, nline = 0;
+	for(i=0; i < w*h; i++){
+		if(pix[i].nout || pix[i].nin){
+			img[i] = 255;
+			pixs++;
+		}
+	}
+	//printf("Numbers of pixels  = %d\n", pixs);
+}
+
+
+static inline uint16 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *img2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
+{
+	int x, y, yx, yx1 = y1*w + x1,  sad, npix = 0;
+	uint16 min = 0xFFFF;
 	int ax = x1 - st, ay = y1 - st, bx = x1 + st, by = y1 + st;
 	//int ax = (x1 - st) < 0 ? 0 : x1 - st;
 	//int ay = (y1 - st) < 0 ? 0 : y1 - st;
@@ -624,21 +637,24 @@ static inline uint32 block_match( imgtype *img1, uint32 x1, uint32 y1, imgtype *
 		for(x=ax; x < bx; x++){
 			yx = y*w + x;
 			//printf("x1 = %d y1 = %d  \n", x, y);
-			if(img2[yx] > 253){
-				sad = 	abs(img1[yx1-1  ] - img2[yx-1  ]) +
+			//if(img2[yx] > 253){
+			if(img2[yx] == 255){
+				sad =  (abs(img1[yx1-1  ] - img2[yx-1  ]) +
 						abs(img1[yx1-1-w] - img2[yx-1-w]) +
 						abs(img1[yx1  -w] - img2[yx  -w]) +
 						abs(img1[yx1+1-w] - img2[yx+1-w]) +
 						abs(img1[yx1+1  ] - img2[yx+1  ]) +
 						abs(img1[yx1+1+w] - img2[yx+1+w]) +
 						abs(img1[yx1  +w] - img2[yx  +w]) +
-						abs(img1[yx1-1+w] - img2[yx-1+w]);
+						abs(img1[yx1-1+w] - img2[yx-1+w]));
 				if(sad < min) {min = sad; *xo = x; *yo = y; }
 				npix++;
 			}
 		}
 	}
-	printf("npix = %d min = %d x = %d y = %d x1 = %d y1 = %d\n", npix, min, x1, y1, *xo, *yo);
+	if(!npix) { *xo = x1; *yo = y1;}
+	//if(abs(*xo - x1) > 8 || abs(*yo - y1) > 8 )
+	//printf("npix = %d min = %d x = %d y = %d x1 = %d y1 = %d vx = %d vy = %d\n", npix, min, x1, y1, *xo, *yo, *xo - x1, *yo - y1);
 	return min;
 }
 
@@ -649,10 +665,34 @@ void seg_compare(Pixel *pix, Pixel *pix1, imgtype *img, imgtype *img1, uint32 w,
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] == 255){
-				block_match(img, x, y, img1, &xo, &yo, w, h, 8);
+				pix[yx].mach = block_match(img, x, y, img1, &xo, &yo, w, h, 8);
+				pix[yx].vx = xo - x;
+				pix[yx].vy = yo - y;
 				npix++;
 			}
 		}
 	}
 	printf("seg_compare npix = %d\n", npix);
+}
+
+void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
+{
+	uint32 i, j, k, sq = w*h, pixs = 0, nline = 0;
+	for(i=0; i < sq; i++){
+		if(pix[i].nout || pix[i].nin) {
+			draw_line(img, pix[i].x, pix[i].y, pix[i].x + pix[i].vx, pix[i].y + pix[i].vy, w, 100);
+			//printf("x = %d %d y = %d %d\n", pix[i].x, pix[i].vx, pix[i].y,  pix[i].vy);
+			nline++;
+			}
+	}
+
+	for(i=0; i < w*h; i++){
+		if(pix[i].nout || pix[i].nin){
+			img[i] = 255;
+			pixs++;
+		}
+	}
+
+	printf("Numbers of pixels  = %d\n", pixs);
+	printf("Numbers of lines   = %d\n", nline);
 }
