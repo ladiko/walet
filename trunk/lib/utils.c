@@ -276,6 +276,15 @@ uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
+uchar* utils_color_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h, uint32 col)
+{
+	int i, j, dim = h*w*3;
+	if(col ==  0) for(i=0, j=0; j < dim; j+=3, i++) rgb[j  ] = img[i]; // Red
+	if(col ==  1) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+1] = img[i]; // Red
+	if(col ==  2) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+2] = img[i]; // Red
+	return rgb;
+}
+
 uchar* utils_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
 {
 	int j, dim = h*w*3;

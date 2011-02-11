@@ -349,27 +349,6 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		//seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 		seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
 
-		//filter_average(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height, 0);
-		//seg_cluster(gop->pix, frm->pix[0].pic, frm->pix[0].pic, frm->pix[0].width, frm->pix[0].height);
-
-		//Scaling images
-		//for(j=1; j < 4; j++)  utils_resize_rgb_2x(frm->rgb[j-1].pic, frm->rgb[j].pic, frm->rgb[j-1].width, frm->rgb[j-1].height);
-		//for(j=1; j < 4; j++)  utils_resize_2x(frm->Y[j-1].pic, frm->Y[j].pic, frm->Y[j-1].width, frm->Y[j-1].height);
-
-		//for(j=0; j < 4; j++) seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 0);
-		//for(j=0; j < 4; j++) {
-			//seg_morph_gradient(frm->Y[j].pic, frm->grad[j].pic, frm->Y[j].width, frm->Y[j].height, 3);
-
-			//seg_morph_gradient(frm->Y[j].pic, gop->buf, frm->Y[j].width, frm->Y[j].height, 0);
-			//filter_average(gop->buf, frm->grad[j].pic,  frm->grad[j].width, frm->grad[j].height, 0);
-		//}
-		//for(j=0; j < 4; j++) seg_fall_forest(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
-		//for(j=0; j < 4; j++) seg_remove_pix(frm->con[j].pic, frm->grad[j].pic, frm->grad[j].width, frm->grad[j].height);
-		//for(j=0; j < 4; j++) {
-			//seg_remove_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
-			//for(i=0; i< frm->Y[j].width*frm->Y[j].height; i++) if(frm->con[j].pic[i]) frm->grad[j].pic[i] = frm->con[j].pic[i];
-			//seg_connect_pix(frm->grad[j].pic, frm->con[j].pic, frm->grad[j].width, frm->grad[j].height);
-		//}
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Segmentation time = %f\n", (double)(end-start)/1000000.);
 	}
@@ -394,6 +373,8 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
 		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+
+		seg_draw_vec(frm1->pixs, npix, frm1->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Frame match time = %f\n", (double)(end-start)/1000000.);

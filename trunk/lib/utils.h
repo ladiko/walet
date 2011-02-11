@@ -66,6 +66,7 @@ uchar* YUV420p_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 w, 
 uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, imgtype **img);
 void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h);
 void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32 h);
+uchar* utils_color_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h, uint32 col);
 
 #ifdef __cplusplus
 }
