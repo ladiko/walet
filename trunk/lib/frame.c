@@ -372,7 +372,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		seg_draw_vec(frm1->pixs, npix, frm1->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
