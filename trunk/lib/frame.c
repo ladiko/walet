@@ -344,10 +344,11 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
-		seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_intersect_pix(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Segmentation time = %f\n", (double)(end-start)/1000000.);
@@ -375,6 +376,9 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		seg_draw_vec(frm1->pixs, npix, frm1->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+
+		seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		seg_draw_lines(frm2->pixs, npix, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Frame match time = %f\n", (double)(end-start)/1000000.);

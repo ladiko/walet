@@ -502,7 +502,7 @@ static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uin
 			img[yx] = 254;
 			return 0;
 		}
-		if(is_new_line(x1, y1, x, y, len, 20) && c > 1){
+		if(is_new_line(x1, y1, x, y, len, 10) && c > 1){
 			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 			if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
 			new_line(&pix[yx1], &pix[yx], min);
@@ -653,7 +653,8 @@ static inline uint16 block_match( imgtype *grad, imgtype *img1, imgtype *img2, u
 			//printf("x1 = %d y1 = %d  \n", x, y);
 			//if(grad[yx] > 253){
 			if(grad[yx] == 255){
-				sad =  (abs(img1[yx1-1  ] - img2[yx-1  ]) +
+				sad =  (abs(img1[yx1    ] - img2[yx    ]) +
+						abs(img1[yx1-1  ] - img2[yx-1  ]) +
 						abs(img1[yx1-1-w] - img2[yx-1-w]) +
 						abs(img1[yx1  -w] - img2[yx  -w]) +
 						abs(img1[yx1+1-w] - img2[yx+1-w]) +
@@ -709,4 +710,63 @@ void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 
 	printf("Numbers of pixels  = %d\n", pixs);
 	printf("Numbers of lines   = %d\n", nline);
+}
+
+static inline uint32 intersect(imgtype *img, uint32 yx, uint32 w)
+{
+	char i, tmp, inter = 0, ni[8];
+	ni[0]=0; ni[1]=0; ni[2]=0; ni[3]=0; ni[4]=0; ni[5]=0; ni[6]=0; ni[7]=0;
+	if(img[yx-1  ] == 255) { inter++; ni[0] = 1;}
+	if(img[yx-1-w] == 255) { inter++; ni[1] = 1;}
+	if(img[yx-w  ] == 255) { inter++; ni[2] = 1;}
+	if(img[yx-w+1] == 255) { inter++; ni[3] = 1;}
+	if(img[yx+1  ] == 255) { inter++; ni[4] = 1;}
+	if(img[yx+1+w] == 255) { inter++; ni[5] = 1;}
+	if(img[yx+w  ] == 255) { inter++; ni[6] = 1;}
+	if(img[yx+w-1] == 255) { inter++; ni[7] = 1;}
+	if(inter == 1) return 1;
+	if(inter == 2) return 0;
+	if(inter > 2)
+		for(i=0; i<7; i++) if(ni[i] == 1 && ni[i+1] == 1) return 0;
+	if(ni[7] == 1 && ni[0] == 1) return 0;
+	return 1;
+}
+
+void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h)
+{
+	uint32 yx, y, y1, x, x1, w1 = w-1, h1 = h-1, npix = 0;
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			yx = y*w + x;
+			if(img1[yx] == 255) if(intersect(img1, yx, w)) { img2[yx] = 255; npix++;}
+		}
+	}
+	printf("seg_intersect_pix npix = %d\n", npix);
+}
+
+static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 yx2, uint32 w)
+{
+	img2[yx2    ] = img1[yx1   ];
+	img2[yx2-1  ] = img1[yx1-1 ];
+	img2[yx2-1-w] = img1[yx1-1-w];
+	img2[yx2  -w] = img1[yx1  -w];
+	img2[yx2+1-w] = img1[yx1+1-w];
+	img2[yx2+1  ] = img1[yx1+1  ];
+	img2[yx2+1+w] = img1[yx1+1+w];
+	img2[yx2  +w] = img1[yx1  +w];
+	img2[yx2-1+w] = img1[yx1-1+w];
+}
+
+void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
+{
+	uint32 yx, y, y1, x, x1, w1 = w-1, h1 = h-1, npix = 0;
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			yx = y*w + x;
+			if(grad1[yx] == 255){
+				copy_block(img1, yx, img2, (pix[yx].x + pix[yx].vx) + (pix[yx].y + pix[yx].vy)*w, w);
+			}
+		}
+	}
+	printf("seg_intersect_pix npix = %d\n", npix);
 }
