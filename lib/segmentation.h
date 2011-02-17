@@ -25,6 +25,8 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h);
 void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uint32 w, uint32 h);
 void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h);
 void seg_draw_pix(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h);
+void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h);
+void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h);
 
 #ifdef __cplusplus
 }
