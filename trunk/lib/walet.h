@@ -114,7 +114,7 @@ typedef enum {		//Wavelet transform filter banks
 
 typedef struct {
 	int x,y;
-}	Vector;
+} Dim;
 //File header
 // -----------------------------------------------------------------------------------------
 // |offset | size | description
@@ -158,6 +158,12 @@ typedef struct Corner Corner;
 typedef struct Edge Edge;
 typedef struct Edgelet Edgelet;
 typedef struct Pixel Pixel;
+typedef struct Vector Vector;
+
+struct Vector {
+	 uint16		x1, y1;		//X coordinate
+	 uint16		x2, y2;		//X coordinate
+};
 
 struct Pixel {
 	 uint16		x;		//X coordinate

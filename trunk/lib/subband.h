@@ -2,7 +2,7 @@
 #define _SUBBAND_H_
 
 typedef struct {
-	Vector size;		//Subband size
+	Dim size;		//Subband size
 	uint32 loc;			//Subband location in the buffer
 	uint32 *dist;		//Distribution probabilities array
 	uint32 d_bits;		//The max bit per pixel after DWT
