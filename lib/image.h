@@ -9,7 +9,7 @@ typedef	void (*funidwt)(imgtype *in, imgtype *out, const uint32 w, const uint32 
 typedef struct {
 	uint32 		width;		// Image width
 	uint32 		height;		// Image width
-	Vector 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
+	Dim 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
 	imgtype 	*img;		//Pointer to image
 	uint32 		*hist;		//distribution probabilities array for white balancing
 	uint16 		*look;		//Look up table for white balancing and gamma correction.

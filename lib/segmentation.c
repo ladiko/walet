@@ -556,7 +556,7 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 
 static inline void draw_line(imgtype *img, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 w, uchar col)
 {
-	int dx = x2 - x1, dy = y2 - y1, xs, ys;
+	int dx = x2 - x1, dy = y2 - y1;
 	uint32 i, j, st, stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
 	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
 	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
@@ -564,21 +564,21 @@ static inline void draw_line(imgtype *img, uint32 x1, uint32 y1, uint32 x2, uint
 	if(dxa >= dya){
 		st = dxa;
 		for(i=0,j=0; i < dxa; i++, j+=dya){
+			img[y1*w + x1] = col;
 			if(j >= st){
 				st += dxa;
 				y1 += sty;
 			}
-			img[y1*w + x1] = col;
 			x1 += stx;
 		}
 	} else {
 		st = dya;
 		for(i=0,j=0; i < dya; i++, j+=dxa){
+			img[y1*w + x1] = col;
 			if(j >= st){
 				st += dya;
 				x1 += stx;
 			}
-			img[y1*w + x1] = col;
 			y1 += sty;
 		}
 	}
@@ -680,7 +680,7 @@ void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtyp
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(grad1[yx] > 253){
-				pix[yx].mach = block_match(grad2, img1, img2, x, y,  &xo, &yo, w, h, 8);
+				pix[yx].mach = block_match(grad2, img1, img2, x, y,  &xo, &yo, w, h, 12);
 				pix[yx].vx = xo - x;
 				pix[yx].vy = yo - y;
 				npix++;
@@ -746,8 +746,8 @@ void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 
 static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 yx2, uint32 w)
 {
-	img2[yx2    ] = img1[yx1   ];
-	img2[yx2-1  ] = img1[yx1-1 ];
+	img2[yx2    ] = img1[yx1    ];
+	img2[yx2-1  ] = img1[yx1-1  ];
 	img2[yx2-1-w] = img1[yx1-1-w];
 	img2[yx2  -w] = img1[yx1  -w];
 	img2[yx2+1-w] = img1[yx1+1-w];
@@ -755,6 +755,70 @@ static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 y
 	img2[yx2+1+w] = img1[yx1+1+w];
 	img2[yx2  +w] = img1[yx1  +w];
 	img2[yx2-1+w] = img1[yx1-1+w];
+}
+
+static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector *v2, uint32 w)
+{
+	int x, y, yx;
+	uint32 i, j, st, l1, l2;
+	int dx1 = v1->x2 - v1->x1, dy1 = v1->y2 - v1->y1;
+	int dx2 = v2->x2 - v2->x1, dy2 = v2->y2 - v2->y1;
+	uint32 dxa1 = abs(dx1)+1, dya1 = abs(dy1)+1;
+	uint32 dxa2 = abs(dx2)+1, dya2 = abs(dy2)+1;
+	uint32 stx1 = dx1 < 0 ? -1 : (dx1 > 0 ? 1 : 0);
+	uint32 sty1 = dy1 < 0 ? -1 : (dy1 > 0 ? 1 : 0);
+	uint32 stx2 = dx2 < 0 ? -1 : (dx2 > 0 ? 1 : 0);
+	uint32 sty2 = dy2 < 0 ? -1 : (dy2 > 0 ? 1 : 0);
+
+	l1 = (dxa1 >= dya1) ? dxa1 : dya1;
+	l2 = (dxa2 >= dya2) ? dxa2 : dya2;
+
+	x = v1->x1; y = v1->y1;
+	if(dxa1 >= dya1){
+		st = dxa1;
+		for(i=0,j=0; i < dxa1; i++, j+=dya1){
+			yx = y*w + x;
+			if(j >= st){
+				st += dxa1;
+				y += sty1;
+			}
+			x += stx1;
+		}
+	} else {
+		st = dya1;
+		for(i=0,j=0; i < dya1; i++, j+=dxa1){
+			yx = y*w + x;
+			if(j >= st){
+				st += dya1;
+				x  += stx1;
+			}
+			y += sty1;
+		}
+	}
+
+	if(l1 >= l2){
+		st = l1;
+		for(i=0,j=0; i < l1; i++, j+=l2){
+			if(j >= st) {
+				//img2[c2] = img1[c1];
+				st += l1;
+				//c2++;
+			}
+			//c1++;
+		}
+	} else {
+		st = l2;
+		for(i=0,j=0; i < l2; i++, j+=l1){
+			//img2[c2] = img1[c1];
+			if(j >= st) {
+				st += l2;
+				//c1++;
+			}
+			//c2++;
+		}
+	}
+
+
 }
 
 void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
