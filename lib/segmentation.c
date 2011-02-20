@@ -554,39 +554,34 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of lines   = %d\n", nline);
 }
 
-static inline void draw_line(imgtype *img, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 w, uchar col)
+#define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
+
+static inline void draw_line(imgtype *img, Vector *v, uint32 w, uint32 col)
 {
-	int dx = x2 - x1, dy = y2 - y1;
-	uint32 i, j, st, stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
+	uint32 i;
+	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
+	uint32 stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
+	uint32 mit = 0, mat = 0, max, min, mi, ma, mist, mast, c, yx;
+
 	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
 	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
 
-	if(dxa >= dya){
-		st = dxa;
-		for(i=0,j=0; i < dxa; i++, j+=dya){
-			img[y1*w + x1] = col;
-			if(j >= st){
-				st += dxa;
-				y1 += sty;
-			}
-			x1 += stx;
-		}
-	} else {
-		st = dya;
-		for(i=0,j=0; i < dya; i++, j+=dxa){
-			img[y1*w + x1] = col;
-			if(j >= st){
-				st += dya;
-				x1 += stx;
-			}
-			y1 += sty;
-		}
+	if(dxa >= dya) 	{ max = dxa; min = dya; mi = v->y1; ma = v->x1; mist = sty; mast = stx; c = 1; }
+	else 			{ max = dya; min = dxa; mi = v->x1; ma = v->y1; mist = stx; mast = sty; c = 0; }
+
+	for(i=0; i < max; i++){
+		img[xy(mi, ma, c)] = col;
+		//yx = xy(mi, ma, c);
+		if(mit >= mat) { mat += max; mi += mist;}
+		mit += min;
+		ma += mast;
 	}
 }
 
 void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, pixs = 0, nline = 0;
+	Vector xy;
 	for(i=0; i < w*h; i++){
 		//if(pix[i].nnei > 4){
 			//if(pix[i].nout) {
@@ -594,19 +589,14 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 			if(pix[i].nout) {
 				if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
 				//printf("x = %d y = %d x1 = %d y1 = %d pow = %d\n", pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, pix[i].pow);
-				draw_line(img, pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, w, pix[i].pow);
+				xy.x1 = pix[i].x; xy.y1 = pix[i].y;
+				xy.x2 = pix[i].out->x; xy.y2 = pix[i].out->y;
+				draw_line(img, &xy, w, pix[i].pow);
+
+				//draw_line(img, pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, w, pix[i].pow);
 				//if(pix[i].pow == 255) printf("pow = %d\n", pix[i].pow);
 				//draw_line(img, pix[i].x, pix[i].y, pix[i].out->x, pix[i].out->y, w, 255);
 				nline++;
-				//for(k=0; k < pix[i].nnei; k++) printf("pix[%d].pix[%d] x = %d y = %d\n", i, k, pix[i].pix[k]->x, pix[i].pix[k]->y);
-				/*
-				for(j=0; j < pix[i].nout; j++) {
-					//printf("%6d x = %4d y = %4d nout = %d nin = %d x = %d y = %d\n", i, pix[i].x, pix[i].y, pix[i].nout, pix[i].nin, pix[i].out[j]->x, pix[i].out[j]->y);
-					draw_line(img, pix[i].x, pix[i].y, pix[i].out[j]->x, pix[i].out[j]->y, w, pix[i].pow[j]);
-					//draw_line(img, pix[i].x, pix[i].y, pix[i].out[j]->x, pix[i].out[j]->y, w, 100);
-					nline++;
-				}*/
-				//printf("%6d x = %4d y = %4d nnei = %d pow = %d\n", i, pix[i].x, pix[i].y, pix[i].nnei, pix[i].pow);
 			}
 	}
 	for(i=0; i < w*h; i++){
@@ -693,9 +683,13 @@ void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtyp
 void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, sq = w*h, pixs = 0, nline = 0;
+	Vector xy;
 	for(i=0; i < sq; i++){
 		if(pix[i].nout || pix[i].nin) {
-			draw_line(img, pix[i].x, pix[i].y, pix[i].x + pix[i].vx, pix[i].y + pix[i].vy, w, 100);
+			xy.x1 = pix[i].x; xy.y1 = pix[i].y;
+			xy.x2 = pix[i].x + pix[i].vx; xy.y2 = pix[i].y + pix[i].vy;
+			draw_line(img, &xy, w, 100);
+			//draw_line(img, pix[i].x, pix[i].y, pix[i].x + pix[i].vx, pix[i].y + pix[i].vy, w, 100);
 			//printf("x = %d %d y = %d %d\n", pix[i].x, pix[i].vx, pix[i].y,  pix[i].vy);
 			nline++;
 		}
@@ -757,64 +751,62 @@ static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 y
 	img2[yx2-1+w] = img1[yx1-1+w];
 }
 
-#define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
-
-static inline uint32 return_yx(imgtype *img, Vector *v, uint32 w, uint32 n)
-{
-	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
-	uint32 stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
-	uint32 mit = 0, mat = 0, max, min, mi, ma, mist, mast, c, yx;
-
-	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
-	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
-
-	if(dxa >= dya) 	{ max = dxa; min = dya; mi = v->y1; ma = v->x1; mist = sty; mast = stx; c = 0; }
-	else 			{ max = dya; min = dxa; mi = v->x1; ma = v->y1; mist = stx; mast = sty; c = 1; }
-
-	yx = xy(mi, ma, c);
-	if(mit >= mat) { mat += max; mi += mist;}
-	mit += min;
-	ma += mast;
-
-}
-
 static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector *v2, uint32 w)
 {
 	int x, y, yx;
 	uint32 i, j, st, l1, l2;
 	int dx1 = v1->x2 - v1->x1, dy1 = v1->y2 - v1->y1;
 	int dx2 = v2->x2 - v2->x1, dy2 = v2->y2 - v2->y1;
-	uint32 dxa1 = abs(dx1)+1, dya1 = abs(dy1)+1;
-	uint32 dxa2 = abs(dx2)+1, dya2 = abs(dy2)+1;
-	uint32 stx1 = dx1 < 0 ? -1 : (dx1 > 0 ? 1 : 0);
-	uint32 sty1 = dy1 < 0 ? -1 : (dy1 > 0 ? 1 : 0);
-	uint32 stx2 = dx2 < 0 ? -1 : (dx2 > 0 ? 1 : 0);
-	uint32 sty2 = dy2 < 0 ? -1 : (dy2 > 0 ? 1 : 0);
+	int dxa1 = abs(dx1)+1, dya1 = abs(dy1)+1;
+	int dxa2 = abs(dx2)+1, dya2 = abs(dy2)+1;
+	int stx1 = dx1 < 0 ? -1 : (dx1 > 0 ? 1 : 0);
+	int sty1 = dy1 < 0 ? -1 : (dy1 > 0 ? 1 : 0);
+	int stx2 = dx2 < 0 ? -1 : (dx2 > 0 ? 1 : 0);
+	int sty2 = dy2 < 0 ? -1 : (dy2 > 0 ? 1 : 0);
+
+	int mit1 = 0, mat1 = 0, max1, min1, mi1, ma1, mist1, mast1, c1, yx1;
+	int mit2 = 0, mat2 = 0, max2, min2, mi2, ma2, mist2, mast2, c2, yx2;
 
 	l1 = (dxa1 >= dya1) ? dxa1 : dya1;
 	l2 = (dxa2 >= dya2) ? dxa2 : dya2;
 
-	x = v1->x1; y = v1->y1;
+	if(dxa1 >= dya1) 	{ max1 = dxa1; min1 = dya1; mi1 = v1->y1; ma1 = v1->x1; mist1 = sty1; mast1 = stx1; c1 = 1; }
+	else 				{ max1 = dya1; min1 = dxa1; mi1 = v1->x1; ma1 = v1->y1; mist1 = stx1; mast1 = sty1; c1 = 0; }
+
+	if(dxa2 >= dya2) 	{ max2 = dxa2; min2 = dya2; mi2 = v2->y1; ma2 = v2->x1; mist2 = sty2; mast2 = stx2; c2 = 1; }
+	else 				{ max2 = dya2; min2 = dxa2; mi2 = v2->x1; ma2 = v2->y1; mist2 = stx2; mast2 = sty2; c2 = 0; }
 
 	if(l1 >= l2){
 		st = l1;
 		for(i=0,j=0; i < l1; i++, j+=l2){
 			if(j >= st) {
-				//img2[c2] = img1[c1];
+				img2[yx2] = img1[yx1];
 				st += l1;
-				//c2++;
+				yx2 = xy(mi2, ma2, c2);
+				if(mit2 >= mat2) { mat2 += max2; mi2 += mist2;}
+				mit2 += min2;
+				ma2 += mast2;
 			}
-			//c1++;
+			yx1 = xy(mi1, ma1, c1);
+			if(mit1 >= mat1) { mat1 += max1; mi1 += mist1;}
+			mit1 += min1;
+			ma1 += mast1;
 		}
 	} else {
 		st = l2;
 		for(i=0,j=0; i < l2; i++, j+=l1){
-			//img2[c2] = img1[c1];
+			img2[yx2] = img1[yx1];
 			if(j >= st) {
 				st += l2;
-				//c1++;
+				yx1 = xy(mi1, ma1, c1);
+				if(mit1 >= mat1) { mat1 += max1; mi1 += mist1;}
+				mit1 += min1;
+				ma1 += mast1;
 			}
-			//c2++;
+			yx2 = xy(mi2, ma2, c2);
+			if(mit2 >= mat2) { mat2 += max2; mi2 += mist2;}
+			mit2 += min2;
+			ma2 += mast2;
 		}
 	}
 }
@@ -822,13 +814,23 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 {
 	uint32 yx, y, y1, x, x1, w1 = w-1, h1 = h-1, npix = 0;
+	Vector v1, v2;
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
-			if(grad1[yx] == 255){
-				copy_block(img1, yx, img2, (pix[yx].x + pix[yx].vx) + (pix[yx].y + pix[yx].vy)*w, w);
+			if(grad1[yx] == 255 && pix[yx].nout){
+				v1.x1 = pix[yx].x; v1.y1 = pix[yx].y;
+				v1.x2 = pix[yx].out->x; v1.y2 = pix[yx].out->y;
+
+				v2.x1 = pix[yx].x + pix[yx].vx; 			v2.y1 = pix[yx].y + pix[yx].vy;
+				v2.x2 = pix[yx].out->x + pix[yx].out->vx; 	v2.y2 = pix[yx].out->y + pix[yx].out->vy;
+
+				//printf("x1  = %d y1 = %d x2 = %d y2 = %d\n", abs(v1.x2-v1.x1), abs(v1.y2-v1.y1), abs(v2.x2-v2.x1), abs(v2.y2-v2.y1));
+				//copy_block(img1, yx, img2, (pix[yx].x + pix[yx].vx) + (pix[yx].y + pix[yx].vy)*w, w);
+				copy_vector(img1, &v1, img2, &v2, w);
+				npix++;
 			}
 		}
 	}
-	printf("seg_intersect_pix npix = %d\n", npix);
+	printf("seg_mvector_copy nvectors = %d\n", npix);
 }
