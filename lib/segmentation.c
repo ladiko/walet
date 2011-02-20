@@ -757,6 +757,27 @@ static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 y
 	img2[yx2-1+w] = img1[yx1-1+w];
 }
 
+#define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
+
+static inline uint32 return_yx(imgtype *img, Vector *v, uint32 w, uint32 n)
+{
+	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
+	uint32 stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
+	uint32 mit = 0, mat = 0, max, min, mi, ma, mist, mast, c, yx;
+
+	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
+	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
+
+	if(dxa >= dya) 	{ max = dxa; min = dya; mi = v->y1; ma = v->x1; mist = sty; mast = stx; c = 0; }
+	else 			{ max = dya; min = dxa; mi = v->x1; ma = v->y1; mist = stx; mast = sty; c = 1; }
+
+	yx = xy(mi, ma, c);
+	if(mit >= mat) { mat += max; mi += mist;}
+	mit += min;
+	ma += mast;
+
+}
+
 static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector *v2, uint32 w)
 {
 	int x, y, yx;
@@ -774,27 +795,6 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 	l2 = (dxa2 >= dya2) ? dxa2 : dya2;
 
 	x = v1->x1; y = v1->y1;
-	if(dxa1 >= dya1){
-		st = dxa1;
-		for(i=0,j=0; i < dxa1; i++, j+=dya1){
-			yx = y*w + x;
-			if(j >= st){
-				st += dxa1;
-				y += sty1;
-			}
-			x += stx1;
-		}
-	} else {
-		st = dya1;
-		for(i=0,j=0; i < dya1; i++, j+=dxa1){
-			yx = y*w + x;
-			if(j >= st){
-				st += dya1;
-				x  += stx1;
-			}
-			y += sty1;
-		}
-	}
 
 	if(l1 >= l2){
 		st = l1;
@@ -817,8 +817,6 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 			//c2++;
 		}
 	}
-
-
 }
 
 void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
