@@ -475,6 +475,7 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_color_draw(frm1->pix[0].pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
 
+
 	new_buffer (gw->orig[3], w, h);
 	utils_grey_draw(gw->gop->frames[1].pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[3]);

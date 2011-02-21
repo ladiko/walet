@@ -243,39 +243,6 @@ static inline int dir(imgtype *img, uint32 yx, uint32 w, int in1)
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in =  1+w; }
 		goto end;
 	}
-	/*
-	if(in1 == 0   ){
-		if(img[yx-1  ] > max) { max = img[yx-1  ]; in = -1  ; }
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		goto end;
-	}
-	if(in1 == -1  ){
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx+1  ] >= max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		goto end;
-	}
-	if(in1 ==   -w){
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx  +w] >= max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		goto end;
-	}
-	if(in1 ==  1  ){
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx  -1] >= max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		goto end;
-	}
-	if(in1 ==    w){
-		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx  -w] >= max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		goto end;
-	}*/
-
 end:
 	return in;
 }
@@ -359,38 +326,6 @@ static inline void dir1(imgtype *img, uint32 w, uint yx, int dx, int dy, int *dx
                 //if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 goto end;
         }
-        /*
-        if(dx == 0 && dy == 0  ){
-                if(img[yx-1  ] > max) { max = img[yx-1  ]; *dx1 = -1; *dy1 =  0;}
-                if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
-                if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
-                if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
-                goto end;
-        }
-        if(dx == -1 && dy == 0){
-                if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
-                if(img[yx+1  ] >= max){ max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
-                if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
-                goto end;
-        }
-        if(dx ==  0 && dy == -1){
-                if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
-                if(img[yx  +w] >= max){ max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
-                if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
-                goto end;
-        }
-        if(dx ==  1 && dy ==  0){
-                if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
-                if(img[yx  -1] >= max){ max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
-                if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
-                goto end;
-        }
-       if(dx ==  0 && dy ==  1){
-                if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
-                if(img[yx  -w] >= max){ max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
-                if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
-                goto end;
-        }*/
 
 end:
         return;
@@ -470,9 +405,11 @@ static inline uint32 length(int dx, int dy)
 	return 32;
 }
 
-static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 yx, uint32 *xo, uint32 *yo, uint32 *yxo, uint32 w, int dx, int dy, uint32 dir)
+static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 yx, uint32 w)
 {
 	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, min, c = 0;
+	int dx, dy;
+	dir1(img, w,  yx,   0,   0, &dx, &dy);
 	min = img[yx];
     while(1){
      	len += length(dx, dy);
@@ -485,7 +422,7 @@ static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uin
 				new_line(&pix[yx1], &pix[yx], min);
 				//if(dir) new_line(&pix[yx1], &pix[yx], min);
 				//else	new_line(&pix[yx], &pix[yx1], min);
-				*xo = x; *yo = y; *yxo = yx;
+				//*xo = x; *yo = y; *yxo = yx;
 			}
 			img[yx] = 254;
 			return 0;
@@ -497,22 +434,23 @@ static inline uint32 find_line(Pixel *pix, imgtype *img, uint32 x, uint32 y, uin
 				new_line(&pix[yx1], &pix[yx], min);
 				//if(dir) new_line(&pix[yx1], &pix[yx], min);
 				//else	new_line(&pix[yx], &pix[yx1], min);
-				*xo = x; *yo = y; *yxo = yx;
+				//*xo = x; *yo = y; *yxo = yx;
 			}
 			img[yx] = 254;
 			return 0;
 		}
+		img[yx] = 254;
 		if(is_new_line(x1, y1, x, y, len, 10) && c > 1){
 			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 			if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
 			new_line(&pix[yx1], &pix[yx], min);
+			x1 = x; y1 = y; yx1 = yx; c = 0; len = 0;
 			//if(dir) new_line(&pix[yx1], &pix[yx], min);
 			//else	new_line(&pix[yx], &pix[yx1], min);
-			*xo = x; *yo = y; *yxo = yx;
+			//*xo = x; *yo = y; *yxo = yx;
 			//img[yx] = 255;
-			return 1;
+			//return 1;
 		}
-		img[yx] = 254;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
 		c++;
     }
@@ -540,11 +478,13 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 			if(img[yx] && img[yx] != 255){
 				if(loc_max(img, yx, w)){
 					yx1 = yx; x1 = x; y1 = y;
-					yx2 = yx; x2 = x; y2 = y;
+					//yx2 = yx; x2 = x; y2 = y;
 					//new_pix(&pix[yx], img[yx], x, y); npix++;
-					dir1(img, w,  yx,   0,   0, &dx1, &dy1);
+					//dir1(img, w,  yx,   0,   0, &dx1, &dy1);
+					find_lines(pix, img, x1, y1, yx1, w);
+					//find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1);
 					//dir1(img, w,  yx, dx1, dy1, &dx2, &dy2);
-					while (find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1)) { npix++; nline++; }
+					//while (find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1)) { npix++; nline++; }
 					//while (find_line(pix, img, x2, y2, yx2, &x1, &y1, &yx1, w, dx2, dy2, 0)) { npix++; nline++; }
 				}
 			}
@@ -561,7 +501,7 @@ static inline void draw_line(imgtype *img, Vector *v, uint32 w, uint32 col)
 	uint32 i;
 	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
 	uint32 stx, sty, dxa = abs(dx)+1, dya = abs(dy)+1;
-	uint32 mit = 0, mat = 0, max, min, mi, ma, mist, mast, c, yx;
+	uint32 mit, mat, max, min, mi, ma, mist, mast, c, yx;
 
 	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
 	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
@@ -569,6 +509,7 @@ static inline void draw_line(imgtype *img, Vector *v, uint32 w, uint32 col)
 	if(dxa >= dya) 	{ max = dxa; min = dya; mi = v->y1; ma = v->x1; mist = sty; mast = stx; c = 1; }
 	else 			{ max = dya; min = dxa; mi = v->x1; ma = v->y1; mist = stx; mast = sty; c = 0; }
 
+	mat = max; mit = min;
 	for(i=0; i < max; i++){
 		img[xy(mi, ma, c)] = col;
 		//yx = xy(mi, ma, c);
@@ -599,15 +540,17 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 				nline++;
 			}
 	}
+
 	for(i=0; i < w*h; i++){
 		if(pix[i].nout || pix[i].nin){
+		//if(pix[i].nout){
 			img[i] = 255;
 			pixs++;
 		}
 	}
 
-	printf("Numbers of pixels  = %d\n", pixs);
-	printf("Numbers of lines   = %d\n", nline);
+	printf("Pixels  = %d\n", pixs);
+	printf("Lines   = %d\n", nline);
 }
 
 void seg_draw_pix(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
@@ -772,13 +715,15 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 
 	if(dxa1 >= dya1) 	{ max1 = dxa1; min1 = dya1; mi1 = v1->y1; ma1 = v1->x1; mist1 = sty1; mast1 = stx1; c1 = 1; }
 	else 				{ max1 = dya1; min1 = dxa1; mi1 = v1->x1; ma1 = v1->y1; mist1 = stx1; mast1 = sty1; c1 = 0; }
+	mit1 = min1; mat1 = max1;
 
 	if(dxa2 >= dya2) 	{ max2 = dxa2; min2 = dya2; mi2 = v2->y1; ma2 = v2->x1; mist2 = sty2; mast2 = stx2; c2 = 1; }
 	else 				{ max2 = dya2; min2 = dxa2; mi2 = v2->x1; ma2 = v2->y1; mist2 = stx2; mast2 = sty2; c2 = 0; }
+	mit2 = min2; mat2 = max2;
 
 	if(l1 >= l2){
 		st = l1;
-		for(i=0,j=0; i < l1; i++, j+=l2){
+		for(i=0,j=l2; i < l1; i++, j+=l2){
 			if(j >= st) {
 				img2[yx2] = img1[yx1];
 				st += l1;
@@ -794,7 +739,7 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 		}
 	} else {
 		st = l2;
-		for(i=0,j=0; i < l2; i++, j+=l1){
+		for(i=0,j=l1; i < l2; i++, j+=l1){
 			img2[yx2] = img1[yx1];
 			if(j >= st) {
 				st += l2;
