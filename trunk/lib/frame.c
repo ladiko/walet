@@ -346,8 +346,8 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
 		//for(i=0; i < sq; i++) frm->pix[0].pic[i] = frm->grad[0].pic[i];
 
-		//seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
 		seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_intersect_pix(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
