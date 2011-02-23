@@ -380,9 +380,10 @@ void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, uint32 w, uint32 h)
 
 static inline uint32 is_in_line(int dx, int dy, int dx1, int dy1)
 {
-	if(!dx && !dx1) return 1;
-	if(!dy && !dy1) return 1;
-	if(dx1*dy == dy1*dx) return 1;
+	if(dx == dx1 && dy == dy1) return 1;
+	//if(!dx && !dx1) return 1;
+	//if(!dy && !dy1) return 1;
+	//if(dx1*dy == dy1*dx) return 1;
 	return 0;
 }
 
@@ -408,11 +409,11 @@ static inline uint32 length(int dx, int dy)
 static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 yx, uint32 w)
 {
 	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, min, c = 0;
-	int dx, dy;
+	int dx, dy, dx1, dy1;
 	dir1(img, w,  yx,   0,   0, &dx, &dy);
 	min = img[yx];
     while(1){
-     	len += length(dx, dy);
+     	//len += length(dx, dy);
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy;
      	min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) {
@@ -420,9 +421,6 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 				if(!pix[yx1].x && !pix[yx1].y)  { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
 				new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 				new_line(&pix[yx1], &pix[yx], min);
-				//if(dir) new_line(&pix[yx1], &pix[yx], min);
-				//else	new_line(&pix[yx], &pix[yx1], min);
-				//*xo = x; *yo = y; *yxo = yx;
 			}
 			img[yx] = 254;
 			return 0;
@@ -432,26 +430,26 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 				if(!pix[yx].x && !pix[yx].y) { new_pix(&pix[yx], img[yx], x, y); img[yx] = 255; }
 				if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255; }
 				new_line(&pix[yx1], &pix[yx], min);
-				//if(dir) new_line(&pix[yx1], &pix[yx], min);
-				//else	new_line(&pix[yx], &pix[yx1], min);
-				//*xo = x; *yo = y; *yxo = yx;
 			}
 			img[yx] = 254;
 			return 0;
 		}
 		img[yx] = 254;
-		if(is_new_line(x1, y1, x, y, len, 10) && c > 1){
+		dx1 = dx; dy1 = dy;
+		dir1(img, w, yx, -dx, -dy, &dx, &dy);
+		//if(is_new_line(x1, y1, x, y, len, 10) && c > 1){
+		if(c > 1 && is_in_line(dx, dy, dx1, dy1)){
+			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
 			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 			if(!pix[yx1].x && !pix[yx1].y) { new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;}
 			new_line(&pix[yx1], &pix[yx], min);
-			x1 = x; y1 = y; yx1 = yx; c = 0; len = 0;
+			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0;
 			//if(dir) new_line(&pix[yx1], &pix[yx], min);
 			//else	new_line(&pix[yx], &pix[yx1], min);
 			//*xo = x; *yo = y; *yxo = yx;
 			//img[yx] = 255;
 			//return 1;
 		}
-		dir1(img, w, yx, -dx, -dy, &dx, &dy);
 		c++;
     }
 }
@@ -468,30 +466,19 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 //     dy2     dy      dy2
 //
 {
-	uint32 y, y1, y2, y3, y11, y22, yp, x, x1, x2, x3, x11, x22, xp, yx, yx1, yx2, yx3, yx11, yx22, i, w1 = w-3, h1 = h-3,  nline = 0, min, npix = 0, pc;
-	int d = 0, d1, dif, dif1, dif2, dx, dy, dx1, dy1, dx2, dy2, min1, min2, len, len1, len2, st, s;
-	for(y=3; y < h1; y++){
-	//for(y=1; y < 2; y++){
-		for(x=3; x < w1; x++){
-		//for(x=1; x < 4; x++){
+	uint32 y, x, yx, w1 = w-1, h1 = h-1;
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] && img[yx] != 255){
 				if(loc_max(img, yx, w)){
-					yx1 = yx; x1 = x; y1 = y;
-					//yx2 = yx; x2 = x; y2 = y;
-					//new_pix(&pix[yx], img[yx], x, y); npix++;
-					//dir1(img, w,  yx,   0,   0, &dx1, &dy1);
-					find_lines(pix, img, x1, y1, yx1, w);
-					//find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1);
-					//dir1(img, w,  yx, dx1, dy1, &dx2, &dy2);
-					//while (find_line(pix, img, x1, y1, yx1, &x1, &y1, &yx1, w, dx1, dy1, 1)) { npix++; nline++; }
-					//while (find_line(pix, img, x2, y2, yx2, &x1, &y1, &yx1, w, dx2, dy2, 0)) { npix++; nline++; }
+					find_lines(pix, img, x, y, yx, w);
 				}
 			}
 		}
 	}
-	printf("Numbers of pixels  = %d\n", npix);
-	printf("Numbers of lines   = %d\n", nline);
+	//printf("Numbers of pixels  = %d\n", npix);
+	//printf("Numbers of lines   = %d\n", nline);
 }
 
 #define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
@@ -571,10 +558,6 @@ static inline uint16 block_match( imgtype *grad, imgtype *img1, imgtype *img2, u
 	int x, y, yx, yx1 = y1*w + x1,  sad, npix = 0;
 	uint16 min = 0xFFFF;
 	int ax = x1 - st, ay = y1 - st, bx = x1 + st, by = y1 + st;
-	//int ax = (x1 - st) < 0 ? 0 : x1 - st;
-	//int ay = (y1 - st) < 0 ? 0 : y1 - st;
-	//int bx = (x1 + st) > w ? w : x1 + st;
-	//int by = (y1 + st) > h ? h : y1 + st;
 	if(ax <= 0) ax = 1;
 	if(ay <= 0) ay = 1;
 	if(bx >= w) bx = w-1;
