@@ -22,10 +22,10 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-			max = g[0]; in = 2;
-			if(max < g[1]) { max = g[1]; in = 3; }
-			if(max < g[2]) { max = g[2]; in = 0; }
-			if(max < g[3]) { max = g[3]; in = 1; }
+			//max = g[0]; in = 2;
+			//if(max < g[1]) { max = g[1]; in = 3; }
+			//if(max < g[2]) { max = g[2]; in = 0; }
+			//if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
 			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0; img2[yx] = in;
 			img1[yx] = max>>th ? (max >252 ? 252 : max) : 0; img2[yx] = in;
@@ -563,7 +563,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	for(i=0; i < w*h; i++){
 		if(pix[i].nout || pix[i].nin){
 		//if(pix[i].nout){
-			img[i] = 255;
+			img[i] = pix[i].pow<<1;
 			pixs++;
 		}
 	}
@@ -824,7 +824,7 @@ void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, 
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
-			if(grad1[yx] == 253 && pix[yx].nout){
+			if(pix[yx].nout){
 				v1.x1 = pix[yx].x; v1.y1 = pix[yx].y;
 				v1.x2 = pix[yx].out->x; v1.y2 = pix[yx].out->y;
 
@@ -839,4 +839,15 @@ void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, 
 		}
 	}
 	printf("seg_mvector_copy nvectors = %d\n", npix);
+}
+
+void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q)
+{
+	uint32 x, y, yx, sq = w*h;
+	for(y=0; y < sq; y+=w){
+		for(x=0; x < w; x++){
+			yx = y + x;
+			img2[yx] = (img1[yx]>>q)<<q;
+		}
+	}
 }

@@ -1525,3 +1525,5 @@ void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32
 	}
 
 }
+
+

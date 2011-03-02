@@ -464,17 +464,17 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	frame_match(gw->gop, 0, 1);
 
 	new_buffer (gw->orig[1], w, h);
-
+	/*
 	seg_draw_pix(frm1->pixs, npix, frm1->grad[0].pic, w, h);
 	seg_draw_pix(frm1->pixs, npix, frm2->grad[0].pic, w, h);
 	seg_draw_pix(frm1->pixs, npix, frm1->pix[0].pic, w, h);
 	seg_draw_pix(frm2->pixs, npix, frm1->grad[0].pic, w, h);
 	seg_draw_pix(frm2->pixs, npix, frm2->grad[0].pic, w, h);
 	seg_draw_pix(frm2->pixs, npix, frm1->pix[0].pic, w, h);
-	//utils_grey_draw(frm1->pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
 	utils_color_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 2);
 	utils_color_draw(frm2->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1);
-	utils_color_draw(frm1->pix[0].pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
+	utils_color_draw(frm1->pix[0].pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);*/
+	utils_grey_draw(frm1->pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
 
 	gtk_widget_queue_draw(gw->drawingarea[1]);
 
