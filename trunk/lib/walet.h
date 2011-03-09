@@ -173,8 +173,8 @@ struct Pixel {
 	 char		vy;		//The motion vector
 	 uchar		nout;	//If 0 - end pint if 1 - vector
 	 uchar		nin;	//Number of neighborhood
-	 Pixel 			*out;
-	 uchar			pow;
+	 Pixel 		*out;
+	 uchar		pow;
 };
 
 struct Edge {
