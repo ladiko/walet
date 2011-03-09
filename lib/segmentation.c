@@ -621,8 +621,8 @@ static inline uint16 block_match(imgtype *grad, imgtype *img1, imgtype *img2, ui
 	}
 	if(!npix) { *xo = x1; *yo = y1;}
 	//if(abs(*xo - x1) > 8 || abs(*yo - y1) > 8 )
-	if(min)
-	printf("npix = %3d min = %4d x = %4d y = %4d x1 = %4d y1 = %4d vx = %4d vy = %4d", npix, min, x1, y1, *xo, *yo, *xo - x1, *yo - y1);
+	//if(min)
+	//printf("npix = %3d min = %4d x = %4d y = %4d x1 = %4d y1 = %4d vx = %4d vy = %4d", npix, min, x1, y1, *xo, *yo, *xo - x1, *yo - y1);
 	return min;
 }
 
@@ -654,7 +654,7 @@ void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtyp
 			if(grad1[yx] == 255){
 				p = &pix[yx];
 				p->mach = block_match(grad2, img1, img2, x, y, x, y, &xo, &yo, w, h, 12);
-				if(p->mach ) printf(" block = 12\n");
+				//if(p->mach ) printf(" block = 12\n");
 				p->vx = xo - x;
 				p->vy = yo - y;
 				yx1 = yx;
@@ -669,7 +669,7 @@ void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtyp
 							p = &pix[yx1];
 							//printf("block = 2\n");
 							p->mach = block_match(grad2, img1, img2, p->x, p->y, x1, y1,  &xo, &yo, w, h, 5);
-							if(p->mach ) printf(" block = 2 \n");
+							//if(p->mach ) printf(" block = 2 \n");
 							p->vx = xo - p->x;
 							p->vy = yo - p->y;
 							//grad1[yx1] = 253;
