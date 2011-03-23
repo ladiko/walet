@@ -169,12 +169,16 @@ struct Pixel {
 	 uint16		x;		//X coordinate
 	 uint16		y;		//Y coordinate
 	 uint16		mach;
+	 //char		dir;	//Direction neighbour region 0 - left, right  1 - top, bottom
+	 uint32 	yx1;
+	 uint32 	yx2;
+
 	 char		vx;		//The motion vector
 	 char		vy;		//The motion vector
 	 uchar		nout;	//If 0 - end pint if 1 - vector
 	 uchar		nin;	//Number of neighborhood
 	 Pixel 		*out;
-	 uchar		pow;
+	 uchar		pow;	//The gradient energy
 };
 
 struct Edge {

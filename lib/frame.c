@@ -344,7 +344,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		//seg_quant(frm->Y[0].pic, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height, 5);
-		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 3);
+		seg_grad(frm->Y[0].pic, frm->grad[0].pic, gop->buf, frm->Y[0].width, frm->Y[0].height, 4);
 		//for(i=0; i < sq; i++) frm->pix[0].pic[i] = frm->grad[0].pic[i];
 
 		seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
