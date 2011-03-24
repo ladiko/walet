@@ -57,6 +57,9 @@ void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
 			i = (i == 2) ? 0 : i+1;
 		}
 	}
+	//Copy one pixel border
+	utils_copy_border(img, img1, 1, w, h);
+
 }
 
 void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)

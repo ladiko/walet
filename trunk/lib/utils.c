@@ -514,7 +514,7 @@ void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
+void utils_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, yx3, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
@@ -528,7 +528,7 @@ void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
 	}
 }
 
-void util_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
+void utils_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
 {
 	uint32 x, x1, y, y1, yx, yx1, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), w3 = w>>1;
 	for(y=0, y1=0; y < h1; y+=w2, y1+=w3){
@@ -539,10 +539,6 @@ void util_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
 		}
 	}
 }
-
-
-
-
 
 imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
@@ -606,6 +602,37 @@ imgtype* utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, B
 	return img1;
 }
 
+void utils_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, sq = h*w, l = b*w, l1 = sq-l, l2 = w-b;
+	//Top border
+	/*
+	for(y=0; y < l; y+=w)
+		for(x=0; x < w; x++){
+			yx = y + x;
+			//Segmentation fault !!!!!!!!!!!!!!!!!!
+			img1[yx] = img[yx];
+		}*/
+	//Bottom border
+	for(y=l1; y < sq; y+=w)
+		for(x=0; x < w; x++){
+			yx = y + x;
+			img1[yx] = img[yx];
+		}
+	//Left border
+	for(y=l; y < l1; y+=w)
+		for(x=0; x < b; x++){
+			yx = y + x;
+			img1[yx] = img[yx];
+		}
+	//Right border
+	for(y=l; y < l1; y+=w)
+		for(x=l2; x < w; x++){
+			yx = y + x;
+			img1[yx] = img[yx];
+		}
+
+}
 
 void inline local_max(imgtype *img, imgtype *img1, uint32 w)
 {

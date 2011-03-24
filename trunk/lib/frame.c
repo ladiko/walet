@@ -340,7 +340,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		util_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
+		utils_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		//util_bayer_to_Y(im->img, frm->Y[0].pic, gop->width, gop->height);
 		//seg_quant(frm->Y[0].pic, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height, 5);
