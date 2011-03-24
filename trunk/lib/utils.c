@@ -606,13 +606,12 @@ void utils_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, sq = h*w, l = b*w, l1 = sq-l, l2 = w-b;
 	//Top border
-	/*
 	for(y=0; y < l; y+=w)
 		for(x=0; x < w; x++){
 			yx = y + x;
 			//Segmentation fault !!!!!!!!!!!!!!!!!!
 			img1[yx] = img[yx];
-		}*/
+		}
 	//Bottom border
 	for(y=l1; y < sq; y+=w)
 		for(x=0; x < w; x++){
