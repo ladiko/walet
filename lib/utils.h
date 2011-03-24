@@ -27,7 +27,7 @@ uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
 void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h);
 void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h);
 uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
-void util_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h);
+void utils_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h);
 
 uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
 uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
@@ -67,6 +67,8 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h);
 void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32 h);
 uchar* utils_color_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h, uint32 col);
+
+void util_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h);
 
 #ifdef __cplusplus
 }
