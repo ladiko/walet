@@ -1132,8 +1132,8 @@ void image_median_filter(Image *im, ColorSpace color, BayerGrid bg, imgtype *buf
 ///	\param color 		The color space of the stream.
 ///	\param steps 		The steps of DWT transform.
 {
-	if(color == BAYER) filters_bayer_median_3x3(im->img, buf, im->width, im->height, bg);
-	else filters_median_3x3(im->img, buf, im->width, im->height);
+	//if(color == BAYER) filters_bayer_median_3x3(im->img, buf, im->width, im->height, bg);
+	//else filters_median_3x3(im->img, buf, im->width, im->height);
 }
 
 void image_subband_median_filter(Image *im, ColorSpace color, uint32 steps, imgtype *buf)
@@ -1151,6 +1151,6 @@ void image_subband_median_filter(Image *im, ColorSpace color, uint32 steps, imgt
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	for(i=0; i < sz; i++) filters_median_3x3(&img[sub[i].loc], &buf[sub[i].loc], sub[i].size.x, sub[i].size.y);
+	//for(i=0; i < sz; i++) filters_median_3x3(&img[sub[i].loc], &buf[sub[i].loc], sub[i].size.x, sub[i].size.y);
 }
 

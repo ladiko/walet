@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -13,7 +13,8 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 	/// | | | |      | ||| |      | | |/|      |\| | |
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
-	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, max, in;
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
+	uchar max;
 	uint32 g[4];
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
@@ -22,19 +23,25 @@ void seg_grad(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, ui
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			//if(y == w)
+			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
+			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
 			//max = g[0]; in = 2;
 			//if(max < g[1]) { max = g[1]; in = 3; }
 			//if(max < g[2]) { max = g[2]; in = 0; }
 			//if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
-			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0; img2[yx] = in;
-			img1[yx] = max>>th ? (max >252 ? 252 : max) : 0; img2[yx] = in;
-			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
+			max = max > 252 ? 252 : max;
+			//img1[yx] = max;
+			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
+			//img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			img1[yx] = max>>th ? max : 0;
+			//printf("yx = %d max = %d\n", yx, max);
 		}
 	}
 }
 
-void seg_grad1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+void seg_grad1(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -63,13 +70,13 @@ void seg_grad1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, u
 					//abs(img[yx    ] - img[yx+1  ]) +
 					//abs(img[yx    ] - img[yx+w  ])
 					) >> 2;
-			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
+			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0;
 			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
 		}
 	}
 }
 
-void seg_grad2(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 th)
+void seg_grad2(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -90,7 +97,7 @@ void seg_grad2(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h, u
 			//Horizontal sobel gradient
 			gh = abs(img[yx-1-w] + (img[yx-w  ]<<1) + img[yx+1-w] - img[yx-1+w] - (img[yx+w  ]<<1) - img[yx+1+w])>>2;
 			max = gv + gh;
-			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0; img2[yx] = in;
+			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0;
 			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
 		}
 	}
@@ -423,7 +430,7 @@ static inline void set_blocks(Pixel *pix, uint32 yx, int dx, int dy, uint32 w)
 
 static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 yx, uint32 w)
 {
-	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, c = 0;
+	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
 	uchar min = img[yx];
 	int dx, dy, dx1, dy1, dx2, dy2;
 	dir1(img, w,  yx, 0, 0, &dx, &dy);
@@ -431,16 +438,17 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 	set_blocks(&pix[yx1], yx1, dx, dy, w);
     while(1){
      	//len += length(dx, dy);
+    	yxt = yx; xt = x; yt = y; // Save previous pixel
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy;
       	if(img[yx]) min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) { //End point with 0
 			if(c > 0){
-				new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
-				set_blocks(&pix[yx], yx, dx, dy, w);
-				new_line(&pix[yx1], &pix[yx], min);
+				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
+				set_blocks(&pix[yxt], yxt, dx, dy, w);
+				new_line(&pix[yx1], &pix[yxt], min);
 				//printf("min = %d ", min);
 			}
-			img[yx] = 254;
+			img[yxt] = 254;
 			return 0;
 		}
 		if(img[yx] == 255 || img[yx] == 254) { //End point on the ege

@@ -630,7 +630,6 @@ void utils_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h)
 			yx = y + x;
 			img1[yx] = img[yx];
 		}
-
 }
 
 void inline local_max(imgtype *img, imgtype *img1, uint32 w)
@@ -641,7 +640,6 @@ void inline local_max(imgtype *img, imgtype *img1, uint32 w)
 		img1[x] = (img[x-1] <= img[x] && img[x] >= img[x+1]) ? img[x] : 0;
 	}
 }
-
 
 static inline void check_min(imgtype *img, uint32 x, int w , uint32 *min)
 {
