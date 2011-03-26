@@ -425,15 +425,16 @@ static inline uint32 length(int dx, int dy)
 static inline void set_blocks(Pixel *pix, uint32 yx, int dx, int dy, uint32 w)
 {
 	if(dx) { pix->yx1 = yx - w; pix->yx2 = yx + w; return; }
-	else { pix->yx1 = yx - 1; pix->yx2 = yx + 1; }
+	else   { pix->yx1 = yx - 1; pix->yx2 = yx + 1; }
 }
 
-static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 yx, uint32 w)
+static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
 {
-	uint32 len = 0, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
+	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
 	uchar min = img[yx];
-	int dx, dy, dx1, dy1, dx2, dy2;
-	dir1(img, w,  yx, 0, 0, &dx, &dy);
+	int dx1, dy1, dx2, dy2;
+	//int dx, dy, dx1, dy1, dx2, dy2;
+	//dir1(img, w,  yx, 0, 0, &dx, &dy);
 	new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
 	set_blocks(&pix[yx1], yx1, dx, dy, w);
     while(1){
@@ -474,6 +475,31 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 		c++;
     }
 }
+static inline void find_start_pixel(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 *xo, uint32 *yo,uint32 *dxo, uint32 *dyo, uint32 w)
+{
+	uint32 yx = y*w + x, yxt, xt, yt;
+	int dx, dy, dx1, dy1;
+	dir1(img, w,  yx, 0,  0,  &dx, &dy);
+	dir1(img, w,  yx, dx, dy, &dx, &dy);
+
+	while(1){
+		yxt = yx; xt = x; yt = y; // Save previous pixel
+		yx = yx + dy*w + dx; x = x + dx; y = y + dy;
+		if(!img[yx]) { //End point with 0
+			*xo = xt; *yo = yt;
+			*dxo = -dx1; *dyo = -dy1;
+			return;
+		}
+		if(img[yx] == 255 || img[yx] == 254) { //End point on the ege
+			*xo = x; *yo = y;
+			*dxo = -dx; *dyo = -dy;
+			return;
+		}
+		dx1 = dx ; dy1 = dy;
+		dir1(img, w, yx, -dx, -dy, &dx, &dy);
+	}
+
+}
 
 void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 //
@@ -487,13 +513,16 @@ void seg_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 //     dy2     dy      dy2
 //
 {
-	uint32 y, x, yx, w1 = w-1, h1 = h-1;
+	uint32 y, x, yx, w1 = w-1, h1 = h-1, x1, y1;
+	int dx, dy;
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] && img[yx] < 253){
 				if(loc_max(img, yx, w)){
-					find_lines(pix, img, x, y, yx, w);
+					find_start_pixel(pix, img, x, y, &x1, &y1, &dx, &dy, w);
+					find_lines(pix, img, x1, y1, dx, dy, w);
+					//find_lines(pix, img, x, y, w);
 				}
 			}
 		}
@@ -652,26 +681,29 @@ static inline uint32 diff3x5( imgtype *img1, imgtype *img2, uint32 yx1, uint32 y
 	uint32 s[5];
 	uint32 w2 = w<<1;
 	//printf("abs(yx1-yx3) = %4d ", abs(yx1-yx3));
+	//|*|*|*|
 	//|*|x|*|
 	//|*|x|*|
 	//|*|x|*|
+	//|*|*|*|
 	if(abs(yx1-yx3) > 1) {
 		s[0] = abs(img1[yx1-w2-1] - img2[yx2-w2-1]) + abs(img1[yx1-w2] - img2[yx2-w2]) + abs(img1[yx1-w2+1] - img2[yx2-w2+1]);
-		s[1] = abs(img1[yx1-w-1] - img2[yx2-w-1]) + abs(img1[yx1-w] - img2[yx2-w]) + abs(img1[yx1-w+1] - img2[yx2-w+1]);
-		s[2] = abs(img1[yx1-1]   - img2[yx2-1])   + abs(img1[yx1]   - img2[yx2])   + abs(img1[yx1+1]   - img2[yx2+1]);
-		s[3] = abs(img1[yx1+w-1] - img2[yx2+w-1]) + abs(img1[yx1+w] - img2[yx2+w]) + abs(img1[yx1+w+1] - img2[yx2+w+1]);
+		s[1] = abs(img1[yx1-w-1]  - img2[yx2-w-1])  + abs(img1[yx1-w]  - img2[yx2-w])  + abs(img1[yx1-w+1]  - img2[yx2-w+1]);
+		s[2] = abs(img1[yx1-1]    - img2[yx2-1])    + abs(img1[yx1]    - img2[yx2])    + abs(img1[yx1+1]    - img2[yx2+1]);
+		s[3] = abs(img1[yx1+w-1]  - img2[yx2+w-1])  + abs(img1[yx1+w]  - img2[yx2+w])  + abs(img1[yx1+w+1]  - img2[yx2+w+1]);
 		s[4] = abs(img1[yx1+w2-1] - img2[yx2+w2-1]) + abs(img1[yx1+w2] - img2[yx2+w2]) + abs(img1[yx1+w2+1] - img2[yx2+w2+1]);
 		//printf("s0 = %d s1 = %d s2 = %d s3 = %d s4 = %d\n", s[0], s[1], s[2], s[3], s[4]);
 
-	//|*|*|*|
-	//|x|x|x|
-	//|*|*|*|
+	//|*|*|*|*|*|
+	//|*|x|x|x|*|
+	//|*|*|*|*|*|
 	} else {
 		s[0] = abs(img1[yx1-2-w] - img2[yx2-2-w]) + abs(img1[yx1-2] - img2[yx2-2]) + abs(img1[yx1-2+w] - img2[yx2-2+w]);
 		s[1] = abs(img1[yx1-1-w] - img2[yx2-1-w]) + abs(img1[yx1-1] - img2[yx2-1]) + abs(img1[yx1-1+w] - img2[yx2-1+w]);
 		s[2] = abs(img1[yx1-w]   - img2[yx2-w])   + abs(img1[yx1]   - img2[yx2])   + abs(img1[yx1+w]   - img2[yx2+w]);
 		s[3] = abs(img1[yx1+1-w] - img2[yx2+1-w]) + abs(img1[yx1+1] - img2[yx2+1]) + abs(img1[yx1+1+w] - img2[yx2+1+w]);
 		s[4] = abs(img1[yx1+2-w] - img2[yx2+2-w]) + abs(img1[yx1+2] - img2[yx2+2]) + abs(img1[yx1+2+w] - img2[yx2+2+w]);
+		//printf("s0 = %d s1 = %d s2 = %d s3 = %d s4 = %d\n", s[0], s[1], s[2], s[3], s[4]);
 	}
 	sad[0] = s[0] + s[1] + s[2];
 	sad[1] = s[1] + s[2] + s[3];
@@ -686,16 +718,30 @@ static inline uint16 block_match1(imgtype *grad, imgtype *img1, imgtype *img2, u
 	uint16 min[4];
 	min[0] = 0xFFFF;
 	int ax = x2 - st, ay = y2 - st, bx = x2 + st, by = y2 + st;
-	if(ax <= 0) ax = 1;
-	if(ay <= 0) ay = 1;
-	if(bx >= w) bx = w-1;
-	if(by >= h) by = h-1;
-	//printf("ax = %d bx = %d ay = %d by = %d x = %d y = %d\n",ax, bx, ay, by, x1, y1);
+	//if(ax <= 0) ax = 1;
+	//if(ay <= 0) ay = 1;
+	//if(bx >= w) bx = w-1;
+	//if(by >= h) by = h-1;
+	if(abs(yx1-yx2) > 1){
+		if(ax <= 0) ax = 1;
+		if(ay <= 1) ay = 2;
+		if(bx >= w) bx = w-1;
+		if(by >= h-1) by = h-2;
+	}
+	else {
+		if(ax <= 1) ax = 2;
+		if(ay <= 0) ay = 1;
+		if(bx >= w) bx = w-1;
+		if(by >= h-1) by = h-2;
+	}
+
+	//printf("yx1-yx2 = %4d ax = %d bx = %d ay = %d by = %d x = %d y = %d\n",abs(yx1-yx2), ax, bx, ay, by, x1, y1);
 	for(y=ay; y < by; y++){
 		for(x=ax; x < bx; x++){
 			yx = y*w + x;
-			//printf("x1 = %d y1 = %d  \n", x, y);
+			//printf("x = %d y = %d  yx = %d\n", x, y, yx);
 			if(grad[yx] > 253){
+				//printf("grad = %d yx1 = %d yx = %d yx2 = %d\n", grad[yx], yx1, yx, yx2);
 			//if(grad[yx] == 255){
 				diff = diff3x5( img1, img2, yx1, yx, yx2, sad, w);
 				if(diff < min[0]) { min[0] = diff; *xo = x; *yo = y; min[1]=sad[0]; min[2]=sad[1]; min[3]=sad[2]; }
@@ -714,9 +760,9 @@ static inline uint16 block_match1(imgtype *grad, imgtype *img1, imgtype *img2, u
 
 void seg_compare(Pixel *pix, Pixel *pix1, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 {
-	uint32 yx, y, y1,  x, x1, w1 = w-1, h1 = h-1, xo, yo, npix = 0;
-	for(y=1; y < h1; y++){
-		for(x=1; x < w1; x++){
+	uint32 yx, y, y1,  x, x1, w1 = w-2, h1 = h-2, xo, yo, npix = 0;
+	for(y=2; y < h1; y++){
+		for(x=2; x < w1; x++){
 			yx = y*w + x;
 			if(grad1[yx] == 255){
 				printf("yx = %d\n", yx);
