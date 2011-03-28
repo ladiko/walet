@@ -13,6 +13,7 @@ typedef struct{
 	//Picture pic[4]; 	// Scaled image for each color
 
 	Pixel	*pixs;		//The array of the pixeles
+	Edge	*edges;		//The array of adges
 	uint32 	size;	//The number of pixels.
 	imgtype *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame

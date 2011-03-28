@@ -23,6 +23,8 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->size = w*h;
 
 	frame->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
+	frame->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
+
 	//RGB scale images
 	for(j=0; j < 4; j++){
 		frame->rgb[j].width  = w>>(j+1);
@@ -344,9 +346,9 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 4);
 
-		seg_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
