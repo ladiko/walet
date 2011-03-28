@@ -170,8 +170,8 @@ struct Pixel {
 	 uint16		y;		//Y coordinate
 	 uint16		mach;
 	 //char		dir;	//Direction neighbour region 0 - left, right  1 - top, bottom
-	 uint32 	yx1;
-	 uint32 	yx2;
+	 uint16 	yx;		//The neibour pixel
+	 //uint32 	yx2;
 
 	 char		vx;		//The motion vector
 	 char		vy;		//The motion vector
@@ -182,14 +182,10 @@ struct Pixel {
 };
 
 struct Edge {
-	uint32 	yx;		//The start point
-	uint32	len;	//The length of edge
-	uint32 	pixc;	//Pixel counter
-	uint32	pow;	//The power of edge
-	//uint32	nedgl;	//The numbers of Edgelets in the Edge
-	//Edgelet *edgl;	//The pointer to Edgelet array
-	uchar	*dir;	//The pointer to direction array
-	Edge	*edg;	//The pointer to connected edge
+	uint32 	yxs;	//The start point
+	uint32 	yxe;	//The end point
+	uint16	pixs;	//The number of pixels
+	uint16	lines;	//The number of lines
 };
 
 struct Edgelet {
