@@ -43,19 +43,25 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->grad[j].height = h>>(j+1);
 		frame->grad[j].pic = (uchar *)calloc(frame->grad[j].width*frame->grad[j].height, sizeof(uchar));
 	}
+	frame->line.width  = w;
+	frame->line.height = h;
+	frame->line.pic = (uchar *)calloc(frame->line.width*frame->line.height, sizeof(uchar));
+	frame->edge.width  = w;
+	frame->edge.height = h;
+	frame->edge.pic = (uchar *)calloc(frame->edge.width*frame->edge.height, sizeof(uchar));
 	/*
 	//Contours of scaled images
 	for(j=0; j < 4; j++){
 		frame->con[j].width  = w>>(j+1);
 		frame->con[j].height = h>>(j+1);
 		frame->con[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
-	}*/
+	}
 	//Pixels of scaled images
 	for(j=0; j < 4; j++){
 		frame->pix[j].width  = w>>(j+1);
 		frame->pix[j].height = h>>(j+1);
 		frame->pix[j].pic = (uchar *)calloc(frame->pix[j].width*frame->pix[j].height, sizeof(uchar));
-	}
+	}*/
 	//Pointers to pixels array
 	//frame->pixs = (Pixel *)calloc(frame->pix[0].width*frame->pix[0].height, sizeof(Pixel));
 
@@ -330,7 +336,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	uint32 j, i, ncors=0, beg, diff, k;// sq = gop->width*gop->height;
+	uint32 j, i, ncors=0, beg, diff, k, nedge;// sq = gop->width*gop->height;
 	Image *im = &gop->frames[fr].img[0];
 	Frame *frm = &gop->frames[fr];
 	clock_t start, end;
@@ -346,9 +352,10 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 4);
 
-		seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_draw_lines(frm->pixs, npix, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_lines(frm->pixs, npix, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_edges(frm->pixs, frm->edges, nedge, frm->edge.pic, frm->grad[0].width, frm->grad[0].height);
 
 		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
@@ -379,9 +386,9 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 
 		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
-		seg_draw_vec(frm1->pixs, npix, frm1->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		seg_draw_vec(frm1->pixs, npix, frm1->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 		//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
-		seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 		//seg_draw_lines(frm2->pixs, npix, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;

@@ -170,7 +170,7 @@ struct Pixel {
 	 uint16		y;		//Y coordinate
 	 uint16		mach;
 	 //char		dir;	//Direction neighbour region 0 - left, right  1 - top, bottom
-	 uint16 	yx;		//The neibour pixel
+	 uint16 	yx;		//The neighborhood pixel
 	 //uint32 	yx2;
 
 	 char		vx;		//The motion vector
