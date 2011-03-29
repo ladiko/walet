@@ -467,20 +467,20 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	seg_draw_pix(frm1->pixs, npix, frm1->grad[0].pic, w, h);
 	seg_draw_pix(frm1->pixs, npix, frm2->grad[0].pic, w, h);
-	seg_draw_pix(frm1->pixs, npix, frm1->pix[0].pic, w, h);
+	seg_draw_pix(frm1->pixs, npix, frm1->line.pic, w, h);
 	seg_draw_pix(frm2->pixs, npix, frm1->grad[0].pic, w, h);
 	seg_draw_pix(frm2->pixs, npix, frm2->grad[0].pic, w, h);
-	seg_draw_pix(frm2->pixs, npix, frm1->pix[0].pic, w, h);
+	seg_draw_pix(frm2->pixs, npix, frm1->line.pic, w, h);
 	utils_color_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 2);
 	utils_color_draw(frm2->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1);
-	utils_color_draw(frm1->pix[0].pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
+	utils_color_draw(frm1->line.pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
 	//utils_grey_draw(frm1->pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
 
 	gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
 	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(frm2->pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+	utils_grey_draw(frm2->line.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	//utils_grey_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
@@ -522,7 +522,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 			gtk_widget_queue_draw(gw->drawingarea[i*2]);
 
 			new_buffer (gw->orig[i*2+1], w, h);
-			utils_grey_draw(gw->gop->frames[i].grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[i*2+1]->pxb), w, h);
+			utils_grey_draw(gw->gop->frames[i].line.pic, gdk_pixbuf_get_pixels(gw->orig[i*2+1]->pxb), w, h);
+			//utils_grey_draw(gw->gop->frames[i].grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[i*2+1]->pxb), w, h);
 			gtk_widget_queue_draw(gw->drawingarea[i*2+1]);
 
 		}
@@ -538,8 +539,12 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 		new_buffer (gw->orig[3], w, h);
-		utils_grey_draw(gw->gop->frames[0].pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
+		utils_grey_draw(gw->gop->frames[0].line.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
+
+		new_buffer (gw->orig[0], w, h);
+		utils_grey_draw(gw->gop->frames[0].edge.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
 
 		//new_buffer (gw->orig[3], w, h);
 		//utils_grey_draw(gw->gop->frames[1].grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
