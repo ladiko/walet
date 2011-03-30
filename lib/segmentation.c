@@ -442,8 +442,8 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
     	yxt = yx; xt = x; yt = y; // Save previous pixel
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
       	if(img[yx]) min = img[yx] < min ? img[yx] : min;
-		if(!img[yx]) { //End point with 0
-			if(c > 2){
+		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
+			if(c > 1){
 				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
 				set_blocks(&pix[yxt], yxt, dx, dy, w);
 				if(dir)	new_line(&pix[yx1], &pix[yxt], min);
@@ -451,16 +451,6 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 				(*nline)++; *npix += c;
 				return yxt;
 			} else return yxt;
-		}
-		if(img[yx] == 255 || img[yx] == 254) { //End point of the ege
-			if(c > 1){
-				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
-				//if(min> 253) printf("img[yx] == 255 min = %d c = %d\n", min, c);
-				if(dir)	new_line(&pix[yx1], &pix[yxt], min);
-				else 	new_line(&pix[yxt], &pix[yx1], min);
-				(*nline)++; *npix += (c+1);
-				return yxt;
-			} else  return yxt;
 		}
 		img[yx] = 254;
 		dx2 = dx1; dy2 = dy1;
@@ -491,13 +481,13 @@ uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
 					dir1(img, w,  yx, 0,  0,  &dx, &dy);
 					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
 					edges[nedge].yxe = find_lines(pix, img, x, y, dx,  dy,  &edges[nedge].pixs, &edges[nedge].lines, w, 1);
-					printf("1 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
+					//printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
 					edges[nedge].yxs = find_lines(pix, img, x, y, dx1, dy1, &edges[nedge].pixs, &edges[nedge].lines, w, 0);
-					printf("0 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
-					printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
+					//printf("0 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
+					//printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
 					npix += edges[nedge].pixs;
 					nline += edges[nedge].lines;
-					if(edges[nedge].yxs) nedge++;
+					if(edges[nedge].yxs != edges[nedge].yxe) nedge++;
 					//find_lines(pix, img, x, y, w);
 				}
 			}
@@ -538,8 +528,10 @@ void seg_reduce_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 
 #define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
 
-static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col)
+static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col, uchar end)
 //Draw line, return number of pixels in line
+//If end 1 not draw last pixel, if 0 draw
+
 {
 	uint32 i;
 	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
@@ -553,6 +545,7 @@ static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col)
 	else 			{ max = dya; min = dxa; mi = v->x1; ma = v->y1; mist = stx; mast = sty; c = 0; }
 
 	mat = max; mit = min;
+	max = end ? max - 1 : max;
 	for(i=0; i < max; i++){
 		img[xy(mi, ma, c)] = col;
 		if(mit >= mat) { mat += max; mi += mist;}
@@ -575,7 +568,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 				//printf("dx = %d dy = %d pow = %d\n", pix[i].x - pix[i].out->x, pix[i].y - pix[i].out->y, pix[i].pow);
 				xy.x1 = pix[i].x; xy.y1 = pix[i].y;
 				xy.x2 = pix[i].out->x; xy.y2 = pix[i].out->y;
-				draw_line(img, &xy, w, pix[i].pow);
+				draw_line(img, &xy, w, pix[i].pow, pix[i].out->nout);
 				nline++;
 			}
 	}
@@ -600,27 +593,39 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	Vector xy;
 	Pixel *p;
 	//Draw lines
-	printf("seg_draw_edges nedge = %d\n", nedge);
+	//printf("seg_draw_edges nedge = %d\n", nedge);
 	for(i=0; i < nedge; i++){
-		printf("New edges line = %d \n", edge[i].lines);
+		//printf("New edges line = %d \n", edge[i].lines);
 		p = &pix[edge[i].yxs];
 		for(j=0; j < edge[i].lines; j++){
 			xy.x1 = p->x; xy.y1 = p->y;
 			xy.x2 = p->out->x; xy.y2 = p->out->y;
-			printf("%3d x1 = %d y1 = %d x2 = %d y2 = %d p = %p\n", j, xy.x1, xy.y1, xy.x2, xy.y2, p);
-			npix += draw_line(img, &xy, w, p->pow);
+			//printf("%3d x1 = %d y1 = %d x2 = %d y2 = %d p = %p\n", j, xy.x1, xy.y1, xy.x2, xy.y2, p);
+			npix += draw_line(img, &xy, w, p->pow, p->out->nout)-1;
 			nline++;
 			p = p->out;
-			printf("p->nout = %d out = %p\n", p->nout, p->out);
-			printf("p->x", p->x);
+			//printf("p->nout = %d out = %p\n", p->nout, p->out);
+			//printf("p->x", p->x);
 
 		}
+		npix++;
 	}
 	//Draw pixels
 	/*
+	for(i=0; i < w*h; i++){
+		if(pix[i].nout || pix[i].nin){
+		//if(pix[i].nout){
+			img[i] = pix[i].pow<<1;
+			//img[i + pix[i].yx] = pix[i].pow<<1;
+			//img[i - pix[i].yx] = pix[i].pow<<1;
+			//pixs++;
+		}
+	}
+	*/
+	/*
 	for(i=0; i < nedge; i++){
 		in = edge[i].yxs;
-		for(j=0; j <= edge[i].lines; j++){
+		for(j=0; j < edge[i].lines; j++){
 			img[in] = pix[in].pow<<1;
 			img[i + pix[in].yx] = pix[in].pow<<1;
 			img[i - pix[in].yx] = pix[in].pow<<1;
@@ -854,7 +859,7 @@ void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 		if(pix[i].nout && pix[i].vx && pix[i].vy) {
 			xy.x1 = pix[i].x; xy.y1 = pix[i].y;
 			xy.x2 = pix[i].x + pix[i].vx; xy.y2 = pix[i].y + pix[i].vy;
-			draw_line(img, &xy, w, 200);
+			draw_line(img, &xy, w, 200, 0);
 			//draw_line(img, pix[i].x, pix[i].y, pix[i].x + pix[i].vx, pix[i].y + pix[i].vy, w, 100);
 			//printf("x = %d %d y = %d %d\n", pix[i].x, pix[i].vx, pix[i].y,  pix[i].vy);
 			nline++;
