@@ -352,10 +352,10 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 4);
 
-		nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		seg_draw_lines(frm->pixs, npix, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
-		seg_draw_edges(frm->pixs, frm->edges, nedge, frm->edge.pic, frm->grad[0].width, frm->grad[0].height);
+		seg_draw_edges(frm->pixs, frm->edges, frm->nedge , frm->edge.pic, frm->grad[0].width, frm->grad[0].height);
 
 		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
@@ -384,7 +384,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		seg_compare(frm1->pixs, frm2->pixs, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		seg_compare(frm1->pixs, frm2->pixs, frm1->edges, frm1->nedge, frm2->edges, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		seg_draw_vec(frm1->pixs, npix, frm1->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 		//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
