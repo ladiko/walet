@@ -149,6 +149,7 @@ typedef struct {
 	uchar		rates;			// Frame rates
 	uchar		comp;			// Compression in times to original image if 1 - lossless 0-without any compression raw bayer format
 	uchar		fb;				// Filters for wavelet transform
+	//uchar		mvs;			// Motion vector search from -mvs to mvs in x and y
 } WaletHeader;
 
 typedef struct Row Row;
