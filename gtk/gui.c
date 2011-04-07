@@ -174,7 +174,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		//printf("img = %p size = %d\n", img, w*h*bpp*3);
 
 		if(!gw->walet_init){
-			gw->gop = walet_encoder_init(w<<1, h<<1, BAYER, RGGB, 8, 5, 2, 0, 0, FR_5_3);
+			gw->gop = walet_encoder_init(w<<1, h<<1, BAYER, RGGB, 8, 5, 2, 0, 0, FR_5_3, 12);
 			gw->walet_init = 1;
 		}
 		printf("w = %d h = %d bpp = %d\n", w, h, bpp);

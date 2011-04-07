@@ -16,6 +16,7 @@ typedef struct{
 	Picture line;	//Draw lines
 	Picture edge;	//Draw edges
 	Picture vec;	//Draw motion vectors
+	uchar 	*mmb;	//The motion much buffer
 
 	Pixel	*pixs;		//The array of the pixeles
 	Edge	*edges;		//The array of adges
