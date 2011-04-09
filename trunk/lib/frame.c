@@ -53,7 +53,7 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->vec.height = h;
 	frame->vec.pic = (uchar *)calloc(frame->vec.width*frame->vec.height, sizeof(uchar));
 
-	frame->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uchar));
+	//frame->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uchar));
 	/*
 	//Contours of scaled images
 	for(j=0; j < 4; j++){
@@ -387,7 +387,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		seg_compare(frm1->pixs,  frm1->edges, frm1->nedge, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, frm1->mmb, frm2->mmb, frm1->grad[0].width, frm1->grad[0].height, gop->mvs);
+		seg_compare(frm1->pixs,  frm1->edges, frm1->nedge, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, gop->mmb, frm1->grad[0].width, frm1->grad[0].height, gop->mvs);
 		//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
 		seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 		//seg_draw_lines(frm2->pixs, npix, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
