@@ -1010,18 +1010,47 @@ static inline uint16 double_block_match(imgtype *grad, imgtype *img1, imgtype *i
 	return minim;
 }
 
-void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb1, uchar *mmb2, uint32 w, uint32 h, uint32 mvs)
+static inline void min_add(uchar *diff1, uchar *diff2, uchar *diff3, uint32 sq)
 {
-	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2, xo, yo, npix = 0, ndge = 0;
-	uchar *mb[2];
+	uint32 i, sum;
+	for(i=0; i < sq; i++) {
+		sum = diff1[i] + diff2[i];
+		diff3[i] = sum > 255 ? 255 : sum;
+	}
+}
+
+static inline void find_local_min(uchar *diff, uint16 *min, uint16 *xo, uint16 *yo, uint16 w, uint16 h)
+{
+	uint32 x, y, yx;
+	min[0] = 255;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(diff[yx] < min[0]) {
+				min[2] = min[1]; min[1] = min[0]; min[0] = diff[yx];
+				xo[2] = xo[1]; xo[1] = xo[0]; xo[0] = x;
+				yo[2] = yo[1]; yo[1] = yo[0]; yo[0] = y;
+			}
+		}
+	}
+}
+
+void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs)
+{
+	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2,npix = 0, ndge = 0;
+	uint32 sq = w*h, sq1 = ((mvs<<1)+1)*((mvs<<1)+1);
+	uchar *mb[2], *sum;
+	uint16 xo[3], yo[3], min[3];
 	Pixel *p;
-	mb[0] = mmb1; mb[1] = mmb2;
+	mb[0] = mmb; mb[1] = &mmb[sq1]; sum = &mmb[sq1<<1];
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
 		block_match_new(grad2, img1, img2, mb[1], p->x, p->y, p->x, p->y, p->yx,  w, h, mvs, 253);
 		for(j=0; j < edge[i].lines; j++){
 			p = p->out;
 			block_match_new(grad2, img1, img2, mb[j&1], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 253);
+			min_add(mb[!(j&1)], mb[j&1], sum, sq);
+			find_local_min(sum, min, xo, yo, w, h);
 		}
 	}
 

@@ -4,8 +4,8 @@
 typedef struct {
 	//WaletHeader 	wh;
 	//Paremeters for decoder and encoder
-	uint32 			width;			// Image width
-	uint32 			height;			// Image width
+	uint16 			width;			// Image width
+	uint16 			height;			// Image width
 	ColorSpace		color;			// Color space
 	BayerGrid		bg;				// Bayer grid pattern
 	uint32			bpp;			// Bits per pixel
@@ -21,6 +21,7 @@ typedef struct {
 	uint64			cur_stream_frame;	// The current stream frame
 
 	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
+	uchar 			*mmb;	//The motion much buffer
 	//uint32 			*row, *reg, *col;		//Buffer for image segmentation
 	Frame			*frames;	//Pointer to frames array
 	Subband			*sub[3];	//Subband location and size structure
