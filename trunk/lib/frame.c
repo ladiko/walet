@@ -389,8 +389,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 
 		seg_compare(frm1->pixs,  frm1->edges, frm1->nedge, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, gop->mmb, frm1->grad[0].width, frm1->grad[0].height, gop->mvs);
 		//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
-		seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
-		//seg_draw_lines(frm2->pixs, npix, frm2->pix[0].pic, frm1->grad[0].width, frm1->grad[0].height);
+		//seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Frame match time = %f\n", (double)(end-start)/1000000.);
