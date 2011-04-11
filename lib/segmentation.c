@@ -1010,47 +1010,86 @@ static inline uint16 double_block_match(imgtype *grad, imgtype *img1, imgtype *i
 	return minim;
 }
 
-static inline void min_add(uchar *diff1, uchar *diff2, uchar *diff3, uint32 sq)
+static inline void min_add(uchar *mb1, uchar *mb2, uchar *mb3, uint32 sqm)
 {
 	uint32 i, sum;
-	for(i=0; i < sq; i++) {
-		sum = diff1[i] + diff2[i];
-		diff3[i] = sum > 255 ? 255 : sum;
+	for(i=0; i < sqm; i++) {
+		sum = mb1[i] + mb2[i];
+		mb3[i] = sum > 255 ? 255 : sum;
 	}
 }
 
-static inline void find_local_min(uchar *diff, uint16 *min, uint16 *xo, uint16 *yo, uint16 w, uint16 h)
+static inline void find_local_min(uchar *mb, uint16 *min, uint16 *xm, uint16 *ym, uint16 wm, uint16 hm)
 {
 	uint32 x, y, yx;
 	min[0] = 255;
-	for(y=0; y < h; y++){
-		for(x=0; x < w; x++){
-			yx = y*w + x;
-			if(diff[yx] < min[0]) {
-				min[2] = min[1]; min[1] = min[0]; min[0] = diff[yx];
-				xo[2] = xo[1]; xo[1] = xo[0]; xo[0] = x;
-				yo[2] = yo[1]; yo[1] = yo[0]; yo[0] = y;
+	for(y=0; y < hm; y++){
+		for(x=0; x < wm; x++){
+			yx = y*wm + x;
+			if(mb[yx] < min[0]) {
+				min[2] = min[1]; min[1] = min[0]; min[0] = mb[yx];
+				xm[2] = xm[1]; xm[1] = xm[0]; xm[0] = x;
+				ym[2] = ym[1]; ym[1] = ym[0]; ym[0] = y;
 			}
 		}
 	}
 }
 
+static inline uint16 find_mv(uchar *mb1, uchar *mb2, uint16 *min, uint16 *xm, uint16 *ym, uint16 *xo1, uint16 *yo1, uint16 *xo2, uint16 *yo2, uint16 wm, uint16 hm)
+{
+	int i, x1, y1, x2, y2, yx1, yx2, xb, yb, xe, ye;
+	uint16 sum, m[3], xt1[3], yt1[3], xt2[3], yt2[3], mg = 0xFFFF, in;
+	for(i=0; i < 3; i++){
+		m[i] = 0xFFFF;
+		x1 = xm[i]; y1 = ym[i];
+		xb = (x1 - 1) < 0 ? 0 : x1; xe = (x1 + 1) > wm ? wm : x1;
+		yb = (y1 - 1) < 0 ? 0 : y1; ye = (y1 + 1) > wm ? wm : y1;
+		for(y1=yb; y1 < ye; y1++){
+			for(x1=xb; x1 < xe; x1++){
+				yx1 = x1 + y1*wm;
+				for(y2=yb; y2 < ye; y2++){
+					for(x2=xb; x2 < xe; x2++){
+						yx2 = x2 + y2*wm;
+						sum = mb1[yx1] + mb2[yx2];
+						if(sum < m[1]) {
+							m[i] = sum;
+							xt1[i] = x1; yt1[i] = y1;
+							xt2[i] = x2; yt2[i] = y2;
+						}
+					}
+				}
+			}
+		}
+		if(m[i] < mg) { mg = m[i]; in = i; }
+	}
+	*xo1 = xt1[in]; *yo1 = yt1[in]; *xo2 = xt2[in]; *yo2 = yt2[in];
+	return mg;
+}
+
 void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs)
 {
 	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2,npix = 0, ndge = 0;
-	uint32 sq = w*h, sq1 = ((mvs<<1)+1)*((mvs<<1)+1);
+	uint32 sq = w*h, wm = ((mvs<<1)+1), hm = wm, sqm = wm*hm;
 	uchar *mb[2], *sum;
-	uint16 xo[3], yo[3], min[3];
-	Pixel *p;
-	mb[0] = mmb; mb[1] = &mmb[sq1]; sum = &mmb[sq1<<1];
+	uint16 xm[3], ym[3], min[3], xo1, yo1, xo2, yo2;
+	Pixel *p, *p1;
+	mb[0] = mmb; mb[1] = &mmb[sqm]; sum = &mmb[sqm<<1];
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
-		block_match_new(grad2, img1, img2, mb[1], p->x, p->y, p->x, p->y, p->yx,  w, h, mvs, 253);
+		block_match_new(grad2, img1, img2, mb[0], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 253);
+		p1 = p->out;
+		block_match_new(grad2, img1, img2, mb[1], p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 253);
+		min_add(mb[0], mb[1], sum, sqm);
+		find_local_min(sum, min, xm, ym, wm, hm);
+
+		p->mach = find_mv(mb[0], mb[1], min, xm, ym, &xo1, &yo1, &xo2, &yo2, wm, hm);
+		p->vx = xo1  - mvs;
+		p->vy = yo1  - mvs;
+		p1->vx = xo2  - mvs;
+		p1->vy = yo2  - mvs;
+
 		for(j=0; j < edge[i].lines; j++){
-			p = p->out;
-			block_match_new(grad2, img1, img2, mb[j&1], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 253);
-			min_add(mb[!(j&1)], mb[j&1], sum, sq);
-			find_local_min(sum, min, xo, yo, w, h);
+
 		}
 	}
 
