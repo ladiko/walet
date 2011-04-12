@@ -465,7 +465,7 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	//seg_draw_vec(frm1->pixs, npix, frm1->vec.pic, frm1->grad[0].width, frm1->grad[0].height);
 
 
-	seg_draw_edges_des(frm1->pixs, frm1->edges, frm1->nedge , frm2->Y[0].pic, frm2->grad[0].width, frm2->grad[0].height, 1, 0);
+	seg_draw_edges_des(frm1->pixs, frm1->edges, frm1->nedge , frm2->Y[0].pic, frm2->grad[0].width, frm2->grad[0].height, 2, 0);
 	new_buffer (gw->orig[2], w, h);
 	utils_grey_draw(frm2->Y[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	//utils_grey_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
@@ -521,7 +521,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 			seg_draw_lines(frm[i]->pixs, npix, frm[i]->line.pic, frm[i]->grad[0].width, frm[i]->grad[0].height);
 			if(!i){
 				seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->edge.pic, frm[i]->grad[0].width, frm[i]->grad[0].height, 0, 0);
-				seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->Y[0].pic, frm[i]->grad[0].width, frm[i]->grad[0].height, 1, 0);
+				seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->Y[0].pic, frm[i]->grad[0].width, frm[i]->grad[0].height, 2, 0);
 			} else {
 				seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->edge.pic, frm[i]->grad[0].width, frm[i]->grad[0].height, 0, 0);
 				//seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->Y[0].pic, frm[i]->grad[0].width, frm[i]->grad[0].height, 0, 0);
