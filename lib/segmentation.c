@@ -478,100 +478,6 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
     }
 }
 
-static inline uint32 find_lines2(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
-{
-	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
-	uint32 yxm[20], xm[20], ym[20];
-	uchar min = img[yx];
-	int dx1, dy1, dx2, dy2;
-	dx2 = dx; dy2 = dx;
-	yxm[0] = yx; xm[0] = x; ym[0] = y;
-	if(dir){
-		new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
-		set_blocks(&pix[yx1], yx1, dx, dy, w);
-	}
-    while(1){
-     	//len += length(dx, dy);
-    	yxt = yx; xt = x; yt = y; // Save previous pixel
-     	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
-     	yxm[c] = yx; xm[c] = x; ym[c] = y;
-      	if(img[yx]) min = img[yx] < min ? img[yx] : min;
-		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
-			if(c > 1){
-				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
-				set_blocks(&pix[yxt], yxt, dx, dy, w);
-				if(dir)	new_line(&pix[yx1], &pix[yxt], min);
-				else	new_line(&pix[yxt], &pix[yx1], min);
-				(*nline)++; *npix += c;
-				return yxt;
-			} else return yxt;
-		}
-		img[yx] = 254;
-		//dx2 = dx1; dy2 = dy1;
-		dx1 = dx; dy1 = dy;
-		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		if((c > 2 && check_dir(dx, dy, dx2, dy2)) || c == 19){
-			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
-			//yx = yxm[c>>1]; x = yxm[c>>1]; y = yxm[c>>1];
-			new_pix(&pix[yxm[c>>1]], img[yxm[c>>1]], xm[c>>1], ym[c>>1]); img[yxm[c>>1]] = 255;
-			set_blocks(&pix[yxm[c>>1]], yxm[c>>1], dx && dx1, dy && dy1, w);
-			if(dir)	new_line(&pix[yx1], &pix[yxm[c>>1] ], min);
-			else 	new_line(&pix[yxm[c>>1] ], &pix[yx1], min);
-			(*nline)++;
-			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
-			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
-			if(dir)	new_line(&pix[yxm[c>>1]], &pix[yx ], min);
-			else 	new_line(&pix[yx ], &pix[yxm[c>>1]], min);
-			(*nline)++; *npix += c;
-			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0;
-			dx2 = dx; dy2 = dx;
-			yxm[c] = yx; xm[c] = x; ym[c] = y;
-		}
-    }
-}
-
-static inline uint32 find_lines1(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
-{
-	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
-	uchar min = img[yx];
-	int dx1, dy1, dx2, dy2;
-	dx2 = dx; dy2 = dy;
-	if(dir){
-		new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
-		set_blocks(&pix[yx1], yx1, dx, dy, w);
-	}
-    while(1){
-     	//len += length(dx, dy);
-    	yxt = yx; xt = x; yt = y; // Save previous pixel
-     	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
-      	if(img[yx]) min = img[yx] < min ? img[yx] : min;
-		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
-			if(c > 1){
-				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
-				set_blocks(&pix[yxt], yxt, dx, dy, w);
-				if(dir)	new_line(&pix[yx1], &pix[yxt], min);
-				else	new_line(&pix[yxt], &pix[yx1], min);
-				(*nline)++; *npix += c;
-				return yxt;
-			} else return yxt;
-		}
-		img[yx] = 254;
-		//dx2 = dx1; dy2 = dy1;
-		dx1 = dx; dy1 = dy;
-		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		if((c > 2 && check_dir(dx, dy, dx2, dy2)) || c > 10){
-			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
-			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
-			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
-			if(dir)	new_line(&pix[yx1], &pix[yx ], min);
-			else 	new_line(&pix[yx ], &pix[yx1], min);
-			(*nline)++; *npix += c;
-			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0;
-			dx2 = dx; dy2 = dy;
-		}
-    }
-}
-
 uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
@@ -582,7 +488,7 @@ uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
 			yx = y*w + x;
 			if(img[yx] && img[yx] < 253){
 				if(loc_max(img, yx, w)){
-					dir1(img, w,  yx, 0,  0,  &dx, &dy);
+					dir1(img, w,  yx,  0,  0,  &dx,  &dy);
 					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
 					edges[nedge].yxe = find_lines(pix, img, x, y, dx,  dy,  &edges[nedge].pixs, &edges[nedge].lines, w, 1);
 					//printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
@@ -650,6 +556,7 @@ static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col, uc
 
 	mat = max; mit = min;
 	max = end ? max - 1 : max;
+	//if(max == 1) printf("max = %d dx = %d dy = %d end = %d\n", max, dx, dy, end);
 	for(i=0; i < max; i++){
 		img[xy(mi, ma, c)] = col;
 		if(mit >= mat) { mat += max; mi += mist;}
@@ -710,8 +617,9 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 			xy.x1 = p->x; xy.y1 = p->y;
 			xy.x2 = p->out->x; xy.y2 = p->out->y;
 			//printf("%3d x1 = %d y1 = %d x2 = %d y2 = %d p = %p\n", j, xy.x1, xy.y1, xy.x2, xy.y2, p);
+			//if(!abs(xy.x1- xy.x2) && !abs(xy.y1 - xy.y2)) printf("%3d x = %d y = %d\n", j, abs(xy.x1- xy.x2), abs(xy.y1 - xy.y2));
 			color = col ? col : p->pow;
-			npix += draw_line(img, &xy, w, color, !p->out->nout)-1;
+			npix += draw_line(img, &xy, w, color, 1)-1;
 			nline++;
 			p = p->out;
 		}
@@ -723,7 +631,10 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 		if(edge[i].pixs > px){
 			in = edge[i].yxs;
 			color = col ? col : pix[in].pow<<1;
-			for(j=0; j <= edge[i].lines; j++){
+			po = px ?  px : edge[i].lines;
+			po = po > edge[i].lines ? edge[i].lines : po;
+
+			for(j=0; j < po; j++){
 				img[in] = color;
 				//img[in] = 250;
 				//img[in + pix[in].yx] = color;
@@ -731,8 +642,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 				if(edge[i].lines != j) in = pix[in].out->x + pix[in].out->y*w;
 			}
 		}
-	}*/
-
+	}
+	*/
 	printf("Draw \n");
 	printf("Numbers of pixels  = %6d\n", npix);
 	printf("Numbers of lines   = %6d\n", nline);
@@ -760,7 +671,7 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 			xy.x2 = p->out->x + p->out->vx; xy.y2 = p->out->y + p->out->vy;
 			//printf("%3d x1 = %d y1 = %d x2 = %d y2 = %d p = %p\n", j, xy.x1, xy.y1, xy.x2, xy.y2, p);
 			color = col ? col : p->pow;
-			npix += draw_line(img, &xy, w, color, !p->out->nout)-1;
+			npix += draw_line(img, &xy, w, color, p->out->nout)-1;
 			nline++;
 			p = p->out;
 			//}
@@ -1170,7 +1081,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
 		block_match_new(grad2, img1, img2, mb[0], sad, p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 0);
-
+		/*
 		//For testing only-------------------------------------------------------------------------
 		find_local_min(mb[0], &min[0], &xm, &ym, wm[0]);
 		printf("match 1 min = %3d x = %4d y = %4d x1 = %4d y1 = %4d\n", min[0], xm, ym, p->x, p->y);
@@ -1181,10 +1092,10 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		find_local_min(sad[2], &min[0], &xm, &ym, wm[0]);
 		printf("sad   2 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
 		///-----------------------------------------------------------------------------------------
-
+		*/
 		p1 = p->out;
 		block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
-
+		/*
 		//For testing only---------------------------------------------------------------------------
 		find_local_min(mb[1], &min[1], &xm, &ym, wm[0]);
 		printf("match 2 min = %3d x = %4d y = %4d x2 = %4d y2 = %4d\n", min[1], xm, ym, p1->x, p1->y);
@@ -1195,10 +1106,10 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		find_local_min(sad[2], &min[1], &xm, &ym, wm[0]);
 		printf("sad   2 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
 		///-----------------------------------------------------------------------------------------
-
+		*/
 		min_add(mb[0], mb[1], sum, sqm[0]);
 		find_local_min(sum, &min[2], &xm, &ym, wm[0]);
-		printf("sum     min = %3d x = %4d y = %4d x2 = %4d y2 = %4d\n", min[2], xm, ym, p->x-mvs+xm, p->y-mvs+ym);
+		//printf("sum     min = %3d x = %4d y = %4d x2 = %4d y2 = %4d\n", min[2], xm, ym, p->x-mvs+xm, p->y-mvs+ym);
 
 		//For testing only---------------------------------------------------------------------------
 		///-----------------------------------------------------------------------------------------
@@ -1208,23 +1119,29 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
 		p1->vx = xo2 - mvs; p1->vy = yo2 - mvs;
 
-		printf("x1 = %4d y1 = %4d x2 = %4d y2 = %4d\n", xo1, yo1, xo2, yo2);
-		printf("vx1 = %4d vy1 = %4d vx2 = %4d vy2 = %4d\n", p->vx, p->vy, p1->vx, p1->vy);
+		//printf("x1  = %4d y1  = %4d x2  = %4d y2  = %4d\n", xo1, yo1, xo2, yo2);
+		if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
+		printf("s vx = %4d vy = %4d \n", p->vx, p->vy);
+		printf("s vx = %4d vy = %4d \n", p1->vx, p1->vy);
+		}
 
 		block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x + p1->vx, p1->y + p1->vy, p1->yx, w, h, nm, 0);
 
 		//px = px > edge[i].lines ? edge[i].lines : px;
 		//if(edge[i].lines > 1)
 		//for(j=2; j <=2; j++){
-		for(j=2; j < edge[i].lines; j++){
+		for(j=2; j <= edge[i].lines; j++){
 			p = p1; p1 = p1->out;
-			printf("p1->x = %d, p1->y = %d, p1->x + p->vx = %d, p1->y + p->vy = %d\n", p1->x, p1->y, p1->x + p->vx, p1->y + p->vy);
+			//printf("p1->x = %d, p1->y = %d, p1->x + p->vx = %d, p1->y + p->vy = %d\n", p1->x, p1->y, p1->x + p->vx, p1->y + p->vy);
 			block_match_new(grad2, img1, img2, mb[j&1], sad, p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
 			min_add(mb[!(j&1)], mb[j&1], sum, sqm[1]);
 			find_local_min(sum, &min[2], &xm, &ym, wm[1]);
 			p1->mach = find_mv(mb[!(j&1)], mb[j&1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[1]);
 			p1->vx = p->vx + xo2 - nm; p1->vy = p->vy + yo2 - nm;
-
+			if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
+				printf("1 vx = %4d vy = %4d \n", p->vx, p->vy);
+				printf("2 vx = %4d vy = %4d \n", p1->vx, p1->vy);
+			}
 			//printf("x1 = %4d y1 = %4d x2 = %4d y2 = %4d\n", xo1, yo1, xo2, yo2);
 			//printf("vx2 = %4d vy2 = %4d\n", p->vx, p->vy);
 			//printf("vy1 = %4d vy1 = %4d vx2 = %4d vy2 = %4d\n", xo1 - nm, yo1 - nm, xo2 - nm, yo2 - nm);
