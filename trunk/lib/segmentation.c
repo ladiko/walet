@@ -669,6 +669,8 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 			//if(p->nout){
 			xy.x1 = p->x + p->vx; xy.y1 = p->y + p->vy;
 			xy.x2 = p->out->x + p->out->vx; xy.y2 = p->out->y + p->out->vy;
+			//if(abs(p->vx) > 12 ||  abs(p->vy) > 12 || abs(p->out->vx) > 12 || abs(p->out->vy) > 12)
+			//	printf("vx1 = %d vy1 = %d vx2 = %d vy2 = %d\n", p->vx, p->vy, p->out->vx,  p->out->vy);
 			//printf("%3d x1 = %d y1 = %d x2 = %d y2 = %d p = %p\n", j, xy.x1, xy.y1, xy.x2, xy.y2, p);
 			color = col ? col : p->pow;
 			npix += draw_line(img, &xy, w, color, p->out->nout)-1;
@@ -921,16 +923,16 @@ static inline uint16 double_block_match(imgtype *grad, imgtype *img1, imgtype *i
 	return minim;
 }
 
-static inline void block_match_new(imgtype *grad, imgtype *img1, imgtype *img2, uchar *mmb, uchar **sd, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 w, uint32 h, uint32 st, uint32 th)
+static inline void block_match_new(imgtype *grad, imgtype *img1, imgtype *img2, uchar *mmb, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 w, uint32 h, uint32 st, uint32 th)
 {
 	int x, y, xm, ym, yx, yx1 = x1 + y1*w, sad[3], diff, npix = 0, w1 = (st<<1)+1;
 	uint16 min[4];
 	min[0] = 0xFFFF;
 	memset (mmb, 255, w1*w1);
 	//For test only-----------------------------------------------------------------------
-	memset (sd[0], 255, w1*w1);
-	memset (sd[1], 255, w1*w1);
-	memset (sd[2], 255, w1*w1);
+	//memset (sd[0], 255, w1*w1);
+	//memset (sd[1], 255, w1*w1);
+	//memset (sd[2], 255, w1*w1);
 	//------------------------------------------------------------------------------------
 	int ax = x2 - st, ay = y2 - st, bx = x2 + st, by = y2 + st;
 	//if(ax <= 0) ax = 1;
@@ -956,9 +958,9 @@ static inline void block_match_new(imgtype *grad, imgtype *img1, imgtype *img2, 
 			//printf("x = %d y = %d  yx = %d\n", x, y, yx);
 			if(grad[yx] > th){
 				mmb[ym*w1 + xm] = diff3x5( img1, img2, yx1, yx, yx2, sad, w);
-				sd[0][ym*w1 + xm] = sad[0];
-				sd[1][ym*w1 + xm] = sad[1];
-				sd[2][ym*w1 + xm] = sad[2];
+				//sd[0][ym*w1 + xm] = sad[0];
+				//sd[1][ym*w1 + xm] = sad[1];
+				//sd[2][ym*w1 + xm] = sad[2];
 				npix++;
 			}
 		}
@@ -1004,7 +1006,7 @@ static inline void min_add(uchar *mb1, uchar *mb2, uchar *mb3, uint32 sqm)
 static inline void find_local_min(uchar *mb, uint16 *min, uint16 *xm, uint16 *ym, uint16 wm)
 {
 	uint32 x, y, yx;
-	min[0] = 255;
+	min[0] = 0xFFFF;
 	for(y=0; y < wm; y++){
 		for(x=0; x < wm; x++){
 			yx = y*wm + x;
@@ -1064,23 +1066,24 @@ static inline void get_small(uchar *mb1, uchar *mb2, uint16 xm, uint16 ym, uint1
 
 void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs)
 {
-	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2, npix = 0, ndge = 0, px = 2;
-	uint32 sq = w*h, wm[2], sqm[2], nm = 3;
+	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2, npix = 0, ndge = 0, px = 3, po;
+	uint32 sq = w*h, wm[2], sqm[2], nm = 2;
+	int xv, yv;
 	wm[0] = ((mvs<<1)+1); sqm[0] = wm[0]*wm[0];
 	wm[1] = ((nm<<1)+1);  sqm[1] = wm[1]*wm[1];
 
-	uchar *mb[2], *sum, *sad[3];
+	uchar *mb[2], *sum;// *sad[3];
 	uint16 xm, ym, min[3], xo1, yo1, xo2, yo2;
 	Pixel *p, *p1;
 
 	uint32 min10=0, min12=0, min01=0, min02=0;
 
 	mb[0] = mmb; mb[1] = &mmb[sqm[0]]; sum = &mmb[sqm[0]<<1];
-	sad[0] = &sum[sqm[0]]; sad[1] = &sad[0][sqm[0]]; sad[2] = &sad[1][sqm[0]];
+	//sad[0] = &sum[sqm[0]]; sad[1] = &sad[0][sqm[0]]; sad[2] = &sad[1][sqm[0]];
 	//for(i=0; i < 10; i++){
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
-		block_match_new(grad2, img1, img2, mb[0], sad, p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 0);
+		block_match_new(grad2, img1, img2, mb[0], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 0);
 		/*
 		//For testing only-------------------------------------------------------------------------
 		find_local_min(mb[0], &min[0], &xm, &ym, wm[0]);
@@ -1094,7 +1097,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		///-----------------------------------------------------------------------------------------
 		*/
 		p1 = p->out;
-		block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
+		block_match_new(grad2, img1, img2, mb[1], p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
 		/*
 		//For testing only---------------------------------------------------------------------------
 		find_local_min(mb[1], &min[1], &xm, &ym, wm[0]);
@@ -1120,28 +1123,35 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		p1->vx = xo2 - mvs; p1->vy = yo2 - mvs;
 
 		//printf("x1  = %4d y1  = %4d x2  = %4d y2  = %4d\n", xo1, yo1, xo2, yo2);
-		if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
-		printf("s vx = %4d vy = %4d \n", p->vx, p->vy);
-		printf("s vx = %4d vy = %4d \n", p1->vx, p1->vy);
-		}
+		//if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
+		printf("  0 vx = %4d vy = %4d \n", p->vx, p->vy);
+		printf("  1 vx = %4d vy = %4d \n", p1->vx, p1->vy);
+		//}
 
-		block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x + p1->vx, p1->y + p1->vy, p1->yx, w, h, nm, 0);
+		//block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x + p1->vx, p1->y + p1->vy, p1->yx, w, h, nm, 0);
 
-		//px = px > edge[i].lines ? edge[i].lines : px;
+		po = px > edge[i].lines ? edge[i].lines : px;
 		//if(edge[i].lines > 1)
-		//for(j=2; j <=2; j++){
+		//for(j=2; j <= po; j++){
 		for(j=2; j <= edge[i].lines; j++){
 			p = p1; p1 = p1->out;
 			//printf("p1->x = %d, p1->y = %d, p1->x + p->vx = %d, p1->y + p->vy = %d\n", p1->x, p1->y, p1->x + p->vx, p1->y + p->vy);
-			block_match_new(grad2, img1, img2, mb[j&1], sad, p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
-			min_add(mb[!(j&1)], mb[j&1], sum, sqm[1]);
-			find_local_min(sum, &min[2], &xm, &ym, wm[1]);
-			p1->mach = find_mv(mb[!(j&1)], mb[j&1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[1]);
-			p1->vx = p->vx + xo2 - nm; p1->vy = p->vy + yo2 - nm;
-			if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
-				printf("1 vx = %4d vy = %4d \n", p->vx, p->vy);
-				printf("2 vx = %4d vy = %4d \n", p1->vx, p1->vy);
-			}
+			//block_match_new(grad2, img1, img2, mb[j&1], sad, p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
+			//min_add(mb[!(j&1)], mb[j&1], sum, sqm[1]);
+			//find_local_min(sum, &min[2], &xm, &ym, wm[1]);
+			//p1->mach = find_mv(mb[!(j&1)], mb[j&1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[1]);
+			//p1->vx = p->vx + xo2 - nm; p1->vy = p->vy + yo2 - nm;
+			xv = p1->x + p->vx; yv = p1->y + p->vy;
+			if(xv >= 0 && xv < w && yv >= 0 && yv < h){
+				block_match_new(grad2, img1, img2, mb[0], p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
+				find_local_min(mb[0], &min[2], &xm, &ym, wm[1]);
+				p1->vx = p->vx + xm - nm; p1->vy = p->vy + ym - nm;
+				//if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
+				//printf("1 vx = %4d vy = %4d \n", p->vx, p->vy);
+				printf("%3d vx = %4d vy = %4d \n", j, p1->vx, p1->vy);
+				if(abs(p1->vx) > 12 || abs(p1->vy) > 12) printf("p->vx = %d xm = %d p->vy = %d ym = %d nm = %d \n", p->vx, xm, p->vy, ym, nm);
+			} else printf("xv = %d yv = %d\n", xv, yv);
+			//}
 			//printf("x1 = %4d y1 = %4d x2 = %4d y2 = %4d\n", xo1, yo1, xo2, yo2);
 			//printf("vx2 = %4d vy2 = %4d\n", p->vx, p->vy);
 			//printf("vy1 = %4d vy1 = %4d vx2 = %4d vy2 = %4d\n", xo1 - nm, yo1 - nm, xo2 - nm, yo2 - nm);
@@ -1149,6 +1159,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 			//get_small(mb[!(i&1)], mb[i&1], xo2, yo2, wm[0], wm[1]);
 			//min_add(mb[0], mb[1], sum, sqm);
 		}
+		//printf("\n");
 	}
 	//printf("nedge = %d min < 10 = %d %f min12 < min0 = %d %f min01 = %d %f\n",
 	//		nedge, min10, (float)min10/(float)nedge, min12, (float)min12/(float)nedge, min01, (float)min01/(float)nedge);
