@@ -349,6 +349,12 @@ static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
 	pix1->nin++; pix->npix = npix;
 }
 
+static inline void change_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
+{
+	pix->out = pix1;  pix->nout = 1; pix->pow = pow;  //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
+	pix1->nin = 1; pix1->pow = pow; pix->npix = npix;
+}
+
 void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0;
@@ -440,8 +446,9 @@ static inline uint32 check_dir(int dx1, int dy1, int dx2, int dy2)
 
 static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
 {
-	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt, xt, yt, c = 0;
+	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt,  xt, yt, c = 0; //yx2 = yx1,
 	uchar min = img[yx];
+	//imgtype im;
 	int dx1, dy1, dx2, dy2;
 	if(dir){
 		new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
@@ -461,19 +468,39 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 				(*nline)++; *npix += c;
 				return yxt;
 			} else return yxt;
+			/*
+			if(c > 1){
+				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
+				set_blocks(&pix[yxt], yxt, dx, dy, w);
+				if(c > 3){	// New line
+					if(dir)	new_line(&pix[yx1], &pix[yxt], min, c);
+					else	new_line(&pix[yxt], &pix[yx1], min, c);
+					(*nline)++; *npix += c;
+					//return yxt;
+				} else { // Change previous line
+					if(dir)	change_line(&pix[yx2], &pix[yxt], min, pix[yx2].npix + c);
+					else	change_line(&pix[yxt], &pix[yx2], min, pix[yx2].npix + c);
+					img[yx1] = im;
+					*npix += c;
+					//return yxt;
+				}
+			}
+			return yxt;
+			*/
 		}
 		img[yx] = 254;
 		dx2 = dx1; dy2 = dy1;
 		dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		if(c > 2 && is_in_line(dx, dy, dx2, dy2)){ //New point
+		if(c > 3 && is_in_line(dx, dy, dx2, dy2)){ //New point
 			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
-			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
+			new_pix(&pix[yx], img[yx], x, y);
+			img[yx] = 255; //im = img[yx], Save previous value
 			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
 			if(dir)	new_line(&pix[yx1], &pix[yx ], min, c);
 			else 	new_line(&pix[yx ], &pix[yx1], min, c);
 			(*nline)++; *npix += c;
-			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0;
+			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0; yx2 = yx1;
 		}
     }
 }
@@ -606,6 +633,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
 	//for(i=0; i < 10; i++){
+	/*
 	for(i=0; i < nedge; i++){
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
@@ -625,8 +653,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 		}
 		npix++;
 		//}
-	}
-	/*
+	}*/
+
 	for(i=0; i < nedge; i++){
 		if(edge[i].pixs > px){
 			in = edge[i].yxs;
@@ -634,7 +662,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 			po = px ?  px : edge[i].lines;
 			po = po > edge[i].lines ? edge[i].lines : po;
 
-			for(j=0; j < po; j++){
+			for(j=0; j <= po; j++){
 				img[in] = color;
 				//img[in] = 250;
 				//img[in + pix[in].yx] = color;
@@ -643,7 +671,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 			}
 		}
 	}
-	*/
+
 	printf("Draw \n");
 	printf("Numbers of pixels  = %6d\n", npix);
 	printf("Numbers of lines   = %6d\n", nline);
