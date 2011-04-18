@@ -492,7 +492,7 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 		dx2 = dx1; dy2 = dy1;
 		dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		if(c > 3 && is_in_line(dx, dy, dx2, dy2)){ //New point
+		if(c > 2 && is_in_line(dx, dy, dx2, dy2)){ //New point
 			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
 			new_pix(&pix[yx], img[yx], x, y);
 			img[yx] = 255; //im = img[yx], Save previous value
@@ -633,7 +633,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
 	//for(i=0; i < 10; i++){
-	/*
+
 	for(i=0; i < nedge; i++){
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
@@ -653,7 +653,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 		}
 		npix++;
 		//}
-	}*/
+	}
 
 	for(i=0; i < nedge; i++){
 		if(edge[i].pixs > px){
@@ -1102,7 +1102,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 
 	uchar *mb[2], *sum;// *sad[3];
 	uint16 xm, ym, min[3], xo1, yo1, xo2, yo2;
-	Pixel *p, *p1;
+	Pixel *p, *p1, *p2;
 
 	uint32 min10=0, min12=0, min01=0, min02=0;
 
@@ -1125,7 +1125,19 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		///-----------------------------------------------------------------------------------------
 		*/
 		p1 = p->out;
-		block_match_new(grad2, img1, img2, mb[1], p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
+		if(p->npix < 4 && p1->nout){
+			printf("<4 npix = %d nout = %d line = %d\n", p->npix, p->nout, edge[i].lines);
+			p2 = p1->out;
+			block_match_new(grad2, img1, img2, mb[1], p2->x, p2->y, p2->x, p2->y, p2->yx, w, h, mvs, 0);
+			p->out = p2; p->npix = p->npix + p1->npix;
+			p1 = p1->out;
+			edge[i].lines--;
+			//j=3;
+		} else {
+			printf(">=4\n");
+			block_match_new(grad2, img1, img2, mb[1], p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
+			//j=2;
+		}
 		if(abs(p1->x - p->x) < 3 &&  abs(p1->y - p->y) < 3) min10++;
 		/*
 		//For testing only---------------------------------------------------------------------------
@@ -1150,6 +1162,9 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		p->mach = find_mv(mb[0], mb[1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[0]);
 		p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
 		p1->vx = xo2 - mvs; p1->vy = yo2 - mvs;
+		//p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
+		//p2->vx = xo2 - mvs; p2->vy = yo2 - mvs;
+		//p1->vx = p->vx;  p1->vy = p->vy;
 
 		//printf("x1  = %4d y1  = %4d x2  = %4d y2  = %4d\n", xo1, yo1, xo2, yo2);
 		//if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
