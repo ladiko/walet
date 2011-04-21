@@ -468,25 +468,6 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 				(*nline)++; *npix += c;
 				return yxt;
 			} else return yxt;
-			/*
-			if(c > 1){
-				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
-				set_blocks(&pix[yxt], yxt, dx, dy, w);
-				if(c > 3){	// New line
-					if(dir)	new_line(&pix[yx1], &pix[yxt], min, c);
-					else	new_line(&pix[yxt], &pix[yx1], min, c);
-					(*nline)++; *npix += c;
-					//return yxt;
-				} else { // Change previous line
-					if(dir)	change_line(&pix[yx2], &pix[yxt], min, pix[yx2].npix + c);
-					else	change_line(&pix[yxt], &pix[yx2], min, pix[yx2].npix + c);
-					img[yx1] = im;
-					*npix += c;
-					//return yxt;
-				}
-			}
-			return yxt;
-			*/
 		}
 		img[yx] = 254;
 		dx2 = dx1; dy2 = dy1;
@@ -632,9 +613,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	Pixel *p;
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
-	//for(i=0; i < 10; i++){
-
-	for(i=0; i < nedge; i++){
+	//for(i=0; i < nedge; i++){
+	i = 22129;{
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
 		po = px ?  px : edge[i].lines;
@@ -654,8 +634,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 		npix++;
 		//}
 	}
-
-	for(i=0; i < nedge; i++){
+	i = 22129;{
+	//for(i=0; i < nedge; i++){
 		if(edge[i].pixs > px){
 			in = edge[i].yxs;
 			color = col ? col : pix[in].pow<<1;
@@ -685,8 +665,8 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 	Pixel *p;
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
-	//for(i=0; i < 10; i++){
-	for(i=0; i < nedge; i++){
+	//for(i=0; i < nedge; i++){
+	i = 22129;{
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
 		po = px ?  px : edge[i].lines;
@@ -1095,7 +1075,7 @@ static inline void get_small(uchar *mb1, uchar *mb2, uint16 xm, uint16 ym, uint1
 void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs)
 {
 	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2, npix = 0, ndge = 0, px = 3, po;
-	uint32 sq = w*h, wm[2], sqm[2], nm = 2;
+	uint32 sq = w*h, wm[2], sqm[2], nm = 1;
 	int xv, yv;
 	wm[0] = ((mvs<<1)+1); sqm[0] = wm[0]*wm[0];
 	wm[1] = ((nm<<1)+1);  sqm[1] = wm[1]*wm[1];
@@ -1126,7 +1106,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		*/
 		p1 = p->out;
 		if(p->npix < 4 && p1->nout){
-			printf("<4 npix = %d nout = %d line = %d\n", p->npix, p->nout, edge[i].lines);
+			printf("< 4 %6d npix = %d nout = %d line = %d\n", i, p->npix, p->nout, edge[i].lines);
 			p2 = p1->out;
 			block_match_new(grad2, img1, img2, mb[1], p2->x, p2->y, p2->x, p2->y, p2->yx, w, h, mvs, 0);
 			p->out = p2; p->npix = p->npix + p1->npix;
@@ -1134,7 +1114,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 			edge[i].lines--;
 			//j=3;
 		} else {
-			printf(">=4\n");
+			printf(">=4 %6d npix = %d nout = %d line = %d\n", i, p->npix, p->nout, edge[i].lines);
 			block_match_new(grad2, img1, img2, mb[1], p1->x, p1->y, p1->x, p1->y, p1->yx, w, h, mvs, 0);
 			//j=2;
 		}
@@ -1168,8 +1148,8 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 
 		//printf("x1  = %4d y1  = %4d x2  = %4d y2  = %4d\n", xo1, yo1, xo2, yo2);
 		//if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
-		printf("  0 %3d vx = %4d vy = %4d  x = %3d y = %3d\n", p->npix, p->vx, p->vy, abs(p->x - p1->x)+1, abs(p->y - p1->y)+1);
-		printf("  1 %3d vx = %4d vy = %4d \n", p1->npix, p1->vx, p1->vy);
+		printf("  0 %3d vx = %4d vy = %4d mach = %3d x = %3d y = %3d\n", p->npix, p->vx, p->vy, p->mach, abs(p->x - p1->x)+1, abs(p->y - p1->y)+1);
+		printf("  1 %3d vx = %4d vy = %4d mach = %3d \n", p1->npix, p1->vx, p1->vy, p->mach);
 		//}
 
 		//block_match_new(grad2, img1, img2, mb[1], sad, p1->x, p1->y, p1->x + p1->vx, p1->y + p1->vy, p1->yx, w, h, nm, 0);
@@ -1189,11 +1169,12 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 			if(xv >= 0 && xv < w && yv >= 0 && yv < h){
 				block_match_new(grad2, img1, img2, mb[0], p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
 				find_local_min(mb[0], &min[2], &xm, &ym, wm[1]);
+				p1->mach = (p->mach + min[2])>>1;
 				p1->vx = p->vx + xm - nm; p1->vy = p->vy + ym - nm;
 				//if(abs(p->vx - p1->vx) > 2 || abs(p->vy - p1->vy) > 2) {
 				//printf("1 vx = %4d vy = %4d \n", p->vx, p->vy);
-				printf("%3d %3d vx = %4d vy = %4d \n", j, p1->npix, p1->vx, p1->vy);
-				if(abs(p1->vx) > 12 || abs(p1->vy) > 12) printf("p->vx = %d xm = %d p->vy = %d ym = %d nm = %d \n", p->vx, xm, p->vy, ym, nm);
+				printf("%3d %3d vx = %4d vy = %4d mach = %3d \n", j, p1->npix, p1->vx, p1->vy, p1->mach);
+				//if(abs(p1->vx) > 12 || abs(p1->vy) > 12) printf("p->vx = %d xm = %d p->vy = %d ym = %d nm = %d \n", p->vx, xm, p->vy, ym, nm);
 			} else printf("xv = %d yv = %d\n", xv, yv);
 			//}
 			//printf("x1 = %4d y1 = %4d x2 = %4d y2 = %4d\n", xo1, yo1, xo2, yo2);
