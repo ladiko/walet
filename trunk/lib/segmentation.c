@@ -515,6 +515,7 @@ uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of lines   = %6d\n", nline);
 	printf("Numbers of edges   = %6d\n", nedge);
 	return nedge;
+
 }
 
 void seg_reduce_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
@@ -613,8 +614,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	Pixel *p;
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
-	//for(i=0; i < nedge; i++){
-	i = 22129;{
+	for(i=0; i < nedge; i++){
+	//i = 22160;{
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
 		po = px ?  px : edge[i].lines;
@@ -634,8 +635,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 		npix++;
 		//}
 	}
-	i = 22129;{
-	//for(i=0; i < nedge; i++){
+	//i = 22160;{
+	for(i=0; i < nedge; i++){
 		if(edge[i].pixs > px){
 			in = edge[i].yxs;
 			color = col ? col : pix[in].pow<<1;
@@ -665,8 +666,8 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 	Pixel *p;
 	//Draw lines
 	//printf("seg_draw_edges nedge = %d\n", nedge);
-	//for(i=0; i < nedge; i++){
-	i = 22129;{
+	for(i=0; i < nedge; i++){
+	//i = 22160;{
 		//if(edge[i].pixs > px){
 		p = &pix[edge[i].yxs];
 		po = px ?  px : edge[i].lines;
@@ -1091,7 +1092,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 	//for(i=0; i < 10; i++){
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
-		block_match_new(grad2, img1, img2, mb[0], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 0);
+		block_match_new(grad2, img1, img2, mb[0], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 253);
 		/*
 		//For testing only-------------------------------------------------------------------------
 		find_local_min(mb[0], &min[0], &xm, &ym, wm[0]);
@@ -1108,7 +1109,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		if(p->npix < 4 && p1->nout){
 			printf("< 4 %6d npix = %d nout = %d line = %d\n", i, p->npix, p->nout, edge[i].lines);
 			p2 = p1->out;
-			block_match_new(grad2, img1, img2, mb[1], p2->x, p2->y, p2->x, p2->y, p2->yx, w, h, mvs, 0);
+			block_match_new(grad2, img1, img2, mb[1], p2->x, p2->y, p2->x, p2->y, p2->yx, w, h, mvs, 253);
 			p->out = p2; p->npix = p->npix + p1->npix;
 			p1 = p1->out;
 			edge[i].lines--;
@@ -1139,9 +1140,12 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 		///-----------------------------------------------------------------------------------------
 
 
-		p->mach = find_mv(mb[0], mb[1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[0]);
-		p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
-		p1->vx = xo2 - mvs; p1->vy = yo2 - mvs;
+		p->mach = min[2];
+		p->vx  = xm - mvs; p->vy  = ym - mvs;
+		p1->vx = p->vx; p1->vy = p->vy;
+		//p->mach = find_mv(mb[0], mb[1], min[2], xm, ym, &xo1, &yo1, &xo2, &yo2, wm[0]);
+		//p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
+		//p1->vx = xo2 - mvs; p1->vy = yo2 - mvs;
 		//p->vx  = xo1 - mvs; p->vy  = yo1 - mvs;
 		//p2->vx = xo2 - mvs; p2->vy = yo2 - mvs;
 		//p1->vx = p->vx;  p1->vy = p->vy;
@@ -1167,7 +1171,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 			//p1->vx = p->vx + xo2 - nm; p1->vy = p->vy + yo2 - nm;
 			xv = p1->x + p->vx; yv = p1->y + p->vy;
 			if(xv >= 0 && xv < w && yv >= 0 && yv < h){
-				block_match_new(grad2, img1, img2, mb[0], p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 0);
+				block_match_new(grad2, img1, img2, mb[0], p1->x, p1->y, p1->x + p->vx, p1->y + p->vy, p1->yx, w, h, nm, 253);
 				find_local_min(mb[0], &min[2], &xm, &ym, wm[1]);
 				p1->mach = (p->mach + min[2])>>1;
 				p1->vx = p->vx + xm - nm; p1->vy = p->vy + ym - nm;
