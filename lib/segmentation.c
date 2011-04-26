@@ -444,7 +444,59 @@ static inline uint32 check_dir(int dx1, int dy1, int dx2, int dy2)
 	return 0;
 }
 
+static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
+{
+	if(dx1 == -dx2 || dy1 == -dy2 ) return 1;
+	return 0;
+}
+
 static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
+{
+	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt,  xt, yt, c = 0; //yx2 = yx1,
+	uchar min = img[yx];
+	uint32 yxm[16], xm[16], ym[16];
+	int dx1, dy1;
+	dx1 = dx; dy1 = dy;
+	yxm[c] = yx; xm[c] = x; ym[c] = y;
+	if(dir){
+		new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
+		set_blocks(&pix[yx], yx, dx, dy, w);
+	}
+    while(1){
+     	//len += length(dx, dy);
+    	yxt = yx; xt = x; yt = y; // Save previous pixel
+     	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
+     	yxm[c] = yx; xm[c] = x; ym[c] = y;
+      	if(img[yx]) min = img[yx] < min ? img[yx] : min;
+		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
+			if(c > 1){
+				new_pix(&pix[yxt], img[yxt], xt, yt); img[yxt] = 255;
+				set_blocks(&pix[yxt], yxt, dx, dy, w);
+				if(dir)	new_line(&pix[yx1], &pix[yxt], min, c);
+				else	new_line(&pix[yxt], &pix[yx1], min, c);
+				(*nline)++; *npix += c;
+				return yxt;
+			} else return yxt;
+		}
+		img[yx] = 254;
+		//dx2 = dx1; dy2 = dy1;
+		//dx1 = dx; dy1 = dy;
+		dir1(img, w, yx, -dx, -dy, &dx, &dy);
+		if(c > 2 && check_corner(dx1, dy1, dx, dy)){ //New point
+			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
+			new_pix(&pix[yx], img[yx], x, y);
+			img[yx] = 255; //im = img[yx], Save previous value
+			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
+			if(dir)	new_line(&pix[yx1], &pix[yx ], min, c);
+			else 	new_line(&pix[yx ], &pix[yx1], min, c);
+			(*nline)++; *npix += c;
+			dx1 = dx; dy1 = dy;
+			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0; yx2 = yx1;
+		}
+    }
+}
+
+static inline uint32 find_lines1(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
 {
 	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt,  xt, yt, c = 0; //yx2 = yx1,
 	uchar min = img[yx];
