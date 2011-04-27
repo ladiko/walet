@@ -446,18 +446,20 @@ static inline uint32 check_dir(int dx1, int dy1, int dx2, int dy2)
 
 static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
 {
-	if(dx1 == -dx2 || dy1 == -dy2 ) return 1;
+	if(!dx1) if(dx2 && !dy2) return 1;
+	if(!dy1) if(dy2 && !dx2) return 1;
+	if(dx1 && dy1) if((dx1 == -dx2) || (dy1 == -dy2)) return 1;
 	return 0;
 }
 
 static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
 {
-	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt,  xt, yt, c = 0; //yx2 = yx1,
+	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2, yxt,  xt, yt, c = 0, c2 = 0; //yx2 = yx1,
 	uchar min = img[yx];
-	uint32 yxm[16], xm[16], ym[16];
-	int dx1, dy1;
+	//uint32 yxm[16], xm[16], ym[16];
+	int dx1, dy1, dx2, dy2;
 	dx1 = dx; dy1 = dy;
-	yxm[c] = yx; xm[c] = x; ym[c] = y;
+	//yxm[c] = yx; xm[c] = x; ym[c] = y;
 	if(dir){
 		new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
 		set_blocks(&pix[yx], yx, dx, dy, w);
@@ -466,7 +468,7 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
      	//len += length(dx, dy);
     	yxt = yx; xt = x; yt = y; // Save previous pixel
      	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
-     	yxm[c] = yx; xm[c] = x; ym[c] = y;
+     	//yxm[c] = yx; xm[c] = x; ym[c] = y;
       	if(img[yx]) min = img[yx] < min ? img[yx] : min;
 		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
 			if(c > 1){
@@ -479,19 +481,38 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
 			} else return yxt;
 		}
 		img[yx] = 254;
-		//dx2 = dx1; dy2 = dy1;
+		dx2 = dx; dy2 = dy;
 		//dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		if(c > 2 && check_corner(dx1, dy1, dx, dy)){ //New point
-			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
-			new_pix(&pix[yx], img[yx], x, y);
-			img[yx] = 255; //im = img[yx], Save previous value
-			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
-			if(dir)	new_line(&pix[yx1], &pix[yx ], min, c);
-			else 	new_line(&pix[yx ], &pix[yx1], min, c);
-			(*nline)++; *npix += c;
+		if(dx1 == dx && dy1 == dy) { x2 = x; y2 = y; yx2 = yx; c2 = c; }
+		if((c > 2 && check_corner(dx1, dy1, dx, dy))){ //New point
+			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d test = %d\n", dx1, dx, dy1, dy, c, (dx1 == -dx) || (dy1 == -dy));
+			if(!c2) {
+				new_pix(&pix[yx], img[yx], x, y);
+				img[yx] = 255; //im = img[yx], Save previous value
+				set_blocks(&pix[yx], yx, dx2 && dx, dy2 && dy, w);
+				if(dir)	new_line(&pix[yx1], &pix[yx ], min, c);
+				else 	new_line(&pix[yx ], &pix[yx1], min, c);
+				(*nline)++; *npix += c;
+			} else {
+				new_pix(&pix[yx], img[yx], x, y);
+				new_pix(&pix[yx2], img[yx2], x2, y2);
+				img[yx] = 255; //im = img[yx], Save previous value
+				set_blocks(&pix[yx], yx, dx2 && dx, dy2 && dy, w);
+				//set_blocks(&pix[yx2], yx2, !dx2 && !dx, !dy2 && !dy, w);
+				if(dir)	{
+					new_line(&pix[yx1], &pix[yx2], min, c2);
+					new_line(&pix[yx2], &pix[yx ], min, c-c2);
+				}
+				else 	{
+					new_line(&pix[yx ], &pix[yx2], min, c-c2);
+					new_line(&pix[yx2], &pix[yx1], min, c2);
+				}
+				(*nline)+=2; *npix += c;
+
+			}
 			dx1 = dx; dy1 = dy;
-			x1 = x; y1 = y; yx1 = yx; c = 0; //len = 0; yx2 = yx1;
+			x1 = x; y1 = y; yx1 = yx; c = 0; c2 = 0;//len = 0; yx2 = yx1;
 		}
     }
 }
