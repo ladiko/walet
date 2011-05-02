@@ -7,6 +7,7 @@ typedef struct{
 	Picture rgb[4]; // Scaled image for each color
 	Picture Y[4];	// The Y color componets
 	Picture grad[4];	// The gradient
+	//uint32	*pixp;		// The pointers on the Pixel array
 	//Picture con[4];		// The contours
 	//Picture pix[4];		// The clustering pixels
 	//Picture y[2]; 	//y[0] Y component y[1] gradient

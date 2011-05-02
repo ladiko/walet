@@ -267,80 +267,129 @@ static inline void dir1(imgtype *img, uint32 w, uint yx, int dx, int dy, int *dx
                 if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
                 if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
-                goto end;
+                //goto end;
         }
-        if(dx == -1 && dy == 0){
+        else if(dx == -1 && dy == 0){
                 //if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
                 if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
                 if(img[yx+1  ] >= max){ max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
                 if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 //if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
-                goto end;
+                //goto end;
         }
-        if(dx == -1 && dy == -1){
+        else if(dx == -1 && dy == -1){
                 //if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
                 if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
                 if(img[yx+1+w] >= max){ max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
                 //if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
-                goto end;
+                //goto end;
         }
-        if(dx ==  0 && dy == -1){
+        else if(dx ==  0 && dy == -1){
                 //if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
                 if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 if(img[yx  +w] >= max){ max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
                 if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
                 //if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
-                goto end;
+                //goto end;
         }
-        if(dx ==  1 && dy == -1){
+        else if(dx ==  1 && dy == -1){
                 //if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
                 if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
                 if(img[yx-1+w] >= max){ max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
                 if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
                 //if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
-                goto end;
+                //goto end;
         }
-        if(dx ==  1 && dy ==  0){
+        else if(dx ==  1 && dy ==  0){
                 //if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
                 if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
                 if(img[yx  -1] >= max){ max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
                 if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
                 //if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
-                goto end;
+                //goto end;
         }
-        if(dx ==  1 && dy ==  1){
+        else if(dx ==  1 && dy ==  1){
                 //if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
                 if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
                 if(img[yx-1-w] >= max){ max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
                 if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
                 //if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
-                goto end;
+                //goto end;
         }
-        if(dx ==  0 && dy ==  1){
+        else if(dx ==  0 && dy ==  1){
                 //if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
                 if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
                 if(img[yx  -w] >= max){ max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
                 if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
                 //if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
-                goto end;
+                //goto end;
         }
-        if(dx == -1 && dy ==  1){
+        else if(dx == -1 && dy ==  1){
                 //if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
                 if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
                 if(img[yx+1-w] >= max){ max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
                 if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
                 //if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
-                goto end;
+               // goto end;
         }
 
-end:
-        return;
+}
+
+static inline int dir2(imgtype *img, uint32 w, uint yx, uint32 max)
+//Check for pixel
+{
+
+        if(yx == -1){
+                if(img[yx+1-w] > max) return 1-w;
+                if(img[yx+1  ] > max) return 1;
+                if(img[yx+1+w] > max) return 1+w;
+         }
+        else if(yx == -1-w){
+                if(img[yx+1  ] > max) return 1;
+                if(img[yx+1+w] > max) return 1+w;
+                if(img[yx  +w] > max) return w;
+        }
+        else if(yx == -w){
+                if(img[yx+1+w] > max) return 1+w;
+                if(img[yx  +w] > max) return w;
+                if(img[yx-1+w] > max) return -1+w;
+         }
+        else if(yx == 1-w){
+                if(img[yx  +w] > max) return w;
+                if(img[yx-1+w] > max) return -1-w;
+                if(img[yx  -1] > max) return -1;
+         }
+        else if(yx == 1){
+                if(img[yx-1+w] > max) return -1+w;
+                if(img[yx  -1] > max) return -1;
+                if(img[yx-1-w] > max) return -1-w;
+         }
+        else if(yx == 1+w){
+                if(img[yx  -1] > max) return -1;
+                if(img[yx-1-w] > max) return -1-w;
+                if(img[yx  -w] > max) return -w;
+         }
+        else if(yx == w){
+                if(img[yx-1-w] > max) return -1-w;
+                if(img[yx  -w] > max) return -w;
+                if(img[yx+1-w] > max) return 1-w;
+         }
+        else if(yx == -1+w){
+                if(img[yx  -w] > max) return -w;
+                if(img[yx+1-w] > max) return 1-w;
+                if(img[yx+1  ] > max) return 1;
+         }
 }
 
 static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
 {
 	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; //pix->draw = 1; //pix->end = 0;
+}
+
+static inline void new_pix1(Pixel *pix, imgtype img, uint32 x, uint32 y, uint32 nei)
+{
+	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; pix->nnei = nei;//pix->draw = 1; //pix->end = 0;
 }
 
 static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
@@ -452,25 +501,27 @@ static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
 	return 0;
 }
 
-static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w, uchar dir)
+static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
 {
 	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2, yxt,  xt, yt, c = 0, c2 = 0; //yx2 = yx1,
 	uchar min = img[yx];
-	//uint32 yxm[16], xm[16], ym[16];
 	int dx1, dy1, dx2, dy2;
 	dx1 = dx; dy1 = dy;
-	if(dir){
-		new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
-	}
     while(1){
-     	//len += length(dx, dy);
-    	//yxt = yx; xt = x; yt = y; // Save previous pixel
-     	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
-     	//yxm[c] = yx; xm[c] = x; ym[c] = y;
-      	if(img[yx]) min = img[yx] < min ? img[yx] : min;
-		if(img[yx] == 255 || img[yx] == 254 || !img[yx]) { //End point with 0
-			new_pix(&pix[yx], img[yx], x, y); img[yx] = 255;
-			npix += c;
+      	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
+       	if(img[yx]) min = img[yx] < min ? img[yx] : min;
+		if(!img[yx]) { //End point with 0
+			new_pix1(&pix[yx], img[yx], x, y, 1);
+			img[yx] = 255; npix++;
+			return npix;
+		}
+		if(img[yx] == 254) { //End point with 0
+			new_pix1(&pix[yx], img[yx], x, y, 3);
+			img[yx] = 255; npix++;
+			return npix;
+		}
+		if(img[yx] == 255) { //End point with 0
+			pix[yx].nnei++;
 			return npix;
 		}
 		img[yx] = 254;
@@ -481,30 +532,15 @@ static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, u
 		if((c > 2 && check_corner(dx1, dy1, dx, dy))){ //New point
 			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d test = %d\n", dx1, dx, dy1, dy, c, (dx1 == -dx) || (dy1 == -dy));
 			if(!c2) {
-				new_pix(&pix[yx], img[yx], x, y);
-				img[yx] = 255; //im = img[yx], Save previous value
-				set_blocks(&pix[yx], yx, dx2 && dx, dy2 && dy, w);
-				if(dir)	new_line(&pix[yx1], &pix[yx ], min, c);
-				else 	new_line(&pix[yx ], &pix[yx1], min, c);
-				(*nline)++; *npix += c;
+				//new_pix1(&pix[yx], img[yx], x, y, );
+				//img[yx] = 255; npix++;
 			} else {
-				new_pix(&pix[yx], img[yx], x, y);
-				new_pix(&pix[yx2], img[yx2], x2, y2);
-				img[yx] = 255; //im = img[yx], Save previous value
-				set_blocks(&pix[yx], yx, dx2 && dx, dy2 && dy, w);
-				//set_blocks(&pix[yx2], yx2, !dx2 && !dx, !dy2 && !dy, w);
-				if(dir)	{
-					new_line(&pix[yx1], &pix[yx2], min, c2);
-					new_line(&pix[yx2], &pix[yx ], min, c-c2);
-				}
-				else 	{
-					new_line(&pix[yx ], &pix[yx2], min, c-c2);
-					new_line(&pix[yx2], &pix[yx1], min, c2);
-				}
-				(*nline)+=2; *npix += c;
+				new_pix1(&pix[yx], img[yx], x, y, 2);
+				new_pix1(&pix[yx2], img[yx2], x2, y2, 2);
+				img[yx] = 255; img[yx2] = 255; npix += 2;
 			}
 			dx1 = dx; dy1 = dy;
-			x1 = x; y1 = y; yx1 = yx; c = 0; c2 = 0;//len = 0; yx2 = yx1;
+			x1 = x; y1 = y; yx1 = yx; c = 0; c2 = 0;
 		}
     }
 	return npix;
@@ -552,7 +588,7 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
     }
 }
 
-uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h, )
+uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
 	uint32 npix = 0;
@@ -564,11 +600,69 @@ uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h, )
 				if(loc_max(img, yx, w)){
 					dir1(img, w,  yx,  0,  0,  &dx,  &dy);
 					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
-					npix += find_pixels(pix, img, x, y, dx,  dy,  &edges[nedge].pixs, &edges[nedge].lines, w, 1);
+					npix += find_pixels(pix, img, x, y, dx,  dy , w);
 					//printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
-					npix += find_pixels(pix, img, x, y, dx1, dy1, &edges[nedge].pixs, &edges[nedge].lines, w, 0);
+					npix += find_pixels(pix, img, x, y, dx1, dy1, w);
 					//printf("0 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
 					//printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
+				}
+			}
+		}
+	}
+	printf("Numbers of pixels  = %6d\n", npix);
+	return npix;
+
+}
+
+static inline uint32 set_dir(imgtype *img, uint32 yx, uint32 w, int dyx)
+{
+	uchar dir;
+	if     (img[yx-1  ] == dyx) dir += 1;
+	else if(img[yx-1-w] == dyx) dir += 2;
+	else if(img[yx  -w] == dyx) dir += 4;
+	else if(img[yx+1-w] == dyx) dir += 8;
+	else if(img[yx+1  ] == dyx) dir += 16;
+	else if(img[yx+1+w] == dyx) dir += 32;
+	else if(img[yx  +w] == dyx) dir += 64;
+	else if(img[yx-1+w] == dyx) dir += 128;
+	return dir;
+}
+
+static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *dm)
+{
+	uchar i;
+	if(img[yx-1  ] > 253 && !(dir&1  )) { dm[i] = -1;   i++; }
+	if(img[yx-1-w] > 253 && !(dir&2  )) { dm[i] = -1-w; i++; }
+	if(img[yx  -w] > 253 && !(dir&4  )) { dm[i] =   -w; i++; }
+	if(img[yx+1-w] > 253 && !(dir&8  )) { dm[i] =  1-w; i++; }
+	if(img[yx+1  ] > 253 && !(dir&16 )) { dm[i] =  1;   i++; }
+	if(img[yx+1+w] > 253 && !(dir&32 )) { dm[i] =  1+w; i++; }
+	if(img[yx  +w] > 253 && !(dir&64 )) { dm[i] =  w;   i++; }
+	if(img[yx-1+w] > 253 && !(dir&128)) { dm[i] = -1+w; i++; }
+	return i;
+}
+
+uint32 seg_line1(Pixel *pix, imgtype *img, uint32 w, uint32 h)
+{
+	uint32 i, y, x, yx, yx1, w1 = w-1, h1 = h-1;
+	uint32 npix = 0, n;
+	int dm[4], dyx;
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
+			yx = y*w + x;
+			if(img[yx] == 255){
+				npix++;
+				n = get_dir(img, yx, w, pix[yx].dir, dm);
+				for(i=0; i < n; i++){
+					dyx = dm[i];
+					while(1){
+						yx1 = yx + dyx;
+						if(img[yx1] == 255){
+							pix[yx1].dir = set_dir(img, yx, w, -dyx);
+							break;
+						}
+						dyx = dir2(img, w, -dyx, 253);
+					}
 				}
 			}
 		}
@@ -803,16 +897,12 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 	printf("Numbers of edges   = %6d\n", nedge);
 }
 
-void seg_draw_pix(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
+void seg_draw_pix(imgtype *img, imgtype *grad, uint32 w, uint32 h, uint32 col)
 {
 	uint32 i, j, k, pixs = 0, nline = 0;
 	for(i=0; i < w*h; i++){
-		if(pix[i].nout || pix[i].nin){
-			img[i] = 255;
-			pixs++;
-		}
+		if(grad[i] == 255) img[i] = col;
 	}
-	//printf("Numbers of pixels  = %d\n", pixs);
 }
 
 static inline uint32 diff3x3( imgtype *img1, imgtype *img2, uint32 yx1, uint32 yx2,  uint32 w)
