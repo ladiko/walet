@@ -540,8 +540,9 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	} else {
 		frm[0] = &gw->gop->frames[0];
 		frame_segmetation(gw->gop, 0);
-		seg_draw_lines(frm[0]->pixs, npix, frm[0]->line.pic, frm[0]->grad[0].width, frm[0]->grad[0].height);
-		seg_draw_edges(frm[0]->pixs, frm[0]->edges, frm[0]->nedge , frm[0]->edge.pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0, 0);
+		//seg_draw_lines(frm[0]->pixs, npix, frm[0]->line.pic, frm[0]->grad[0].width, frm[0]->grad[0].height);
+		//seg_draw_edges(frm[0]->pixs, frm[0]->edges, frm[0]->nedge , frm[0]->edge.pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0, 0);
+		seg_draw_pix(frm[0]->Y[0].pic, frm[0]->grad[0].pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0);
 
 
 		new_buffer (gw->orig[1], w, h);

@@ -52,6 +52,7 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->vec.width  = w;
 	frame->vec.height = h;
 	frame->vec.pic = (uchar *)calloc(frame->vec.width*frame->vec.height, sizeof(uchar));
+	//frame->pixp = (uint32 *)calloc(frame->vec.width*frame->vec.height, sizeof(uint32));
 
 	//frame->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uchar));
 	/*
@@ -357,12 +358,10 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 3);
 
-		frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_pixels(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 
-		//seg_draw_lines(frm->pixs, npix, frm->Y[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_local_max(frm->pixs, &npix, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_intersect_pix(frm->grad[0].pic, frm->pix[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Segmentation time = %f\n", (double)(end-start)/1000000.);
