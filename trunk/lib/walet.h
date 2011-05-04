@@ -177,7 +177,7 @@ struct Pixel {
 	 char		vx;		//The motion vector
 	 char		vy;		//The motion vector
 	 uchar		nnei;	//Number of neighborhood
-	 Pixel 		*nei[4];	//Pointer to neighborhood
+	 Pixel 		*nei[5];	//Pointer to neighborhood
 	 uchar 		dir;	// Direction for neighborhood
 						// 1 2 3
 						// 0   4
