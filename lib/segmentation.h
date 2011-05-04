@@ -26,11 +26,12 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w, uint32 h, uint32 px, uint32 col);
 void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs);
 void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h);
-void seg_draw_pix(imgtype *img, imgtype *grad, uint32 w, uint32 h, uint32 col);
+void seg_draw_pix(Pixel *pix, imgtype *img, imgtype *grad, uint32 w, uint32 h, uint32 col);
 void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h);
 void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h);
 void seg_reduce_line(Pixel *pix, imgtype *img, uint32 w, uint32 h);
 uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h);
+uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h);
 
 void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q);
 
