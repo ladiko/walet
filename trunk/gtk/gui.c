@@ -499,7 +499,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	GstStateChangeReturn ret;
 	GstState state;
 	uchar *buf;
-	uint32 i, w, h, npix;
+	uint32 i, j, w, h, npix;
 	Frame *frm[2];
 	//uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs=0, nrows=0, npregs=0, nobjs=0, nprows=0, ncors, fn, w, h, sn;
 	//clock_t start, end;
@@ -557,6 +557,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_grey_draw(frm[0]->line.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 
+		for(j=0; j < w*h; j++) frm[0]->edge.pic[j] = frm[0]->grad[0].pic[j] == 255 ? 255 : ( frm[0]->grad[0].pic[j] == 254 ? 100 : 0);
+		//for(j=0; j < w*h; j++) frm[0]->edge.pic[j] = frm[0]->grad[0].pic[j] == 255 ? 255 : ( frm[0]->grad[0].pic[j] == 254 ? 255 : 0);
 		new_buffer (gw->orig[0], w, h);
 		utils_grey_draw(frm[0]->edge.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
