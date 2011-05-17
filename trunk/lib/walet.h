@@ -178,6 +178,7 @@ struct Pixel {
 	 char		vy;		//The motion vector
 	 uchar		nnei;	//Number of neighborhood
 	 Pixel 		*nei[5];	//Pointer to neighborhood
+	 Pixel		*cp;	//Pointer to the center of cluster NULL if centre
 	 uchar 		dir;	// Direction for neighborhood
 						// 1 2 3
 						// 0   4

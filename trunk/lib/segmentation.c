@@ -533,37 +533,74 @@ static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
 	return 0;
 }
 
+static inline void set_dir_one(Pixel *pix, imgtype *img, uint32 yx, uint32 w, int dyx)
+{
+	uchar dir;
+	pix[yx + dyx].cp = &pix[yx];
+	img[yx + dyx] = 255;
+	if     (-1   == dyx) pix[yx].dir += 1;
+	else if(-1-w == dyx) pix[yx].dir += 2;
+	else if(  -w == dyx) pix[yx].dir += 4;
+	else if(+1-w == dyx) pix[yx].dir += 8;
+	else if(+1   == dyx) pix[yx].dir += 16;
+	else if(+1+w == dyx) pix[yx].dir += 32;
+	else if(  +w == dyx) pix[yx].dir += 64;
+	else if(-1+w == dyx) pix[yx].dir += 128;
+}
+
+static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
+{
+	uchar dir;
+	if(img[yx-1  ] > 253) { pix[yx].dir += 1; 	pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
+	if(img[yx-1-w] > 253) { pix[yx].dir += 2;	pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
+	if(img[yx  -w] > 253) { pix[yx].dir += 4;	pix[yx  -w].cp = &pix[yx]; img[yx  -w] = 255;}
+	if(img[yx+1-w] > 253) { pix[yx].dir += 8;	pix[yx+1-w].cp = &pix[yx]; img[yx+1-w] = 255;}
+	if(img[yx+1  ] > 253) { pix[yx].dir += 16;	pix[yx+1  ].cp = &pix[yx]; img[yx+1  ] = 255;}
+	if(img[yx+1+w] > 253) { pix[yx].dir += 32;	pix[yx+1+w].cp = &pix[yx]; img[yx+1+w] = 255;}
+	if(img[yx  +w] > 253) { pix[yx].dir += 64;	pix[yx  +w].cp = &pix[yx]; img[yx  +w] = 255;}
+	if(img[yx-1+w] > 253) { pix[yx].dir += 128;	pix[yx-1+w].cp = &pix[yx]; img[yx-1+w] = 255;}
+}
+
+
 static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
 {
-	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2, yxt,  xt, yt, c = 0, c2 = 0; //yx2 = yx1,
+	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2,  xt, yt, c = 0, c2 = 0; //yx2 = yx1,
 	uchar min = img[yx];
 	int dx1, dy1, dx2, dy2;
 	dx1 = dx; dy1 = dy;
 	img[yx] = 254;
     while(1){
-    	yxt = yx; xt = x; yt = y; // Save previous pixel
+    	yx2 = yx1; //x1 = x; y1 = y; // Save previous pixel
+    	yx1 = yx; x1 = x; y1 = y; // Save previous pixel
       	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
        	if(img[yx]) min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) { //End point with 0
-			//new_pix1(&pix[yx], img[yx], x, y, 1);
-			//img[yx] = 255; npix++;
-			new_pix1(&pix[yxt], img[yxt], xt, yt, 1);
-			img[yxt] = 255; npix++;
+			new_pix1(&pix[yx1], img[yx1], x1, y1, 1);
+			set_dir_one(pix, img, yx1, w, yx1-yx2);
+			img[yx1] = 255; npix++;
 			return npix;
 		}
 		if(img[yx] == 254) { //End point with 0
 			new_pix1(&pix[yx], img[yx], x, y, 3);
+			set_dir_all(pix, img, yx, w);
 			img[yx] = 255; npix++;
 			return npix;
 		}
 		if(img[yx] == 255) { //End point with 0
-			pix[yx].nnei++;
+			if(pix[yx].cp){
+				pix[yx].cp->nnei++;
+				set_dir_one(pix, img, pix[yx].cp->x + pix[yx].cp->y*w, w, pix[yx].cp->x + pix[yx].cp->y*w - yx);
+			} else {
+				pix[yx].nnei++;
+				set_dir_one(pix, img, yx, w, yx-yx1);
+			}
 			return npix;
 		}
 		img[yx] = 254;
-		dx2 = dx; dy2 = dy;
-		//dx1 = dx; dy1 = dy;
+		dx2 = dx1; dy2 = dy1;
+		dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
+		/*
 		if(dx1 == dx && dy1 == dy) { x2 = x; y2 = y; yx2 = yx; c2 = c; }
 		if((c > 2 && check_corner(dx1, dy1, dx, dy))){ //New point
 			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d test = %d\n", dx1, dx, dy1, dy, c, (dx1 == -dx) || (dy1 == -dy));
@@ -577,7 +614,7 @@ static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, u
 			}
 			dx1 = dx; dy1 = dy;
 			x1 = x; y1 = y; yx1 = yx; c = 0; c2 = 0;
-		}
+		}*/
     }
 	//return npix;
 }
@@ -648,20 +685,6 @@ uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of pixels  = %6d\n", npix);
 	return npix;
 
-}
-
-static inline uint32 set_dir(imgtype *img, uint32 yx, uint32 w, int dyx)
-{
-	uchar dir;
-	if     (img[yx-1  ] == dyx) dir += 1;
-	else if(img[yx-1-w] == dyx) dir += 2;
-	else if(img[yx  -w] == dyx) dir += 4;
-	else if(img[yx+1-w] == dyx) dir += 8;
-	else if(img[yx+1  ] == dyx) dir += 16;
-	else if(img[yx+1+w] == dyx) dir += 32;
-	else if(img[yx  +w] == dyx) dir += 64;
-	else if(img[yx-1+w] == dyx) dir += 128;
-	return dir;
 }
 
 static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *dm)
