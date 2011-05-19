@@ -564,19 +564,20 @@ static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
 
 static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
 {
-	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2,  xt, yt, c = 0, c2 = 0; //yx2 = yx1,
+	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2, x3, y3, yx3, xt, yt, c = 0, c3 = 0; //yx2 = yx1,
 	uchar min = img[yx];
-	int dx1, dy1, dx2, dy2;
-	dx1 = dx; dy1 = dy;
+	int dx1, dy1, dx2, dy2, dx3, dy3;
+	dx3 = dx; dy3 = dy;
 	img[yx] = 254;
     while(1){
+    	//printf("New pix\n");
     	yx2 = yx1; //x1 = x; y1 = y; // Save previous pixel
     	yx1 = yx; x1 = x; y1 = y; // Save previous pixel
       	yx = yx + dy*w + dx; x = x + dx; y = y + dy; c++;
        	if(img[yx]) min = img[yx] < min ? img[yx] : min;
 		if(!img[yx]) { //End point with 0
 			new_pix1(&pix[yx1], img[yx1], x1, y1, 1);
-			set_dir_one(pix, img, yx1, w, yx1-yx2);
+			if(c >2 ) set_dir_one(pix, img, yx1, w, yx1-yx2);
 			img[yx1] = 255; npix++;
 			return npix;
 		}
@@ -597,24 +598,25 @@ static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, u
 			return npix;
 		}
 		img[yx] = 254;
-		dx2 = dx1; dy2 = dy1;
-		dx1 = dx; dy1 = dy;
+		//dx2 = dx1; dy2 = dy1;
+		//dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
-		/*
-		if(dx1 == dx && dy1 == dy) { x2 = x; y2 = y; yx2 = yx; c2 = c; }
-		if((c > 2 && check_corner(dx1, dy1, dx, dy))){ //New point
-			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d test = %d\n", dx1, dx, dy1, dy, c, (dx1 == -dx) || (dy1 == -dy));
-			if(!c2) {
-				//new_pix1(&pix[yx], img[yx], x, y, );
-				//img[yx] = 255; npix++;
+
+		if(dx3 == dx && dy3 == dy) { x3 = x; y3 = y; yx3 = yx; c3 = c; }
+		if((c > 2 && check_corner(dx3, dy3, dx, dy))){ //New point
+			//printf("c = %d c3 = %d \n", c, c3);
+			if(!c3) {
+				new_pix1(&pix[yx], img[yx], x, y, 2);
+				img[yx] = 255; npix++;
 			} else {
 				new_pix1(&pix[yx], img[yx], x, y, 2);
-				new_pix1(&pix[yx2], img[yx2], x2, y2, 2);
-				img[yx] = 255; img[yx2] = 255; npix += 2;
+				new_pix1(&pix[yx3], img[yx3], x3, y3, 2);
+				img[yx] = 255; img[yx3] = 255; npix += 2;
 			}
-			dx1 = dx; dy1 = dy;
-			x1 = x; y1 = y; yx1 = yx; c = 0; c2 = 0;
-		}*/
+			dx3 = dx; dy3 = dy;
+			x3 = x; y3 = y; yx3 = yx;
+			c = 0; c3 = 0;
+		}
     }
 	//return npix;
 }
@@ -737,7 +739,7 @@ uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 						yx1 = yx1 + dyx;
 						printf("img = %d  dyx = %d\n", img[yx1], dyx);
 						if(img[yx1] == 255){
-							pix[yx1].dir = set_dir(img, yx1, w, -dyx);
+							//pix[yx1].dir = set_dir(img, yx1, w, -dyx);
 							break;
 						}
 						//dyx1 = dyx;
