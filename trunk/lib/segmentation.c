@@ -1651,3 +1651,72 @@ void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q)
 		}
 	}
 }
+
+void seg_fall_forest1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
+    //for(x=0; x<sq; x++) img1[x] = img[x];
+	for(x=0; x < sq; x++) img1[x] = 255;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(!img[yx]) img1[yx] = 0;
+			else {
+				//img1[yx] = 255;
+				min = img[yx]; dir = 0;
+				if(x)		if(img[yx-1] < min) { min = img[yx-1]; dir = 1; }
+				if(y)		if(img[yx-w] < min) { min = img[yx-w]; dir = 2; }
+				if(x != w1) if(img[yx+1] < min) { min = img[yx+1]; dir = 3; }
+				if(y != h1) if(img[yx+w] < min) { dir = 4; }
+				switch(dir){
+					case 0 : { img1[yx  ] = 0; break; }
+					case 1 : { img1[yx-1] = 0; break; }
+					case 2 : { img1[yx-w] = 0; break; }
+					case 3 : { img1[yx+1] = 0; break; }
+					case 4 : { img1[yx+w] = 0; break; }
+				}
+			}
+		}
+	}
+}
+
+void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
+	int dyx;
+    //for(x=0; x<sq; x++) img1[x] = img[x];
+	for(x=0; x < sq; x++) img1[x] = 0;
+	for(y=0; y < h; y++){
+		for(x=0; x < w; x++){
+			yx = y*w + x;
+			if(img[yx]) {
+				max = img[yx];
+                if(img[yx-1  ] > max) { max = img[yx-1  ]; dyx = -1;}
+                //if(img[yx-1-w] > max) { max = img[yx-1-w]; dyx = -1-w;}
+                if(img[yx  -w] > max) { max = img[yx  -w]; dyx =   -w;}
+                //if(img[yx+1-w] > max) { max = img[yx+1-w]; dyx = 1-w;}
+                if(img[yx+1  ] > max) { max = img[yx+1  ]; dyx = 1;}
+                //if(img[yx+1+w] > max) { max = img[yx+1+w]; dyx = 1+w;}
+                if(img[yx  +w] > max) { max = img[yx  +w]; dyx = w;}
+                //if(img[yx-1+w] > max) { max = img[yx-1+w]; dyx = -1+w;}
+                img1[yx+dyx]+=32;
+				//img1[yx] = 255;
+                /*
+				max = img[yx]; dir = 0;
+				if(img[yx-1] > max) { max = img[yx-1]; dir = 1; }
+				if(img[yx-w] > max) { max = img[yx-w]; dir = 2; }
+				if(img[yx+1] > max) { max = img[yx+1]; dir = 3; }
+				if(img[yx+w] > max) { dir = 4; }
+				switch(dir){
+					case 0 : { img1[yx  ]+=32; break; }
+					case 1 : { img1[yx-1]+=32; break; }
+					case 2 : { img1[yx-w]+=32; break; }
+					case 3 : { img1[yx+1]+=32; break; }
+					case 4 : { img1[yx+w]+=32; break; }
+				}
+				*/
+			}
+		}
+	}
+}
+
