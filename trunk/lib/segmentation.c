@@ -14,7 +14,7 @@ void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
-	uchar max;
+	uchar max, in;
 	uint32 g[4];
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
@@ -31,47 +31,43 @@ void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 			//if(max < g[2]) { max = g[2]; in = 0; }
 			//if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			//max = max > 252 ? 252 : max;
+			//img1[yx] = max;
+			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
+			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			//img1[yx] = max>>th ? max : 0;
+			//printf("yx = %d max = %d\n", yx, max);
+		}
+	}
+}
+
+void seg_grad1(imgtype *img, imgtype *img1,imgtype *img2, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
+	uchar max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			//if(y == w)
+			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
+			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
+			max = g[0]; in = 2;
+			if(max < g[1]) { max = g[1]; in = 3; }
+			if(max < g[2]) { max = g[2]; in = 0; }
+			if(max < g[3]) { max = g[3]; in = 1; }
+			img2[yx] = in;
+			max = (g[0] + g[1] + g[2] + g[3])>>2;
 			max = max > 252 ? 252 : max;
 			//img1[yx] = max;
 			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
 			//img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
 			img1[yx] = max>>th ? max : 0;
 			//printf("yx = %d max = %d\n", yx, max);
-		}
-	}
-}
-
-void seg_grad1(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
-{
-	/// | |x| |      | | | |      |x| | |      | | |x|
-	/// | |x| |      |x|x|x|      | |x| |      | |x| |
-	/// | |x| |      | | | |      | | |x|      |x| | |
-	///  g[2]         g[0]         g[1]         g[3]
-	/// Direction
-	///   n=0          n=2         n=3          n=1
-	/// | | | |      | ||| |      | | |/|      |\| | |
-	/// |-|-|-|      | ||| |      | |/| |      | |\| |
-	/// | | | |      | ||| |      |/| | |      | | |\|
-	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, max, in;
-	uint32 g[4];
-	for(y=w; y < sq; y+=w){
-		for(x=1; x < w1; x++){
-			yx = y + x;
-			max = (	abs(img[yx-1-w] - img[yx-w  ]) +
-					abs(img[yx-w  ] - img[yx-w+1]) +
-					abs(img[yx-w+1] - img[yx+1  ]) +
-					abs(img[yx+1  ] - img[yx+1+w]) +
-					abs(img[yx+1+w] - img[yx+w  ]) +
-					abs(img[yx+w  ] - img[yx+w-1]) +
-					abs(img[yx+w-1] - img[yx-1  ]) +
-					abs(img[yx-1  ] - img[yx-1-w])
-					//abs(img[yx    ] - img[yx-1  ]) +
-					//abs(img[yx    ] - img[yx-w  ]) +
-					//abs(img[yx    ] - img[yx+1  ]) +
-					//abs(img[yx    ] - img[yx+w  ])
-					) >> 2;
-			img1[yx] = max>>th ? (max >253 ? 253 : max) : 0;
-			//img1[yx] = max>>th ? (max>>th)<<th : 0; img2[yx] = in;
 		}
 	}
 }
@@ -411,7 +407,7 @@ static inline int dir2(imgtype *img, uint32 w, uint32 yx, int dyx, uint32 max)
 		if(img[yx+1  ] > max) return 1;
 	 }
 	printf("////////////////////////////////not find\n");
-	//return 0;
+	return 0;
 }
 
 static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
@@ -421,7 +417,7 @@ static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
 
 static inline void new_pix1(Pixel *pix, imgtype img, uint32 x, uint32 y, uint32 nei)
 {
-	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; pix->nnei = nei;//pix->draw = 1; //pix->end = 0;
+	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; pix->nnei = nei; pix->cp = NULL; //pix->draw = 1; //pix->end = 0;
 }
 
 static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
@@ -720,29 +716,35 @@ uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 {
 	uint32 i, y, x, yx, yx1, w1 = w-1, h1 = h-1;
 	uint32 npix = 0, n;
-	int dm[5], dyx;
+	int dm[8], dyx, dyx1;
 	for(y=1; y < h1; y++){
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] == 255){
+				printf("\n cp = %p\n", pix[yx].cp);
+				if(pix[yx].cp) yx = pix[yx].cp->x + pix[yx].cp->y*w;
 				npix++;
 				n = get_dir(img, yx, w, pix[yx].dir, dm);
 				test(img, yx, w);
-				printf("\ndir = %d n = %d \n", pix[yx].dir, n);
+				printf("dir =  %d n = %d \n", pix[yx].dir, n);
 
 				for(i=0; i < n; i++){
 					yx1 = yx;
 					printf("dm[%d] = %d \n", i, dm[i]);
 					dyx = dm[i];
 					while(1){
+						//if(!dyx)
 						test(img, yx1, w);
 						yx1 = yx1 + dyx;
-						printf("img = %d  dyx = %d\n", img[yx1], dyx);
+						printf("img = %d  dyx = %d\n", img[yx1], dyx1);
+						if(!dyx) return 0;
+
 						if(img[yx1] == 255){
 							//pix[yx1].dir = set_dir(img, yx1, w, -dyx);
+							if(pix[yx1].cp) yx1 = pix[yx1].cp->x + pix[yx1].cp->y*w;
 							break;
 						}
-						//dyx1 = dyx;
+						dyx1 = dyx;
 						dyx = dir2(img, w, yx1, -dyx, 253);
 					}
 				}
@@ -1652,9 +1654,10 @@ void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q)
 	}
 }
 
-void seg_fall_forest1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
+	int dyx;
     //for(x=0; x<sq; x++) img1[x] = img[x];
 	for(x=0; x < sq; x++) img1[x] = 255;
 	for(y=0; y < h; y++){
@@ -1662,60 +1665,55 @@ void seg_fall_forest1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 			yx = y*w + x;
 			if(!img[yx]) img1[yx] = 0;
 			else {
-				//img1[yx] = 255;
-				min = img[yx]; dir = 0;
-				if(x)		if(img[yx-1] < min) { min = img[yx-1]; dir = 1; }
-				if(y)		if(img[yx-w] < min) { min = img[yx-w]; dir = 2; }
-				if(x != w1) if(img[yx+1] < min) { min = img[yx+1]; dir = 3; }
-				if(y != h1) if(img[yx+w] < min) { dir = 4; }
-				switch(dir){
-					case 0 : { img1[yx  ] = 0; break; }
-					case 1 : { img1[yx-1] = 0; break; }
-					case 2 : { img1[yx-w] = 0; break; }
-					case 3 : { img1[yx+1] = 0; break; }
-					case 4 : { img1[yx+w] = 0; break; }
-				}
-			}
+				min = img[yx];
+                if(img[yx-1  ] < min) { min = img[yx-1  ]; dyx = -1;}
+                //if(img[yx-1-w] < min) { min = img[yx-1-w]; dyx = -1-w;}
+                if(img[yx  -w] < min) { min = img[yx  -w]; dyx = -w;}
+                //if(img[yx+1-w] < min) { min = img[yx+1-w]; dyx =  1-w;}
+                if(img[yx+1  ] < min) { min = img[yx+1  ]; dyx = 1;}
+                //if(img[yx+1+w] < min) { min = img[yx+1+w]; dyx =  1+w;}
+                if(img[yx  +w] < min) { min = img[yx  +w]; dyx = w;}
+                //if(img[yx-1+w] < min) { min = img[yx-1+w]; dyx = -1+w;}
+                img1[yx+dyx] =0;
+ 			}
 		}
 	}
 }
 
-void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_fall_forest1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
 	int dyx;
     //for(x=0; x<sq; x++) img1[x] = img[x];
 	for(x=0; x < sq; x++) img1[x] = 0;
-	for(y=0; y < h; y++){
-		for(x=0; x < w; x++){
+	for(y=1; y < h1; y++){
+		for(x=1; x < w1; x++){
 			yx = y*w + x;
+			//g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+			//g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+			//g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+			//g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			//if(y == w)
+			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
+			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
+			//max = g[0]; in = 2;
+			//if(max < g[1]) { max = g[1]; in = 3; }
+			//if(max < g[2]) { max = g[2]; in = 0; }
+			//if(max < g[3]) { max = g[3]; in = 1; }
+			if( img[yx] > img[yx-w  ] && img[yx] > img[yx+w  ]) { img2[yx] = 255; } else img2[yx] = 0;
+			if( img[yx] > img[yx+1-w] && img[yx] > img[yx-1+w]) { img2[yx] = 255; } else img2[yx] = 0;
+			if( img[yx] > img[yx-1  ] && img[yx] > img[yx+1  ]) { img2[yx] = 255; } else img2[yx] = 0;
+			if( img[yx] > img[yx-1-w] && img[yx] > img[yx+1+w]) { img2[yx] = 255; } else img2[yx] = 0;
+			/*
 			if(img[yx]) {
-				max = img[yx];
-                if(img[yx-1  ] > max) { max = img[yx-1  ]; dyx = -1;}
-                //if(img[yx-1-w] > max) { max = img[yx-1-w]; dyx = -1-w;}
-                if(img[yx  -w] > max) { max = img[yx  -w]; dyx =   -w;}
-                //if(img[yx+1-w] > max) { max = img[yx+1-w]; dyx = 1-w;}
-                if(img[yx+1  ] > max) { max = img[yx+1  ]; dyx = 1;}
-                //if(img[yx+1+w] > max) { max = img[yx+1+w]; dyx = 1+w;}
-                if(img[yx  +w] > max) { max = img[yx  +w]; dyx = w;}
-                //if(img[yx-1+w] > max) { max = img[yx-1+w]; dyx = -1+w;}
-                img1[yx+dyx]+=32;
-				//img1[yx] = 255;
-                /*
-				max = img[yx]; dir = 0;
-				if(img[yx-1] > max) { max = img[yx-1]; dir = 1; }
-				if(img[yx-w] > max) { max = img[yx-w]; dir = 2; }
-				if(img[yx+1] > max) { max = img[yx+1]; dir = 3; }
-				if(img[yx+w] > max) { dir = 4; }
-				switch(dir){
-					case 0 : { img1[yx  ]+=32; break; }
-					case 1 : { img1[yx-1]+=32; break; }
-					case 2 : { img1[yx-w]+=32; break; }
-					case 3 : { img1[yx+1]+=32; break; }
-					case 4 : { img1[yx+w]+=32; break; }
+				switch(img1[yx]){
+					case 0 : { if( img[yx] > img[yx-w  ] && img[yx] > img[yx+w  ]) img2[yx] = 255; else img2[yx] = 0; break; }
+					case 1 : { if( img[yx] > img[yx+1-w] && img[yx] > img[yx-1+w]) img2[yx] = 255; else img2[yx] = 0; break; }
+					case 2 : { if( img[yx] > img[yx-1  ] && img[yx] > img[yx+1  ]) img2[yx] = 255; else img2[yx] = 0; break; }
+					case 3 : { if( img[yx] > img[yx-1-w] && img[yx] > img[yx+1+w]) img2[yx] = 255; else img2[yx] = 0; break; }
 				}
-				*/
 			}
+			*/
 		}
 	}
 }

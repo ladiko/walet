@@ -357,12 +357,13 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		utils_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
 		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
 		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 3);
+		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
 
-		seg_fall_forest(frm->grad[0].pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_fall_forest(frm->grad[0].pic, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_fall_forest(frm->grad[0].pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_fall_forest1(frm->grad[0].pic, frm->edge.pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
 		//frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_pixels(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_pixels(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 
