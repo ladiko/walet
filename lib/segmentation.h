@@ -35,6 +35,8 @@ uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h);
 
 void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q);
 void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h);
+void seg_fall_forest1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h);
+void seg_grad1(imgtype *img, imgtype *img1,imgtype *img2, uint32 w, uint32 h, uint32 th);
 
 #ifdef __cplusplus
 }

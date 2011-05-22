@@ -553,7 +553,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_grey_draw(frm[0]->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
-		for(j=0; j < w*h; j++) frm[0]->line.pic[j] = frm[0]->line.pic[j] <= 32 ? 0 : 255;
+		//for(j=0; j < w*h; j++) frm[0]->line.pic[j] = frm[0]->line.pic[j] <= 32 ? 0 : 255;
 		new_buffer (gw->orig[3], w, h);
 		utils_grey_draw(frm[0]->line.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
