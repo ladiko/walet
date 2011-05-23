@@ -534,6 +534,7 @@ static inline void set_dir_one(Pixel *pix, imgtype *img, uint32 yx, uint32 w, in
 	uchar dir;
 	pix[yx + dyx].cp = &pix[yx];
 	img[yx + dyx] = 255;
+	/*
 	if     (-1   == dyx) pix[yx].dir += 1;
 	else if(-1-w == dyx) pix[yx].dir += 2;
 	else if(  -w == dyx) pix[yx].dir += 4;
@@ -542,11 +543,13 @@ static inline void set_dir_one(Pixel *pix, imgtype *img, uint32 yx, uint32 w, in
 	else if(+1+w == dyx) pix[yx].dir += 32;
 	else if(  +w == dyx) pix[yx].dir += 64;
 	else if(-1+w == dyx) pix[yx].dir += 128;
+	*/
 }
 
 static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
 {
 	uchar dir;
+	/*
 	if(img[yx-1  ] > 253) { pix[yx].dir += 1; 	pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
 	if(img[yx-1-w] > 253) { pix[yx].dir += 2;	pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
 	if(img[yx  -w] > 253) { pix[yx].dir += 4;	pix[yx  -w].cp = &pix[yx]; img[yx  -w] = 255;}
@@ -555,6 +558,15 @@ static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
 	if(img[yx+1+w] > 253) { pix[yx].dir += 32;	pix[yx+1+w].cp = &pix[yx]; img[yx+1+w] = 255;}
 	if(img[yx  +w] > 253) { pix[yx].dir += 64;	pix[yx  +w].cp = &pix[yx]; img[yx  +w] = 255;}
 	if(img[yx-1+w] > 253) { pix[yx].dir += 128;	pix[yx-1+w].cp = &pix[yx]; img[yx-1+w] = 255;}
+	*/
+	if(img[yx-1  ] > 253) { pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
+	if(img[yx-1-w] > 253) { pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
+	if(img[yx  -w] > 253) { pix[yx  -w].cp = &pix[yx]; img[yx  -w] = 255;}
+	if(img[yx+1-w] > 253) { pix[yx+1-w].cp = &pix[yx]; img[yx+1-w] = 255;}
+	if(img[yx+1  ] > 253) { pix[yx+1  ].cp = &pix[yx]; img[yx+1  ] = 255;}
+	if(img[yx+1+w] > 253) { pix[yx+1+w].cp = &pix[yx]; img[yx+1+w] = 255;}
+	if(img[yx  +w] > 253) { pix[yx  +w].cp = &pix[yx]; img[yx  +w] = 255;}
+	if(img[yx-1+w] > 253) { pix[yx-1+w].cp = &pix[yx]; img[yx-1+w] = 255;}
 }
 
 
@@ -565,6 +577,8 @@ static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, u
 	int dx1, dy1, dx2, dy2, dx3, dy3;
 	dx3 = dx; dy3 = dy;
 	img[yx] = 254;
+	//new_pix1(&pix[yx], img[yx], x, y, 1);
+	//set_dir_one(pix, img, yx, w, yx1-yx2);
     while(1){
     	//printf("New pix\n");
     	yx2 = yx1; //x1 = x; y1 = y; // Save previous pixel
@@ -688,6 +702,7 @@ uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *dm)
 {
 	uchar i;
+	/*
 	if(img[yx-1  ] > 253 && !(dir&1  )) { dm[i] = -1;   i++; }
 	if(img[yx-1-w] > 253 && !(dir&2  )) { dm[i] = -1-w; i++; }
 	if(img[yx  -w] > 253 && !(dir&4  )) { dm[i] =   -w; i++; }
@@ -696,6 +711,16 @@ static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *
 	if(img[yx+1+w] > 253 && !(dir&32 )) { dm[i] =  1+w; i++; }
 	if(img[yx  +w] > 253 && !(dir&64 )) { dm[i] =  w;   i++; }
 	if(img[yx-1+w] > 253 && !(dir&128)) { dm[i] = -1+w; i++; }
+	*/
+	if(img[yx-1  ] == 255) { dm[i] = -1;   i++; }
+	if(img[yx-1-w] == 255) { dm[i] = -1-w; i++; }
+	if(img[yx  -w] == 255) { dm[i] =   -w; i++; }
+	if(img[yx+1-w] == 255) { dm[i] =  1-w; i++; }
+	if(img[yx+1  ] == 255) { dm[i] =  1;   i++; }
+	if(img[yx+1+w] == 255) { dm[i] =  1+w; i++; }
+	if(img[yx  +w] == 255) { dm[i] =  w;   i++; }
+	if(img[yx-1+w] == 255) { dm[i] = -1+w; i++; }
+
 	return i;
 }
 
@@ -721,22 +746,22 @@ uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 		for(x=1; x < w1; x++){
 			yx = y*w + x;
 			if(img[yx] == 255){
-				printf("\n cp = %p\n", pix[yx].cp);
+				//printf("\n cp = %p\n", pix[yx].cp);
 				if(pix[yx].cp) yx = pix[yx].cp->x + pix[yx].cp->y*w;
 				npix++;
 				n = get_dir(img, yx, w, pix[yx].dir, dm);
-				test(img, yx, w);
-				printf("dir =  %d n = %d \n", pix[yx].dir, n);
+				//test(img, yx, w);
+				//printf("dir =  %d n = %d \n", pix[yx].dir, n);
 
 				for(i=0; i < n; i++){
 					yx1 = yx;
-					printf("dm[%d] = %d \n", i, dm[i]);
+					//printf("dm[%d] = %d \n", i, dm[i]);
 					dyx = dm[i];
 					while(1){
 						//if(!dyx)
-						test(img, yx1, w);
+						//test(img, yx1, w);
 						yx1 = yx1 + dyx;
-						printf("img = %d  dyx = %d\n", img[yx1], dyx1);
+						//printf("img = %d  dyx = %d x = %d y = %d\n", img[yx1], dyx1, yx1%w, yx1/w);
 						if(!dyx) return 0;
 
 						if(img[yx1] == 255){
