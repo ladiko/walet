@@ -134,8 +134,9 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 
 		//Copy frame 0 to decoder pipeline
+		//printf("video/x-raw-bayer\n");
 		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-		frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
 		utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
