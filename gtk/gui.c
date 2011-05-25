@@ -194,6 +194,10 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_bayer_draw(gw->gop->frames[nf].img[0].img, gdk_pixbuf_get_pixels(gw->orig[nf]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[nf]);
 
+		new_buffer (gw->orig[nf+1], gw->gop->width, gw->gop->height);
+		utils_grey_draw(gw->gop->frames[nf].img[0].img, gdk_pixbuf_get_pixels(gw->orig[nf+1]->pxb), gw->gop->width, gw->gop->height);
+		//utils_draw(img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
+		gtk_widget_queue_draw(gw->drawingarea[nf+1]);
 		free(img);
 
 	} else {
