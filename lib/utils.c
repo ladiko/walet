@@ -95,21 +95,21 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 				}
 				h = sub[k*st ].size.y; w = sub[k*st].size.x;
 				im = &img->img[sub[k*st].loc];
-				drawrect(rgb, im, w1, h1, w, h, img->width, 128);
+				drawrect(rgb, im, w1, h1, w, h, img->width, 0);
 			}
 		} else {
-			h0 = sub[0 ].size.y; w0 = sub[0 ].size.x;
+			h0 = sub[0].size.y; w0 = sub[0].size.x;
 			h  = sub[1].size.y; w  = sub[1].size.x;
 			im = &img->img[sub[1].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
+			drawrect(rgb, im, w0, 0, w, h, img->width, 0);
 
 			h = sub[2].size.y; w = sub[2].size.x;
 			im = &img->img[sub[2].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
+			drawrect(rgb, im, 0, h0, w, h, img->width, 0);
 
 			h = sub[3].size.y; w = sub[3].size.x;
 			im = &img->img[sub[3].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
+			drawrect(rgb, im, w0, h0, w, h, img->width, 0);
 
 			h = sub[0].size.y; w = sub[0].size.x;
 			im = &img->img[sub[0].loc];
@@ -514,7 +514,7 @@ void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-void utils_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h)
+void utils_bayer_to_rgb(imgtype *img, imgtype *rgb, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, yx3, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){

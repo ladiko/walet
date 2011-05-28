@@ -32,9 +32,10 @@ typedef char       			int8;
 typedef unsigned int       	uint32;
 typedef unsigned short int 	uint16;
 typedef unsigned long long 	uint64;
-//typedef short int           int16;
+typedef short int           int16;
 //typedef short int			imgtype;
 typedef uchar			imgtype;
+typedef int16			dwttype;
 #endif
 
 typedef enum {

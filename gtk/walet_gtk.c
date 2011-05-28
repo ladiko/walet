@@ -96,7 +96,8 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
-		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, 8, 2, 2, 0, 20, FR_5_3, 12);
+		//gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 4, 2, 0, 20, FR_HAAR, 12);
+		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 1, 2, 0, 20, FR_5_3, 12);
 		gw->walet_init = 1;
 	}
 	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
@@ -146,7 +147,6 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		utils_draw_bayer(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
-
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
 	//g_printf("The current state = %d ret = %d\n", state, ret);

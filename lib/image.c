@@ -860,6 +860,7 @@ void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32
 	int i, num;
 	im->width = width; im->height = height;
 	im->img = (imgtype *)calloc(width*height, sizeof(imgtype));
+	im->iwt = (dwttype *)calloc(width*height, sizeof(dwttype));
 	im->hist = (color == BAYER) ? (uint32 *)calloc((1<<bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bpp, sizeof(uint32));
 	im->look = (color == BAYER) ? (uint16 *)calloc((1<<bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bpp, sizeof(uint16));
 	//img->qfl[steps] = 1; for(i=steps-1; i; i--) img->qfl[i] += img->qfl[i+1]+3; img->qfl[0] = img->qfl[1]+2;
@@ -879,7 +880,7 @@ void image_copy(Image *im, uint32 bpp, uchar *v)
 ///	\param v 			The input stream buffer.
 {
 	uint32 i, size = im->width*im->height;
-	//printf("Start copy  x = %d y = %d p = %p \n", img->size.x, img->size.y, img->img);
+	printf("Start copy  x = %d y = %d p = %p \n", im->width, im->height, im->img);
 	if(bpp > 8) for(i=0; i<size; i++) im->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
 	else 		 for(i=0; i<size; i++) im->img[i] = v[i];
 }

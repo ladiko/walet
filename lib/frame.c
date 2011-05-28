@@ -363,7 +363,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 		//seg_fall_forest1(frm->grad[0].pic, frm->edge.pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
 		//frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		seg_pixels(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 
 
