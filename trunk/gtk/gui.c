@@ -175,6 +175,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 
 		if(!gw->walet_init){
 			gw->gop = walet_encoder_init(w<<1, h<<1, BAYER, RGGB, 8, 5, 2, 0, 0, FR_5_3, 12);
+			//walet_encoder_init(width, height, BAYER, RGGB, 8, 5, 2, 0, 20, FR_5_3, 12);
 			gw->walet_init = 1;
 		}
 		printf("w = %d h = %d bpp = %d\n", w, h, bpp);
@@ -188,6 +189,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 
 		//printf("nf = %d\n", nf);
 		utils_rgb2bayer(img, gw->gop->frames[nf].img[0].img, w, h);
+		gw->gop->frames[nf].state = FRAME_COPY;
 		//frame_copy(gw->gop, nf, uchar *y, uchar *u, uchar *v)
 
 		new_buffer (gw->orig[nf], gw->gop->width-1, gw->gop->height-1);
@@ -348,7 +350,6 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
     	//new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
     	//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height);
     	//gtk_widget_queue_draw(gw->drawingarea[3]);
-
 	}
 }
 
