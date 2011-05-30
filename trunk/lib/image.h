@@ -1,10 +1,10 @@
 #ifndef IMAGE_H_
 #define IMAGE_H_
 
-typedef void (*fun1d)(imgtype *in, imgtype *out, const uint32 w);
-typedef void (*fun2d)(imgtype *in, imgtype *out, const uint32 w, const uint32 h);
-typedef	void (*funwt)(imgtype *in, imgtype *out, const uint32 w, const uint32 h);
-typedef	void (*funidwt)(imgtype *in, imgtype *out, const uint32 w, const uint32 h, uint32 *loc);
+typedef void (*fun1d)(dwttype *in, dwttype *out, const uint32 w);
+typedef void (*fun2d)(dwttype *in, dwttype *out, const uint32 w, const uint32 h);
+typedef	void (*funwt)(dwttype *in, dwttype *out, const uint32 w, const uint32 h);
+typedef	void (*funidwt)(dwttype *in, dwttype *out, const uint32 w, const uint32 h, uint32 *loc);
 
 typedef struct {
 	uint32 		width;		// Image width
@@ -44,8 +44,8 @@ extern "C" {
 #endif /* __cplusplus */
 void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
 void 	image_copy			(Image *im, uint32 bpp, uchar *v);
-void 	image_dwt			(Image *im, ColorSpace color, uint32 steps, imgtype *buf, TransformType tt, FilterBank fb);
-void 	image_idwt			(Image *im, ColorSpace color, uint32 steps, imgtype *buf, uint32 isteps, TransformType tt, FilterBank fb);
+void 	image_dwt			(Image *im, ColorSpace color, uint32 steps, dwttype *buf, TransformType tt, FilterBank fb);
+void 	image_idwt			(Image *im, ColorSpace color, uint32 steps, dwttype *buf, uint32 isteps, TransformType tt, FilterBank fb);
 void 	image_fill_subb		(Image *im, ColorSpace color, uint32 steps);
 void 	image_fill_hist		(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp);
 //void 	image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep);

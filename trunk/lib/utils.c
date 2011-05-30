@@ -34,7 +34,7 @@ int g[9][2] = {
 
 
 
-static inline void drawrect(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
+static inline void drawrect(uchar *rgb, dwttype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y, tmp;
 	for(y=0; y < h; y++ ){
@@ -65,7 +65,7 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 {
 	uint32 k, h, w, h0, w0, h1, w1, st;
 	int i;
-	imgtype* im;
+	dwttype* im;
 	Subband *sub = img->sub;
 	//for(i=0; i<=steps*3; i++) printf("sub %d h %d w %d p %p\n",sub[0][i]->subb, sub[0][i]->size.y, sub[0][i]->size.x,  sub[0][i ]);
 	if(color == BAYER ){
@@ -82,56 +82,56 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 				for(i=(steps-1); i>0; i--){
 					h0 = sub[k*st + 3*i-2].size.y; w0 = sub[k*st + 3*i-1].size.x;
 					h  = sub[k*st + 3*i-2].size.y;  w = sub[k*st + 3*i-2].size.x;
-					im = &img->img[sub[k*st + 3*i-2].loc];
+					im = &img->iwt[sub[k*st + 3*i-2].loc];
 					drawrect(rgb, im, w1+w0, h1, w, h, img->width, 128);
 
 					h = sub[k*st + 3*i-1].size.y; w = sub[k*st + 3*i-1].size.x;
-					im = &img->img[sub[k*st + 3*i-1].loc];
+					im = &img->iwt[sub[k*st + 3*i-1].loc];
 					drawrect(rgb, im, w1, h1+h0, w, h, img->width, 128);
 
 					h = sub[k*st + 3*i].size.y; w = sub[k*st + 3*i].size.x;
-					im = &img->img[sub[k*st + 3*i].loc];
+					im = &img->iwt[sub[k*st + 3*i].loc];
 					drawrect(rgb, im, w1+w0, h1+h0, w, h, img->width, 128);
 				}
 				h = sub[k*st ].size.y; w = sub[k*st].size.x;
-				im = &img->img[sub[k*st].loc];
+				im = &img->iwt[sub[k*st].loc];
 				drawrect(rgb, im, w1, h1, w, h, img->width, 0);
 			}
 		} else {
 			h0 = sub[0].size.y; w0 = sub[0].size.x;
 			h  = sub[1].size.y; w  = sub[1].size.x;
-			im = &img->img[sub[1].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 0);
+			im = &img->iwt[sub[1].loc];
+			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
 
 			h = sub[2].size.y; w = sub[2].size.x;
-			im = &img->img[sub[2].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 0);
+			im = &img->iwt[sub[2].loc];
+			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
 
 			h = sub[3].size.y; w = sub[3].size.x;
-			im = &img->img[sub[3].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 0);
+			im = &img->iwt[sub[3].loc];
+			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
 
 			h = sub[0].size.y; w = sub[0].size.x;
-			im = &img->img[sub[0].loc];
+			im = &img->iwt[sub[0].loc];
 			drawrect(rgb, im, 0, 0, w, h, img->width, 0);
 		}
 	} else {
 		for(i=steps; i>0; i--){
 			h0 = sub[3*i-2].size.y; w0 = sub[3*i-1].size.x;
 			h  = sub[3*i-2].size.y; w  = sub[3*i-2].size.x;
-			im = &img->img[sub[3*i-2].loc];
+			im = &img->iwt[sub[3*i-2].loc];
 			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
 
 			h = sub[3*i-1].size.y; w = sub[3*i-1].size.x;
-			im = &img->img[sub[3*i-1].loc];
+			im = &img->iwt[sub[3*i-1].loc];
 			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
 
 			h = sub[3*i].size.y; w = sub[3*i].size.x;
-			im = &img->img[sub[3*i].loc];
+			im = &img->iwt[sub[3*i].loc];
 			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
 		}
 		h = sub[0].size.y; w = sub[0].size.x;
-		im = &img->img[sub[0].loc];
+		im = &img->iwt[sub[0].loc];
 		drawrect(rgb, im, 0, 0, w, h, img->width, 0);
 	}
 	return rgb;
@@ -411,7 +411,7 @@ uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h, uchar *p0, 
 	}
 	return rgb;
 }
-
+/*
 uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Picture *p1,  Picture *p2,  Picture *p3)
 {
 	uint32 i=0, sx, sy;
@@ -450,7 +450,7 @@ uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 
 	return rgb;
 }
-
+*/
 uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 {
 

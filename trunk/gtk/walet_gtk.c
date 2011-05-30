@@ -97,7 +97,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
 		//gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 4, 2, 0, 20, FR_HAAR, 12);
-		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 1, 2, 0, 20, FR_5_3, 12);
+		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 5, 2, 0, 20, FR_5_3, 12);
 		gw->walet_init = 1;
 	}
 	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
