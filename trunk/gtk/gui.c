@@ -358,7 +358,7 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(gw->gop == NULL ) return;
     if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, gw->gop->fb)){
     	new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);
-    	utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
+    	utils_bayer_draw_16(gw->gop->frames[0].img[0].iwt, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
     			gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
     	//new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
     	//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);

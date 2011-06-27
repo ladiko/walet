@@ -4,9 +4,9 @@
 
 typedef struct{
 	Image 	img[3];	//Pointer to image
-	Picture rgb[4]; // Scaled image for each color
-	Picture Y[4];	// The Y color componets
-	Picture grad[4];	// The gradient
+	Picture8 rgb[4]; // Scaled image for each color
+	Picture8 Y[4];	// The Y color componets
+	Picture8 grad[4];	// The gradient
 	//uint32	*pixp;		// The pointers on the Pixel array
 	//Picture con[4];		// The contours
 	//Picture pix[4];		// The clustering pixels
@@ -14,9 +14,9 @@ typedef struct{
 	//Picture pic[4]; 	// Scaled image for each color
 
 	//For visualization only
-	Picture line;	//Draw lines
-	Picture edge;	//Draw edges
-	Picture vec;	//Draw motion vectors
+	Picture8 line;	//Draw lines
+	Picture8 edge;	//Draw edges
+	Picture8 vec;	//Draw motion vectors
 	//uchar 	*mmb;	//The motion much buffer
 
 	Pixel	*pixs;		//The array of the pixeles

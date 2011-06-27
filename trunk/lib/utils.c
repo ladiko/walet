@@ -95,7 +95,7 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 				}
 				h = sub[k*st ].size.y; w = sub[k*st].size.x;
 				im = &img->iwt[sub[k*st].loc];
-				drawrect(rgb, im, w1, h1, w, h, img->width, 0);
+				drawrect(rgb, im, w1, h1, w, h, img->width, 128);
 			}
 		} else {
 			h0 = sub[0].size.y; w0 = sub[0].size.x;
@@ -142,6 +142,47 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 #define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
 uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
+/*! \fn void bayer_to_rgb(uchar *rgb)
+	\brief DWT picture transform.
+  	\param	rgb 	The pointer to rgb array.
+*/
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
+
+	switch(bay){
+		case(BGGR):{ a = 1; b = 1; break;}
+		case(GRBG):{ a = 0; b = 1; break;}
+		case(GBRG):{ a = 1; b = 0; break;}
+		case(RGGB):{ a = 0; b = 0; break;}
+	}
+
+	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+		for(x=0; x < w1; x++){
+			y2 = oe(a,y);
+			x2 = oe(b,x);
+			xwy = x + yw;
+			wy 	= x + yw1;
+			xwy3 = wy + wy + wy;
+			rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
+			rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
+								 (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1);
+			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
+		}
+	}
+	return rgb;
+}
+
+uchar* utils_bayer_draw_16(dwttype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
 /*! \fn void bayer_to_rgb(uchar *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
@@ -451,7 +492,7 @@ uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 */
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p)
 {
 
 	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].width, p[0].height, w);
@@ -462,7 +503,7 @@ uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 
-uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p)
 {
 
 	utils_draw_scale_color(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 3);

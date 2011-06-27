@@ -114,7 +114,7 @@ typedef enum {		//Wavelet transform filter banks
 }	FilterBank;
 
 typedef struct {
-	int x,y;
+	uint32 x,y;
 } Dim;
 //File header
 // -----------------------------------------------------------------------------------------
@@ -256,7 +256,13 @@ typedef struct {
 	uint16 width;
 	uint16 height;
 	uchar *pic;
-} Picture;
+} Picture8;
+
+typedef struct {
+	uint16 w;
+	uint16 h;
+	dwttype *pic;
+} Picture16;
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
