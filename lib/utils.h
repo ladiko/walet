@@ -9,6 +9,7 @@ extern "C"
 
 uchar* 		utils_subband_draw		(Image *img, uchar *rgb, ColorSpace color, uint32 steps);
 uchar* 		utils_bayer_draw		(imgtype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
+uchar* 		utils_bayer_draw_16		(dwttype *img, uchar *rgb, uint32 height, uint32 width,  BayerGrid bay);
 uchar* 		utils_grey_draw			(imgtype *img, uchar *rgb, uint32 height, uint32 width);
 uchar* 		utils_draw				(uchar *img, uchar *rgb, uint32 w, uint32 h);
 imgtype* 	utils_cat				(imgtype *img, imgtype *img1, uint32 height, uint32 width, uint32 bits);
@@ -17,20 +18,20 @@ uchar* 		utils_ppm_to_bayer		(uchar *img, uchar *img1, uint32 w, uint32 h);
 //uchar*		utils_bayer_to_4color	(uchar *img, uchar *img1, uchar **p, uint32 w, uint32 h);
 void 		utils_bayer_to_4color	(uchar *img, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3);
 uchar* 		utils_4color_draw		(uchar *img, uchar *rgb, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3);
-uchar* utils_4color_scale_draw		(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Picture *p1,  Picture *p2,  Picture *p3);
+uchar* utils_4color_scale_draw		(uchar *rgb, uint32 w, uint32 h, Picture8 *p0,  Picture8 *p1,  Picture8 *p2,  Picture8 *p3);
 //uchar* 		utils_4color_draw		(uchar *img, uchar *rgb, uchar **p, uint32 w, uint32 h);
 
 uchar* utils_draw_bayer(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay);
 void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h);
-uchar* utils_bayer_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
-uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
+uchar* utils_bayer_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p);
+uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p);
 void util_bayer_to_rgb(uchar *img, uchar *rgb, uint32 w, uint32 h);
 void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h);
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p);
 void utils_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h);
 
-uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p);
+uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p);
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p);
 
 
 void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly);

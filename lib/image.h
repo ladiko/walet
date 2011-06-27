@@ -57,6 +57,8 @@ uint32	image_range_decode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp
 void 	image_median_filter	(Image *im, ColorSpace color, BayerGrid bg, imgtype *buf);
 void 	image_subband_median_filter	(Image *im, ColorSpace color, uint32 steps, imgtype *buf);
 
+void image_grad(Image *im, ColorSpace color, uint32 steps, uint32 th);
+
 //void	image_init				(Image *im, StreamData *sd, uint32 x, uint32 y);
 //void 	image_copy				(Image *im, StreamData *sd, uchar *v);
 //void 	image_dwt_53 			(Image *im, StreamData *sd, imgtype *buf);

@@ -121,15 +121,16 @@ uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)
 	Frame *frame = &gop->frames[fr];
 	if(check_state(frame->state, FRAME_COPY | IDWT)){
 		frame->img[0].sub = gop->sub[0]; 	//Set current image for DWT transform
-		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, MALLET, fb); //MALLET
-		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, gop->buf, CLASSIC, fb);
+		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, MALLET, fb); //MALLET
+		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
 		else {
 			frame->img[1].sub = gop->sub[1]; 	//Set current image for DWT transform
 			frame->img[2].sub = gop->sub[2]; 	//Set current image for DWT transform
-			image_dwt(&frame->img[1], gop->color, gop->steps, gop->buf, CLASSIC, fb);
-			image_dwt(&frame->img[2], gop->color, gop->steps, gop->buf, CLASSIC, fb);
+			image_dwt(&frame->img[1], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
+			image_dwt(&frame->img[2], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
 		}
 		frame->state = DWT;
+		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
 	} else return 0;
 }
@@ -146,13 +147,13 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 	Frame *frame = &gop->frames[fr];
 	if(check_state(frame->state, RANGE_DECODER | DWT | QUANTIZATION)){
 		frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
-		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, MALLET, fb);
-		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
+		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, isteps, MALLET, fb);
+		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
 		else {
 			frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
 			frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
-			image_idwt(&frame->img[1], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
-			image_idwt(&frame->img[2], gop->color, gop->steps, gop->buf, isteps, CLASSIC, fb);
+			image_idwt(&frame->img[1], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
+			image_idwt(&frame->img[2], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
 		}
 		frame->state = IDWT;
 		return 1;

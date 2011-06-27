@@ -54,11 +54,11 @@ static inline void dwt_haar_2d(dwttype *in, dwttype *out, const uint32 w, const 
 	for(y=0, y1=0, y2=0; y < sz; y+=(w<<1), y1+=w1, y2+=w2){
 		for(x=0; x<w1; x++){
 			out[y1+x     ] = (in[y+x] + in[y+x+w])>>1;
-			out[s[2]+y1+x] = (in[y+x] - in[y+x+w])>>1;
+			out[s[2]+y1+x] = (in[y+x] - in[y+x+w])>>1;//>>1;
 		}
 		for(   ; x<w; x++){
 			out[s[1]+y2+x-w1] = (in[y+x] + in[y+x+w])>>1;
-			out[s[3]+y2+x-w1] = (in[y+x] - in[y+x+w])>>1;
+			out[s[3]+y2+x-w1] = (in[y+x] - in[y+x+w])>>1;//>>1;
 		}
 		//for(x=0; x<w2; x++){
 		//	out[s[1]+y2+x] = (in[y+x+w1] + in[y+x+w1+w])>>1;
@@ -121,6 +121,36 @@ static inline void dwt_haar_2d_one(dwttype *in, dwttype *out, const uint32 w, co
 	uint32 j, sz = w*h;
 	for(j=0; j < sz; j+=w) dwt_haar_1d(&in[j], &out[j], w);
 	dwt_haar_2d(out, in, w, h);
+}
+
+static inline void dwt_2d_haar(Picture16 *in, Picture16 *out1, Picture16 *out2, Picture16 *out3, Picture16 *out4)
+///	\fn static inline void dwt_2d_haar(Picture16 *in, Picture16 *out1, Picture16 *out2, Picture16 *out3, Picture16 *out4)
+///	\brief One step 2D Haar DWT transform.
+///	\param in	 		The input image data.
+///	\param out1 		The output image data LL.
+///	\param out2 		The output image data LH.
+///	\param out3 		The output image data HL.
+///	\param out4 		The output image data HH.
+{
+	uint32 x, y, y1, y2, yx, yx1, yx2, sz = in->w*((in->h>>1)<<1);
+	uint32 w = in->w<<1, w1 = (in->w>>1) + (in->w&1), w2 = (in->w>>1), wx = ((in->w>>1)<<1);
+	dwttype tmp[4];
+	for(y=0, y1=0, y2 = 0; y < sz; y+=w, y1+=w1, y2+=w2){
+		for(x=0; x < wx; x+=2){
+			yx = y + x;
+			tmp[0]	= (in->pic[yx] + in->pic[yx+1])>>1;
+			tmp[1]	= (in->pic[yx] - in->pic[yx+1])>>1;
+			yx = y + x + w;
+			tmp[2]	= (in->pic[yx] + in->pic[yx+1])>>1;
+			tmp[3]	= (in->pic[yx] - in->pic[yx+1])>>1;
+			yx = y + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
+			out1->pic[yx1] = (tmp[0] + tmp[2])>>1;
+			out2->pic[yx2] = (tmp[1] + tmp[3])>>1;
+			out3->pic[yx1] = (tmp[0] - tmp[2])>>1;
+			out4->pic[yx2] = (tmp[1] - tmp[3])>>1;
+		}
+	}
+
 }
 
 static inline void idwt_haar_2d_one(dwttype *in, dwttype *out, const uint32 w, const uint32 h, uint32 *loc)
@@ -531,6 +561,7 @@ static void dwt_color(Image *im, dwttype *buf, uint32 steps, funwt dwt_one)
 	uint32 j, k, h = im->height, w = im->width, sz = w*h,st;
 	int i;
 	Subband *sub = im->sub;
+	printf("color IDWT steps = %d", steps);
 
 	bayer2color(im->img, (imgtype*)buf, w, h);
 	for(j=0; j < sz; j++) im->iwt[j] = im->img[j];
@@ -558,6 +589,7 @@ static void idwt(Image *im, dwttype *buf, uint32 steps,  uint32 isteps, funidwt 
 	//imgtype *img = im->img;
 	uint32 i, h, w;
 	Subband *sub = im->sub;
+	printf("IDWT steps = %d", steps);
 
 	for(i=0; i<isteps; i++){
 			w = sub[3*i+1].size.x + sub[3*i+2].size.x;
@@ -577,7 +609,7 @@ static void idwt_mallet(Image *im, dwttype *buf, uint32 steps,  uint32 isteps, f
 /// \param funwt		The function for one step 2d IDWT.
 {
 	//imgtype *img = im->img;
-	uint32 j, k, h, w, st, sz = (steps-1)*3+1;
+	uint32 l, j, k, h, w, st, sz = (steps-1)*3+1;
 	uint32 s[4];
 	int i;
 	//w = im->width; h = im->height;
@@ -591,6 +623,12 @@ static void idwt_mallet(Image *im, dwttype *buf, uint32 steps,  uint32 isteps, f
 		for(k=0; k<4; k++) {
 			for(i=0; i<(isteps-1); i++){
 				st = sz*k;
+				//For test only zero all LL subband
+				//if(i==0) {
+				//	printf("Mallet st = %d size = %d loc = %d\n", st, sub[st].size.x*sub[st].size.y, sub[st].loc);
+				//	for(l=0; l < sub[st].size.x*sub[st].size.y; l++) im->iwt[sub[st].loc+l] = 0;
+				//}
+				//---------------------------------
 				w = sub[3*i+1+st].size.x + sub[3*i+2+st].size.x;
 				h = sub[3*i+1+st].size.y + sub[3*i+2+st].size.y;
 				(*idwt_one)(&im->iwt[sub[st].loc], &buf[sub[st].loc], w, h, NULL);
@@ -1155,3 +1193,23 @@ void image_subband_median_filter(Image *im, ColorSpace color, uint32 steps, imgt
 	//for(i=0; i < sz; i++) filters_median_3x3(&img[sub[i].loc], &buf[sub[i].loc], sub[i].size.x, sub[i].size.y);
 }
 
+static void grad(dwttype *img, dwttype *img1, uint32 w, uint32 h, uint32 th)
+{
+	uint32 sz = w*h, i, mod;
+	for(i=0; i < sz; i++){
+		mod = abs(img[i]);
+		img1[i] = (mod>>th) ? mod<<1 : 0;
+	}
+}
+
+void image_grad(Image *im, ColorSpace color, uint32 steps, uint32 th)
+{
+	uint32 i, sz;
+	Subband *sub = im->sub;
+	dwttype *img = im->iwt;
+
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	for(i=1; i < sz; i++) {
+		grad(&img[sub[i].loc], &img[sub[i].loc], sub[i].size.x, sub[i].size.y, th);
+	}
+}
