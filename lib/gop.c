@@ -50,15 +50,15 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	printf("Frames  init\n");
 
 	//Segmentation parts init
-	gop->subs.width  = width>>1;
-	gop->subs.height = height>>1;
-	gop->subs.pic = (uchar *)calloc(gop->subs.width*gop->subs.height, sizeof(uchar));
-	gop->grad.width  = width>>1;
-	gop->grad.height = height>>1;
-	gop->grad.pic = (uchar *)calloc(gop->grad.width*gop->grad.height, sizeof(uchar));
-	gop->con.width  = width>>1;
-	gop->con.height = height>>1;
-	gop->con.pic = (uchar *)calloc(gop->con.width*gop->con.height, sizeof(uchar));
+	gop->subs.w  = width>>1;
+	gop->subs.h = height>>1;
+	gop->subs.pic = (uchar *)calloc(gop->subs.w*gop->subs.h, sizeof(uchar));
+	gop->grad.w  = width>>1;
+	gop->grad.h = height>>1;
+	gop->grad.pic = (uchar *)calloc(gop->grad.w*gop->grad.h, sizeof(uchar));
+	gop->con.w  = width>>1;
+	gop->con.h = height>>1;
+	gop->con.pic = (uchar *)calloc(gop->con.w*gop->con.h, sizeof(uchar));
 
 	//Subband init
 	subband_init(gop->sub, 0, color, width, height, steps, bpp, gop->q);

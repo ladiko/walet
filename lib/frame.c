@@ -26,6 +26,7 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
 	//RGB scale images
+	/*
 	for(j=0; j < 4; j++){
 		frame->rgb[j].width  = w>>(j+1);
 		frame->rgb[j].height = h>>(j+1);
@@ -42,16 +43,27 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->grad[j].width  = w>>(j+1);
 		frame->grad[j].height = h>>(j+1);
 		frame->grad[j].pic = (uchar *)calloc(frame->grad[j].width*frame->grad[j].height, sizeof(uchar));
-	}
-	frame->line.width  = w;
-	frame->line.height = h;
-	frame->line.pic = (uchar *)calloc(frame->line.width*frame->line.height, sizeof(uchar));
-	frame->edge.width  = w;
-	frame->edge.height = h;
-	frame->edge.pic = (uchar *)calloc(frame->edge.width*frame->edge.height, sizeof(uchar));
-	frame->vec.width  = w;
-	frame->vec.height = h;
-	frame->vec.pic = (uchar *)calloc(frame->vec.width*frame->vec.height, sizeof(uchar));
+	}*/
+	frame->rgb.w  = w;
+	frame->rgb.h = h;
+	frame->rgb.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+	frame->Y.w  = w;
+	frame->Y.h = h;
+	frame->Y.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+	frame->grad.w  = w;
+	frame->grad.h = h;
+	frame->grad.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+
+
+	frame->line.w  = w;
+	frame->line.h = h;
+	frame->line.pic = (uchar *)calloc(frame->line.w*frame->line.h, sizeof(uchar));
+	frame->edge.w  = w;
+	frame->edge.h = h;
+	frame->edge.pic = (uchar *)calloc(frame->edge.w*frame->edge.h, sizeof(uchar));
+	frame->vec.w  = w;
+	frame->vec.h = h;
+	frame->vec.pic = (uchar *)calloc(frame->vec.w*frame->vec.h, sizeof(uchar));
 	//frame->pixp = (uint32 *)calloc(frame->vec.width*frame->vec.height, sizeof(uint32));
 
 	//frame->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uchar));
@@ -349,21 +361,21 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
-	uint32 npix, sq = frm->grad[0].width*frm->grad[0].height;
+	uint32 npix, sq = frm->grad.w*frm->grad.h;
 
 
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
 		utils_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
-		filter_median(gop->buf, frm->Y[0].pic, frm->Y[0].width, frm->Y[0].height);
-		seg_grad(frm->Y[0].pic, frm->grad[0].pic, frm->Y[0].width, frm->Y[0].height, 3);
+		filter_median(gop->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
+		seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
 		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
 
 		//seg_fall_forest(frm->grad[0].pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_fall_forest1(frm->grad[0].pic, frm->edge.pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
 		//frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		seg_pixels(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+		seg_pixels(frm->pixs, frm->grad.pic, frm->grad.w, frm->grad.h);
 		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 
@@ -391,7 +403,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		seg_compare(frm1->pixs,  frm1->edges, frm1->nedge, frm1->grad[0].pic, frm2->grad[0].pic, frm1->Y[0].pic, frm2->Y[0].pic, gop->mmb, frm1->grad[0].width, frm1->grad[0].height, gop->mvs);
+		seg_compare(frm1->pixs,  frm1->edges, frm1->nedge, frm1->grad.pic, frm2->grad.pic, frm1->Y.pic, frm2->Y.pic, gop->mmb, frm1->grad.w, frm1->grad.h, gop->mvs);
 		//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
 		//seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 

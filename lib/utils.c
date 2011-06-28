@@ -32,8 +32,6 @@ int g[9][2] = {
 //#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
 
-
-
 static inline void drawrect(uchar *rgb, dwttype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y, tmp;
@@ -492,24 +490,24 @@ uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 */
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p)
+uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
 {
 
-	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].width, p[0].height, w);
-	drawrect_rgb(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w);
-	drawrect_rgb(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w);
-	drawrect_rgb(rgb, p[3].pic, p[0].width, p[1].height+p[2].height , p[3].width, p[3].height, w);
+	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].w, p[0].h, w);
+	drawrect_rgb(rgb, p[1].pic, p[0].w, 0 						, p[1].w, p[1].h, w);
+	drawrect_rgb(rgb, p[2].pic, p[0].w, p[1].h				, p[2].w, p[2].h, w);
+	drawrect_rgb(rgb, p[3].pic, p[0].w, p[1].h+p[2].h , p[3].w, p[3].h, w);
 
 	return rgb;
 }
 
-uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture8 *p)
+uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
 {
 
-	utils_draw_scale_color(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 3);
-	utils_draw_scale_color(rgb, p[1].pic, p[0].width, 0 						, p[1].width, p[1].height, w, 3);
-	utils_draw_scale_color(rgb, p[2].pic, p[0].width, p[1].height				, p[2].width, p[2].height, w, 3);
-	utils_draw_scale_color(rgb, p[3].pic, p[0].width, p[1].height+p[2].height 	, p[3].width, p[3].height, w, 3);
+	utils_draw_scale_color(rgb, p[0].pic, 0		  , 0 							, p[0].w, p[0].h, w, 3);
+	utils_draw_scale_color(rgb, p[1].pic, p[0].w, 0 						, p[1].w, p[1].h, w, 3);
+	utils_draw_scale_color(rgb, p[2].pic, p[0].w, p[1].h				, p[2].w, p[2].h, w, 3);
+	utils_draw_scale_color(rgb, p[3].pic, p[0].w, p[1].h+p[2].h	, p[3].w, p[3].h, w, 3);
 
 	return rgb;
 }

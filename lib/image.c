@@ -123,34 +123,47 @@ static inline void dwt_haar_2d_one(dwttype *in, dwttype *out, const uint32 w, co
 	dwt_haar_2d(out, in, w, h);
 }
 
-static inline void dwt_2d_haar(Picture16 *in, Picture16 *out1, Picture16 *out2, Picture16 *out3, Picture16 *out4)
+static inline void dwt_2d_haar(uchar *in, uint16 w, uint16 h, uchar *out0, char *out1, char *out2, char *out3)
 ///	\fn static inline void dwt_2d_haar(Picture16 *in, Picture16 *out1, Picture16 *out2, Picture16 *out3, Picture16 *out4)
 ///	\brief One step 2D Haar DWT transform.
 ///	\param in	 		The input image data.
-///	\param out1 		The output image data LL.
-///	\param out2 		The output image data LH.
-///	\param out3 		The output image data HL.
-///	\param out4 		The output image data HH.
+///	\param l 			The pointer to the one level of decomposition
 {
-	uint32 x, y, y1, y2, yx, yx1, yx2, sz = in->w*((in->h>>1)<<1);
-	uint32 w = in->w<<1, w1 = (in->w>>1) + (in->w&1), w2 = (in->w>>1), wx = ((in->w>>1)<<1);
-	dwttype tmp[4];
-	for(y=0, y1=0, y2 = 0; y < sz; y+=w, y1+=w1, y2+=w2){
+	uint32 x, y, y1, y2, yx, yx1, yx2, sz = w*((h>>1)<<1);
+	uint32 wy = w<<1, wy1 = (w>>1) + (w&1), wy2 = (w>>1), wx = ((w>>1)<<1);
+	int tmp[4];
+
+	for(y=0, y1=0, y2 = 0; y < sz; y+=wy, y1+=wy1, y2+=wy2){
 		for(x=0; x < wx; x+=2){
 			yx = y + x;
-			tmp[0]	= (in->pic[yx] + in->pic[yx+1])>>1;
-			tmp[1]	= (in->pic[yx] - in->pic[yx+1])>>1;
-			yx = y + x + w;
-			tmp[2]	= (in->pic[yx] + in->pic[yx+1])>>1;
-			tmp[3]	= (in->pic[yx] - in->pic[yx+1])>>1;
-			yx = y + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
-			out1->pic[yx1] = (tmp[0] + tmp[2])>>1;
-			out2->pic[yx2] = (tmp[1] + tmp[3])>>1;
-			out3->pic[yx1] = (tmp[0] - tmp[2])>>1;
-			out4->pic[yx2] = (tmp[1] - tmp[3])>>1;
+			tmp[0]	= (in[yx] + in[yx+1])>>1;
+			tmp[1]	= (in[yx] - in[yx+1])>>1;
+			yx = yx + w;
+			tmp[2]	= (in[yx] + in[yx+1])>>1;
+			tmp[3]	= (in[yx] - in[yx+1])>>1;
+			yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
+			out0[yx1] = (tmp[0] + tmp[2])>>1;
+			out1[yx2] = (tmp[1] + tmp[3])>>1;
+			out2[yx1] = (tmp[0] - tmp[2])>>1;
+			out3[yx2] = (tmp[1] - tmp[3])>>1;
+		}
+		if(w&1){
+			out0[yx1+1] = (in[yx+2] + in[yx+2+w])>>1;
+			out2[yx1+1] = (in[yx+2] - in[yx+2+w])>>1;
 		}
 	}
+	if(h&1){
+		yx = yx + w; yx1 = yx1 + wy1; yx2 = yx2 + wy2;
+		for(x=0; x < wx; x+=2){
+			yx = yx + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
+			out0[yx1] = (in[yx] + in[yx+1])>>1;
+			out1[yx2] = (in[yx] - in[yx+1])>>1;
 
+		}
+		if(w&1){
+			out0[yx1+1] = in[yx+2];
+		}
+	}
 }
 
 static inline void idwt_haar_2d_one(dwttype *in, dwttype *out, const uint32 w, const uint32 h, uint32 *loc)
