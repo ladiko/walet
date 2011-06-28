@@ -113,6 +113,12 @@ typedef enum {		//Wavelet transform filter banks
 	FR_9_7	= 2,
 }	FilterBank;
 
+typedef enum {		//The type of image
+	U8BITS	= 1,	// Unsigned 8 bits
+	S8BITS	= 2,	// Signed 8 bits
+	S16BITS = 3,	// Signed 16 bits
+}	ImageType;
+
 typedef struct {
 	uint32 x,y;
 } Dim;
@@ -252,22 +258,38 @@ struct Corner {
 	Region		*reg;		//Pointer to the region
 };
 
-typedef struct {
-	uint16 width;
-	uint16 height;
-	uchar *pic;
-} Picture8;
-
-typedef struct {
+typedef struct { 	// Unsigned picture 8bit
 	uint16 w;
 	uint16 h;
-	dwttype *pic;
-} Picture16;
+	uchar *pic;
+} Pic8u;
+
+typedef struct {	// Signed picture 8bit
+	uint16 w;
+	uint16 h;
+	char *pic;
+} Pic8s;
+
+typedef struct {	// Signed picture 16bit
+	uint16 w;
+	uint16 h;
+	short int *pic;
+} Pic16s;
+
+typedef struct {	//One DWT decomposition level
+	Pic8u ll;
+	Pic8s lh;
+	Pic8s hl;
+	Pic8s hh;
+} Lelel;
+
+
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define rc(x)	((x) < -127 ? -127 : ( (x) > 127 ? 127 : (x) ))
+
 //#define oe(a,x)	(a ? x%2 : (x+1)%2)
 
 
