@@ -136,7 +136,7 @@ static inline void init_prob( uint32 *d, uint32 bits, uint32 **c)
 	}
 }
 
-static inline uint32 get_cum(imgtype img, uint32 **c, uint32 bits)
+static inline uint32 get_cum(uint8 img, uint32 **c, uint32 bits)
 //Get the cumulative frequency and update array
 {
 	uint32 i, cf=0, ind;
@@ -161,7 +161,7 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
 }
 
 /*
-static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bits, uint32 size, int *q)
+static inline void fill_prob( uint8 *img, uint32 *d, uint32 bits, uint32 a_bits, uint32 size, int *q)
 //Init probability array.
 {
 	uint32 j, sz = 1<<bits, *c = &d[sz], half = 1<<(a_bits-1);
@@ -175,8 +175,8 @@ static inline void fill_prob( imgtype *img, uint32 *d, uint32 bits, uint32 a_bit
 }
 */
 
-uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
-/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+uint32  range_encoder(uint8 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
     \param d		The pointer to array of distribution probabilities of the message.
@@ -233,8 +233,8 @@ uint32  range_encoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	return j;
 }
 
-uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
-/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+uint32  range_decoder(uint8 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
     \param d		The pointer to array of distribution probabilities of the message.
@@ -290,8 +290,8 @@ uint32  range_decoder(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint
 	return j;
 }
 
-static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,uint32 q_bits, int *q)
-/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+static uint32 make_distrib(uint8 *img, uint32 *d, uint32 size, uint32 a_bits ,uint32 q_bits, int *q)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
     \param d		The pointer to array of distribution probabilities of the message.
@@ -338,7 +338,7 @@ static uint32 make_distrib(imgtype *img, uint32 *d, uint32 size, uint32 a_bits ,
 	return bits;
 }
 
-static inline write_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+static inline write_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
 {
 	uint32 i, rest, mask;
 	for(;;){
@@ -350,14 +350,14 @@ static inline write_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
 	}
 }
 
-static inline uint32 check_bit_poz(uchar *buff, uint32 *poz)
+static inline uint32 check_bit_poz(uint8 *buff, uint32 *poz)
 {
 	uint32 ch =  (1<<(7-(*poz&7))) & buff[*poz&7 ? (*poz>>3) + 1 : *poz>>3];
 	*poz++;
 	return ch;
 }
 
-static inline read_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
+static inline read_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
 {
 	uint32 i, rest, mask, bit;
 	for(;;){
@@ -368,10 +368,10 @@ static inline read_bits_poz(uchar *buff, uint32 *poz, uchar *st, uint32 bits)
 	}
 }
 
-uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
+uint32 write_distrib(uint32 *d, uint32 q_bits, uint8 *buff)
 {
 	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st, bits, msb;
-	uchar z = 0;
+	uint8 z = 0;
 	//Write distribution
 	for(i=0; i < num; i++) {
 		if(d[i]) {
@@ -381,7 +381,7 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
 			st = st | (msb<<26);
 			st = st | (d[i]<<26-msb);
 			bits = 6+msb;
-			write_bits_poz(buff, &poz, (uchar*)&st, bits);
+			write_bits_poz(buff, &poz, (uint8*)&st, bits);
 		} else {
 			z++;
 			if(z == 127) { write_bits_poz(buff, &poz, &z, 8); z = 0;}
@@ -390,17 +390,17 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uchar *buff)
 	return poz;
 }
 
-static uint32 read_distrib(uchar *buff, uint32 *d, uint32 q_bits)
+static uint32 read_distrib(uint8 *buff, uint32 *d, uint32 q_bits)
 {
 	uint32 i, j = 0, num = 1<<q_bits, poz = 0, st1, bits, msb;
-	uchar z = 0, st;
+	uint8 z = 0, st;
 	//Write distribution
 	for(i=0; i < num; i++) {
 	}
 	return poz;
 }
 
-static uint32 read_distrib1(uchar *buff, uint32 *d, uint32 q_bits)
+static uint32 read_distrib1(uint8 *buff, uint32 *d, uint32 q_bits)
 {
 	uint32 i, j, in, num = 1<<q_bits, sz, msb , sum = 0, bits;
 	uint32 *cu = &d[num];
@@ -416,7 +416,7 @@ static uint32 read_distrib1(uchar *buff, uint32 *d, uint32 q_bits)
 	return bits;
 }
 
-static uint32 read_distrib2(uchar *buff, uint32 *d, int *q, uint32 q_bits, uint32 *cu_sz)
+static uint32 read_distrib2(uint8 *buff, uint32 *d, int *q, uint32 q_bits, uint32 *cu_sz)
 {
 	uint32 i, j, in, num = 1<<q_bits, sz, msb , sum = 0, bits, tmp;
 	uint32 *cu = &d[num];
@@ -496,8 +496,8 @@ static inline uint32 get_cum_f1(uint32 out, uint32 *cu, uint32 i, uint32 j)
 	}
 }
 
-uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
-/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+uint32  range_encoder1(uint8 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
     \param d		The pointer to array of distribution probabilities of the message.
@@ -563,8 +563,8 @@ uint32  range_encoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uin
 	return j;
 }
 
-uint32  range_decoder1(imgtype *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uchar *buff, int *q)
-/*! \fn uint32  range_encoder(imgtype *img, uint32 *distrib, const uint32 size, const uchar bits)
+uint32  range_decoder1(uint8 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
     \param d		The pointer to array of distribution probabilities of the message.

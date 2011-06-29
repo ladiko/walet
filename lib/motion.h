@@ -11,7 +11,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-void motion_contour(Image *im, ColorSpace color, uint32 steps, uchar *buf);
+void motion_contour(Image *im, ColorSpace color, uint32 steps, uint8 *buf);
 
 #ifdef __cplusplus
 }

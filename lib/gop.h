@@ -15,13 +15,13 @@ typedef struct {
 	uint32			comp;			// Compression in times to original image if 1 - lossless
 	FilterBank		fb;				// Filters bank for wavelet transform
 	//Paremeters for encoder
-	uchar		mvs;			// Motion vector search from -mvs to mvs in x and y
+	uint8		mvs;			// Motion vector search from -mvs to mvs in x and y
 
 	uint32			cur_gop_frame;	// The current gop frame
 	uint64			cur_stream_frame;	// The current stream frame
 
-	imgtype			*buf;		//Temporal buffer for DWT, IDW, and range coder
-	uchar 			*mmb;	//The motion much buffer
+	uint8			*buf;		//Temporal buffer for DWT, IDW, and range coder
+	uint8 			*mmb;	//The motion much buffer
 	//uint32 			*row, *reg, *col;		//Buffer for image segmentation
 	Frame			*frames;	//Pointer to frames array
 	Subband			*sub[3];	//Subband location and size structure
@@ -49,7 +49,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 GOP* 	walet_decoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb);
-GOP* 	walet_encoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uchar mvs);
+GOP* 	walet_encoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uint8 mvs);
 
 uint32 	walet_write_stream	(GOP *gop, uint32 num, const char *filename);
 uint32 	walet_read_stream	(GOP **gop, uint32 num, const char *filename);
