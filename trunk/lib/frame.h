@@ -1,12 +1,55 @@
 #ifndef _FRAME_H_
 #define _FRAME_H_
+//	|---------|            |---------|    |---------|
+//	|         |	2d wavelet |  Y | C1 |    | LL | HL |
+//	|  Bayer  |	transform  |---------|    |---------|
+//	|  bay8u  |	---------> | C2 | C3 |    | LH | HH |
+//	|---------|            |---------|    |---------|
+
+typedef struct{
+	Pic8u	BAY8;		//Bayer image 8 bits
+	Pic8u	Y;			//Y  color component after first BDWT
+	Pic8s	C1;			//C1 color component after first BDWT
+	Pic8s	C2;			//C2 color component after first BDWT
+	Pic8s	C3;			//C3 color component after first BDWT
+}BAYER8;
+
+typedef struct{
+	Pic8u	BAY16;		//Bayer image 16 bits
+	Pic16s	Y;			//Y  color component after first BDWT
+	Pic16s	C1;			//C1 color component after first BDWT
+	Pic16s	C2;			//C2 color component after first BDWT
+	Pic16s	C3;			//C3 color component after first BDWT
+}BAYER16;
+
+typedef struct{
+	Pic8u	Y;			//Y image for 420 422 444
+	Pic8u	U;			//U image for 420 422 444
+	Pic8u	V;			//V image for 420 422 444
+}YUV8;
 
 
 typedef struct{
+	BAYER8	B8;
+	BAYER8	B16;
+	YUV8 	YUV;
+
+	Pic8u	BAY8;		//Bayer image 8 bits
+	Pic16u	BAY16;		//Bayer image more than 8 bits
+	Pic8u	Y;			//Y image for 420 422 444 or Y component after first bayer DWT color transform (BDWT)
+	Pic8u	U;			//U image for 420 422 444
+	Pic8u	V;			//V image for 420 422 444
+	Pic8s	C1;			//C1 color component after first BDWT
+	Pic8s	C2;			//C2 color component after first BDWT
+	Pic8s	C3;			//C3 color component after first BDWT
+
+	Level8	**lev;		//The levels of DWT transform
+
+	//Old interface
 	Image 	img[3];	//Pointer to image
 
 	Pic8u rgb; // Scaled image for each color
-	Pic8u Y;	// The Y color componets
+	//Pic8u Y;	// The Y color componets
 	Pic8u grad;	// The gradient
 
 	//For visualization only
@@ -19,7 +62,7 @@ typedef struct{
 	Edge	*edges;		//The array of adges
 	uint32 	nedge;		//The number of edges
 	uint32 	size;	//The number of pixels.
-	imgtype *buf;	//The pointer to temporary buffer in GOP structure
+	uint8 *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame
 }	Frame;
 
@@ -36,7 +79,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 void 	frames_init			(GOP *gop, uint32 fr);
-void 	frame_copy			(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v);
+void 	frame_copy			(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v);
 uint32 	frame_dwt			(GOP *gop, uint32 fr, FilterBank fb);
 uint32 	frame_idwt			(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
 uint32 	frame_fill_subb		(GOP *gop, uint32 fr);

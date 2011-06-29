@@ -17,7 +17,6 @@
 //  Copyright  2006  vadim
 //  <vadim@vadim.sigrand.lcl>
 
-
 #ifndef _WALET_H_
 #define _WALET_H_
 
@@ -27,15 +26,15 @@
 
 #ifndef _WALET_TYPES_
 #define _WALET_TYPES_
-typedef unsigned char       uchar;
 typedef char       			int8;
+typedef unsigned char       uint8;
+typedef short int 			int16;
+typedef unsigned short int	uint16;
 typedef unsigned int       	uint32;
-typedef unsigned short int 	uint16;
 typedef unsigned long long 	uint64;
-typedef short int           int16;
-//typedef short int			imgtype;
-typedef uchar			imgtype;
-typedef int16			dwttype;
+
+//typedef uchar			imgtype;
+//typedef int16			dwttype;
 #endif
 
 typedef enum {
@@ -148,14 +147,14 @@ typedef struct {
 	uint16		marker;			// The walet codec marker
 	uint16 		width;			// Image width
 	uint16 		height;			// Image width
-	uchar		color;			// Color space
-	uchar		bg;				// Bayer grid pattern
-	uchar		bpp;			// Bits per pixel
-	uchar 		steps;  		// Steps of DWT
-	uchar		gop_size;		// GOP size
-	uchar		rates;			// Frame rates
-	uchar		comp;			// Compression in times to original image if 1 - lossless 0-without any compression raw bayer format
-	uchar		fb;				// Filters for wavelet transform
+	uint8		color;			// Color space
+	uint8		bg;				// Bayer grid pattern
+	uint8		bpp;			// Bits per pixel
+	uint8 		steps;  		// Steps of DWT
+	uint8		gop_size;		// GOP size
+	uint8		rates;			// Frame rates
+	uint8		comp;			// Compression in times to original image if 1 - lossless 0-without any compression raw bayer format
+	uint8		fb;				// Filters for wavelet transform
 	//uchar		mvs;			// Motion vector search from -mvs to mvs in x and y
 } WaletHeader;
 
@@ -183,17 +182,17 @@ struct Pixel {
 
 	 char		vx;		//The motion vector
 	 char		vy;		//The motion vector
-	 uchar		nnei;	//Number of neighborhood
+	 uint8		nnei;	//Number of neighborhood
 	 Pixel 		*nei[5];	//Pointer to neighborhood
 	 Pixel		*cp;	//Pointer to the center of cluster NULL if centre
-	 uchar 		dir;	// Direction for neighborhood
+	 uint8 		dir;	// Direction for neighborhood
 						// 1 2 3
 						// 0   4
 						// 7 6 5
-	 uchar		nout;	//If 0 - end pint if 1 - vector
-	 uchar		nin;	//Number of neighborhood
+	 uint8		nout;	//If 0 - end pint if 1 - vector
+	 uint8		nin;	//Number of neighborhood
 	 Pixel 		*out;
-	 uchar		pow;	//The gradient energy
+	 uint8		pow;	//The gradient energy
 };
 
 struct Edge {
@@ -205,13 +204,13 @@ struct Edge {
 
 struct Edgelet {
 	uint32 	yx;		//The start point
-	uchar 	len;	//The length of edgelet
+	uint8 	len;	//The length of edgelet
 	uint32	pow;	//The power of edgelet
 	uint32	dir;	//The direction 00 - left; 01 - top; 10 - right; 11 - bottom; max 16 dot per Edgelet
 };
 
 struct Object{
-	uchar 		c[4];		//The colors
+	uint8 		c[4];		//The colors
 	uint32		ac[4];		//The average colors
 	uint32 		nregs;		//Number of regions in the object
 	uint32 		regc;		//Number of regions in the object
@@ -222,7 +221,7 @@ struct Object{
 struct Region{
 	//uint16 		x;			//The top left point
 	//uint16 		y;			//The top left point
-	uchar 		c[3];		//The colors
+	uint8 		c[3];		//The colors
 	uint32		ac[4];		//The average colors
 	uint32 		nrows;		//The numbers of rows in the region
 	uint32		npixs;		//The numbers of pixels in the region
@@ -241,7 +240,7 @@ struct Row {
 	uint32 		yx;			//The start point
 	//uint16		x;			//The start row on axis X
 	//uint32 		y;			//The start point
-	uchar 		c[3];		//The colors
+	uint8 		c[3];		//The colors
 	//uint32		ac[4];		//The average colors
 	uint16 		length;		//The length of row
 	Region		*reg;		//Pointer to the region
@@ -252,7 +251,7 @@ struct Row {
 
 struct Corner {
 	uint32 		yx;			//The start point
-	uchar 		c[4];		//The colors
+	uint8 		c[4];		//The colors
 	//uint32		ac[4];		//The average colors
 	uint32 		diff;		//The different from neighborhood pixeles
 	Region		*reg;		//Pointer to the region
@@ -261,7 +260,7 @@ struct Corner {
 typedef struct { 	// Unsigned picture 8bit
 	uint16 w;
 	uint16 h;
-	uchar *pic;
+	uint8 *pic;
 } Pic8u;
 
 typedef struct {	// Signed picture 8bit
@@ -276,14 +275,25 @@ typedef struct {	// Signed picture 16bit
 	short int *pic;
 } Pic16s;
 
+typedef struct {	// Unsigned picture 16bit
+	uint16 w;
+	uint16 h;
+	short unsigned int *pic;
+} Pic16u;
+
 typedef struct {	//One DWT decomposition level
 	Pic8u ll;
-	Pic8s lh;
 	Pic8s hl;
+	Pic8s lh;
 	Pic8s hh;
-} Lelel;
+} Level8;
 
-
+typedef struct {	//One DWT decomposition level
+	Pic16s ll;
+	Pic16s hl;
+	Pic16s lh;
+	Pic16s hh;
+} Level16;
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))

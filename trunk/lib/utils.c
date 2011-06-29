@@ -32,7 +32,7 @@ int g[9][2] = {
 //#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
 
-static inline void drawrect(uchar *rgb, dwttype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
+static inline void drawrect(uint8 *rgb, int16 *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y, tmp;
 	for(y=0; y < h; y++ ){
@@ -46,7 +46,7 @@ static inline void drawrect(uchar *rgb, dwttype *im, uint32 w0, uint32 h0, uint3
 	}
 }
 
-static inline void drawrect_rgb(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
+static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
 {
 	uint32 x, y, tmp;
 	for(y=0; y < h; y++ ){
@@ -58,12 +58,12 @@ static inline void drawrect_rgb(uchar *rgb, imgtype *im, uint32 w0, uint32 h0, u
 	}
 }
 
-uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps)
+uint8* utils_subband_draw(Image *img, uint8 *rgb, ColorSpace color, uint32 steps)
 //For vizualisation only
 {
 	uint32 k, h, w, h0, w0, h1, w1, st;
 	int i;
-	dwttype* im;
+	int16* im;
 	Subband *sub = img->sub;
 	//for(i=0; i<=steps*3; i++) printf("sub %d h %d w %d p %p\n",sub[0][i]->subb, sub[0][i]->size.y, sub[0][i]->size.x,  sub[0][i ]);
 	if(color == BAYER ){
@@ -139,8 +139,8 @@ uchar* utils_subband_draw(Image *img, uchar *rgb, ColorSpace color, uint32 steps
 //#define lb(x) (x&0xFF)
 #define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
-uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uchar *rgb)
+uint8* utils_bayer_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
+/*! \fn void bayer_to_rgb(uint8 *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
 */
@@ -180,8 +180,8 @@ uchar* utils_bayer_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid
 	return rgb;
 }
 
-uchar* utils_bayer_draw_16(dwttype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uchar *rgb)
+uint8* utils_bayer_draw_16(int16 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
+/*! \fn void bayer_to_rgb(uint8 *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
 */
@@ -221,8 +221,8 @@ uchar* utils_bayer_draw_16(dwttype *img, uchar *rgb, uint32 w, uint32 h,  BayerG
 	return rgb;
 }
 
-uchar* utils_draw_bayer(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uchar *rgb)
+uint8* utils_draw_bayer(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
+/*! \fn void bayer_to_rgb(uint8 *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
 */
@@ -269,8 +269,8 @@ uchar* utils_draw_bayer(imgtype *img, uchar *rgb, uint32 w, uint32 h,  BayerGrid
 	return rgb;
 }
 
-uchar* utils_draw_scale_color(uchar *rgb, imgtype *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay)
-/*! \fn void bayer_to_rgb(uchar *rgb)
+uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay)
+/*! \fn void bayer_to_rgb(uint8 *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
 */
@@ -303,7 +303,7 @@ uchar* utils_draw_scale_color(uchar *rgb, imgtype *img,  uint32 w0, uint32 h0, u
 	return rgb;
 }
 
-uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
+uint8* utils_grey_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
@@ -315,7 +315,7 @@ uchar* utils_grey_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
-uchar* utils_color_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h, uint32 col)
+uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)
 {
 	int i, j, dim = h*w*3;
 	if(col ==  0) for(i=0, j=0; j < dim; j+=3, i++) rgb[j  ] = img[i]; // Red
@@ -324,7 +324,7 @@ uchar* utils_color_draw(imgtype *img, uchar *rgb, uint32 w, uint32 h, uint32 col
 	return rgb;
 }
 
-uchar* utils_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
+uint8* utils_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 {
 	int j, dim = h*w*3;
 	for(j= 0; j < dim; j+=3){
@@ -336,7 +336,7 @@ uchar* utils_draw(uchar *img, uchar *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
-uchar* utils_reg_draw(uint32 *img, uchar *rgb, uint32 w, uint32 h)
+uint8* utils_reg_draw(uint32 *img, uint8 *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
@@ -348,14 +348,14 @@ uchar* utils_reg_draw(uint32 *img, uchar *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
-imgtype* utils_cat(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 bits)
+uint8* utils_cat(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 bits)
 {
 	int i, dim = h*w, sh = bits-8;
 	for(i = 0; i < dim; i++) img1[i] = img[i]<0 ? 0 : rnd(img[i]>>sh);
 	return img1;
 }
 
-imgtype* utils_bayer_to_Y1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+uint8* utils_bayer_to_Y1(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
@@ -370,7 +370,7 @@ imgtype* utils_bayer_to_Y1(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	return img1;
 }
 
-uchar* utils_ppm_to_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
+uint8* utils_ppm_to_bayer(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h1 = w*h, w1 = w<<1;
 
@@ -390,10 +390,10 @@ uchar* utils_ppm_to_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	return img1;
 }
 
-void utils_bayer_to_4color(uchar *img, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3)
+void utils_bayer_to_4color(uint8 *img, uint32 w, uint32 h, uint8 *p0, uint8 *p1, uint8 *p2, uint8 *p3)
 {
 	uint32 i = 0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
-	//uchar *p[4];
+	//uint8 *p[4];
 	//p[0] = img1; p[1] = &img1[h1>>2]; p[2] = &img1[h1>>1]; p[3] = &img1[(h1>>2)*3];
 
 	for(y=0; y < h1; y+=w1) {
@@ -412,10 +412,10 @@ void utils_bayer_to_4color(uchar *img, uint32 w, uint32 h, uchar *p0, uchar *p1,
 	}
 }
 
-uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h, uchar *p0, uchar *p1, uchar *p2, uchar *p3)
+uint8* utils_4color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint8 *p0, uint8 *p1, uint8 *p2, uint8 *p3)
 {
 	uint32 i=0, j=0, x, y, yx, h1 = w*((h>>1)<<1), w1 = w<<1;
-	//uchar *p[4];
+	//uint8 *p[4];
 	//p[0] = img; p[1] = &img[h1>>2]; p[2] = &img[h1>>1]; p[3] = &img[(h1>>2)*3];
 
 
@@ -451,7 +451,7 @@ uchar* utils_4color_draw(uchar *img, uchar *rgb, uint32 w, uint32 h, uchar *p0, 
 	return rgb;
 }
 /*
-uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Picture *p1,  Picture *p2,  Picture *p3)
+uint8* utils_4color_scale_draw(uint8 *rgb, uint32 w, uint32 h, Picture *p0,  Picture *p1,  Picture *p2,  Picture *p3)
 {
 	uint32 i=0, sx, sy;
 	drawrect(rgb, p0[0].pic, 0			, 0 							, p0[0].width, p0[0].height, w, 0);
@@ -479,7 +479,7 @@ uchar* utils_4color_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p0,  Pic
 	return rgb;
 }
 
-uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
+uint8* utils_scale_draw(uint8 *rgb, uint32 w, uint32 h, Picture *p)
 {
 	uint32 i=0, sx, sy;
 	drawrect(rgb, p[0].pic, 0		  , 0 							, p[0].width, p[0].height, w, 0);
@@ -490,7 +490,7 @@ uchar* utils_scale_draw(uchar *rgb, uint32 w, uint32 h, Picture *p)
 	return rgb;
 }
 */
-uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
+uint8* utils_rgb_scale_draw(uint8 *rgb, uint32 w, uint32 h, Pic8u *p)
 {
 
 	drawrect_rgb(rgb, p[0].pic, 0		  , 0 						, p[0].w, p[0].h, w);
@@ -501,7 +501,7 @@ uchar* utils_rgb_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
 	return rgb;
 }
 
-uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
+uint8* utils_color_scale_draw(uint8 *rgb, uint32 w, uint32 h, Pic8u *p)
 {
 
 	utils_draw_scale_color(rgb, p[0].pic, 0		  , 0 							, p[0].w, p[0].h, w, 3);
@@ -513,7 +513,7 @@ uchar* utils_color_scale_draw(uchar *rgb, uint32 w, uint32 h, Pic8u *p)
 }
 
 
-void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
+void utils_resize_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), i=0;
 	for(y=0; y < h1; y+=w2){
@@ -524,7 +524,7 @@ void utils_resize_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
+void utils_resize_bayer_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, yx1, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
@@ -540,7 +540,7 @@ void utils_resize_bayer_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
+void utils_resize_rgb_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, h1 = ((h>>1)<<1)*w*3, w2 = (w<<1)*3, w1 = ((w>>1)<<1)*3, i=0;
 	for(y=0; y < h1; y+=w2){
@@ -553,7 +553,7 @@ void utils_resize_rgb_2x(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-void utils_bayer_to_rgb(imgtype *img, imgtype *rgb, uint32 w, uint32 h)
+void utils_bayer_to_rgb(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, yx3, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
@@ -567,7 +567,7 @@ void utils_bayer_to_rgb(imgtype *img, imgtype *rgb, uint32 w, uint32 h)
 	}
 }
 
-void utils_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
+void utils_bayer_to_Y(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 x, x1, y, y1, yx, yx1, h1 = ((h>>1)<<1)*w, w2 = w<<1, w1 = ((w>>1)<<1), w3 = w>>1;
 	for(y=0, y1=0; y < h1; y+=w2, y1+=w3){
@@ -579,7 +579,7 @@ void utils_bayer_to_Y(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
+uint8* utils_bayer_to_gradient(uint8 *img, uint8 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
 	uint32 x, y, wy, xwy, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
 
@@ -622,7 +622,7 @@ imgtype* utils_bayer_to_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h
 	return img1;
 }
 
-imgtype* utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
+uint8* utils_bayer_gradient(uint8 *img, uint8 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 thresh)
 {
 	uint32 x, y, yx, h1 = (h-1)*w, w1 = w-1, yw;
 
@@ -641,7 +641,7 @@ imgtype* utils_bayer_gradient(imgtype *img, imgtype *img1, uint32 w, uint32 h, B
 	return img1;
 }
 
-void utils_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h)
+void utils_copy_border(uint8 *img, uint8 *img1, uint32 b, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, sq = h*w, l = b*w, l1 = sq-l, l2 = w-b;
 	//Top border
@@ -671,7 +671,7 @@ void utils_copy_border(uchar *img, uchar *img1, uint32 b, uint32 w, uint32 h)
 		}
 }
 
-void inline local_max(imgtype *img, imgtype *img1, uint32 w)
+void inline local_max(uint8 *img, uint8 *img1, uint32 w)
 {
 	uint32 x, w1 = w-1;
 	for(x=1; x < w1; x++){
@@ -680,13 +680,13 @@ void inline local_max(imgtype *img, imgtype *img1, uint32 w)
 	}
 }
 
-static inline void check_min(imgtype *img, uint32 x, int w , uint32 *min)
+static inline void check_min(uint8 *img, uint32 x, int w , uint32 *min)
 {
 	uint32 y = x+w;
 	if(img[x] > img[y]) if(img[*min] > img[y]) *min = y;
 }
 
-imgtype* utils_watershed(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+uint8* utils_watershed(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 y=0, sq = w*(h-1), x, w1 = w-1, min, yx;
 	//img[0] = 255;
@@ -717,7 +717,7 @@ imgtype* utils_watershed(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 }
 
 
-void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+void utils_min_region(uint8 *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
 {
 	uint32 y=0, sq = w*(h-1), x, w1 = w-1, min, yx, zc = 0, mc = sq>>1 ;
 
@@ -752,7 +752,7 @@ void utils_min_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h
 	}
 }
 
-void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+void utils_steep_descent(uint8 *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
 {
 	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx, tmp;
 	//y=w;{
@@ -771,7 +771,7 @@ void utils_steep_descent(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint3
 	}
 }
 
-void utils_connect_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
+void utils_connect_region(uint8 *img, uint32 *ind, uint32 *arg, uint32 w, uint32 h)
 {
 	uint32 y, sq = w*(h-1), x, w1 = w-1, min, yx, tmp;
 	//y=w;{
@@ -787,7 +787,7 @@ void utils_connect_region(imgtype *img, uint32 *ind, uint32 *arg, uint32 w, uint
 	}
 }
 
-void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
+void utils_print_img(uint8* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
 {
 	uint32 x, y;
 	for(y=by; y < ly+by; y++) {
@@ -806,7 +806,7 @@ void utils_print_img(imgtype* img, uint32* ind, uint32 w, uint32 h,  uint32 bx, 
 	printf("\n");
 }
 
-void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
+void utils_print_ind(uint8* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uint32 lx, uint32 ly)
 {
 	uint32 x, y;
 	for(y=by; y < ly; y++) {
@@ -818,8 +818,8 @@ void utils_print_ind(imgtype* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  u
 }
 
 
-double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/// \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double utils_dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/// \fn double dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate distortion of two image.
 /// \param before	Pointer to first image.
 /// \param after	Pointer to second image.
@@ -856,8 +856,8 @@ double utils_dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/// \fn double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/// \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate APE of two image.
 /// \param before	Pointer to first image.
 /// \param after	Pointer to second image.
@@ -891,8 +891,8 @@ double utils_ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/// \fn double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/// \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate PSNR of two image.
 /// \param before	Pointer to first image.
 /// \param after	Pointer to second image.
@@ -938,7 +938,7 @@ double utils_psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 
 
 
-void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uchar sub, uint32 size, uint32 *q, double *dis, double *e)
+void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uint8 sub, uint32 size, uint32 *q, double *dis, double *e)
 /*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
 	\brief Calculate distortion for the given uniform quantizer.
     \param distrib	 The pointer to array of distribution probabilities.
@@ -1111,13 +1111,13 @@ void utils_unifom_dist_entr(uint32 *distrib, uint32 bits, uint32 step, uint32 si
 	//return (double)sum/(double)size;
 }
 
-uchar* wavelet_to_rgb(imgtype *img, uchar *rgb, int height, int width, int step)
+uint8* wavelet_to_rgb(uint8 *img, uint8 *rgb, int height, int width, int step)
 { 
 	int i, j, k, t, dim = height*width;
 	int w3 = width*3;
-	imgtype *p;
+	uint8 *p;
 	
-	if((p = (imgtype*)malloc(dim * sizeof(imgtype))) == NULL){
+	if((p = (uint8*)malloc(dim * sizeof(uint8))) == NULL){
 		printf("Out of memory\n");
 		return NULL;
 	}
@@ -1167,13 +1167,13 @@ uchar* wavelet_to_rgb(imgtype *img, uchar *rgb, int height, int width, int step)
 	return rgb;
 }
 
-uchar* wavelet_to_rgb1(imgtype *img, uchar *rgb, int height, int width, int step)
+uint8* wavelet_to_rgb1(uint8 *img, uint8 *rgb, int height, int width, int step)
 { 
 	int i, j, k, t, dim = height*width;
 	int w3 = width*3;
-	imgtype *p;
+	uint8 *p;
 	
-	if((p = (imgtype*)malloc(dim*sizeof(imgtype))) == NULL){
+	if((p = (uint8*)malloc(dim*sizeof(uint8))) == NULL){
 		printf("Out of memory\n");
 		return NULL;
 	}
@@ -1214,16 +1214,16 @@ uchar* wavelet_to_rgb1(imgtype *img, uchar *rgb, int height, int width, int step
 			/*rgb[ i*w3 + 3*k]  			   = top(low(128 + p[i*width + k]));
 			rgb[ i*w3 + 3*k + 1] 		   = top(low(128 + p[i*width + k]));
 			rgb[ i*w3 + 3*k + 2] 		   = top(low(128 + p[i*width + k]));*/
-			rgb[ i*w3 + 3*k]  			   = (uchar)clip(128 + p[i*width + k]);
-			rgb[ i*w3 + 3*k + 1] 		   = (uchar)clip(128 + p[i*width + k]);
-			rgb[ i*w3 + 3*k + 2] 		   = (uchar)clip(128 + p[i*width + k]);
+			rgb[ i*w3 + 3*k]  			   = (uint8)clip(128 + p[i*width + k]);
+			rgb[ i*w3 + 3*k + 1] 		   = (uint8)clip(128 + p[i*width + k]);
+			rgb[ i*w3 + 3*k + 2] 		   = (uint8)clip(128 + p[i*width + k]);
 		}
 	}
 	free(p);
 	return rgb;
 }
 
-uchar* img_to_rgb128(imgtype *img, uchar *rgb, int height, int width)
+uint8* img_to_rgb128(uint8 *img, uint8 *rgb, int height, int width)
 { 
 	int i, j, dim = height*width*3;
 	
@@ -1237,7 +1237,7 @@ uchar* img_to_rgb128(imgtype *img, uchar *rgb, int height, int width)
 }
 
 
-uchar* uchar_to_rgb(uchar *img, uchar *rgb, int height, int width)
+uint8* uint8_to_rgb(uint8 *img, uint8 *rgb, int height, int width)
 { 
 	int i, j, dim = height*width*3;
 	
@@ -1251,7 +1251,7 @@ uchar* uchar_to_rgb(uchar *img, uchar *rgb, int height, int width)
 }
 
 //Copy image
-void copy(imgtype *in, imgtype *out, int w, int h)
+void copy(uint8 *in, uint8 *out, int w, int h)
 {
 	int i, dim = h*w;
 	for(i = 0; i < dim; i++){
@@ -1260,7 +1260,7 @@ void copy(imgtype *in, imgtype *out, int w, int h)
 }
 
 //Compare two image
-void compare(imgtype *in, imgtype *out, int w, int h)
+void compare(uint8 *in, uint8 *out, int w, int h)
 {
 	int x, y, c=0;
 	for(y = 0; y < h; y++){
@@ -1273,7 +1273,7 @@ void compare(imgtype *in, imgtype *out, int w, int h)
 }
 
 //Make image less for one pix horizontal and for one vertical 
-void resizeonepix(uchar *in, int w, int h)
+void resizeonepix(uint8 *in, int w, int h)
 {
 	int x, y;
 	for(y = 0; y < (h-1); y++){
@@ -1283,7 +1283,7 @@ void resizeonepix(uchar *in, int w, int h)
 	}
 }
 
-uchar* malet_to_rgb(imgtype *img, uchar *rgb, int h, int w, int step)
+uint8* malet_to_rgb(uint8 *img, uint8 *rgb, int h, int w, int step)
 { 
 	int x, y, k, t;
 	int ws[4], hs[4], s[4], tlx[4], tly[4];
@@ -1334,8 +1334,8 @@ uchar* malet_to_rgb(imgtype *img, uchar *rgb, int h, int w, int step)
 }
 
 
-double dist3(uchar *before, uchar *after, uint32 dim, uint32 d)
-/*! \fn double dist(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double dist3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/*! \fn double dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate distortion of two image.
     \param before	Pointer to first image.
     \param after	Pointer to second image.
@@ -1373,8 +1373,8 @@ double dist3(uchar *before, uchar *after, uint32 dim, uint32 d)
 	}
 }
 
-double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
-/*! \fn double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/*! \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate APE of two image.
     \param before	Pointer to first image.
     \param after	Pointer to second image.
@@ -1409,8 +1409,8 @@ double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
 	}
 }
 
-double ape3(uchar *before, uchar *after, uint32 dim, uint32 d)
-/*! \fn double ape(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double ape3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/*! \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate APE of two image.
     \param before	Pointer to first image.
     \param after	Pointer to second image.
@@ -1446,8 +1446,8 @@ double ape3(uchar *before, uchar *after, uint32 dim, uint32 d)
 }
 
 
-double psnr3(uchar *before, uchar *after, uint32 dim, uint32 d)
-/*! \fn double psnr(imgtype *before, imgtype *after, uint32 dim, uint32 d)
+double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/*! \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate PSNR of two image.
     \param before	Pointer to first image.
     \param after	Pointer to second image.
@@ -1491,7 +1491,7 @@ double psnr3(uchar *before, uchar *after, uint32 dim, uint32 d)
 	}
 }
 
-uchar* YUV_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 sq)
+uint8* YUV_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 sq)
 {
 	int C, D, E, i;
 	for(i=0; i<sq; i++){
@@ -1505,7 +1505,7 @@ uchar* YUV_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 sq)
 	return rgb;
 }
 
-uchar* YUV420p_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 w, uint32 h)
+uint8* YUV420p_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h)
 {
 	int C, D, E, i, j;
 	for(i=0; i<h; i++){
@@ -1521,10 +1521,10 @@ uchar* YUV420p_to_RGB(uchar *rgb, imgtype *y, imgtype *u, imgtype *v, uint32 w, 
 	return rgb;
 }
 
-uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, imgtype **img)
+uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 **img)
 {
     //FILE *wl;
-    uchar line[100];
+    uint8 line[100];
     uint32 byts;
 
 	wl = fopen(filename, "rb");
@@ -1553,8 +1553,8 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 	printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
 	fgetc(wl);
 
-	*img = (imgtype *)calloc((*w)*(*h)*(*bpp)*3, sizeof(imgtype));
-	byts = fread(*img, sizeof(imgtype), (*w)*(*h)*(*bpp)*3,  wl);
+	*img = (uint8 *)calloc((*w)*(*h)*(*bpp)*3, sizeof(uint8));
+	byts = fread(*img, sizeof(uint8), (*w)*(*h)*(*bpp)*3,  wl);
 	if(byts != (*w)*(*h)*(*bpp)*3){ printf("Image read error\n");}
 	//printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp)*3);
     fclose(wl);
@@ -1562,7 +1562,7 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 	return byts;
 }
 
-void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h)
+void utils_rgb2bayer(uint8 *rgb, uint8 *bay, uint32 w, uint32 h)
 {
 	uint32 w1 = w<<1, h1 = h<<1, w3 = w*3, x, x1, y, y1, yx, yx1;
 	for(y=0, y1=0; y < h1; y+=2, y1++){
@@ -1577,7 +1577,7 @@ void utils_rgb2bayer(imgtype *rgb, imgtype *bay, uint32 w, uint32 h)
 	}
 }
 
-void utils_subtract(imgtype *img1, imgtype *img2, imgtype *sub, uint32 w, uint32 h)
+void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h)
 {
 	uint32 sq = w*h, x, y, yx;
 	for(y=0; y < sq; y+=w){

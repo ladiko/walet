@@ -61,8 +61,8 @@ void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 
 	//			k, j, sub[num][j+((steps-1)*3+1)*k].loc, sub[num][j+((steps-1)*3+1)*k].size.x, sub[num][j+((steps-1)*3+1)*k].size.y, &sub[num][j+((steps-1)*3+1)*k]);
 }
 
-void subband_fill_prob(imgtype *img, Subband *sub)
-///	\fn void subband_fill_prob(imgtype *img, Subband *sub)
+void subband_fill_prob(uint8 *img, Subband *sub)
+///	\fn void subband_fill_prob(uint8 *img, Subband *sub)
 ///	\brief Fill distribution probability arrays.
 ///	\param img	 		The pointer to image.
 ///	\param sub 			Pointer to filling subband.
@@ -219,8 +219,8 @@ void  subband_decode_table(Subband *sub, QI q_i)
 	sub->q[half-j] = sub->q[half-j+1];
 }
 
-void  subband_quantization(imgtype *img, Subband *sub, QI q_i)
-/// \fn void  subband_quantization(imgtype *img, Subband *sub)
+void  subband_quantization(uint8 *img, Subband *sub, QI q_i)
+/// \fn void  subband_quantization(uint8 *img, Subband *sub)
 ///	\brief Subband quantization.
 ///	\param img			The pointer to subband
 ///	\param sub 			Pointer to subband.

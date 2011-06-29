@@ -8,7 +8,7 @@ GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 }
 
 
-GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uchar mvs)
+GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uint8 mvs)
 {
 	int i;
 	GOP *gop = (GOP*) malloc(sizeof(GOP));
@@ -25,9 +25,9 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->mvs		= mvs;
 
 	//Temp buffer init
-	gop->buf = (imgtype *)calloc(width*height*3, sizeof(imgtype));
+	gop->buf = (uint8 *)calloc(width*height*3, sizeof(uint8));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
-	gop->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1)*6, sizeof(uchar));
+	gop->mmb = (uint8 *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1)*6, sizeof(uint8));
 	//The memory for segmentation
 	/*
 	gop->row = (Row *)calloc(width*height, sizeof(Row));
@@ -52,13 +52,13 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	//Segmentation parts init
 	gop->subs.w  = width>>1;
 	gop->subs.h = height>>1;
-	gop->subs.pic = (uchar *)calloc(gop->subs.w*gop->subs.h, sizeof(uchar));
+	gop->subs.pic = (uint8 *)calloc(gop->subs.w*gop->subs.h, sizeof(uint8));
 	gop->grad.w  = width>>1;
 	gop->grad.h = height>>1;
-	gop->grad.pic = (uchar *)calloc(gop->grad.w*gop->grad.h, sizeof(uchar));
+	gop->grad.pic = (uint8 *)calloc(gop->grad.w*gop->grad.h, sizeof(uint8));
 	gop->con.w  = width>>1;
 	gop->con.h = height>>1;
-	gop->con.pic = (uchar *)calloc(gop->con.w*gop->con.h, sizeof(uchar));
+	gop->con.pic = (uint8 *)calloc(gop->con.w*gop->con.h, sizeof(uint8));
 
 	//Subband init
 	subband_init(gop->sub, 0, color, width, height, steps, bpp, gop->q);

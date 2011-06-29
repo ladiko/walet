@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
+void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -14,7 +14,7 @@ void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
-	uchar max, in;
+	uint8 max, in;
 	uint32 g[4];
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
@@ -41,10 +41,10 @@ void seg_grad(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 	}
 }
 
-void seg_grad1(imgtype *img, imgtype *img1,imgtype *img2, uint32 w, uint32 h, uint32 th)
+void seg_grad1(uint8 *img, uint8 *img1,uint8 *img2, uint32 w, uint32 h, uint32 th)
 {
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
-	uchar max, in;
+	uint8 max, in;
 	uint32 g[4];
 	for(y=w; y < sq; y+=w){
 		for(x=1; x < w1; x++){
@@ -72,7 +72,7 @@ void seg_grad1(imgtype *img, imgtype *img1,imgtype *img2, uint32 w, uint32 h, ui
 	}
 }
 
-void seg_grad2(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
+void seg_grad2(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -99,7 +99,7 @@ void seg_grad2(imgtype *img, imgtype *img1, uint32 w, uint32 h, uint32 th)
 	}
 }
 
-static inline uint32 loc_max(imgtype *img, uint32 yx, uint32 w)
+static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 {
 	uint32 in = 0;
 	if(img[yx]){
@@ -153,7 +153,7 @@ no:
 	return 0; */
 }
 
-static inline int dir(imgtype *img, uint32 yx, uint32 w, int in1)
+static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 //Check for pixel
 {
 	uint32 max = 0;
@@ -250,7 +250,7 @@ end:
 	return in;
 }
 
-static inline void dir1(imgtype *img, uint32 w, uint yx, int dx, int dy, int *dx1, int *dy1)
+static inline void dir1(uint8 *img, uint32 w, uint yx, int dx, int dy, int *dx1, int *dy1)
 //Check for pixel
 {
         uint32 max = 0;
@@ -331,7 +331,7 @@ static inline void dir1(imgtype *img, uint32 w, uint yx, int dx, int dy, int *dx
         }
 }
 
-static inline int dir2(imgtype *img, uint32 w, uint32 yx, int dyx, uint32 max)
+static inline int dir2(uint8 *img, uint32 w, uint32 yx, int dyx, uint32 max)
 {
 	//printf("dyx = %d\n", dyx);
 	if(dyx == -1){
@@ -410,29 +410,29 @@ static inline int dir2(imgtype *img, uint32 w, uint32 yx, int dyx, uint32 max)
 	return 0;
 }
 
-static inline void new_pix(Pixel *pix, imgtype img, uint32 x, uint32 y)
+static inline void new_pix(Pixel *pix, uint8 img, uint32 x, uint32 y)
 {
 	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; //pix->draw = 1; //pix->end = 0;
 }
 
-static inline void new_pix1(Pixel *pix, imgtype img, uint32 x, uint32 y, uint32 nei)
+static inline void new_pix1(Pixel *pix, uint8 img, uint32 x, uint32 y, uint32 nei)
 {
 	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; pix->nnei = nei; pix->cp = NULL; //pix->draw = 1; //pix->end = 0;
 }
 
-static inline void new_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
+static inline void new_line(Pixel *pix, Pixel *pix1, uint8 pow, uint16 npix)
 {
 	pix->out = pix1;   pix->nout++; pix->pow = pow; pix1->pow = pow; //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
 	pix1->nin++; pix->npix = npix;
 }
 
-static inline void change_line(Pixel *pix, Pixel *pix1, uchar pow, uint16 npix)
+static inline void change_line(Pixel *pix, Pixel *pix1, uint8 pow, uint16 npix)
 {
 	pix->out = pix1;  pix->nout = 1; pix->pow = pow;  //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
 	pix1->nin = 1; pix1->pow = pow; pix->npix = npix;
 }
 
-void seg_local_max( Pixel *pix, uint32 *npix, imgtype *img, uint32 w, uint32 h)
+void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0;
 	int d1, d2;
@@ -529,9 +529,9 @@ static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
 	return 0;
 }
 
-static inline void set_dir_one(Pixel *pix, imgtype *img, uint32 yx, uint32 w, int dyx)
+static inline void set_dir_one(Pixel *pix, uint8 *img, uint32 yx, uint32 w, int dyx)
 {
-	uchar dir;
+	uint8 dir;
 	pix[yx + dyx].cp = &pix[yx];
 	img[yx + dyx] = 255;
 	/*
@@ -546,9 +546,9 @@ static inline void set_dir_one(Pixel *pix, imgtype *img, uint32 yx, uint32 w, in
 	*/
 }
 
-static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
+static inline void set_dir_all(Pixel *pix, uint8 *img, uint32 yx, uint32 w)
 {
-	uchar dir;
+	uint8 dir;
 	/*
 	if(img[yx-1  ] > 253) { pix[yx].dir += 1; 	pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
 	if(img[yx-1-w] > 253) { pix[yx].dir += 2;	pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
@@ -570,10 +570,10 @@ static inline void set_dir_all(Pixel *pix, imgtype *img, uint32 yx, uint32 w)
 }
 
 
-static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
+static inline uint32 find_pixels(Pixel *pix, uint8 *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint32 w)
 {
 	uint32 npix = 0, len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, x2, y2, yx2, x3, y3, yx3, xt, yt, c = 0, c3 = 0; //yx2 = yx1,
-	uchar min = img[yx];
+	uint8 min = img[yx];
 	int dx1, dy1, dx2, dy2, dx3, dy3;
 	dx3 = dx; dy3 = dy;
 	img[yx] = 254;
@@ -631,11 +631,11 @@ static inline uint32 find_pixels(Pixel *pix, imgtype *img, uint32 x, uint32 y, u
 	//return npix;
 }
 
-static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uchar dir)
+static inline uint32 find_lines(Pixel *pix, uint8 *img, uint32 x, uint32 y, uint32 dx, uint32 dy, uint16 *npix, uint16 *nline, uint32 w, uint8 dir)
 {
 	uint32 len = 0, yx = y*w + x, x1 = x, y1 = y, yx1 = yx, yxt,  xt, yt, c = 0; //yx2 = yx1,
-	uchar min = img[yx];
-	//imgtype im;
+	uint8 min = img[yx];
+	//uint8 im;
 	int dx1, dy1, dx2, dy2;
 	if(dir){
 		new_pix(&pix[yx1], img[yx1], x1, y1); img[yx1] = 255;
@@ -673,7 +673,7 @@ static inline uint32 find_lines(Pixel *pix, imgtype *img, uint32 x, uint32 y, ui
     }
 }
 
-uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h)
+uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
 	uint32 npix = 0;
@@ -699,9 +699,9 @@ uint32 seg_pixels(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 
 }
 
-static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *dm)
+static inline uint32 get_dir(uint8 *img, uint32 yx, uint32 w, uint8 dir, int *dm)
 {
-	uchar i;
+	uint8 i;
 	/*
 	if(img[yx-1  ] > 253 && !(dir&1  )) { dm[i] = -1;   i++; }
 	if(img[yx-1-w] > 253 && !(dir&2  )) { dm[i] = -1-w; i++; }
@@ -724,7 +724,7 @@ static inline uint32 get_dir(imgtype *img, uint32 yx, uint32 w, uchar dir, int *
 	return i;
 }
 
-static inline void test(imgtype *img, uint32 yx, uint32 w)
+static inline void test(uint8 *img, uint32 yx, uint32 w)
 {
 	printf("%3d ",img[yx-1-w]);
 	printf("%3d ",img[yx-w]);
@@ -737,7 +737,7 @@ static inline void test(imgtype *img, uint32 yx, uint32 w)
 	printf("%3d\n",img[yx+1+w]);
 }
 
-uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h)
+uint32 seg_region(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 i, y, x, yx, yx1, w1 = w-1, h1 = h-1;
 	uint32 npix = 0, n;
@@ -781,7 +781,7 @@ uint32 seg_region(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 
 }
 
-uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
+uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
 	uint32 npix = 0, nline = 0, nedge = 0, px, ln;
@@ -813,7 +813,7 @@ uint32 seg_line(Pixel *pix, Edge *edges, imgtype *img, uint32 w, uint32 h)
 
 }
 
-void seg_reduce_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
+void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
 	Pixel *pix1, *pix2;
@@ -842,7 +842,7 @@ void seg_reduce_line(Pixel *pix, imgtype *img, uint32 w, uint32 h)
 
 #define xy(a,b,c) ((c) ? (a)*w + (b) : (b)*w + (a))
 
-static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col, uchar end)
+static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint8 end)
 //Draw line, return number of pixels in line
 //If end 1 not draw last pixel, if 0 draw
 
@@ -870,7 +870,7 @@ static inline uint32 draw_line(imgtype *img, Vector *v, uint32 w, uint32 col, uc
 	return max;
 }
 
-void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
+void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, pixs = 0, nline = 0;
 	Vector xy;
@@ -902,7 +902,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	printf("Lines   = %d\n", nline);
 }
 
-void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w, uint32 h, uint32 px, uint32 col)
+void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, uint32 h, uint32 px, uint32 col)
 {
 	uint32 i, j, in, k, npix = 0, nline = 0, color, po;
 	Vector xy;
@@ -954,7 +954,7 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w
 	printf("Numbers of edges   = %6d\n", nedge);
 }
 
-void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint32 w, uint32 h, uint32 px, uint32 col)
+void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, uint32 h, uint32 px, uint32 col)
 {
 	uint32 i, j, in, k, npix = 0, nline = 0, color, po;
 	Vector xy;
@@ -1006,7 +1006,7 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, imgtype *img, uint
 	printf("Numbers of edges   = %6d\n", nedge);
 }
 
-void seg_draw_pix(Pixel *pix, imgtype *img, imgtype *grad, uint32 w, uint32 h, uint32 col)
+void seg_draw_pix(Pixel *pix, uint8 *img, uint8 *grad, uint32 w, uint32 h, uint32 col)
 {
 	uint32 i, j, k, pixs = 0, nline = 0;
 	for(i=0; i < w*h; i++){
@@ -1020,7 +1020,7 @@ void seg_draw_pix(Pixel *pix, imgtype *img, imgtype *grad, uint32 w, uint32 h, u
 	}
 }
 
-static inline uint32 diff3x3( imgtype *img1, imgtype *img2, uint32 yx1, uint32 yx2,  uint32 w)
+static inline uint32 diff3x3( uint8 *img1, uint8 *img2, uint32 yx1, uint32 yx2,  uint32 w)
 {
 	return (abs(img1[yx1    ] - img2[yx2    ]) +
 			abs(img1[yx1-1  ] - img2[yx2-1  ]) +
@@ -1033,7 +1033,7 @@ static inline uint32 diff3x3( imgtype *img1, imgtype *img2, uint32 yx1, uint32 y
 			abs(img1[yx1-1+w] - img2[yx2-1+w]));
 }
 
-static inline uint16 block_match(imgtype *grad, imgtype *img1, imgtype *img2, uint32 x1, uint32 y1, uint32 x2, uint32 y2,  uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
+static inline uint16 block_match(uint8 *grad, uint8 *img1, uint8 *img2, uint32 x1, uint32 y1, uint32 x2, uint32 y2,  uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st)
 {
 	int x, y, yx, yx1 = x1 + y1*w,  sad, npix = 0;
 	uint16 min = 0xFFFF;
@@ -1062,7 +1062,7 @@ static inline uint16 block_match(imgtype *grad, imgtype *img1, imgtype *img2, ui
 	return min;
 }
 
-static inline uint32 diff3x5( imgtype *img1, imgtype *img2, uint32 yx1, uint32 yx2, uint32 yx3, int *sad,  uint32 w)
+static inline uint32 diff3x5( uint8 *img1, uint8 *img2, uint32 yx1, uint32 yx2, uint32 yx3, int *sad,  uint32 w)
 {
 	uint32 s[5];
 	int yxw1, yxw2;
@@ -1108,7 +1108,7 @@ static inline uint32 diff3x5( imgtype *img1, imgtype *img2, uint32 yx1, uint32 y
 	return (s[0] + s[1] + s[2] + s[3] + s[4])/15;
 }
 
-static inline uint16 block_match1(imgtype *grad, imgtype *img1, imgtype *img2, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st, uint32 th)
+static inline uint16 block_match1(uint8 *grad, uint8 *img1, uint8 *img2, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st, uint32 th)
 {
 	int x, y, yx, yx1 = x1 + y1*w, sad[3], diff, npix = 0;
 	uint16 min[4];
@@ -1151,7 +1151,7 @@ static inline uint16 block_match1(imgtype *grad, imgtype *img1, imgtype *img2, u
 	return min[0];
 }
 
-static inline uint16 double_block_match(imgtype *grad, imgtype *img1, imgtype *img2, uint32 x1, uint32 y1, uint32 yx1, uint32 x2, uint32 y2, uint32 yx2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st, uint32 th)
+static inline uint16 double_block_match(uint8 *grad, uint8 *img1, uint8 *img2, uint32 x1, uint32 y1, uint32 yx1, uint32 x2, uint32 y2, uint32 yx2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st, uint32 th)
 {
 	int x, y, yx, yx3, sad[3], diff[2], dif, npix = 0;
 	uint32 xy1 = x1 + w*y1, xy2 = x2 + w*y2;
@@ -1229,7 +1229,7 @@ static inline uint16 double_block_match(imgtype *grad, imgtype *img1, imgtype *i
 	return minim;
 }
 
-static inline void block_match_new(imgtype *grad, imgtype *img1, imgtype *img2, uchar *mmb, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 w, uint32 h, uint32 st, uint32 th)
+static inline void block_match_new(uint8 *grad, uint8 *img1, uint8 *img2, uint8 *mmb, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 w, uint32 h, uint32 st, uint32 th)
 {
 	int x, y, xm, ym, yx, yx1 = x1 + y1*w, sad[3], diff, npix = 0, w1 = (st<<1)+1;
 	uint16 min[4];
@@ -1299,7 +1299,7 @@ static inline void block_match_new(imgtype *grad, imgtype *img1, imgtype *img2, 
 }
 
 
-static inline void min_add(uchar *mb1, uchar *mb2, uchar *mb3, uint32 sqm)
+static inline void min_add(uint8 *mb1, uint8 *mb2, uint8 *mb3, uint32 sqm)
 {
 	uint32 i, sum;
 	for(i=0; i < sqm; i++) {
@@ -1309,7 +1309,7 @@ static inline void min_add(uchar *mb1, uchar *mb2, uchar *mb3, uint32 sqm)
 	}
 }
 
-static inline void find_local_min(uchar *mb, uint16 *min, uint16 *xm, uint16 *ym, uint16 wm)
+static inline void find_local_min(uint8 *mb, uint16 *min, uint16 *xm, uint16 *ym, uint16 wm)
 {
 	uint32 x, y, yx;
 	min[0] = 0xFFFF;
@@ -1325,7 +1325,7 @@ static inline void find_local_min(uchar *mb, uint16 *min, uint16 *xm, uint16 *ym
 	}
 }
 
-static inline uint16 find_mv(uchar *mb1, uchar *mb2, uint16 min, uint16 xm, uint16 ym, uint16 *xo1, uint16 *yo1, uint16 *xo2, uint16 *yo2, uint16 wm)
+static inline uint16 find_mv(uint8 *mb1, uint8 *mb2, uint16 min, uint16 xm, uint16 ym, uint16 *xo1, uint16 *yo1, uint16 *xo2, uint16 *yo2, uint16 wm)
 {
 	int i, x1, y1, x2, y2, yx1, yx2, xb, yb, xe, ye;
 	uint16 sum, m, xt1, yt1, xt2, yt2;
@@ -1354,7 +1354,7 @@ static inline uint16 find_mv(uchar *mb1, uchar *mb2, uint16 min, uint16 xm, uint
 	return m;
 }
 
-static inline void get_small(uchar *mb1, uchar *mb2, uint16 xm, uint16 ym, uint16 wm, uint16 wm1)
+static inline void get_small(uint8 *mb1, uint8 *mb2, uint16 xm, uint16 ym, uint16 wm, uint16 wm1)
 {
 	uint32 x, y, x1, y1, yx, yx1, xb, xe, yb, ye, mvs = wm1>>1;
 	memset (mb2, 255, wm1*wm1);
@@ -1370,7 +1370,7 @@ static inline void get_small(uchar *mb1, uchar *mb2, uint16 xm, uint16 ym, uint1
 	}
 }
 
-void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *grad2, imgtype *img1, imgtype *img2, uchar *mmb, uint32 w, uint32 h, uint32 mvs)
+void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, uint8 *grad1, uint8 *grad2, uint8 *img1, uint8 *img2, uint8 *mmb, uint32 w, uint32 h, uint32 mvs)
 {
 	uint32 i, j, yx, yx1, yx2, y, y1, y2,  x, x1, x2, w1 = w-2, h1 = h-2, npix = 0, ndge = 0, px = 3, po;
 	uint32 sq = w*h, wm[2], sqm[2], nm = 1;
@@ -1378,7 +1378,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 	wm[0] = ((mvs<<1)+1); sqm[0] = wm[0]*wm[0];
 	wm[1] = ((nm<<1)+1);  sqm[1] = wm[1]*wm[1];
 
-	uchar *mb[2], *sum;// *sad[3];
+	uint8 *mb[2], *sum;// *sad[3];
 	uint16 xm, ym, min[3], xo1, yo1, xo2, yo2;
 	Pixel *p, *p1, *p2;
 
@@ -1511,7 +1511,7 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, imgtype *grad1, imgtype *
 	}*/
 }
 
-void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
+void seg_draw_vec(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, sq = w*h, pixs = 0, nline = 0;
 	Vector xy;
@@ -1537,7 +1537,7 @@ void seg_draw_vec(Pixel *pix, uint32 npix, imgtype *img, uint32 w, uint32 h)
 	printf("Numbers of lines   = %d\n", nline);
 }
 
-static inline uint32 intersect(imgtype *img, uint32 yx, uint32 w)
+static inline uint32 intersect(uint8 *img, uint32 yx, uint32 w)
 {
 	char i, tmp, inter = 0, ni[8];
 	ni[0]=0; ni[1]=0; ni[2]=0; ni[3]=0; ni[4]=0; ni[5]=0; ni[6]=0; ni[7]=0;
@@ -1557,7 +1557,7 @@ static inline uint32 intersect(imgtype *img, uint32 yx, uint32 w)
 	return 1;
 }
 
-void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h)
+void seg_intersect_pix(uint8 *img1, uint8 *img2, uint32 w, uint32 h)
 {
 	uint32 yx, y, y1, x, x1, w1 = w-1, h1 = h-1, npix = 0;
 	for(y=1; y < h1; y++){
@@ -1569,7 +1569,7 @@ void seg_intersect_pix(imgtype *img1, imgtype *img2, uint32 w, uint32 h)
 	printf("seg_intersect_pix npix = %d\n", npix);
 }
 
-static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 yx2, uint32 w)
+static inline void copy_block(uint8 *img1, uint32 yx1, uint8 *img2, uint32 yx2, uint32 w)
 {
 	img2[yx2    ] = img1[yx1    ];
 	img2[yx2-1  ] = img1[yx1-1  ];
@@ -1582,7 +1582,7 @@ static inline void copy_block(imgtype *img1, uint32 yx1, imgtype *img2, uint32 y
 	img2[yx2-1+w] = img1[yx1-1+w];
 }
 
-static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector *v2, uint32 w)
+static inline void copy_vector(uint8 *img1, Vector *v1, uint8 *img2, Vector *v2, uint32 w)
 {
 	int x, y, yx;
 	uint32 i, j, st, l1, l2;
@@ -1644,7 +1644,7 @@ static inline void copy_vector(imgtype *img1, Vector *v1, imgtype *img2, Vector 
 	}
 }
 
-void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
+void seg_mvector_copy(Pixel *pix, uint8 *grad1, uint8 *img1, uint8 *img2, uint32 w, uint32 h)
 {
 	uint32 yx, y, y1, x, x1, w1 = w-1, h1 = h-1, npix = 0;
 	Vector v1, v2;
@@ -1668,7 +1668,7 @@ void seg_mvector_copy(Pixel *pix, imgtype *grad1, imgtype *img1, imgtype *img2, 
 	printf("seg_mvector_copy nvectors = %d\n", npix);
 }
 
-void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q)
+void seg_quant(uint8 *img1, uint8 *img2, uint32 w, uint32 h, uint32 q)
 {
 	uint32 x, y, yx, sq = w*h;
 	for(y=0; y < sq; y+=w){
@@ -1679,7 +1679,7 @@ void seg_quant(imgtype *img1, imgtype *img2, uint32 w, uint32 h, uint32 q)
 	}
 }
 
-void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
+void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
 	int dyx;
@@ -1705,7 +1705,7 @@ void seg_fall_forest(imgtype *img, imgtype *img1, uint32 w, uint32 h)
 	}
 }
 
-void seg_fall_forest1(imgtype *img, imgtype *img1, imgtype *img2, uint32 w, uint32 h)
+void seg_fall_forest1(uint8 *img, uint8 *img1, uint8 *img2, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
 	int dyx;

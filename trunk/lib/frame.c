@@ -17,7 +17,65 @@ void frames_init(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 {
 	Frame *frame = &gop->frames[fr];
-	uint32 i, j, w = gop->width, h = gop->height ;
+	uint32 i, j, w = gop->width, h = gop->height;
+	//New init
+	if(gop->color == BAYER){
+		if(gop->bpp > 8){
+			frame->BAY16.w = w; frame->BAY16.h = h;
+			frame->BAY16.pic = (uint16 *)calloc(frame->BAY16.w*frame->BAY16.h, sizeof(uint16));
+		} else {
+			frame->BAY8.w = w; frame->BAY8.h = h;
+			frame->BAY8.pic = (uint8 *)calloc(frame->BAY8.w*frame->BAY8.h, sizeof(uint8));
+		}
+		//Init color components
+		frame->Y.w = w>>1; frame->Y.h = h>>1;
+		frame->Y.pic = (uint8 *)calloc(frame->Y.w*frame->Y.h, sizeof(uint8));
+		frame->C1.w = w>>1; frame->C1.h = h>>1;
+		frame->C1.pic = (int8 *)calloc(frame->C1.w*frame->C1.h, sizeof(int8));
+		frame->C2.w = w>>1; frame->C2.h = h>>1;
+		frame->C2.pic = (int8 *)calloc(frame->C2.w*frame->C2.h, sizeof(int8));
+		frame->C3.w = w>>1; frame->C3.h = h>>1;
+		frame->C3.pic = (int8 *)calloc(frame->C3.w*frame->C3.h, sizeof(int8));
+		//Init DWT level components
+		frame->lev = (Level8 **)calloc(gop->steps, sizeof(Level8 *));
+		frame->lev[i] = (Level8 *)calloc(4, sizeof(Level8));
+		i=0;
+		for(j=0; j < 4; j++){
+			frame->lev[i][j].ll.w = (frame->Y.w>>1) + (frame->Y.w&1);
+			frame->lev[i][j].ll.h = (frame->Y.h>>1) + (frame->Y.h&1);
+			frame->lev[i][j].ll.pic = (uint8 *)calloc(frame->lev[i][j].ll.w*frame->lev[i][j].ll.h, sizeof(uint8));
+			frame->lev[i][j].hl.w = (frame->Y.w>>1);
+			frame->lev[i][j].hl.h = (frame->Y.h>>1) + (frame->Y.h&1);
+			frame->lev[i][j].hl.pic = (int8 *)calloc(frame->lev[i][j].hl.w*frame->lev[i][j].hl.h, sizeof(int8));
+			frame->lev[i][j].lh.w = (frame->Y.w>>1) + (frame->Y.w&1);
+			frame->lev[i][j].lh.h = (frame->Y.h>>1);
+			frame->lev[i][j].lh.pic = (int8 *)calloc(frame->lev[i][j].lh.w*frame->lev[i][j].lh.h, sizeof(int8));
+			frame->lev[i][j].hh.w = (frame->Y.w>>1);
+			frame->lev[i][j].hh.h = (frame->Y.h>>1);
+			frame->lev[i][j].hh.pic = (int8 *)calloc(frame->lev[i][j].hh.w*frame->lev[i][j].hh.h, sizeof(int8));
+		}
+		for(i=1; i < gop->steps; i++){
+			for(j=0; j < 4; j++){
+				frame->lev[i][j].ll.w = (frame->lev[i-1][0].ll.w>>1) + (frame->lev[i-1][0].ll.w&1);
+				frame->lev[i][j].ll.h = (frame->lev[i-1][0].ll.h>>1) + (frame->lev[i-1][0].ll.h&1);
+				frame->lev[i][j].ll.pic = (uint8 *)calloc(frame->lev[i][j].ll.w*frame->lev[i][j].ll.h, sizeof(uint8));
+				frame->lev[i][j].hl.w = (frame->lev[i-1][0].ll.w>>1);
+				frame->lev[i][j].hl.h = (frame->lev[i-1][0].ll.h>>1) + (frame->lev[i-1][0].ll.h&1);
+				frame->lev[i][j].hl.pic = (int8 *)calloc(frame->lev[i][j].hl.w*frame->lev[i][j].hl.h, sizeof(int8));
+				frame->lev[i][j].lh.w = (frame->lev[i-1][0].ll.w>>1) + (frame->lev[i-1][0].ll.w&1);
+				frame->lev[i][j].lh.h = (frame->lev[i-1][0].ll.h>>1);
+				frame->lev[i][j].lh.pic = (int8 *)calloc(frame->lev[i][j].lh.w*frame->lev[i][j].lh.h, sizeof(int8));
+				frame->lev[i][j].hh.w = (frame->lev[i-1][0].ll.w>>1);
+				frame->lev[i][j].hh.h = (frame->lev[i-1][0].ll.h>>1);
+				frame->lev[i][j].hh.pic = (int8 *)calloc(frame->lev[i][j].hh.w*frame->lev[i][j].hh.h, sizeof(int8));
+			}
+
+		}
+	}
+
+
+
+	//Old init
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	frame->size = w*h;
@@ -25,60 +83,41 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
 	frame->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
-	//RGB scale images
-	/*
-	for(j=0; j < 4; j++){
-		frame->rgb[j].width  = w>>(j+1);
-		frame->rgb[j].height = h>>(j+1);
-		frame->rgb[j].pic = (uchar *)calloc(frame->rgb[j].width*frame->rgb[j].height*3, sizeof(uchar));
-	}
-	//Y component scale images
-	for(j=0; j < 4; j++){
-		frame->Y[j].width  = w>>(j+1);
-		frame->Y[j].height = h>>(j+1);
-		frame->Y[j].pic = (uchar *)calloc(frame->Y[j].width*frame->Y[j].height, sizeof(uchar));
-	}
-	//Gradient of  scaled images
-	for(j=0; j < 4; j++){
-		frame->grad[j].width  = w>>(j+1);
-		frame->grad[j].height = h>>(j+1);
-		frame->grad[j].pic = (uchar *)calloc(frame->grad[j].width*frame->grad[j].height, sizeof(uchar));
-	}*/
 	frame->rgb.w  = w;
 	frame->rgb.h = h;
-	frame->rgb.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+	frame->rgb.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
 	frame->Y.w  = w;
 	frame->Y.h = h;
-	frame->Y.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+	frame->Y.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
 	frame->grad.w  = w;
 	frame->grad.h = h;
-	frame->grad.pic = (uchar *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uchar));
+	frame->grad.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
 
 
 	frame->line.w  = w;
 	frame->line.h = h;
-	frame->line.pic = (uchar *)calloc(frame->line.w*frame->line.h, sizeof(uchar));
+	frame->line.pic = (uint8 *)calloc(frame->line.w*frame->line.h, sizeof(uint8));
 	frame->edge.w  = w;
 	frame->edge.h = h;
-	frame->edge.pic = (uchar *)calloc(frame->edge.w*frame->edge.h, sizeof(uchar));
+	frame->edge.pic = (uint8 *)calloc(frame->edge.w*frame->edge.h, sizeof(uint8));
 	frame->vec.w  = w;
 	frame->vec.h = h;
-	frame->vec.pic = (uchar *)calloc(frame->vec.w*frame->vec.h, sizeof(uchar));
+	frame->vec.pic = (uint8 *)calloc(frame->vec.w*frame->vec.h, sizeof(uint8));
 	//frame->pixp = (uint32 *)calloc(frame->vec.width*frame->vec.height, sizeof(uint32));
 
-	//frame->mmb = (uchar *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uchar));
+	//frame->mmb = (uint8 *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1), sizeof(uint8));
 	/*
 	//Contours of scaled images
 	for(j=0; j < 4; j++){
 		frame->con[j].width  = w>>(j+1);
 		frame->con[j].height = h>>(j+1);
-		frame->con[j].pic = (uchar *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uchar));
+		frame->con[j].pic = (uint8 *)calloc(frame->con[j].width*frame->con[j].height, sizeof(uint8));
 	}
 	//Pixels of scaled images
 	for(j=0; j < 4; j++){
 		frame->pix[j].width  = w>>(j+1);
 		frame->pix[j].height = h>>(j+1);
-		frame->pix[j].pic = (uchar *)calloc(frame->pix[j].width*frame->pix[j].height, sizeof(uchar));
+		frame->pix[j].pic = (uint8 *)calloc(frame->pix[j].width*frame->pix[j].height, sizeof(uint8));
 	}*/
 	//Pointers to pixels array
 	//frame->pixs = (Pixel *)calloc(frame->pix[0].width*frame->pix[0].height, sizeof(Pixel));
@@ -101,8 +140,8 @@ void frames_init(GOP *gop, uint32 fr)
 	frame->state = 0;
 }
 
-void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
-///	\fn	void frame_copy(GOP *gop, uint32 fr, uchar *y, uchar *u, uchar *v)
+void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
+///	\fn	void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\brief	Fill frame from the stream.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
@@ -133,13 +172,13 @@ uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)
 	Frame *frame = &gop->frames[fr];
 	if(check_state(frame->state, FRAME_COPY | IDWT)){
 		frame->img[0].sub = gop->sub[0]; 	//Set current image for DWT transform
-		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, MALLET, fb); //MALLET
-		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
+		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, MALLET, fb); //MALLET
+		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
 		else {
 			frame->img[1].sub = gop->sub[1]; 	//Set current image for DWT transform
 			frame->img[2].sub = gop->sub[2]; 	//Set current image for DWT transform
-			image_dwt(&frame->img[1], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
-			image_dwt(&frame->img[2], gop->color, gop->steps, (dwttype*)gop->buf, CLASSIC, fb);
+			image_dwt(&frame->img[1], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
+			image_dwt(&frame->img[2], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
 		}
 		frame->state = DWT;
 		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
@@ -159,13 +198,13 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 	Frame *frame = &gop->frames[fr];
 	if(check_state(frame->state, RANGE_DECODER | DWT | QUANTIZATION)){
 		frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
-		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, isteps, MALLET, fb);
-		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
+		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, isteps, MALLET, fb);
+		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
 		else {
 			frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
 			frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
-			image_idwt(&frame->img[1], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
-			image_idwt(&frame->img[2], gop->color, gop->steps, (dwttype*)gop->buf, isteps, CLASSIC, fb);
+			image_idwt(&frame->img[1], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
+			image_idwt(&frame->img[2], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
 		}
 		frame->state = IDWT;
 		return 1;
@@ -249,11 +288,11 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		*size = 0;
-		frame->img[0].c_size = image_range_encode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+		frame->img[0].c_size = image_range_encode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
 		*size += frame->img[0].c_size;
 		if(gop->color != GREY  && gop->color != BAYER) {
-			frame->img[1].c_size = image_range_encode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
-			frame->img[2].c_size = image_range_encode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+			frame->img[1].c_size = image_range_encode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
+			frame->img[2].c_size = image_range_encode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
 			*size += frame->img[1].c_size + frame->img[2].c_size;
 		}
 		frame->state |= RANGE_ENCODER;
@@ -274,10 +313,10 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 
 	if(check_state(frame->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
-		*size += image_range_decode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+		*size += image_range_decode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
 		if(gop->color != GREY  && gop->color != BAYER) {
-			*size += image_range_decode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
-			*size += image_range_decode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uchar*)gop->buf);
+			*size += image_range_decode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
+			*size += image_range_decode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
 		}
 		frame->state |= RANGE_DECODER;
 		return 1;
@@ -422,7 +461,7 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 {
     //FILE *wl;
     //WaletHeader wh;
-    uchar *bits;
+    uint8 *bits;
     uint32 i, sz, size=0, fsize;
     Frame *frame = &gop->frames[fr];
     uint32  rgb = (gop->color != GREY  && gop->color != BAYER);
@@ -440,7 +479,7 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
 
     //Fill and write bits array
     sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : (gop->steps*3 + 1);
-    bits = (uchar *)calloc(sz, sizeof(uchar));
+    bits = (uint8 *)calloc(sz, sizeof(uint8));
     for(i=0; i<sz; i++)  {
     	bits[i] = (frame->img[0].sub[i].a_bits<<4) | frame->img[0].sub[i].q_bits;
     	//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, frame->img[0].sub[i].a_bits, frame->img[0].sub[i].q_bits, bits[i]);
@@ -482,13 +521,13 @@ uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
 //	\param	filename	The file name.
 ///	\retval				The size of file.
 {
-    uchar *bits;
+    uint8 *bits;
     uint32 i, sz, size = 0, fsize;
     Frame *frame = &gop->frames[fr];
     uint32  rgb = (gop->color != GREY  && gop->color != BAYER);
 
     sz = (gop->color == BAYER) ? ((gop->steps-1)*3+1)<<2 : (gop->steps*3 + 1);
-    bits = (uchar *)calloc(sz, sizeof(uchar));
+    bits = (uint8 *)calloc(sz, sizeof(uint8));
 
      //Read bits array
     if(fread (bits, 1, sz, wl)!= sz) { printf("Bits array read error\n"); return 0; }

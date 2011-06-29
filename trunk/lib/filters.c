@@ -5,31 +5,31 @@
 #include <string.h>
 #include <math.h>
 
-static  inline uchar*  sort_3(uchar *s)
+static  inline uint8*  sort_3(uint8 *s)
 {
-	uchar tmp;
+	uint8 tmp;
 	if(s[0] > s[1]) { tmp = s[1]; s[1] = s[0]; s[0] = tmp; }
 	if(s[1] > s[2]) { tmp = s[2]; s[2] = s[1]; s[1] = tmp; }
 	return s;
 }
 
-static  inline uchar  max_3(uchar s0, uchar s1, uchar s2)
+static  inline uint8  max_3(uint8 s0, uint8 s1, uint8 s2)
 {
 	return (s0 > s1) ? (s0 > s2 ? s0 : s2) : (s1 > s2 ? s1 : s2);
 }
 
-static  inline uchar  min_3(uchar s0, uchar s1, uchar s2)
+static  inline uint8  min_3(uint8 s0, uint8 s1, uint8 s2)
 {
 	return (s0 > s1) ? (s1 > s2 ? s2 : s1) : (s0 > s2 ? s2 : s0);
 }
 
-static  inline uchar  median_3(uchar s0, uchar s1, uchar s2)
+static  inline uint8  median_3(uint8 s0, uint8 s1, uint8 s2)
 {
 	return (s2 > s1) ? (s1 > s0 ? s1 : (s2 > s0 ? s0 : s2))
 					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
 }
 
-void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
+void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
@@ -40,7 +40,7 @@ void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
 	//|     |     |     |
 	//|-----|-----|-----|
 	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
-	uchar s[3][3];
+	uint8 s[3][3];
 
 	for(y=w; y < sq; y+=w){
 		x = 1; i = 2;
@@ -62,7 +62,7 @@ void filter_median(uchar *img, uchar *img1, uint32 w, uint32 h)
 	utils_copy_border(img, img1, 1, w, h);
 }
 
-void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
+void filter_median_bayer(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
@@ -73,7 +73,7 @@ void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	//|     |     |     |
 	//|-----|-----|-----|
 	uint32 y, x, yx, i, w2 = w<<1, sq = w*h - w2, w1 = w-2;
-	uchar s0[3][3], s1[3][3], s2[3][3], s3[3][3];
+	uint8 s0[3][3], s1[3][3], s2[3][3], s3[3][3];
 	for(y=w2; y < sq; y+=w2){
 		x = 2; i = 2;
 		yx = y + x;
@@ -113,7 +113,7 @@ void filter_median_bayer(uchar *img, uchar *img1, uint32 w, uint32 h)
 	}
 }
 
-static inline uchar filter(uchar *img, uint32 yx, uint32 w, uint32 thresh)
+static inline uint8 filter(uint8 *img, uint32 yx, uint32 w, uint32 thresh)
 {
 	uint32 sum;
 	sum = 	(img[yx-w-1] + img[yx-w  ] + img[yx-w+1] +
@@ -122,7 +122,7 @@ static inline uchar filter(uchar *img, uint32 yx, uint32 w, uint32 thresh)
 	return sum > thresh ? sum : 0;
 }
 
-void filter_average(uchar *img, uchar *img1, uint32 w, uint32 h, uint32 thresh)
+void filter_average(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 thresh)
 {
 	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
 	for(y=w; y < sq; y+=w){
@@ -172,7 +172,7 @@ static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_b
 	}
 }
 
-void filters_white_balance(imgtype *in, imgtype *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
+void filters_white_balance(uint8 *in, uint8 *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, x, y, size = h*w;
 	uint16 *c[4];

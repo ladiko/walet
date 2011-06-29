@@ -109,7 +109,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	GtkWidget	*dialog;
 	FILE wl;
 	uint32 w, h, bpp;
-	imgtype *img;
+	uint8 *img;
 
 
 	dialog = gtk_file_chooser_dialog_new ("Open File...",
@@ -170,7 +170,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		nf++;
 
 		utils_read_ppm(gw->filename_open, &wl,  &w, &h, &bpp, &img);
-		//img = (imgtype *)calloc(w*h*bpp*3, sizeof(imgtype));
+		//img = (uint8 *)calloc(w*h*bpp*3, sizeof(uint8));
 		//printf("img = %p size = %d\n", img, w*h*bpp*3);
 
 		if(!gw->walet_init){
@@ -453,7 +453,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	uint32 h, w, x, y, fn = 0, npix;
-	imgtype *pic, *pic1;
+	uint8 *pic, *pic1;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
@@ -503,7 +503,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GstStateChangeReturn ret;
 	GstState state;
-	uchar *buf;
+	uint8 *buf;
 	uint32 i, j, w, h, npix;
 	Frame *frm[2];
 	//uint32 i , j, sz = (gw->gop->width)*(gw->gop->height), nregs=0, nrows=0, npregs=0, nobjs=0, nprows=0, ncors, fn, w, h, sn;
@@ -512,7 +512,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	//struct timeval tv;
 	//Image *im = &gw->gop->frames[fn].img[0];
 	//Frame *frm = &gw->gop->frames[fn];
-	//imgtype *pic, *pic1;
+	//uint8 *pic, *pic1;
 
 	w = gw->gop->frames[0].Y.w;
 	h = gw->gop->frames[0].Y.h;

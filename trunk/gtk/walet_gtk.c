@@ -92,7 +92,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
-	uchar *buf = (uchar *)calloc(width*height, sizeof(uchar));
+	uint8 *buf = (uint8 *)calloc(width*height, sizeof(uint8));
 
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
@@ -125,9 +125,9 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 
-		//utils_bayer_to_4color(buf, (uchar*)gw->gop->buf, p, gw->gop->width, gw->gop->height);
+		//utils_bayer_to_4color(buf, (uint8*)gw->gop->buf, p, gw->gop->width, gw->gop->height);
 		//new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
-		//utils_4color_draw((uchar*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height,
+		//utils_4color_draw((uint8*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height,
 		//		&gw->gop->frames[fn].p[0], &gw->gop->frames[fn].p[1], &gw->gop->frames[fn].p[2], &gw->gop->frames[fn].p[3]);
 		//gtk_widget_queue_draw(gw->drawingarea[3]);
 
