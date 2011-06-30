@@ -30,9 +30,9 @@ typedef struct{
 
 
 typedef struct{
-	BAYER8	B8;
-	BAYER8	B16;
-	YUV8 	YUV;
+	//BAYER8	B8;
+	//BAYER8	B16;
+	//YUV8 	YUV;
 
 	Pic8u	BAY8;		//Bayer image 8 bits
 	Pic16u	BAY16;		//Bayer image more than 8 bits

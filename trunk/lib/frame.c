@@ -38,8 +38,8 @@ void frames_init(GOP *gop, uint32 fr)
 		frame->C3.pic = (int8 *)calloc(frame->C3.w*frame->C3.h, sizeof(int8));
 		//Init DWT level components
 		frame->lev = (Level8 **)calloc(gop->steps, sizeof(Level8 *));
-		frame->lev[i] = (Level8 *)calloc(4, sizeof(Level8));
 		i=0;
+		frame->lev[i] = (Level8 *)calloc(4, sizeof(Level8));
 		for(j=0; j < 4; j++){
 			frame->lev[i][j].ll.w = (frame->Y.w>>1) + (frame->Y.w&1);
 			frame->lev[i][j].ll.h = (frame->Y.h>>1) + (frame->Y.h&1);
@@ -55,6 +55,7 @@ void frames_init(GOP *gop, uint32 fr)
 			frame->lev[i][j].hh.pic = (int8 *)calloc(frame->lev[i][j].hh.w*frame->lev[i][j].hh.h, sizeof(int8));
 		}
 		for(i=1; i < gop->steps; i++){
+			frame->lev[i] = (Level8 *)calloc(4, sizeof(Level8));
 			for(j=0; j < 4; j++){
 				frame->lev[i][j].ll.w = (frame->lev[i-1][0].ll.w>>1) + (frame->lev[i-1][0].ll.w&1);
 				frame->lev[i][j].ll.h = (frame->lev[i-1][0].ll.h>>1) + (frame->lev[i-1][0].ll.h&1);
@@ -69,10 +70,8 @@ void frames_init(GOP *gop, uint32 fr)
 				frame->lev[i][j].hh.h = (frame->lev[i-1][0].ll.h>>1);
 				frame->lev[i][j].hh.pic = (int8 *)calloc(frame->lev[i][j].hh.w*frame->lev[i][j].hh.h, sizeof(int8));
 			}
-
 		}
 	}
-
 
 
 	//Old init
@@ -159,6 +158,29 @@ void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 		image_copy(&frame->img[2], gop->bpp, v);
 	}
 	frame->state = FRAME_COPY;
+}
+
+uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
+///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
+///	\brief	Discrete wavelets frame transform.
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+///	\retval				1 - if all OK, 0 - if not OK
+{
+	uint32 i, j;
+	if(gop == NULL ) return 0;
+	Frame *f = &gop->frames[fr];
+	if(check_state(f->state, FRAME_COPY | IDWT)){
+		dwt_2d_haar8(f->BAY8.pic, f->BAY8.w, f->BAY8.h, f->Y.pic, f->C1.pic, f->C2.pic, f->C3.pic);
+		for(i=0; i < gop->steps; i++) {
+			for(j=0; j < 4; j++) {
+				dwt_2d_haar8(f->lev[i-1][j].hh.pic, f->lev[i-1][j].hh.w, f->lev[i-1][j].hh.h, f->Y.pic, f->C1.pic, f->C2.pic, f->C3.pic);
+			}
+		}
+		f->state = DWT;
+		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
+		return 1;
+	} else return 0;
 }
 
 uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)

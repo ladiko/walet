@@ -113,10 +113,11 @@ typedef enum {		//Wavelet transform filter banks
 }	FilterBank;
 
 typedef enum {		//The type of image
-	U8BITS	= 1,	// Unsigned 8 bits
-	S8BITS	= 2,	// Signed 8 bits
-	S16BITS = 3,	// Signed 16 bits
-}	ImageType;
+	U8	= 0,	// Unsigned 8 bits
+	S8	= 1,	// Signed 8 bits
+	U16	= 2,	// Unsigned 16 bits
+	S16	= 3,	// Signed 16 bits
+}	ImgType;
 
 typedef struct {
 	uint32 x,y;
@@ -252,10 +253,16 @@ struct Row {
 struct Corner {
 	uint32 		yx;			//The start point
 	uint8 		c[4];		//The colors
-	//uint32		ac[4];		//The average colors
 	uint32 		diff;		//The different from neighborhood pixeles
 	Region		*reg;		//Pointer to the region
 };
+
+//typedef struct { 	// Common struct for all image
+//	uint16 		w;		//The image width
+//	uint16 		h;		//The image height
+//	ImgType		bit;	//The type of image
+//	char 		*p;		//The pointer to the image
+//} Pic;
 
 typedef struct { 	// Unsigned picture 8bit
 	uint16 w;
@@ -299,6 +306,10 @@ typedef struct {	//One DWT decomposition level
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define rc(x)	((x) < -127 ? -127 : ( (x) > 127 ? 127 : (x) ))
+#define	setpoiter(p, pic)	if		(pic->bit == U8) 	p = (uint8*)	pic->p;	\
+							else if	(pic->bit == S8) 	p = (int8*) 	pic->p; \
+							else if	(pic->bit == U16)	p = (uint16*) 	pic->p; \
+							else if	(pic->bit == S16) 	p = (int16*) 	pic->p; \
 
 //#define oe(a,x)	(a ? x%2 : (x+1)%2)
 

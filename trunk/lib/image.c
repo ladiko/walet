@@ -123,8 +123,8 @@ static inline void dwt_haar_2d_one(int16 *in, int16 *out, const uint32 w, const 
 	dwt_haar_2d(out, in, w, h);
 }
 
-static inline void dwt_2d_haar(uint8 *in, uint16 w, uint16 h, uint8 *out0, char *out1, char *out2, char *out3)
-///	\fn static inline void dwt_2d_haar(Picture16 *in, Picture16 *out1, Picture16 *out2, Picture16 *out3, Picture16 *out4)
+static inline void dwt_2d_haar8(uint8 *in, uint16 w, uint16 h, uint8 *out0, int8 *out1, int8 *out2, int8 *out3)
+///	\fn
 ///	\brief One step 2D Haar DWT transform.
 ///	\param in	 		The input image data.
 ///	\param l 			The pointer to the one level of decomposition
@@ -158,7 +158,6 @@ static inline void dwt_2d_haar(uint8 *in, uint16 w, uint16 h, uint8 *out0, char 
 			yx = yx + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
 			out0[yx1] = (in[yx] + in[yx+1])>>1;
 			out1[yx2] = (in[yx] - in[yx+1])>>1;
-
 		}
 		if(w&1){
 			out0[yx1+1] = in[yx+2];
