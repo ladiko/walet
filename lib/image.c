@@ -123,7 +123,7 @@ static inline void dwt_haar_2d_one(int16 *in, int16 *out, const uint32 w, const 
 	dwt_haar_2d(out, in, w, h);
 }
 
-static inline void dwt_2d_haar8(uint8 *in, uint16 w, uint16 h, uint8 *out0, int8 *out1, int8 *out2, int8 *out3)
+void dwt_2d_haar8(uint8 *in, uint16 w, uint16 h, uint8 *out0, int8 *out1, int8 *out2, int8 *out3)
 ///	\fn
 ///	\brief One step 2D Haar DWT transform.
 ///	\param in	 		The input image data.
@@ -933,6 +933,12 @@ void image_copy(Image *im, uint32 bpp, uint8 *v)
 	printf("Start copy  x = %d y = %d p = %p \n", im->width, im->height, im->img);
 	if(bpp > 8) for(i=0; i<size; i++) im->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
 	else 		 for(i=0; i<size; i++) im->img[i] = v[i];
+}
+
+void pic_copy(Pic8u *p, char *y)
+{
+	uint32 i, sz = p->h*p->w;
+	for(i=0; i < sz; i++) p->pic[i] = y[i];
 }
 
 void image_fill_subb(Image *im, ColorSpace color, uint32 steps)

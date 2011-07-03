@@ -7,6 +7,9 @@ extern "C"
 {
 #endif /* __cplusplus */
 
+uint8* utils_one_dwt_draw_8(Pic8u *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w);
+uint8* utils_dwt_draw_8(Level8 **l8, uint8 *rgb, uint32 steps);
+
 
 uint8* 		utils_subband_draw		(Image *img, uint8 *rgb, ColorSpace color, uint32 steps);
 uint8* 		utils_bayer_draw		(uint8 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay);

@@ -42,6 +42,11 @@ static uint16 del[5][16] = {
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+
+void dwt_2d_haar8(uint8 *in, uint16 w, uint16 h, uint8 *out0, int8 *out1, int8 *out2, int8 *out3);
+void pic_copy(Pic8u *p, char *y);
+
+
 void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
 void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 void 	image_dwt			(Image *im, ColorSpace color, uint32 steps, int16 *buf, TransformType tt, FilterBank fb);
