@@ -60,9 +60,11 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->con.h = height>>1;
 	gop->con.pic = (uint8 *)calloc(gop->con.w*gop->con.h, sizeof(uint8));
 
+	/*
 	//Subband init
 	subband_init(gop->sub, 0, color, width, height, steps, bpp, gop->q);
 	gop->frames[0].img[0].sub = gop->sub[0];  // Set pointer to subband to frame[0]
+	printf("subband_init  init\n");
 
 	if(color == CS444 || color == RGB) 	{
 		subband_init(gop->sub, 1, color, width, height, steps, bpp, gop->q);
@@ -70,12 +72,15 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 		gop->frames[0].img[1].sub = gop->sub[1]; // Set pointer to subband to frame[0]
 		gop->frames[0].img[2].sub = gop->sub[2]; // Set pointer to subband to frame[0]
 	}
+	printf("subband_init  init\n");
 	if(color == CS422){
 		subband_init(gop->sub, 1, color, width>>1, height, steps, bpp, gop->q);
 		subband_init(gop->sub, 2, color, width>>1, height, steps, bpp, gop->q);
 		gop->frames[0].img[1].sub = gop->sub[1]; // Set pointer to subband to frame[0]
 		gop->frames[0].img[2].sub = gop->sub[2]; // Set pointer to subband to frame[0]
 	}
+	printf("subband_init  init\n");
+	*/
 	gop->cur_stream_frame = 0;
 	gop->cur_gop_frame = 0;
 	return gop;

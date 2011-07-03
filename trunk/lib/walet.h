@@ -257,12 +257,6 @@ struct Corner {
 	Region		*reg;		//Pointer to the region
 };
 
-//typedef struct { 	// Common struct for all image
-//	uint16 		w;		//The image width
-//	uint16 		h;		//The image height
-//	ImgType		bit;	//The type of image
-//	char 		*p;		//The pointer to the image
-//} Pic;
 
 typedef struct { 	// Unsigned picture 8bit
 	uint16 w;
@@ -301,6 +295,34 @@ typedef struct {	//One DWT decomposition level
 	Pic16s lh;
 	Pic16s hh;
 } Level16;
+
+//	|---------|            |---------|    |---------|
+//	|         |	2d wavelet |  Y | C1 |    | LL | HL |
+//	|  Bayer  |	transform  |---------|    |---------|
+//	|  bay8u  |	---------> | C2 | C3 |    | LH | HH |
+//	|---------|            |---------|    |---------|
+
+typedef struct{
+	Pic8u	B;			//Bayer image 8 bits
+	Pic8u	Y;			//Y  color component after first BDWT
+	Pic8s	C1;			//C1 color component after first BDWT
+	Pic8s	C2;			//C2 color component after first BDWT
+	Pic8s	C3;			//C3 color component after first BDWT
+}BAY8;
+
+typedef struct{
+	Pic16s	B;			//Bayer image 16 bits
+	Pic16s	Y;			//Y  color component after first BDWT
+	Pic16s	C1;			//C1 color component after first BDWT
+	Pic16s	C2;			//C2 color component after first BDWT
+	Pic16s	C3;			//C3 color component after first BDWT
+}BAY16;
+
+typedef struct{
+	Pic8u	Y;			//Y image for 420 422 444
+	Pic8u	U;			//U image for 420 422 444
+	Pic8u	V;			//V image for 420 422 444
+}YUV8;
 
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))

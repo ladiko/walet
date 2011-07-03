@@ -96,7 +96,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
-		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 4, 2, 0, 20, FR_HAAR, 12);
+		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 1, 2, 0, 20, FR_HAAR, 12);
 		//gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 2, 2, 0, 20, FR_5_3, 12);
 		gw->walet_init = 1;
 	}
@@ -135,16 +135,16 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 
 		//Copy frame 0 to decoder pipeline
-		//printf("video/x-raw-bayer\n");
+		printf("video/x-raw-bayer\n");
 		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-		utils_grey_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
+		new_buffer (gw->orig[0], gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
+		utils_grey_draw(gw->gop->frames[0].B8.B.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		new_buffer (gw->orig[1], gw->gop->width, gw->gop->height);
-		utils_draw_bayer(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		new_buffer (gw->orig[1], gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
+		utils_draw_bayer(gw->gop->frames[0].B8.B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h, gw->gop->bg);
 		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 	}

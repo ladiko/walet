@@ -1,55 +1,34 @@
 #ifndef _FRAME_H_
 #define _FRAME_H_
-//	|---------|            |---------|    |---------|
-//	|         |	2d wavelet |  Y | C1 |    | LL | HL |
-//	|  Bayer  |	transform  |---------|    |---------|
-//	|  bay8u  |	---------> | C2 | C3 |    | LH | HH |
-//	|---------|            |---------|    |---------|
 
 typedef struct{
-	Pic8u	BAY8;		//Bayer image 8 bits
-	Pic8u	Y;			//Y  color component after first BDWT
-	Pic8s	C1;			//C1 color component after first BDWT
-	Pic8s	C2;			//C2 color component after first BDWT
-	Pic8s	C3;			//C3 color component after first BDWT
-}BAYER8;
-
-typedef struct{
-	Pic8u	BAY16;		//Bayer image 16 bits
-	Pic16s	Y;			//Y  color component after first BDWT
-	Pic16s	C1;			//C1 color component after first BDWT
-	Pic16s	C2;			//C2 color component after first BDWT
-	Pic16s	C3;			//C3 color component after first BDWT
-}BAYER16;
-
-typedef struct{
-	Pic8u	Y;			//Y image for 420 422 444
-	Pic8u	U;			//U image for 420 422 444
-	Pic8u	V;			//V image for 420 422 444
-}YUV8;
-
-
-typedef struct{
-	//BAYER8	B8;
-	//BAYER8	B16;
-	//YUV8 	YUV;
-
+	BAY8	B8;
+	BAY16	B16;
+	YUV8 	YUV;
+	/*
 	Pic8u	BAY8;		//Bayer image 8 bits
 	Pic16u	BAY16;		//Bayer image more than 8 bits
 	Pic8u	Y;			//Y image for 420 422 444 or Y component after first bayer DWT color transform (BDWT)
-	Pic8u	U;			//U image for 420 422 444
-	Pic8u	V;			//V image for 420 422 444
-	Pic8s	C1;			//C1 color component after first BDWT
-	Pic8s	C2;			//C2 color component after first BDWT
-	Pic8s	C3;			//C3 color component after first BDWT
+	Pic8u	U;			//U image for 420 422 444 or color component after first BDWT
+	Pic8u	V;			//V image for 420 422 444 or color component after first BDWT
+	Pic8s	W;			//W The last color component after first BDWT
+	Pic16s	Y;			//Y image for 420 422 444 or Y component after first bayer DWT color transform (BDWT)
+	Pic16s	U;			//U image for 420 422 444 or color component after first BDWT
+	Pic8u	V;			//V image for 420 422 444 or color component after first BDWT
+	Pic8s	W;			//W The last color component after first BDWT
+	//Pic8s	C2;			//C2 color component after first BDWT
+	//Pic8s	C3;			//C3 color component after first BDWT
 
-	Level8	**lev;		//The levels of DWT transform
+	 */
+
+	Level8	**L8;		//The levels of DWT transform
+	Level16	**L16;		//The levels of DWT transform
 
 	//Old interface
 	Image 	img[3];	//Pointer to image
 
 	Pic8u rgb; // Scaled image for each color
-	//Pic8u Y;	// The Y color componets
+	Pic8u Y;	// The Y color componets
 	Pic8u grad;	// The gradient
 
 	//For visualization only
@@ -78,8 +57,10 @@ typedef struct{
 extern "C" {
 #endif /* __cplusplus */
 
+uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb);
+
 void 	frames_init			(GOP *gop, uint32 fr);
-void 	frame_copy			(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v);
+void 	frame_copy			(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v);
 uint32 	frame_dwt			(GOP *gop, uint32 fr, FilterBank fb);
 uint32 	frame_idwt			(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
 uint32 	frame_fill_subb		(GOP *gop, uint32 fr);
