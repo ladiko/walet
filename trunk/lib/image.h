@@ -43,7 +43,7 @@ static uint16 del[5][16] = {
 extern "C" {
 #endif /* __cplusplus */
 
-void dwt_2d_haar8(uint8 *in, uint16 w, uint16 h, uint8 *out0, int8 *out1, int8 *out2, int8 *out3);
+void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *out2, int8 *out3, uint32 shift);
 void pic_copy(Pic8u *p, char *y);
 
 

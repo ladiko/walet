@@ -283,17 +283,19 @@ typedef struct {	// Unsigned picture 16bit
 } Pic16u;
 
 typedef struct {	//One DWT decomposition level
-	Pic8u ll;
-	Pic8s hl;
-	Pic8s lh;
-	Pic8s hh;
+	Pic8s s[4];		//Subband array s[0] - LL, s[1] - HL, s[2] - LH, s[3] - HH
+	//Pic8s ll;
+	//Pic8s hl;
+	//Pic8s lh;
+	//Pic8s hh;
 } Level8;
 
 typedef struct {	//One DWT decomposition level
-	Pic16s ll;
-	Pic16s hl;
-	Pic16s lh;
-	Pic16s hh;
+	Pic16s s[4];	//Subband array s[0] - LL, s[1] - HL, s[2] - LH, s[3] - HH
+	//Pic16s ll;
+	//Pic16s hl;
+	//Pic16s lh;
+	//Pic16s hh;
 } Level16;
 
 //	|---------|            |---------|    |---------|
@@ -304,18 +306,21 @@ typedef struct {	//One DWT decomposition level
 
 typedef struct{
 	Pic8u	B;			//Bayer image 8 bits
-	Pic8u	Y;			//Y  color component after first BDWT
-	Pic8s	C1;			//C1 color component after first BDWT
-	Pic8s	C2;			//C2 color component after first BDWT
-	Pic8s	C3;			//C3 color component after first BDWT
+	Pic8s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
+	//Pic8s	Y;			//Y  color component after first BDWT
+	//Pic8s	C1;			//C1 color component after first BDWT
+	//Pic8s	C2;			//C2 color component after first BDWT
+	//Pic8s	C3;			//C3 color component after first BDWT
 }BAY8;
 
 typedef struct{
 	Pic16s	B;			//Bayer image 16 bits
-	Pic16s	Y;			//Y  color component after first BDWT
-	Pic16s	C1;			//C1 color component after first BDWT
-	Pic16s	C2;			//C2 color component after first BDWT
-	Pic16s	C3;			//C3 color component after first BDWT
+	Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
+
+	//Pic16s	Y;			//Y  color component after first BDWT
+	//Pic16s	C1;			//C1 color component after first BDWT
+	//Pic16s	C2;			//C2 color component after first BDWT
+	//Pic16s	C3;			//C3 color component after first BDWT
 }BAY16;
 
 typedef struct{
@@ -328,10 +333,8 @@ typedef struct{
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define rc(x)	((x) < -127 ? -127 : ( (x) > 127 ? 127 : (x) ))
-#define	setpoiter(p, pic)	if		(pic->bit == U8) 	p = (uint8*)	pic->p;	\
-							else if	(pic->bit == S8) 	p = (int8*) 	pic->p; \
-							else if	(pic->bit == U16)	p = (uint16*) 	pic->p; \
-							else if	(pic->bit == S16) 	p = (int16*) 	pic->p; \
+#define bit_check(w, i) (((w)&1)&(!((i)&1)))	//Check odd width or height of subband
+
 
 //#define oe(a,x)	(a ? x%2 : (x+1)%2)
 

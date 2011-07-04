@@ -16,60 +16,49 @@ void frames_init(GOP *gop, uint32 fr)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	Frame *frame = &gop->frames[fr];
-	uint32 i, j, w = gop->width, h = gop->height;
+	Frame *f = &gop->frames[fr];
+	uint32 i, j, k, w = gop->width, h = gop->height;
 	//New init
 
 	if(gop->color == BAYER && gop->bpp > 8){
-		frame->B16.B.w = w; frame->B16.B.h = h;
-		frame->B16.B.pic = (int16 *)calloc(frame->B16.B.w*frame->B16.B.h, sizeof(uint16));
+		f->B16.B.w = w; f->B16.B.h = h;
+		f->B16.B.pic = (int16 *)calloc(f->B16.B.w*f->B16.B.h, sizeof(uint16));
 
 	} else if(gop->color == BAYER && gop->bpp == 8){
-		frame->B8.B.w = w; frame->B8.B.h = h;
-		frame->B8.B.pic = (uint8 *)calloc(frame->B8.B.w*frame->B8.B.h, sizeof(uint8));
+		//Init bayer picture
+		f->B8.B.w = w; f->B8.B.h = h;
+		f->B8.B.pic = (uint8 *)calloc(f->B8.B.w*f->B8.B.h, sizeof(uint8));
+
 		//Init color components
-		frame->B8.Y.w = (w>>1) + (w&1); frame->B8.Y.h = (h>>1) + (h&1);
-		frame->B8.Y.pic = (uint8 *)calloc(frame->B8.Y.w*frame->B8.Y.h, sizeof(uint8));
-		frame->B8.C1.w = w>>1; frame->B8.C1.h = (h>>1) + (h&1);
-		frame->B8.C1.pic = (int8 *)calloc(frame->B8.C1.w*frame->B8.C1.h, sizeof(int8));
-		frame->B8.C2.w = (w>>1) + (w&1); frame->B8.C2.h = h>>1;
-		frame->B8.C2.pic = (int8 *)calloc(frame->B8.C2.w*frame->B8.C2.h, sizeof(int8));
-		frame->B8.C3.w = w>>1; frame->B8.C3.h = h>>1;
-		frame->B8.C3.pic = (int8 *)calloc(frame->B8.C3.w*frame->B8.C3.h, sizeof(int8));
+		//f->B8.C[0].w = (w>>1) + (w&1); f->B8.C[0].h = (h>>1) + (h&1);
+		//f->B8.C[1].w = w>>1; f->B8.C[1].h = (h>>1) + (h&1);
+		//f->B8.C[2].w = (w>>1) + (w&1); f->B8.C[2].h = h>>1;
+		//f->B8.C[3].w = w>>1; f->B8.C[3].h = h>>1;
+		for(i=0; i < 4; i++) {
+			f->B8.C[i].w = (w>>1) + bit_check(w, i);
+			f->B8.C[i].h = (h>>1) + bit_check(h, i>>1);
+			f->B8.C[i].pic = (int8 *)calloc(f->B8.C[i].w*f->B8.C[i].h, sizeof(int8));
+		}
 		//Init DWT level components
 		if(gop->steps){
-			frame->L8 = (Level8 **)calloc(gop->steps, sizeof(Level8 *));
-			frame->L8[0] = (Level8 *)calloc(4, sizeof(Level8));
-			//printf("L8[0][0] = %p\n", &frame->L8[0][0]);
+			f->L8 = (Level8 **)calloc(gop->steps, sizeof(Level8 *));
+			f->L8[0] = (Level8 *)calloc(4, sizeof(Level8));
+			printf("L8[0][0] = %p\n", &f->L8[0][0]);
 			for(j=0; j < 4; j++){
-				frame->L8[0][j].ll.w = (frame->B8.Y.w>>1) + (frame->B8.Y.w&1);
-				frame->L8[0][j].ll.h = (frame->B8.Y.h>>1) + (frame->B8.Y.h&1);
-				frame->L8[0][j].ll.pic = (uint8 *)calloc(frame->L8[0][j].ll.w*frame->L8[0][j].ll.h, sizeof(uint8));
-				frame->L8[0][j].hl.w = (frame->B8.Y.w>>1);
-				frame->L8[0][j].hl.h = (frame->B8.Y.h>>1) + (frame->B8.Y.h&1);
-				frame->L8[0][j].hl.pic = (int8 *)calloc(frame->L8[0][j].hl.w*frame->L8[0][j].hl.h, sizeof(int8));
-				frame->L8[0][j].lh.w = (frame->B8.Y.w>>1) + (frame->B8.Y.w&1);
-				frame->L8[0][j].lh.h = (frame->B8.Y.h>>1);
-				frame->L8[0][j].lh.pic = (int8 *)calloc(frame->L8[0][j].lh.w*frame->L8[0][j].lh.h, sizeof(int8));
-				frame->L8[0][j].hh.w = (frame->B8.Y.w>>1);
-				frame->L8[0][j].hh.h = (frame->B8.Y.h>>1);
-				frame->L8[0][j].hh.pic = (int8 *)calloc(frame->L8[0][j].hh.w*frame->L8[0][j].hh.h, sizeof(int8));
+				for(i=0; i < 4; i++) {
+					f->L8[0][j].s[i].w = (f->B8.C[j].w>>1) + bit_check(f->B8.C[j].w, i);
+					f->L8[0][j].s[i].h = (f->B8.C[j].h>>1) + bit_check(f->B8.C[j].h, i>>1);
+					f->L8[0][j].s[i].pic = (uint8 *)calloc(f->L8[0][j].s[i].w*f->L8[0][j].s[i].h, sizeof(uint8));
+				}
 			}
-			for(i=1; i < gop->steps; i++){
-				frame->L8[i] = (Level8 *)calloc(4, sizeof(Level8));
+			for(k=1; k < gop->steps; k++){
+				f->L8[k] = (Level8 *)calloc(4, sizeof(Level8));
 				for(j=0; j < 4; j++){
-					frame->L8[i][j].ll.w = (frame->L8[i-1][0].ll.w>>1) + (frame->L8[i-1][0].ll.w&1);
-					frame->L8[i][j].ll.h = (frame->L8[i-1][0].ll.h>>1) + (frame->L8[i-1][0].ll.h&1);
-					frame->L8[i][j].ll.pic = (uint8 *)calloc(frame->L8[i][j].ll.w*frame->L8[i][j].ll.h, sizeof(uint8));
-					frame->L8[i][j].hl.w = (frame->L8[i-1][0].ll.w>>1);
-					frame->L8[i][j].hl.h = (frame->L8[i-1][0].ll.h>>1) + (frame->L8[i-1][0].ll.h&1);
-					frame->L8[i][j].hl.pic = (int8 *)calloc(frame->L8[i][j].hl.w*frame->L8[i][j].hl.h, sizeof(int8));
-					frame->L8[i][j].lh.w = (frame->L8[i-1][0].ll.w>>1) + (frame->L8[i-1][0].ll.w&1);
-					frame->L8[i][j].lh.h = (frame->L8[i-1][0].ll.h>>1);
-					frame->L8[i][j].lh.pic = (int8 *)calloc(frame->L8[i][j].lh.w*frame->L8[i][j].lh.h, sizeof(int8));
-					frame->L8[i][j].hh.w = (frame->L8[i-1][0].ll.w>>1);
-					frame->L8[i][j].hh.h = (frame->L8[i-1][0].ll.h>>1);
-					frame->L8[i][j].hh.pic = (int8 *)calloc(frame->L8[i][j].hh.w*frame->L8[i][j].hh.h, sizeof(int8));
+					for(i=0; i < 4; i++) {
+						f->L8[k][j].s[i].w = (f->L8[k-1][j].s[0].w>>1) + bit_check(f->L8[k-1][j].s[0].w, i);
+						f->L8[k][j].s[i].h = (f->L8[k-1][j].s[0].h>>1) + bit_check(f->L8[k-1][j].s[0].h, i>>1);
+						f->L8[k][j].s[i].pic = (uint8 *)calloc(f->L8[k][j].s[i].w*f->L8[k][j].s[i].h, sizeof(uint8));
+					}
 				}
 			}
 		}
@@ -78,50 +67,50 @@ void frames_init(GOP *gop, uint32 fr)
 
 	//Old init
 	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
-	image_init(&frame->img[0], w, h, gop->color, gop->bpp, gop->steps);
-	frame->size = w*h;
+	image_init(&f->img[0], w, h, gop->color, gop->bpp, gop->steps);
+	f->size = w*h;
 
-	frame->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
-	frame->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
+	f->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
+	f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
-	frame->rgb.w  = w;
-	frame->rgb.h = h;
-	frame->rgb.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
-	frame->Y.w  = w;
-	frame->Y.h = h;
-	frame->Y.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
-	frame->grad.w  = w;
-	frame->grad.h = h;
-	frame->grad.pic = (uint8 *)calloc(frame->rgb.w*frame->rgb.h*3, sizeof(uint8));
+	f->rgb.w  = w;
+	f->rgb.h = h;
+	f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
+	f->Y.w  = w;
+	f->Y.h = h;
+	f->Y.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
+	f->grad.w  = w;
+	f->grad.h = h;
+	f->grad.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
 
 
-	frame->line.w  = w;
-	frame->line.h = h;
-	frame->line.pic = (uint8 *)calloc(frame->line.w*frame->line.h, sizeof(uint8));
-	frame->edge.w  = w;
-	frame->edge.h = h;
-	frame->edge.pic = (uint8 *)calloc(frame->edge.w*frame->edge.h, sizeof(uint8));
-	frame->vec.w  = w;
-	frame->vec.h = h;
-	frame->vec.pic = (uint8 *)calloc(frame->vec.w*frame->vec.h, sizeof(uint8));
-	//frame->pixp = (uint32 *)calloc(frame->vec.width*frame->vec.height, sizeof(uint32));
+	f->line.w  = w;
+	f->line.h = h;
+	f->line.pic = (uint8 *)calloc(f->line.w*f->line.h, sizeof(uint8));
+	f->edge.w  = w;
+	f->edge.h = h;
+	f->edge.pic = (uint8 *)calloc(f->edge.w*f->edge.h, sizeof(uint8));
+	f->vec.w  = w;
+	f->vec.h = h;
+	f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
+	//f->pixp = (uint32 *)calloc(f->vec.width*f->vec.height, sizeof(uint32));
 
 	if(gop->color == CS444 || gop->color == RGB) {
-		image_init(&frame->img[1], w, h, gop->color, gop->bpp, gop->steps);
-		image_init(&frame->img[2], w, h, gop->color, gop->bpp, gop->steps);
-		frame->size = frame->size*3;
+		image_init(&f->img[1], w, h, gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[2], w, h, gop->color, gop->bpp, gop->steps);
+		f->size = f->size*3;
 	}
 	if(gop->color == CS422){
-		image_init(&frame->img[1], w>>1 , h, gop->color, gop->bpp, gop->steps);
-		image_init(&frame->img[2], w>>1 , h, gop->color, gop->bpp, gop->steps);
-		frame->size = frame->size*2;
+		image_init(&f->img[1], w>>1 , h, gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[2], w>>1 , h, gop->color, gop->bpp, gop->steps);
+		f->size = f->size*2;
 	}
 	if(gop->color == CS420){
-		image_init(&frame->img[1], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
-		image_init(&frame->img[2], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
-		frame->size = (frame->size*3)>>1;
+		image_init(&f->img[1], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[2], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
+		f->size = (f->size*3)>>1;
 	}
-	frame->state = 0;
+	f->state = 0;
 }
 
 void frame_copy_old(GOP *gop, uint32 fr, char *y, char *u, char *v)
@@ -171,22 +160,25 @@ uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	uint32 i, j;
+	uint32 i, j, k;
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
 	if(check_state(f->state, FRAME_COPY | IDWT)){
 		if(gop->bpp == 8 && gop->fb == FR_HAAR){
 			printf("Start color dwt_2d_haar8\n");
-			dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.Y.pic, f->B8.C1.pic, f->B8.C2.pic, f->B8.C3.pic);
+			//Befor DWT shift all image on 128
+			shift(f->B8.B.pic, (int8*)gop->buf, 128, f->B8.B.w*f->B8.B.h);
+			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
+			//dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
 			if(gop->steps){
-				dwt_2d_haar8(f->B8.Y.pic,  f->B8.Y.w,  f->B8.Y.h,  f->L8[0][0].ll.pic, f->L8[0][0].hl.pic, f->L8[0][0].lh.pic, f->L8[0][0].hh.pic);
-				dwt_2d_haar8(f->B8.C1.pic, f->B8.C1.w, f->B8.C1.h, f->L8[0][1].ll.pic, f->L8[0][1].hl.pic, f->L8[0][1].lh.pic, f->L8[0][1].hh.pic);
-				dwt_2d_haar8(f->B8.C2.pic, f->B8.C2.w, f->B8.C2.h, f->L8[0][2].ll.pic, f->L8[0][2].hl.pic, f->L8[0][2].lh.pic, f->L8[0][2].hh.pic);
-				dwt_2d_haar8(f->B8.C3.pic, f->B8.C3.w, f->B8.C3.h, f->L8[0][3].ll.pic, f->L8[0][3].hl.pic, f->L8[0][3].lh.pic, f->L8[0][3].hh.pic);
-
-				for(i=1; i < gop->steps; i++) {
-					for(j=0; j < 4; j++) {
-						dwt_2d_haar8(f->L8[i-1][j].ll.pic, f->L8[i-1][j].ll.w, f->L8[i-1][j].ll.h, f->L8[i][j].ll.pic, f->L8[i][j].hl.pic, f->L8[i][j].lh.pic, f->L8[i][j].hh.pic);
+				for(j=0; j < 4; j++){
+					dwt_2d_haar8(f->B8.C[j].pic, f->B8.C[j].w, f->B8.C[j].h,
+							f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic, 0);
+				}
+				for(k=1; k < gop->steps; k++){
+					for(j=0; j < 4; j++){
+						dwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
+								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic, 0);
 					}
 				}
 			}
