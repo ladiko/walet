@@ -32,20 +32,6 @@ int g[9][2] = {
 //#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
 
-static inline void drawrect_8u(uint8 *rgb, uint8 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
-{
-	uint32 x, y, tmp;
-	for(y=0; y < h; y++ ){
-		for(x=0; x < w; x++){
-			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
-			tmp = rnd(shift + pic[y*w+x]);
-			rgb[3*((y+y0)*size +x0 +x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
-			rgb[3*((y+y0)*size +x0 +x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
-			rgb[3*((y+y0)*size +x0 +x)+2] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
-		}
-	}
-}
-
 static inline void drawrect_8s(uint8 *rgb, int8 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y, tmp;
@@ -86,9 +72,9 @@ static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uin
 	}
 }
 
-uint8* utils_one_dwt_draw_8(Pic8u *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w)
+uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w)
 {
-	drawrect_8u(rgb, ll->pic, x,         y,         ll->w, ll->h, w, 0);
+	drawrect_8s(rgb, ll->pic, x,         y,         ll->w, ll->h, w, 128);
 	drawrect_8s(rgb, hl->pic, x + ll->w, y,         hl->w, hl->h, w, 128);
 	drawrect_8s(rgb, lh->pic, x        , y + ll->h, lh->w, lh->h, w, 128);
 	drawrect_8s(rgb, hh->pic, x + ll->w, y + ll->h, hh->w, hh->h, w, 128);
@@ -97,12 +83,12 @@ uint8* utils_one_dwt_draw_8(Pic8u *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *r
 
 uint8* utils_dwt_draw_8(Level8 **l8, uint8 *rgb, uint32 steps)
 {
-	printf("L8[0][0] = %p\n", &l8[0][0]);
-	uint32 w = l8[0][0].ll.w + l8[0][0].hl.w + l8[0][1].ll.w + l8[0][1].hl.w;
-	utils_one_dwt_draw_8(&l8[0][0].ll, &l8[0][0].hl, &l8[0][0].lh, &l8[0][0].hh, rgb, 0, 0, w);
-	utils_one_dwt_draw_8(&l8[0][1].ll, &l8[0][1].hl, &l8[0][1].lh, &l8[0][1].hh, rgb, l8[0][0].ll.w + l8[0][0].hl.w, 0, w);
-	utils_one_dwt_draw_8(&l8[0][2].ll, &l8[0][2].hl, &l8[0][2].lh, &l8[0][2].hh, rgb, 0, l8[0][0].ll.h + l8[0][0].lh.h, w);
-	utils_one_dwt_draw_8(&l8[0][3].ll, &l8[0][3].hl, &l8[0][3].lh, &l8[0][3].hh, rgb, l8[0][0].ll.w + l8[0][0].hl.w, l8[0][0].ll.h + l8[0][0].lh.h, w);
+	//printf("L8[0][0] = %p\n", &l8[0][0]);
+	uint32 w = l8[0][0].s[0].w + l8[0][0].s[1].w + l8[0][1].s[0].w + l8[0][1].s[1].w;
+	utils_one_dwt_draw_8(&l8[0][0].s[0], &l8[0][0].s[1], &l8[0][0].s[2], &l8[0][0].s[3], rgb, 0, 0, w);
+	utils_one_dwt_draw_8(&l8[0][1].s[0], &l8[0][1].s[1], &l8[0][1].s[2], &l8[0][1].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, 0, w);
+	utils_one_dwt_draw_8(&l8[0][2].s[0], &l8[0][2].s[1], &l8[0][2].s[2], &l8[0][2].s[3], rgb, 0, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
+	utils_one_dwt_draw_8(&l8[0][3].s[0], &l8[0][3].s[1], &l8[0][3].s[2], &l8[0][3].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
 	return rgb;
 }
 
@@ -181,6 +167,12 @@ uint8* utils_subband_draw(Image *img, uint8 *rgb, ColorSpace color, uint32 steps
 		drawrect(rgb, im, 0, 0, w, h, img->width, 0);
 	}
 	return rgb;
+}
+
+int8* shift(uint8 *in, int8 *out, uint32 shift, uint32 size)
+{
+	uint32 i;
+	for(i=0; i < size; i++) out[i] = in[i] - shift;
 }
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)

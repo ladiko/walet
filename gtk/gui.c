@@ -349,11 +349,11 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
 		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
-		//utils_one_dwt_draw_8(&gw->gop->frames[0].B8.Y, &gw->gop->frames[0].B8.C1,  &gw->gop->frames[0].B8.C2, &gw->gop->frames[0].B8.C3,
-		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.Y.w + gw->gop->frames[0].B8.C1.w);
-		printf("L8[0][0] = %p\n", &gw->gop->frames[0].L8[0][0]);
-		//utils_one_dwt_draw_8(&gw->gop->frames[0].L8[0][0].ll, &gw->gop->frames[0].L8[0][0].hl,  &gw->gop->frames[0].L8[0][0].lh, &gw->gop->frames[0].L8[0][0].hh,
-		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.Y.w + gw->gop->frames[0].B8.C1.w);
+		//utils_one_dwt_draw_8(&gw->gop->frames[0].B8.C[0], &gw->gop->frames[0].B8.C[1],  &gw->gop->frames[0].B8.C[2], &gw->gop->frames[0].B8.C[3],
+		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
+		//printf("L8[0][0] = %p\n", &gw->gop->frames[0].L8[0][0]);
+		//utils_one_dwt_draw_8(&gw->gop->frames[0].L8[0][0].s[0], &gw->gop->frames[0].L8[0][0].s[1],  &gw->gop->frames[0].L8[0][0].s[2], &gw->gop->frames[0].L8[0][0].s[3],
+		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
 		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
 
 		utils_dwt_draw_8(gw->gop->frames[0].L8, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 1);
