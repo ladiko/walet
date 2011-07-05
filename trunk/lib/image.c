@@ -123,7 +123,7 @@ static inline void dwt_haar_2d_one(int16 *in, int16 *out, const uint32 w, const 
 	dwt_haar_2d(out, in, w, h);
 }
 
-void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *out2, int8 *out3, uint32 shift)
+void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *out2, int8 *out3)
 ///	\fn
 ///	\brief One step 2D Haar DWT transform.
 ///	\param in	 		The input image data.
@@ -155,7 +155,7 @@ void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *ou
 		}
 	}
 	if(h&1){
-		yx = yx + w; yx1 = yx1 + wy1; yx2 = yx2 + wy2;
+		//yx = yx + w; yx1 = yx1 + wy1; yx2 = yx2 + wy2;
 		for(x=0; x < wx; x+=2){
 			yx = yx + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
 			//out0[yx1] = ((in[yx] + in[yx+1])>>1) - shift;
