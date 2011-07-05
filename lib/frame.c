@@ -168,17 +168,53 @@ uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
 			printf("Start color dwt_2d_haar8\n");
 			//Befor DWT shift all image on 128
 			shift(f->B8.B.pic, (int8*)gop->buf, 128, f->B8.B.w*f->B8.B.h);
-			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
+			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
 			//dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
 			if(gop->steps){
 				for(j=0; j < 4; j++){
 					dwt_2d_haar8(f->B8.C[j].pic, f->B8.C[j].w, f->B8.C[j].h,
-							f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic, 0);
+							f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic);
 				}
 				for(k=1; k < gop->steps; k++){
 					for(j=0; j < 4; j++){
 						dwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
-								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic, 0);
+								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic);
+					}
+				}
+			}
+			f->state = DWT;
+		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
+			return 1;
+		}
+	} else return 0;
+}
+
+uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
+///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
+///	\brief	Discrete wavelets frame transform.
+///	\param	gop			The GOP structure.
+///	\param	fr			The frame number.
+///	\retval				1 - if all OK, 0 - if not OK
+{
+	uint32 i, j, k;
+	if(gop == NULL ) return 0;
+	Frame *f = &gop->frames[fr];
+	if(check_state(f->state, FRAME_COPY | IDWT)){
+		if(gop->bpp == 8 && gop->fb == FR_HAAR){
+			printf("Start color dwt_2d_haar8\n");
+			//Befor DWT shift all image on 128
+			//shift(f->B8.B.pic, (int8*)gop->buf, 128, f->B8.B.w*f->B8.B.h);
+			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
+			//dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
+			if(gop->steps){
+				for(j=0; j < 4; j++){
+					dwt_2d_haar8(f->B8.C[j].pic, f->B8.C[j].w, f->B8.C[j].h,
+							f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic);
+				}
+				for(k=1; k < gop->steps; k++){
+					for(j=0; j < 4; j++){
+						dwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
+								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic);
 					}
 				}
 			}
