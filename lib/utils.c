@@ -169,10 +169,21 @@ uint8* utils_subband_draw(Image *img, uint8 *rgb, ColorSpace color, uint32 steps
 	return rgb;
 }
 
-int8* shift(uint8 *in, int8 *out, uint32 shift, uint32 size)
+void shift_b_to_w(uint8 *in, int8 *out, int shift, uint32 size)
 {
 	uint32 i;
-	for(i=0; i < size; i++) out[i] = in[i] - shift;
+	for(i=0; i < size; i++) out[i] = in[i] + shift;
+}
+
+void shift_w_to_b(int8 *in, uint8 *out, int shift, uint32 size)
+{
+	uint32 i;
+	int tmp;
+	for(i=0; i < size; i++) {
+		tmp = in[i] + shift;
+		if(in[i] < -128 || in[i] > 127) printf("out[i] = %d\n", in[i]);
+		out[i] = in[i] + shift;
+	}
 }
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
@@ -920,7 +931,7 @@ double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 	if(d==1){
 		for(i = 0; i < dim; i++){
-			//if(before[i] - after[i] && i < 1920*2) printf("i = %4d b = %4d a = %4d\n", i, before[i], after[i]);
+			//if(before[i] - after[i] ) printf("i = %4d b = %4d a = %4d diff = %4d\n", i, before[i], after[i], before[i] - after[i]);
 			r += abs((int)(before[i] - after[i] ));
 		}
 		ape = (double)r/(double)dim;

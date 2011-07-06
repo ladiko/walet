@@ -58,6 +58,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb);
+uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep);
 
 void 	frames_init			(GOP *gop, uint32 fr);
 void 	frame_copy			(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v);

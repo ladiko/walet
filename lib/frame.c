@@ -28,15 +28,13 @@ void frames_init(GOP *gop, uint32 fr)
 		//Init bayer picture
 		f->B8.B.w = w; f->B8.B.h = h;
 		f->B8.B.pic = (uint8 *)calloc(f->B8.B.w*f->B8.B.h, sizeof(uint8));
+		printf("w = %d h = %d\n", f->B8.B.w, f->B8.B.h);
 
 		//Init color components
-		//f->B8.C[0].w = (w>>1) + (w&1); f->B8.C[0].h = (h>>1) + (h&1);
-		//f->B8.C[1].w = w>>1; f->B8.C[1].h = (h>>1) + (h&1);
-		//f->B8.C[2].w = (w>>1) + (w&1); f->B8.C[2].h = h>>1;
-		//f->B8.C[3].w = w>>1; f->B8.C[3].h = h>>1;
 		for(i=0; i < 4; i++) {
 			f->B8.C[i].w = (w>>1) + bit_check(w, i);
 			f->B8.C[i].h = (h>>1) + bit_check(h, i>>1);
+			printf("w = %d h = %d\n", f->B8.C[i].w, f->B8.C[i].h);
 			f->B8.C[i].pic = (int8 *)calloc(f->B8.C[i].w*f->B8.C[i].h, sizeof(int8));
 		}
 		//Init DWT level components
@@ -48,8 +46,10 @@ void frames_init(GOP *gop, uint32 fr)
 				for(i=0; i < 4; i++) {
 					f->L8[0][j].s[i].w = (f->B8.C[j].w>>1) + bit_check(f->B8.C[j].w, i);
 					f->L8[0][j].s[i].h = (f->B8.C[j].h>>1) + bit_check(f->B8.C[j].h, i>>1);
+					printf("w = %d h = %d\n", f->L8[0][j].s[i].w, f->L8[0][j].s[i].h);
 					f->L8[0][j].s[i].pic = (uint8 *)calloc(f->L8[0][j].s[i].w*f->L8[0][j].s[i].h, sizeof(uint8));
 				}
+				printf("\n");
 			}
 			for(k=1; k < gop->steps; k++){
 				f->L8[k] = (Level8 *)calloc(4, sizeof(Level8));
@@ -57,8 +57,10 @@ void frames_init(GOP *gop, uint32 fr)
 					for(i=0; i < 4; i++) {
 						f->L8[k][j].s[i].w = (f->L8[k-1][j].s[0].w>>1) + bit_check(f->L8[k-1][j].s[0].w, i);
 						f->L8[k][j].s[i].h = (f->L8[k-1][j].s[0].h>>1) + bit_check(f->L8[k-1][j].s[0].h, i>>1);
+						printf("nw = %d h = %d\n", f->L8[k][j].s[i].w, f->L8[k][j].s[i].h);
 						f->L8[k][j].s[i].pic = (uint8 *)calloc(f->L8[k][j].s[i].w*f->L8[k][j].s[i].h, sizeof(uint8));
 					}
+					printf("\n");
 				}
 			}
 		}
@@ -167,7 +169,7 @@ uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
 		if(gop->bpp == 8 && gop->fb == FR_HAAR){
 			printf("Start color dwt_2d_haar8\n");
 			//Befor DWT shift all image on 128
-			shift(f->B8.B.pic, (int8*)gop->buf, 128, f->B8.B.w*f->B8.B.h);
+			shift_b_to_w(f->B8.B.pic, (int8*)gop->buf, -128, f->B8.B.w*f->B8.B.h);
 			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
 			//dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
 			if(gop->steps){
@@ -199,26 +201,28 @@ uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
 	uint32 i, j, k;
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
-	if(check_state(f->state, FRAME_COPY | IDWT)){
+	if(check_state(f->state, FRAME_COPY | DWT)){
 		if(gop->bpp == 8 && gop->fb == FR_HAAR){
 			printf("Start color dwt_2d_haar8\n");
-			//Befor DWT shift all image on 128
-			//shift(f->B8.B.pic, (int8*)gop->buf, 128, f->B8.B.w*f->B8.B.h);
-			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
-			//dwt_2d_haar8(f->B8.B.pic, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic, 128);
 			if(gop->steps){
-				for(j=0; j < 4; j++){
-					dwt_2d_haar8(f->B8.C[j].pic, f->B8.C[j].w, f->B8.C[j].h,
-							f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic);
-				}
-				for(k=1; k < gop->steps; k++){
-					for(j=0; j < 4; j++){
-						dwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
+				if(gop->steps > 1){
+					for(k=gop->steps; k; k--){
+						for(j=0; j < 4; j++){
+							idwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
 								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic);
+						}
 					}
 				}
+				for(j=0; j < 4; j++){
+					idwt_2d_haar8(f->B8.C[j].pic, f->B8.C[j].w, f->B8.C[j].h,
+						f->L8[0][j].s[0].pic, f->L8[0][j].s[1].pic, f->L8[0][j].s[2].pic, f->L8[0][j].s[3].pic);
+				}
 			}
-			f->state = DWT;
+			idwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
+			//shift((int8*)gop->buf, f->B8.B.pic, 128, f->B8.B.w*f->B8.B.h);
+			shift_w_to_b((int8*)gop->buf, gop->buf, 128, f->B8.B.w*f->B8.B.h);
+
+			f->state = IDWT;
 		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 			return 1;
 		}
