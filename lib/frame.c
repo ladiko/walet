@@ -24,6 +24,40 @@ void frames_init(GOP *gop, uint32 fr)
 		f->B16.B.w = w; f->B16.B.h = h;
 		f->B16.B.pic = (int16 *)calloc(f->B16.B.w*f->B16.B.h, sizeof(uint16));
 
+		//Init color components
+		for(i=0; i < 4; i++) {
+			f->B16.C[i].w = (w>>1) + bit_check(w, i);
+			f->B16.C[i].h = (h>>1) + bit_check(h, i>>1);
+			f->B16.C[i].pic = (int16 *)calloc(f->B16.C[i].w*f->B16.C[i].h, sizeof(int16));
+		}
+		//Init DWT level components
+		if(gop->steps){
+			f->L16 = (Level16 **)calloc(gop->steps, sizeof(Level16 *));
+			f->L16[0] = (Level16 *)calloc(4, sizeof(Level16));
+			printf("L16[0][0] = %p\n", &f->L16[0][0]);
+			for(j=0; j < 4; j++){
+				for(i=0; i < 4; i++) {
+					f->L16[0][j].s[i].w = (f->B16.C[j].w>>1) + bit_check(f->B16.C[j].w, i);
+					f->L16[0][j].s[i].h = (f->B16.C[j].h>>1) + bit_check(f->B16.C[j].h, i>>1);
+					printf("w = %d h = %d\n", f->L16[0][j].s[i].w, f->L16[0][j].s[i].h);
+					f->L16[0][j].s[i].pic = (uint16 *)calloc(f->L16[0][j].s[i].w*f->L16[0][j].s[i].h, sizeof(uint16));
+				}
+				printf("\n");
+			}
+			for(k=1; k < gop->steps; k++){
+				f->L16[k] = (Level16 *)calloc(4, sizeof(Level16));
+				for(j=0; j < 4; j++){
+					for(i=0; i < 4; i++) {
+						f->L16[k][j].s[i].w = (f->L16[k-1][j].s[0].w>>1) + bit_check(f->L16[k-1][j].s[0].w, i);
+						f->L16[k][j].s[i].h = (f->L16[k-1][j].s[0].h>>1) + bit_check(f->L16[k-1][j].s[0].h, i>>1);
+						printf("nw = %d h = %d\n", f->L16[k][j].s[i].w, f->L16[k][j].s[i].h);
+						f->L16[k][j].s[i].pic = (uint16 *)calloc(f->L16[k][j].s[i].w*f->L16[k][j].s[i].h, sizeof(uint16));
+					}
+					printf("\n");
+				}
+			}
+		}
+
 	} else if(gop->color == BAYER && gop->bpp == 8){
 		//Init bayer picture
 		f->B8.B.w = w; f->B8.B.h = h;
@@ -167,7 +201,7 @@ uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
 	Frame *f = &gop->frames[fr];
 	if(check_state(f->state, FRAME_COPY | IDWT)){
 		if(gop->bpp == 8 && gop->fb == FR_HAAR){
-			printf("Start color dwt_2d_haar8\n");
+			printf("Start dwt_2d_haar8\n");
 			//Befor DWT shift all image on 128
 			shift_b_to_w(f->B8.B.pic, (int8*)gop->buf, -128, f->B8.B.w*f->B8.B.h);
 			dwt_2d_haar8((int8*)gop->buf, f->B8.B.w, f->B8.B.h, f->B8.C[0].pic, f->B8.C[1].pic, f->B8.C[2].pic, f->B8.C[3].pic);
@@ -185,8 +219,28 @@ uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
 				}
 			}
 			f->state = DWT;
-		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 			return 1;
+		} else if(gop->bpp > 8 && gop->fb == FR_HAAR){
+			printf("Start dwt_2d_haar16\n");
+			//Befor DWT shift all image on 128
+			//shift_b_to_w(f->B8.B.pic, (int8*)gop->buf, -128, f->B8.B.w*f->B8.B.h);
+			dwt_2d_haar16(f->B16.B.pic, f->B16.B.w, f->B16.B.h, f->B16.C[0].pic, f->B16.C[1].pic, f->B16.C[2].pic, f->B16.C[3].pic);
+			//dwt_2d_haar16(f->B16.B.pic, f->B16.B.w, f->B16.B.h, f->B16.C[0].pic, f->B16.C[1].pic, f->B16.C[2].pic, f->B16.C[3].pic, 1216);
+			if(gop->steps){
+				for(j=0; j < 4; j++){
+					dwt_2d_haar16(f->B16.C[j].pic, f->B16.C[j].w, f->B16.C[j].h,
+							f->L16[0][j].s[0].pic, f->L16[0][j].s[1].pic, f->L16[0][j].s[2].pic, f->L16[0][j].s[3].pic);
+				}
+				for(k=1; k < gop->steps; k++){
+					for(j=0; j < 4; j++){
+						dwt_2d_haar16(f->L16[k-1][j].s[0].pic, f->L16[k-1][j].s[0].w, f->L16[k-1][j].s[0].h,
+								f->L16[k][j].s[0].pic, f->L16[k][j].s[1].pic, f->L16[k][j].s[2].pic, f->L16[k][j].s[3].pic);
+					}
+				}
+			}
+			f->state = DWT;
+			return 1;
+
 		}
 	} else return 0;
 }
@@ -203,7 +257,7 @@ uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
 	Frame *f = &gop->frames[fr];
 	if(check_state(f->state, FRAME_COPY | DWT)){
 		if(gop->bpp == 8 && gop->fb == FR_HAAR){
-			printf("Start color dwt_2d_haar8\n");
+			printf("Start idwt_2d_haar8\n");
 			if(gop->steps){
 				if(gop->steps > 1){
 					for(k=gop->steps; k; k--){
@@ -223,8 +277,30 @@ uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
 			shift_w_to_b((int8*)gop->buf, gop->buf, 128, f->B8.B.w*f->B8.B.h);
 
 			f->state = IDWT;
-		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 			return 1;
+		} else if(gop->bpp > 8 && gop->fb == FR_HAAR){
+			printf("Start idwt_2d_haar16\n");
+			if(gop->steps){
+				if(gop->steps > 1){
+					for(k=gop->steps; k; k--){
+						for(j=0; j < 4; j++){
+							idwt_2d_haar16(f->L16[k-1][j].s[0].pic, f->L16[k-1][j].s[0].w, f->L16[k-1][j].s[0].h,
+								f->L16[k][j].s[0].pic, f->L16[k][j].s[1].pic, f->L16[k][j].s[2].pic, f->L16[k][j].s[3].pic);
+						}
+					}
+				}
+				for(j=0; j < 4; j++){
+					idwt_2d_haar16(f->B16.C[j].pic, f->B16.C[j].w, f->B16.C[j].h,
+						f->L16[0][j].s[0].pic, f->L16[0][j].s[1].pic, f->L16[0][j].s[2].pic, f->L16[0][j].s[3].pic);
+				}
+			}
+			idwt_2d_haar16((int16*)gop->buf, f->B16.B.w, f->B16.B.h, f->B16.C[0].pic, f->B16.C[1].pic, f->B16.C[2].pic, f->B16.C[3].pic);
+			//shift((int8*)gop->buf, f->B8.B.pic, 128, f->B8.B.w*f->B8.B.h);
+			//shift_w_to_b((int8*)gop->buf, gop->buf, 128, f->B8.B.w*f->B8.B.h);
+
+			f->state = IDWT;
+			return 1;
+
 		}
 	} else return 0;
 }

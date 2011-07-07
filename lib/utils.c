@@ -81,14 +81,37 @@ uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *r
 	return rgb;
 }
 
-uint8* utils_dwt_draw_8(Level8 **l8, uint8 *rgb, uint32 steps)
+uint8* utils_dwt_draw_8(BAY8 *b8, Level8 **l8, uint8 *rgb, uint32 steps)
 {
-	//printf("L8[0][0] = %p\n", &l8[0][0]);
-	uint32 w = l8[0][0].s[0].w + l8[0][0].s[1].w + l8[0][1].s[0].w + l8[0][1].s[1].w;
-	utils_one_dwt_draw_8(&l8[0][0].s[0], &l8[0][0].s[1], &l8[0][0].s[2], &l8[0][0].s[3], rgb, 0, 0, w);
-	utils_one_dwt_draw_8(&l8[0][1].s[0], &l8[0][1].s[1], &l8[0][1].s[2], &l8[0][1].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, 0, w);
-	utils_one_dwt_draw_8(&l8[0][2].s[0], &l8[0][2].s[1], &l8[0][2].s[2], &l8[0][2].s[3], rgb, 0, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
-	utils_one_dwt_draw_8(&l8[0][3].s[0], &l8[0][3].s[1], &l8[0][3].s[2], &l8[0][3].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
+	uint32 i, j, x, y, w = b8->C[0].w +  b8->C[1].w;
+	if(steps){
+		for(j=0; j < steps; j++){
+			for(i=0; i < 4; i++){
+				x = 0; y = 0;
+				x = b8->C[0].w; y = 0;
+				x = 0; y = b8->C[0].h;
+				x = b8->C[0].w; y = b8->C[0].h;
+				drawrect_8s(rgb, l8[j][i].s[0].pic, x,                   y,                   l8[j][i].s[0].w, l8[j][i].s[0].h, w, 128);
+				drawrect_8s(rgb, l8[j][i].s[1].pic, x + l8[j][i].s[0].w, y,                   l8[j][i].s[1].w, l8[j][i].s[1].h, w, 128);
+				drawrect_8s(rgb, l8[j][i].s[2].pic, x,                   y + l8[j][i].s[0].h, l8[j][i].s[2].w, l8[j][i].s[2].h, w, 128);
+				drawrect_8s(rgb, l8[j][i].s[3].pic, x + l8[j][i].s[0].w, y + l8[j][i].s[0].h, l8[j][i].s[3].w, l8[j][i].s[3].h, w, 128);
+			}
+		}
+
+
+		uint32 w = l8[0][0].s[0].w + l8[0][0].s[1].w + l8[0][1].s[0].w + l8[0][1].s[1].w;
+		utils_one_dwt_draw_8(&l8[0][0].s[0], &l8[0][0].s[1], &l8[0][0].s[2], &l8[0][0].s[3], rgb, 0, 0, w);
+		utils_one_dwt_draw_8(&l8[0][1].s[0], &l8[0][1].s[1], &l8[0][1].s[2], &l8[0][1].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, 0, w);
+		utils_one_dwt_draw_8(&l8[0][2].s[0], &l8[0][2].s[1], &l8[0][2].s[2], &l8[0][2].s[3], rgb, 0, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
+		utils_one_dwt_draw_8(&l8[0][3].s[0], &l8[0][3].s[1], &l8[0][3].s[2], &l8[0][3].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, l8[0][0].s[0].h + l8[0][0].s[2].h, w);
+
+	} else {
+		drawrect_8s(rgb, b8->C[0].pic, 0,          0,          b8->C[0].w, b8->C[0].h, w, 128);
+		drawrect_8s(rgb, b8->C[1].pic, b8->C[0].w, 0,          b8->C[1].w, b8->C[1].h, w, 128);
+		drawrect_8s(rgb, b8->C[2].pic, 0,          b8->C[0].h, b8->C[2].w, b8->C[2].h, w, 128);
+		drawrect_8s(rgb, b8->C[3].pic, b8->C[0].w, b8->C[0].h, b8->C[3].w, b8->C[3].h, w, 128);
+	}
+
 	return rgb;
 }
 

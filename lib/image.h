@@ -44,7 +44,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
+void dwt_2d_haar16(int16 *in, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
 void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
+void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
 void pic_copy(Pic8u *p, char *y);
 
 
