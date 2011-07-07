@@ -4,23 +4,7 @@
 typedef struct{
 	BAY8	B8;
 	BAY16	B16;
-	YUV8 	YUV;
-	/*
-	Pic8u	BAY8;		//Bayer image 8 bits
-	Pic16u	BAY16;		//Bayer image more than 8 bits
-	Pic8u	Y;			//Y image for 420 422 444 or Y component after first bayer DWT color transform (BDWT)
-	Pic8u	U;			//U image for 420 422 444 or color component after first BDWT
-	Pic8u	V;			//V image for 420 422 444 or color component after first BDWT
-	Pic8s	W;			//W The last color component after first BDWT
-	Pic16s	Y;			//Y image for 420 422 444 or Y component after first bayer DWT color transform (BDWT)
-	Pic16s	U;			//U image for 420 422 444 or color component after first BDWT
-	Pic8u	V;			//V image for 420 422 444 or color component after first BDWT
-	Pic8s	W;			//W The last color component after first BDWT
-	//Pic8s	C2;			//C2 color component after first BDWT
-	//Pic8s	C3;			//C3 color component after first BDWT
-
-	 */
-
+	//YUV8 	YUV;
 	Level8	**L8;		//The levels of DWT transform
 	Level16	**L16;		//The levels of DWT transform
 

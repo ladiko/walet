@@ -171,7 +171,104 @@ void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, in
 	}
 }
 
+void dwt_2d_haar16(int16 *in, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh)
+///	\fn void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *out2, int8 *out3)
+///	\brief One step 2D Haar DWT transform.
+///	\param in	 		The input image data.
+///	\param w 			The width
+///	\param h 			The height
+///	\param ll	 		The pointer to LL subbabnd
+///	\param hl	 		The pointer to HL subbabnd
+///	\param lh	 		The pointer to LH subbabnd
+///	\param hh	 		The pointer to HH subbabnd
+{
+	uint32 x, y, y1, y2, yx, yx0, yx1, yx2, sz = w*((h>>1)<<1);
+	uint32 wy = w<<1, wy1 = (w>>1) + (w&1), wy2 = (w>>1), wx = ((w>>1)<<1);
+	//uint32 yx0, yx01, yx11;
+	int tmp[4];
+
+	for(y=0, y1=0, y2 = 0; y < sz; y+=wy, y1+=wy1, y2+=wy2){
+		for(x=0; x < wx; x+=2){
+			yx = y + x; yx0 = yx + 1;
+			tmp[0]	= (in[yx] + in[yx0]);
+			tmp[1]	= (in[yx] - in[yx0]);
+			yx = yx + w; yx0 = yx + 1;
+			tmp[2]	= (in[yx] + in[yx0]);
+			tmp[3]	= (in[yx] - in[yx0]);
+			yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
+			ll[yx1] = (tmp[0] + tmp[2]);
+			hl[yx2] = (tmp[1] + tmp[3]);
+			lh[yx1] = (tmp[0] - tmp[2]);
+			hh[yx2] = (tmp[1] - tmp[3]);
+		}
+		if(w&1){
+			yx = y + x;
+			ll[yx1+1] = (in[yx] + in[yx+w]);
+			lh[yx1+1] = (in[yx] - in[yx+w]);
+		}
+	}
+	if(h&1){
+		for(x=0; x < wx; x+=2){
+			yx = y + x; yx1 = y1 + (x>>1); yx2 = y2 + (x>>1);
+			ll[yx1] = (in[yx] + in[yx+1]);
+			hl[yx2] = (in[yx] - in[yx+1]);
+		}
+		if(w&1){
+			ll[yx1+1] = in[yx+2];
+		}
+	}
+}
+
 void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh)
+///	\fn void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh)
+///	\brief One step 2D Haar IDWT transform.
+///	\param out	 		The input image data.
+///	\param w 			The width
+///	\param h 			The height
+///	\param ll	 		The pointer to LL subbabnd
+///	\param hl	 		The pointer to HL subbabnd
+///	\param lh	 		The pointer to LH subbabnd
+///	\param hh	 		The pointer to HH subbabnd
+{
+	uint32 x, y, y1, y2, yx, yx1, yx2, sz = w*((h>>1)<<1);
+	uint32 wy = w<<1, wy1 = (w>>1) + (w&1), wy2 = (w>>1), wx = ((w>>1)<<1);
+	int tmp[4], tm;
+
+	for(y=0, y1=0, y2 = 0; y < sz; y+=wy, y1+=wy1, y2+=wy2){
+		for(x=0; x < wx; x+=2){
+			yx1 = y1 + (x>>1);
+			tmp[0]	= ll[yx1] + lh[yx1];
+			tmp[1]	= ll[yx1] - lh[yx1];
+			yx2 = y2 + (x>>1);
+			tmp[2]	= hl[yx2] + hh[yx2];
+			tmp[3]	= hl[yx2] - hh[yx2];
+			yx = y + x;
+			out[yx  ] = (tmp[0] + tmp[2])>>2;
+			out[yx+1] = (tmp[0] - tmp[2])>>2;
+			yx = yx + w;
+			out[yx  ] = (tmp[1] + tmp[3])>>2;
+			out[yx+1] = (tmp[1] - tmp[3])>>2;
+		}
+		if(w&1){
+			yx = y + x; yx1 = y1 + (x>>1);
+			out[yx  ] = (ll[yx1] + lh[yx1])>>1;
+			out[yx+w] = (ll[yx1] - lh[yx1])>>1;
+		}
+	}
+	if(h&1){
+		for(x=0; x < wx; x+=2){
+			yx = y + x; yx1 = y1 + (x>>1);
+			out[yx  ] = (ll[yx1] + hl[yx1])>>1;
+			out[yx+1] = (ll[yx1] - hl[yx1])>>1;
+		}
+		if(w&1){
+			yx = y + x;
+			out[yx] = ll[yx1+1];
+		}
+	}
+}
+
+void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh)
 ///	\fn void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh)
 ///	\brief One step 2D Haar IDWT transform.
 ///	\param out	 		The input image data.
