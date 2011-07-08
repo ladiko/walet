@@ -1087,7 +1087,13 @@ void image_copy(Image *im, uint32 bpp, uint8 *v)
 	else 		 for(i=0; i<size; i++) im->img[i] = v[i];
 }
 
-void pic_copy(Pic8u *p, char *y)
+void pic_copy8(Pic8u *p, uint8 *y)
+{
+	uint32 i, sz = p->h*p->w;
+	for(i=0; i < sz; i++) p->pic[i] = y[i];
+}
+
+void pic_copy16(Pic16s *p, uint8 *y)
 {
 	uint32 i, sz = p->h*p->w;
 	for(i=0; i < sz; i++) p->pic[i] = y[i];

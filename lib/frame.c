@@ -34,15 +34,15 @@ void frames_init(GOP *gop, uint32 fr)
 		if(gop->steps){
 			f->L16 = (Level16 **)calloc(gop->steps, sizeof(Level16 *));
 			f->L16[0] = (Level16 *)calloc(4, sizeof(Level16));
-			printf("L16[0][0] = %p\n", &f->L16[0][0]);
+			//printf("L16[0][0] = %p\n", &f->L16[0][0]);
 			for(j=0; j < 4; j++){
 				for(i=0; i < 4; i++) {
 					f->L16[0][j].s[i].w = (f->B16.C[j].w>>1) + bit_check(f->B16.C[j].w, i);
 					f->L16[0][j].s[i].h = (f->B16.C[j].h>>1) + bit_check(f->B16.C[j].h, i>>1);
-					printf("w = %d h = %d\n", f->L16[0][j].s[i].w, f->L16[0][j].s[i].h);
+					//printf("w = %d h = %d\n", f->L16[0][j].s[i].w, f->L16[0][j].s[i].h);
 					f->L16[0][j].s[i].pic = (uint16 *)calloc(f->L16[0][j].s[i].w*f->L16[0][j].s[i].h, sizeof(uint16));
 				}
-				printf("\n");
+				//printf("\n");
 			}
 			for(k=1; k < gop->steps; k++){
 				f->L16[k] = (Level16 *)calloc(4, sizeof(Level16));
@@ -50,10 +50,10 @@ void frames_init(GOP *gop, uint32 fr)
 					for(i=0; i < 4; i++) {
 						f->L16[k][j].s[i].w = (f->L16[k-1][j].s[0].w>>1) + bit_check(f->L16[k-1][j].s[0].w, i);
 						f->L16[k][j].s[i].h = (f->L16[k-1][j].s[0].h>>1) + bit_check(f->L16[k-1][j].s[0].h, i>>1);
-						printf("nw = %d h = %d\n", f->L16[k][j].s[i].w, f->L16[k][j].s[i].h);
+						//printf("nw = %d h = %d\n", f->L16[k][j].s[i].w, f->L16[k][j].s[i].h);
 						f->L16[k][j].s[i].pic = (uint16 *)calloc(f->L16[k][j].s[i].w*f->L16[k][j].s[i].h, sizeof(uint16));
 					}
-					printf("\n");
+					//printf("\n");
 				}
 			}
 		}
@@ -68,22 +68,22 @@ void frames_init(GOP *gop, uint32 fr)
 		for(i=0; i < 4; i++) {
 			f->B8.C[i].w = (w>>1) + bit_check(w, i);
 			f->B8.C[i].h = (h>>1) + bit_check(h, i>>1);
-			printf("w = %d h = %d\n", f->B8.C[i].w, f->B8.C[i].h);
+			//printf("w = %d h = %d\n", f->B8.C[i].w, f->B8.C[i].h);
 			f->B8.C[i].pic = (int8 *)calloc(f->B8.C[i].w*f->B8.C[i].h, sizeof(int8));
 		}
 		//Init DWT level components
 		if(gop->steps){
 			f->L8 = (Level8 **)calloc(gop->steps, sizeof(Level8 *));
 			f->L8[0] = (Level8 *)calloc(4, sizeof(Level8));
-			printf("L8[0][0] = %p\n", &f->L8[0][0]);
+			//printf("L8[0][0] = %p\n", &f->L8[0][0]);
 			for(j=0; j < 4; j++){
 				for(i=0; i < 4; i++) {
 					f->L8[0][j].s[i].w = (f->B8.C[j].w>>1) + bit_check(f->B8.C[j].w, i);
 					f->L8[0][j].s[i].h = (f->B8.C[j].h>>1) + bit_check(f->B8.C[j].h, i>>1);
-					printf("w = %d h = %d\n", f->L8[0][j].s[i].w, f->L8[0][j].s[i].h);
+					//printf("w = %d h = %d\n", f->L8[0][j].s[i].w, f->L8[0][j].s[i].h);
 					f->L8[0][j].s[i].pic = (uint8 *)calloc(f->L8[0][j].s[i].w*f->L8[0][j].s[i].h, sizeof(uint8));
 				}
-				printf("\n");
+				//printf("\n");
 			}
 			for(k=1; k < gop->steps; k++){
 				f->L8[k] = (Level8 *)calloc(4, sizeof(Level8));
@@ -91,10 +91,10 @@ void frames_init(GOP *gop, uint32 fr)
 					for(i=0; i < 4; i++) {
 						f->L8[k][j].s[i].w = (f->L8[k-1][j].s[0].w>>1) + bit_check(f->L8[k-1][j].s[0].w, i);
 						f->L8[k][j].s[i].h = (f->L8[k-1][j].s[0].h>>1) + bit_check(f->L8[k-1][j].s[0].h, i>>1);
-						printf("nw = %d h = %d\n", f->L8[k][j].s[i].w, f->L8[k][j].s[i].h);
+						//printf("nw = %d h = %d\n", f->L8[k][j].s[i].w, f->L8[k][j].s[i].h);
 						f->L8[k][j].s[i].pic = (uint8 *)calloc(f->L8[k][j].s[i].w*f->L8[k][j].s[i].h, sizeof(uint8));
 					}
-					printf("\n");
+					//printf("\n");
 				}
 			}
 		}
@@ -183,9 +183,11 @@ void frame_copy(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v)
 	Frame *frame = &gop->frames[fr];
 
 	if(gop->bpp == 8 && gop->color == BAYER){
-		pic_copy(&frame->B8.B, y);
-		frame->state = FRAME_COPY;
+		pic_copy8(&frame->B8.B, y);
+	} else if (gop->bpp > 8 && gop->color == BAYER){
+		pic_copy16(&frame->B16.B, y);
 	}
+	frame->state = FRAME_COPY;
 	printf("Finished frame copy \n");
 }
 
