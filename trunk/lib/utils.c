@@ -98,7 +98,6 @@ uint8* utils_dwt_draw_8(BAY8 *b8, Level8 **l8, uint8 *rgb, uint32 steps)
 			}
 		}
 
-
 		uint32 w = l8[0][0].s[0].w + l8[0][0].s[1].w + l8[0][1].s[0].w + l8[0][1].s[1].w;
 		utils_one_dwt_draw_8(&l8[0][0].s[0], &l8[0][0].s[1], &l8[0][0].s[2], &l8[0][0].s[3], rgb, 0, 0, w);
 		utils_one_dwt_draw_8(&l8[0][1].s[0], &l8[0][1].s[1], &l8[0][1].s[2], &l8[0][1].s[3], rgb, l8[0][0].s[0].w + l8[0][0].s[1].w, 0, w);
@@ -209,56 +208,38 @@ void shift_w_to_b(int8 *in, uint8 *out, int shift, uint32 size)
 	}
 }
 
-#define oe(a,x)	(a ? x&1 : (x+1)&1)
-//#define lb(x) (x&0xFF)
-#define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
-uint8* utils_bayer_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uint8 *rgb)
-	\brief DWT picture transform.
-  	\param	rgb 	The pointer to rgb array.
-*/
+uint8* utils_grey_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint8 bpp)
 {
-/*
-   All RGB cameras use one of these Bayer grids:
-
-	BGGR  0         GRBG 1          GBRG  2         RGGB 3
-	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
-	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
-	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
-	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
-	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
- */
-	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
-
-	switch(bay){
-		case(BGGR):{ a = 1; b = 1; break;}
-		case(GRBG):{ a = 0; b = 1; break;}
-		case(GBRG):{ a = 1; b = 0; break;}
-		case(RGGB):{ a = 0; b = 0; break;}
-	}
-
-	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
-		for(x=0; x < w1; x++){
-			y2 = oe(a,y);
-			x2 = oe(b,x);
-			xwy = x + yw;
-			wy 	= x + yw1;
-			xwy3 = wy + wy + wy;
-			rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
-			rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
-								 (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1);
-			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
+	int i, j, dim = h*w*3;
+	int16 *imd;
+	if(bpp == 8){
+		for(i = 0,  j= 0; j < dim; j+=3, i++){
+			rgb[j]     = img[i];
+			rgb[j + 1] = img[i];
+			rgb[j + 2] = img[i];
+		}
+	} else {
+		imd = (int16*)img;
+		for(i = 0,  j= 0; j < dim; j+=3, i++){
+			rgb[j]     = imd[i];
+			rgb[j + 1] = imd[i];
+			rgb[j + 2] = imd[i];
 		}
 	}
 	return rgb;
 }
 
-uint8* utils_bayer_draw_16(int16 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uint8 *rgb)
-	\brief DWT picture transform.
-  	\param	rgb 	The pointer to rgb array.
-*/
+
+#define oe(a,x)	(a ? x&1 : (x+1)&1)
+//#define lb(x) (x&0xFF)
+#define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
+
+uint8* utils_bayer_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, uint8 bpp)
+/// \fn void bayer_to_rgb(uint8 *rgb)
+///	\brief DWT picture transform.
+///	\param	rgb 	The pointer to rgb array.
+
 {
 /*
    All RGB cameras use one of these Bayer grids:
@@ -270,7 +251,8 @@ uint8* utils_bayer_draw_16(int16 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGri
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h-1, w1 = w-1, yw, yw1;
+	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, h1 = h, w1 = w, yw, yw1;
+	int16 *imd;
 
 	switch(bay){
 		case(BGGR):{ a = 1; b = 1; break;}
@@ -279,18 +261,36 @@ uint8* utils_bayer_draw_16(int16 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGri
 		case(RGGB):{ a = 0; b = 0; break;}
 	}
 
-	for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
-		for(x=0; x < w1; x++){
-			y2 = oe(a,y);
-			x2 = oe(b,x);
-			xwy = x + yw;
-			wy 	= x + yw1;
-			xwy3 = wy + wy + wy;
-			rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
-			rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
-								 (x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1);
-			rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
+	if(bpp == 8){
+		for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+			for(x=0; x < w1; x++){
+				y2 = oe(a,y);
+				x2 = oe(b,x);
+				xwy = x + yw;
+				wy 	= x + yw1;
+				xwy3 = wy + wy + wy;
+				rgb[xwy3    ] = y2 ? (x2 ?  lb(img[xwy    ]) : lb(img[xwy+1])) : (x2 ? lb(img[xwy+w]) : lb(img[xwy+w+1]));
+				rgb[xwy3 + 1] = y2 ? (x2 ? (lb(img[xwy+w  ]) + lb(img[xwy+1]))>>1 :   (lb(img[xwy  ]) + lb(img[xwy+w+1]))>>1) :
+						(x2 ? (lb(img[xwy+w+1]) + lb(img[xwy  ]))>>1 :   (lb(img[xwy+1]) + lb(img[xwy+w  ]))>>1);
+				rgb[xwy3 + 2] = y2 ? (x2 ?  lb(img[xwy+w+1]) : lb(img[xwy+w])) : (x2 ? lb(img[xwy+1]) : lb(img[xwy    ]));
+			}
 		}
+	} else {
+		imd = (int16*)img;
+		for(y=0, yw=0, yw1=0 ; y < h1; y++, yw+=w, yw1+=w1){
+			for(x=0; x < w1; x++){
+				y2 = oe(a,y);
+				x2 = oe(b,x);
+				xwy = x + yw;
+				wy 	= x + yw1;
+				xwy3 = wy + wy + wy;
+				rgb[xwy3    ] = y2 ? (x2 ?  lb(imd[xwy    ]) : lb(imd[xwy+1])) : (x2 ? lb(imd[xwy+w]) : lb(imd[xwy+w+1]));
+				rgb[xwy3 + 1] = y2 ? (x2 ? (lb(imd[xwy+w  ]) + lb(imd[xwy+1]))>>1 :   (lb(imd[xwy  ]) + lb(imd[xwy+w+1]))>>1) :
+						(x2 ? (lb(imd[xwy+w+1]) + lb(imd[xwy  ]))>>1 :   (lb(imd[xwy+1]) + lb(imd[xwy+w  ]))>>1);
+				rgb[xwy3 + 2] = y2 ? (x2 ?  lb(imd[xwy+w+1]) : lb(imd[xwy+w])) : (x2 ? lb(imd[xwy+1]) : lb(imd[xwy    ]));
+			}
+		}
+
 	}
 	return rgb;
 }
@@ -333,10 +333,10 @@ uint8* utils_draw_bayer(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid b
 					yx = yw + x;
 					yx3 = yx*3;
 					rgb[yx3  ] = (!(x&1) && !(y&1)) ? img[yx] : ((x&1 && y&1) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-					(x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+								 (x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
 					rgb[yx3+1] = ((!(x&1) && y&1) || ( x&1 && !(y&1))) ? img[yx] : (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2;
 					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-					(!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
+								 (!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
 				}
 			}
 	}
@@ -373,18 +373,6 @@ uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uin
 					(!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
 				}
 			}
-	}
-	return rgb;
-}
-
-uint8* utils_grey_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
-{
-	int i, j, dim = h*w*3;
-	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i];
-		rgb[j + 1] = img[i];
-		rgb[j + 2] = img[i];
-		//printf("y_w[%d] = %4d\n",i,mod(yuv_buffer->y_w[i]));
 	}
 	return rgb;
 }

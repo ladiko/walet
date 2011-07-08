@@ -47,7 +47,8 @@ void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, in
 void dwt_2d_haar16(int16 *in, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
 void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
 void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
-void pic_copy(Pic8u *p, char *y);
+void pic_copy8(Pic8u *p, uint8 *y);
+void pic_copy16(Pic16s *p, uint8 *y);
 
 
 void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
