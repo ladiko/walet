@@ -351,6 +351,8 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		new_buffer (gw->orig[2], gw->gop->width, gw->gop->height);
 		utils_one_dwt_draw_8(&gw->gop->frames[0].B8.C[0], &gw->gop->frames[0].B8.C[1],  &gw->gop->frames[0].B8.C[2], &gw->gop->frames[0].B8.C[3],
 				gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
+		utils_dwt_draw_8(&gw->gop->frames[0].B8, gw->gop->frames[0].L8, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps);
+
 
 		//printf("L8[0][0] = %p\n", &gw->gop->frames[0].L8[0][0]);
 		//utils_one_dwt_draw_8(&gw->gop->frames[0].L8[0][0].s[0], &gw->gop->frames[0].L8[0][0].s[1],  &gw->gop->frames[0].L8[0][0].s[2], &gw->gop->frames[0].L8[0][0].s[3],
