@@ -243,30 +243,31 @@ void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, 
 			tmp[2]	= hl[yx2] + hh[yx2];
 			tmp[3]	= hl[yx2] - hh[yx2];
 			yx = y + x;
-			out[yx  ] = (tmp[0] + tmp[2])>>2;
-			out[yx+1] = (tmp[0] - tmp[2])>>2;
+			tm = tmp[0] + tmp[2]; out[yx  ] = rc(tm);
+			tm = tmp[0] - tmp[2]; out[yx+1] = rc(tm);
 			yx = yx + w;
-			out[yx  ] = (tmp[1] + tmp[3])>>2;
-			out[yx+1] = (tmp[1] - tmp[3])>>2;
+			tm = tmp[1] + tmp[3]; out[yx  ] = rc(tm);
+			tm = tmp[1] - tmp[3]; out[yx+1] = rc(tm);
 		}
 		if(w&1){
 			yx = y + x; yx1 = y1 + (x>>1);
-			out[yx  ] = (ll[yx1] + lh[yx1])>>1;
-			out[yx+w] = (ll[yx1] - lh[yx1])>>1;
+			tm = ll[yx1] + lh[yx1]; out[yx  ] = rc(tm);
+			tm = ll[yx1] - lh[yx1]; out[yx+w] = rc(tm);
 		}
 	}
 	if(h&1){
 		for(x=0; x < wx; x+=2){
 			yx = y + x; yx1 = y1 + (x>>1);
-			out[yx  ] = (ll[yx1] + hl[yx1])>>1;
-			out[yx+1] = (ll[yx1] - hl[yx1])>>1;
+			tm = ll[yx1] + hl[yx1]; out[yx  ] = rc(tm);
+			tm = ll[yx1] - hl[yx1]; out[yx+1] = rc(tm);
 		}
 		if(w&1){
 			yx = y + x;
-			out[yx] = ll[yx1+1];
+			out[yx] = rc(ll[yx1+1]);
 		}
 	}
 }
+
 
 void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh)
 ///	\fn void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh)
@@ -292,27 +293,27 @@ void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 
 			tmp[2]	= hl[yx2] + hh[yx2];
 			tmp[3]	= hl[yx2] - hh[yx2];
 			yx = y + x;
-			tm = tmp[0] + tmp[2]; out[yx  ] = rc(tm);
-			tm = tmp[0] - tmp[2]; out[yx+1] = rc(tm);
+			out[yx  ] = (tmp[0] + tmp[2])>>2;
+			out[yx+1] = (tmp[0] - tmp[2])>>2;
 			yx = yx + w;
-			tm = tmp[1] + tmp[3]; out[yx  ] = rc(tm);
-			tm = tmp[1] - tmp[3]; out[yx+1] = rc(tm);
+			out[yx  ] = (tmp[1] + tmp[3])>>2;
+			out[yx+1] = (tmp[1] - tmp[3])>>2;
 		}
 		if(w&1){
 			yx = y + x; yx1 = y1 + (x>>1);
-			tm = ll[yx1] + lh[yx1]; out[yx  ] = rc(tm);
-			tm = ll[yx1] - lh[yx1]; out[yx+w] = rc(tm);
+			out[yx  ] = (ll[yx1] + lh[yx1])>>1;
+			out[yx+w] = (ll[yx1] - lh[yx1])>>1;
 		}
 	}
 	if(h&1){
 		for(x=0; x < wx; x+=2){
 			yx = y + x; yx1 = y1 + (x>>1);
-			tm = ll[yx1] + hl[yx1]; out[yx  ] = rc(tm);
-			tm = ll[yx1] - hl[yx1]; out[yx+1] = rc(tm);
+			out[yx  ] = (ll[yx1] + hl[yx1])>>1;
+			out[yx+1] = (ll[yx1] - hl[yx1])>>1;
 		}
 		if(w&1){
 			yx = y + x;
-			out[yx] = rc(ll[yx1+1]);
+			out[yx] = ll[yx1+1];
 		}
 	}
 }

@@ -19,7 +19,6 @@ void frames_init(GOP *gop, uint32 fr)
 	Frame *f = &gop->frames[fr];
 	uint32 i, j, k, w = gop->width, h = gop->height;
 	//New init
-
 	if(gop->color == BAYER && gop->bpp > 8){
 		f->B16.B.w = w; f->B16.B.h = h;
 		f->B16.B.pic = (int16 *)calloc(f->B16.B.w*f->B16.B.h, sizeof(uint16));
@@ -57,7 +56,6 @@ void frames_init(GOP *gop, uint32 fr)
 				}
 			}
 		}
-
 	} else if(gop->color == BAYER && gop->bpp == 8){
 		//Init bayer picture
 		f->B8.B.w = w; f->B8.B.h = h;
@@ -185,6 +183,7 @@ void frame_copy(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v)
 	if(gop->bpp == 8 && gop->color == BAYER){
 		pic_copy8(&frame->B8.B, y);
 	} else if (gop->bpp > 8 && gop->color == BAYER){
+		printf("gop->bpp = %d\n", gop->bpp);
 		pic_copy16(&frame->B16.B, y);
 	}
 	frame->state = FRAME_COPY;
@@ -262,7 +261,7 @@ uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
 			printf("Start idwt_2d_haar8\n");
 			if(gop->steps){
 				if(gop->steps > 1){
-					for(k=gop->steps; k; k--){
+					for(k=gop->steps-1; k; k--){
 						for(j=0; j < 4; j++){
 							idwt_2d_haar8(f->L8[k-1][j].s[0].pic, f->L8[k-1][j].s[0].w, f->L8[k-1][j].s[0].h,
 								f->L8[k][j].s[0].pic, f->L8[k][j].s[1].pic, f->L8[k][j].s[2].pic, f->L8[k][j].s[3].pic);
@@ -284,7 +283,7 @@ uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
 			printf("Start idwt_2d_haar16\n");
 			if(gop->steps){
 				if(gop->steps > 1){
-					for(k=gop->steps; k; k--){
+					for(k=gop->steps-1; k; k--){
 						for(j=0; j < 4; j++){
 							idwt_2d_haar16(f->L16[k-1][j].s[0].pic, f->L16[k-1][j].s[0].w, f->L16[k-1][j].s[0].h,
 								f->L16[k][j].s[0].pic, f->L16[k][j].s[1].pic, f->L16[k][j].s[2].pic, f->L16[k][j].s[3].pic);
