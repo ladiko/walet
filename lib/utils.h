@@ -8,9 +8,10 @@ extern "C"
 #endif /* __cplusplus */
 
 //uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w);
-uint8* utils_dwt_draw_8(BAY8 *b8, Level8 **l8, uint8 *rgb, uint32 steps);
+uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps, uint8 bpp);
 uint8* utils_grey_draw(uint8 *img, uint8 *rgb, uint32 height, uint32 width, uint8 bpp);
 uint8* utils_bayer_draw(uint8 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay, uint8 bpp);
+double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);

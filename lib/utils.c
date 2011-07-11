@@ -38,7 +38,22 @@ static inline void drawrect_8s(uint8 *rgb, int8 *pic, uint32 x0, uint32 y0, uint
 	for(y=0; y < h; y++ ){
 		for(x=0; x < w; x++){
 			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
-			tmp = rnd(shift + pic[y*w+x]);
+			tmp = shift + pic[y*w+x];
+			rgb[3*((y+y0)*size +x0 +x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+2] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+		}
+	}
+}
+
+static inline void drawrect_16s(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
+{
+	uint32 x, y, tmp;
+	for(y=0; y < h; y++ ){
+		for(x=0; x < w; x++){
+			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
+			tmp = shift + (pic[y*w+x]>>2);
+			//if(tmp > 255) printf("tmp = %d pic = %d\n", tmp, pic[y*w+x]);
 			rgb[3*((y+y0)*size +x0 +x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
 			rgb[3*((y+y0)*size +x0 +x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
 			rgb[3*((y+y0)*size +x0 +x)+2] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
@@ -81,30 +96,100 @@ uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *r
 	return rgb;
 }
 
-uint8* utils_dwt_draw_8(BAY8 *b8, Level8 **l8, uint8 *rgb, uint32 steps)
+uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps, uint8 bpp)
 {
-	uint32 i, j, x, y, w = b8->C[0].w +  b8->C[1].w;
-	if(steps){
-		for(j=0; j < steps; j++){
-			for(i=0; i < 4; i++){
-				if		(i == 0){ x = 0; y = 0;}
-				else if	(i == 1){ x = b8->C[0].w; y = 0;}
-				else if (i == 2){ x = 0; y = b8->C[0].h;}
-				else			{ x = b8->C[0].w; y = b8->C[0].h;}
-				if(j == steps-1)
-				drawrect_8s(rgb, l8[j][i].s[0].pic, x,                   y,                   l8[j][i].s[0].w, l8[j][i].s[0].h, w, 128);
-				drawrect_8s(rgb, l8[j][i].s[1].pic, x + l8[j][i].s[0].w, y,                   l8[j][i].s[1].w, l8[j][i].s[1].h, w, 128);
-				drawrect_8s(rgb, l8[j][i].s[2].pic, x,                   y + l8[j][i].s[0].h, l8[j][i].s[2].w, l8[j][i].s[2].h, w, 128);
-				drawrect_8s(rgb, l8[j][i].s[3].pic, x + l8[j][i].s[0].w, y + l8[j][i].s[0].h, l8[j][i].s[3].w, l8[j][i].s[3].h, w, 128);
+	uint32 i, j, x, y, w;
+	Frame *f = &gop->frames[fr];
+	if(bpp == 8){
+		w = f->B8.C[0].w + f->B8.C[1].w;
+		if(steps == gop->steps && gop->steps){
+			for(j=0; j < steps; j++){
+				for(i=0; i < 4; i++){
+					if		(i == 0){ x = 0; y = 0;}
+					else if	(i == 1){ x = f->B8.C[0].w; y = 0;}
+					else if (i == 2){ x = 0; y = f->B8.C[0].h;}
+					else			{ x = f->B8.C[0].w; y = f->B8.C[0].h;}
+					if(j == steps-1)
+					drawrect_8s(rgb, f->L8[j][i].s[0].pic, x,                      y,                      f->L8[j][i].s[0].w, f->L8[j][i].s[0].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[1].pic, x + f->L8[j][i].s[0].w, y,                      f->L8[j][i].s[1].w, f->L8[j][i].s[1].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[2].pic, x,                      y + f->L8[j][i].s[0].h, f->L8[j][i].s[2].w, f->L8[j][i].s[2].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[3].pic, x + f->L8[j][i].s[0].w, y + f->L8[j][i].s[0].h, f->L8[j][i].s[3].w, f->L8[j][i].s[3].h, w, 128);
+				}
+			}
+		} else {
+			if(gop->steps == 0){
+				drawrect_8s(rgb, f->B8.C[0].pic, 0,            0,            f->B8.C[0].w, f->B8.C[0].h, w, 128);
+				drawrect_8s(rgb, f->B8.C[1].pic, f->B8.C[0].w, 0,            f->B8.C[1].w, f->B8.C[1].h, w, 128);
+				drawrect_8s(rgb, f->B8.C[2].pic, 0,            f->B8.C[0].h, f->B8.C[2].w, f->B8.C[2].h, w, 128);
+				drawrect_8s(rgb, f->B8.C[3].pic, f->B8.C[0].w, f->B8.C[0].h, f->B8.C[3].w, f->B8.C[3].h, w, 128);
+			} else {
+				j = steps;
+				for(i=0; i < 4; i++){
+					if(steps == 0){
+						if		(i == 0){ x = 0; y = 0;}
+						else if	(i == 1){ x = f->B8.C[0].w; y = 0;}
+						else if (i == 2){ x = 0; y = f->B8.C[0].h;}
+						else			{ x = f->B8.C[0].w; y = f->B8.C[0].h;}
+					} else {
+						if		(i == 0){ x = 0; y = 0;}
+						else if	(i == 1){ x = f->L8[j-1][i].s[0].w; y = 0;}
+						else if (i == 2){ x = 0; y = f->L8[j-1][i].s[0].h;}
+						else			{ x = f->L8[j-1][i].s[0].w; y = f->L8[j-1][i].s[0].h;}
+					}
+					drawrect_8s(rgb, f->L8[j][i].s[0].pic, x,                      y,                      f->L8[j][i].s[0].w, f->L8[j][i].s[0].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[1].pic, x + f->L8[j][i].s[0].w, y,                      f->L8[j][i].s[1].w, f->L8[j][i].s[1].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[2].pic, x,                      y + f->L8[j][i].s[0].h, f->L8[j][i].s[2].w, f->L8[j][i].s[2].h, w, 128);
+					drawrect_8s(rgb, f->L8[j][i].s[3].pic, x + f->L8[j][i].s[0].w, y + f->L8[j][i].s[0].h, f->L8[j][i].s[3].w, f->L8[j][i].s[3].h, w, 128);
+				}
+
 			}
 		}
 	} else {
-		drawrect_8s(rgb, b8->C[0].pic, 0,          0,          b8->C[0].w, b8->C[0].h, w, 128);
-		drawrect_8s(rgb, b8->C[1].pic, b8->C[0].w, 0,          b8->C[1].w, b8->C[1].h, w, 128);
-		drawrect_8s(rgb, b8->C[2].pic, 0,          b8->C[0].h, b8->C[2].w, b8->C[2].h, w, 128);
-		drawrect_8s(rgb, b8->C[3].pic, b8->C[0].w, b8->C[0].h, b8->C[3].w, b8->C[3].h, w, 128);
-	}
+		w = f->B16.C[0].w + f->B16.C[1].w;
+		if(steps == gop->steps && gop->steps){
+			for(j=0; j < steps; j++){
+				for(i=0; i < 4; i++){
+					if		(i == 0){ x = 0; y = 0;}
+					else if	(i == 1){ x = f->B16.C[0].w; y = 0;}
+					else if (i == 2){ x = 0; y = f->B16.C[0].h;}
+					else			{ x = f->B16.C[0].w; y = f->B16.C[0].h;}
+					if(j == steps-1)
+					drawrect_16s(rgb, f->L16[j][i].s[0].pic, x,                      y,                      f->L16[j][i].s[0].w, f->L16[j][i].s[0].h, w, 0);
+					drawrect_16s(rgb, f->L16[j][i].s[1].pic, x + f->L16[j][i].s[0].w, y,                      f->L16[j][i].s[1].w, f->L16[j][i].s[1].h, w, 128);
+					drawrect_16s(rgb, f->L16[j][i].s[2].pic, x,                      y + f->L16[j][i].s[0].h, f->L16[j][i].s[2].w, f->L16[j][i].s[2].h, w, 128);
+					drawrect_16s(rgb, f->L16[j][i].s[3].pic, x + f->L16[j][i].s[0].w, y + f->L16[j][i].s[0].h, f->L16[j][i].s[3].w, f->L16[j][i].s[3].h, w, 128);
+				}
+			}
+		} else {
+			if(gop->steps == 0){
+				drawrect_16s(rgb, f->B16.C[0].pic, 0,            0,            f->B16.C[0].w, f->B16.C[0].h, w, 0);
+				drawrect_16s(rgb, f->B16.C[1].pic, f->B16.C[0].w, 0,            f->B16.C[1].w, f->B16.C[1].h, w, 128);
+				drawrect_16s(rgb, f->B16.C[2].pic, 0,            f->B16.C[0].h, f->B16.C[2].w, f->B16.C[2].h, w, 128);
+				drawrect_16s(rgb, f->B16.C[3].pic, f->B16.C[0].w, f->B16.C[0].h, f->B16.C[3].w, f->B16.C[3].h, w, 128);
+			} else {
+				j = steps;
+				for(i=0; i < 4; i++){
+					if(steps == 0){
+						if		(i == 0){ x = 0; y = 0;}
+						else if	(i == 1){ x = f->B16.C[0].w; y = 0;}
+						else if (i == 2){ x = 0; y = f->B16.C[0].h;}
+						else			{ x = f->B16.C[0].w; y = f->B16.C[0].h;}
+					} else {
+						if		(i == 0){ x = 0; y = 0;}
+						else if	(i == 1){ x = f->L16[j-1][i].s[0].w; y = 0;}
+						else if (i == 2){ x = 0; y = f->L16[j-1][i].s[0].h;}
+						else			{ x = f->L16[j-1][i].s[0].w; y = f->L16[j-1][i].s[0].h;}
+					}
+					drawrect_16s(rgb, f->L16[j][i].s[0].pic, x,                      y,                      f->L16[j][i].s[0].w, f->L16[j][i].s[0].h, w, 0);
+					drawrect_16s(rgb, f->L16[j][i].s[1].pic, x + f->L16[j][i].s[0].w, y,                      f->L16[j][i].s[1].w, f->L16[j][i].s[1].h, w, 128);
+					drawrect_16s(rgb, f->L16[j][i].s[2].pic, x,                      y + f->L16[j][i].s[0].h, f->L16[j][i].s[2].w, f->L16[j][i].s[2].h, w, 128);
+					drawrect_16s(rgb, f->L16[j][i].s[3].pic, x + f->L16[j][i].s[0].w, y + f->L16[j][i].s[0].h, f->L16[j][i].s[3].w, f->L16[j][i].s[3].h, w, 128);
+				}
 
+			}
+		}
+
+	}
 	return rgb;
 }
 
@@ -938,6 +1023,41 @@ double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 		for(i = 0; i < dim; i++){
 			//if(before[i] - after[i] ) printf("i = %4d b = %4d a = %4d diff = %4d\n", i, before[i], after[i], before[i] - after[i]);
 			r += abs((int)(before[i] - after[i] ));
+		}
+		ape = (double)r/(double)dim;
+		return ape;
+	}
+	else{printf("ape: ERROR\n");
+		 return 0.;
+	}
+}
+
+double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d)
+/// \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/// \brief Calculate APE of two image.
+/// \param before	Pointer to first image.
+/// \param after	Pointer to second image.
+/// \param dim 		Size of image height*width.
+/// \param d 		d = 1 if gray image, d = 3 if color image.
+/// \retval 		The APE.
+{
+	uint32 i;
+	double ape;
+	unsigned long long r = 0, g = 0, b = 0;
+	if(d==3){
+		for(i = 0; i < dim; i = i + 3){
+			//if(before[i]     - after[i]) printf("x = %4d y = %4d r = %4d\n",i/3,i/3,before[i]     - after[i]);
+			r += abs((int)(before[i]     - after[i]));
+			g += abs((int)(before[i+1] - after[i+1]));
+			b += abs((int)(before[i+2] - after[i+2]));
+		}
+		ape = (double)(r + g + b)/((double)dim*3.);
+		return ape;
+	}
+	if(d==1){
+		for(i = 0; i < dim; i++){
+			//if(before[i] - after[i] ) printf("i = %4d b = %4d a = %4d diff = %4d\n", i, before[i], after[i], before[i] - after[i]);
+			r += abs(before[i] - after[i]);
 		}
 		ape = (double)r/(double)dim;
 		return ape;
