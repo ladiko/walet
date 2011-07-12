@@ -24,35 +24,31 @@ void frames_init(GOP *gop, uint32 fr)
 		f->B16.B.pic = (int16 *)calloc(f->B16.B.w*f->B16.B.h, sizeof(uint16));
 
 		//Init color components
-		for(i=0; i < 4; i++) {
-			f->B16.C[i].w = (w>>1) + bit_check(w, i);
-			f->B16.C[i].h = (h>>1) + bit_check(h, i>>1);
-			f->B16.C[i].pic = (int16 *)calloc(f->B16.C[i].w*f->B16.C[i].h, sizeof(int16));
-		}
+		f->B16.C[0].pic = (int16 *)calloc(f->B16.B.w*f->B16.B.h, sizeof(int16));
+		for(i=0; i < 4; i++) { f->B16.C[i].w = (w>>1) + bit_check(w, i); f->B16.C[i].h = (h>>1) + bit_check(h, i>>1);}
+		for(i=1; i < 4; i++) f->B16.C[i].pic = f->B16.C[i-1].pic + f->B16.C[i-1].w*f->B16.C[i-1].h;
 		//Init DWT level components
 		if(gop->steps){
 			f->L16 = (Level16 **)calloc(gop->steps, sizeof(Level16 *));
 			f->L16[0] = (Level16 *)calloc(4, sizeof(Level16));
 			//printf("L16[0][0] = %p\n", &f->L16[0][0]);
 			for(j=0; j < 4; j++){
+				f->L16[0][j].s[0].pic = (uint16 *)calloc(f->B16.C[j].w*f->B16.C[j].h, sizeof(uint16));
 				for(i=0; i < 4; i++) {
 					f->L16[0][j].s[i].w = (f->B16.C[j].w>>1) + bit_check(f->B16.C[j].w, i);
 					f->L16[0][j].s[i].h = (f->B16.C[j].h>>1) + bit_check(f->B16.C[j].h, i>>1);
-					//printf("w = %d h = %d\n", f->L16[0][j].s[i].w, f->L16[0][j].s[i].h);
-					f->L16[0][j].s[i].pic = (uint16 *)calloc(f->L16[0][j].s[i].w*f->L16[0][j].s[i].h, sizeof(uint16));
 				}
-				//printf("\n");
+				for(i=1; i < 4; i++) f->L16[0][j].s[i].pic = f->L16[0][j].s[i-1].pic + f->L16[0][j].s[i-1].w*f->L16[0][j].s[i-1].h;
 			}
 			for(k=1; k < gop->steps; k++){
 				f->L16[k] = (Level16 *)calloc(4, sizeof(Level16));
 				for(j=0; j < 4; j++){
+					f->L16[k][j].s[0].pic = (uint16 *)calloc(f->L16[k-1][j].s[0].w*f->L16[k-1][j].s[0].h, sizeof(uint16));
 					for(i=0; i < 4; i++) {
 						f->L16[k][j].s[i].w = (f->L16[k-1][j].s[0].w>>1) + bit_check(f->L16[k-1][j].s[0].w, i);
 						f->L16[k][j].s[i].h = (f->L16[k-1][j].s[0].h>>1) + bit_check(f->L16[k-1][j].s[0].h, i>>1);
-						//printf("nw = %d h = %d\n", f->L16[k][j].s[i].w, f->L16[k][j].s[i].h);
-						f->L16[k][j].s[i].pic = (uint16 *)calloc(f->L16[k][j].s[i].w*f->L16[k][j].s[i].h, sizeof(uint16));
 					}
-					//printf("\n");
+					for(i=1; i < 4; i++) f->L16[k][j].s[i].pic = f->L16[k][j].s[i-1].pic + f->L16[k][j].s[i-1].w*f->L16[k][j].s[i-1].h;
 				}
 			}
 		}
