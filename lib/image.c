@@ -687,6 +687,31 @@ static void dwt(Image *im, int16 *buf, uint32 steps, funwt dwt_one)
 	}
 }
 
+void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
+//	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
+///	\brief Discrete wavelets transform.
+///	\param im	 		The image structure.
+///	\param buf 			The temporary buffer.
+///	\param steps 		The steps of DWT transform.
+/// \param funwt		The function for one step 2d DWT.
+{
+	//uint8 *img = im->img;
+	uint32 j, k, h = b->h, w = b->w, sz = w*h;
+	//Color transform
+	dwt_53_2d_one(b->pic, c[0].pic, w, h);
+	if(steps){
+		for(j=0; j < 4; j++){
+			dwt_53_2d_one(c[j].pic, l[0][j].s[0].pic, c[j].w, c[j].h);
+		}
+		for(k=1; k < steps; k++){
+			for(j=0; j < 4; j++){
+				dwt_53_2d_one(l[k-1][j].s[0].pic, l[k][j].s[0].pic, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
+
+			}
+		}
+	}
+}
+
 static void dwt_mallet(Image *im, int16 *buf, uint32 steps, funwt dwt_one)
 //	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
 ///	\brief Discrete wavelets transform.
