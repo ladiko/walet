@@ -2,11 +2,15 @@
 #define _FRAME_H_
 
 typedef struct{
-	BAY8	B8;
-	BAY16	B16;
+	Pic16s	B;			//Bayer image 16 bits
+	Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
+	Level	**L;		//The levels of DWT transform
+
+	//BAY8	B8;
+	//BAY16	B16;
 	//YUV8 	YUV;
-	Level8	**L8;		//The levels of DWT transform
-	Level16	**L16;		//The levels of DWT transform
+	//Level8	**L8;		//The levels of DWT transform
+	//Level16	**L16;		//The levels of DWT transform
 
 	//Old interface
 	Image 	img[3];	//Pointer to image

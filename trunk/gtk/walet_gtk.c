@@ -119,19 +119,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		frame_copy(gw->gop, 0, buf, NULL, NULL);
 
 		new_buffer (gw->orig[1], gw->gop->width, gw->gop->height);
-		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bpp);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 		new_buffer (gw->orig[2], gw->gop->width-1, gw->gop->height-1);
-		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg, gw->gop->bpp);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].B.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
-
-
-		//utils_bayer_to_4color(buf, (uint8*)gw->gop->buf, p, gw->gop->width, gw->gop->height);
-		//new_buffer (gw->orig[3], gw->gop->width, gw->gop->height);
-		//utils_4color_draw((uint8*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->width, gw->gop->height,
-		//		&gw->gop->frames[fn].p[0], &gw->gop->frames[fn].p[1], &gw->gop->frames[fn].p[2], &gw->gop->frames[fn].p[3]);
-		//gtk_widget_queue_draw(gw->drawingarea[3]);
 
 
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
@@ -140,26 +133,16 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		printf("video/x-raw-bayer\n");
 		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
-		if(gw->gop->bpp == 8){
-			new_buffer (gw->orig[0], gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
-			utils_grey_draw(gw->gop->frames[0].B8.B.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h, gw->gop->bpp);
-			gtk_widget_queue_draw(gw->drawingarea[0]);
+		new_buffer (gw->orig[0], gw->gop->frames[0].B.w, gw->gop->frames[0].B.h);
+		utils_grey_draw(gw->gop->frames[0].B.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].B.w, gw->gop->frames[0].B.h);
+		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-			new_buffer (gw->orig[1], gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
-			utils_bayer_draw(gw->gop->frames[0].B8.B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h, gw->gop->bg, gw->gop->bpp);
-			//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-			gtk_widget_queue_draw(gw->drawingarea[1]);
-		} else {
-			new_buffer (gw->orig[0], gw->gop->frames[0].B16.B.w, gw->gop->frames[0].B16.B.h);
-			utils_grey_draw((uint8*)gw->gop->frames[0].B16.B.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].B16.B.w, gw->gop->frames[0].B16.B.h, gw->gop->bpp);
-			gtk_widget_queue_draw(gw->drawingarea[0]);
+		new_buffer (gw->orig[1], gw->gop->frames[0].B.w, gw->gop->frames[0].B.h);
+		utils_bayer_draw(gw->gop->frames[0].B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B.w, gw->gop->frames[0].B.h, gw->gop->bg);
+		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-			new_buffer (gw->orig[1], gw->gop->frames[0].B16.B.w, gw->gop->frames[0].B16.B.h);
-			utils_bayer_draw((uint8*)gw->gop->frames[0].B16.B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B16.B.w, gw->gop->frames[0].B16.B.h, gw->gop->bg, gw->gop->bpp);
-			//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
-			gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		}
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
 	//g_printf("The current state = %d ret = %d\n", state, ret);

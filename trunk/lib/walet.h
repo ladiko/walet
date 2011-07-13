@@ -288,7 +288,7 @@ typedef struct {	//One DWT decomposition level
 
 typedef struct {	//One DWT decomposition level
 	Pic16s s[4];	//Subband array s[0] - LL, s[1] - HL, s[2] - LH, s[3] - HH
-} Level16;
+} Level;
 
 //	|---------|            |---------|    |---------|
 //	|         |	2d wavelet |  Y | C1 |    | LL | HL |
