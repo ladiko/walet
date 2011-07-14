@@ -373,13 +373,14 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-    if(frame_idwt_new(gw->gop, gw->gop->cur_gop_frame, gw->gop->fb, 2)){
+	idwt_bayer_53(&gw->gop->frames[0].D, gw->gop->frames[0].C, gw->gop->frames[0].L, (int16*)gw->gop->buf, gw->gop->steps);
+    //if(frame_idwt_new(gw->gop, gw->gop->cur_gop_frame, gw->gop->fb, 2)){
 		//if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, gw->gop->fb)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[1], gw->gop->frames[0].B.w, gw->gop->frames[0].B.h);
-		utils_grey_draw((int16*)gw->gop->buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B.w, gw->gop->frames[0].B.h);
+		new_buffer (gw->orig[1], gw->gop->frames[0].D.w, gw->gop->frames[0].D.h);
+		utils_grey_draw(gw->gop->frames[0].D.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].D.w, gw->gop->frames[0].D.h);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
@@ -394,8 +395,8 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
         //new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);
         //utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
            //               gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
-		printf("APE = %f\n",utils_ape_16(gw->gop->frames[0].B.pic, (int16*)gw->gop->buf, gw->gop->frames[0].B.w*gw->gop->frames[0].B.h, 1));
-    }
+		printf("APE = %f\n",utils_ape_16(gw->gop->frames[0].B.pic, gw->gop->frames[0].D.pic, gw->gop->frames[0].B.w*gw->gop->frames[0].B.h, 1));
+    //}
 }
 
 void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)

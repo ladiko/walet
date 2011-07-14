@@ -331,7 +331,7 @@ static inline void idwt_haar_2d_one(int16 *in, int16 *out, const uint32 w, const
 	for(j=0; j < sz; j+=w) idwt_haar_1d(&out[j], &in[j], w);
 }
 
-static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w)
+static inline void dwt_53_1d_old(int16 *in, int16 *out, const uint32 w)
 ///	\fn static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\brief 1D 5.3 wavelet transform.
 ///	\param in	 		The input line.
@@ -356,7 +356,7 @@ static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w)
 	}
 }
 
-static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w)
+static inline void idwt_53_1d_old(int16 *in, int16 *out, const uint32 w)
 ///	\fn static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
 ///	\brief 1D 5.3 invert wavelet transform.
 ///	\param in	 		The input line.
@@ -379,6 +379,90 @@ static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w)
 		sj = shift+j;
 		out[i-1] = in[sj] + out[i-2];
 	}
+}
+
+
+
+static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w)
+///	\fn static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D 5.3 wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
+{
+	int wt = w - 2, i, j;
+	int16 *l, *h;
+	l = out; h = &out[(w>>1) + (w&1)];
+	h[0] = in[1] - ((in[0] + in[2])>>1);
+	l[0] = in[0] + (h[0]>>1);
+	for(i=2,j=1; i < wt; i+=2,j++){
+		h[j] = in[i+1] - ((in[i] + in[i+2])>>1);
+		l[j] = in[i] + ((h[j-1] + h[j])>>2);
+	}
+	if(w&1){
+		l[j] = in[i] + (h[j-1]>>1);
+	} else{
+		h[j] = in[i+1] - in[i];
+		l[j] = in[i] + ((h[j-1] + h[j])>>2);
+	}
+}
+
+static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w)
+///	\fn static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
+///	\brief 1D 5.3 invert wavelet transform.
+///	\param in	 		The input line.
+///	\param out 			The output line.
+///	\param w 			The line width.
+{
+	int wt = w - 2, i, j;
+	int16 *l, *h;
+	l = in; h = &in[(w>>1) + (w&1)];
+
+	out[0] = l[0] - (h[0]>>1);
+	for(i=2,j=0; i <= wt; i+=2,j++){
+		out[i] = l[j+1] - ((h[j] + h[j+1])>>2);
+		out[i-1] = h[j] + ((out[i-2] + out[i])>>1);
+	}
+	if(w&1){
+		out[i] = l[j+1] - (h[j]>>1);
+		out[i-1] = h[j] + ((out[i-2] + out[i])>>1);
+	} else{
+		out[i-1] = h[j] + out[i-2];
+	}
+}
+
+static inline void dwt_53_2d_2row(int16 *in, int16 *d, int16 *out, const uint32 w, const uint32 h)
+///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief 2D 5.3 vertical wavelet transform.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
+{
+	uint32 i, k=1;
+	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
+	int16 *ll, *hl, *lh, *hh;
+	ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+
+	int kw1, kwi, kw, k1;
+
+	//for(k=3; k < h-1; k+=2){
+
+		k1 = (k>>1)*w1; kw = k*w;
+		for(i=0; i<w1; i++){
+			kw1 = k1+i; kwi = kw+i;
+			lh[i] = in[i] - ((in[i-w] + in[i+w])>>1);
+			ll[i] = in[i-w] + ((lh[i -w1] + lh[i])>>2);
+		}
+		k1 = (k>>1)*w2; kw = k*w+w1;
+		for(i=0; i<w2; i++){
+			kw1 = k1+i; kwi = kw+i;
+
+			hh[i] = in[i] - ((in[i-w] + in[i+w])>>1);
+			hl[i] = in[i-w]  + ((hh[i-w2] + hh[i])>>2);
+		}
+	//}
+
 }
 
 static inline void dwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint32 h)
@@ -523,7 +607,6 @@ static inline void dwt_53_2d_one(int16 *in, int16 *out, const uint32 w, const ui
 	uint32 j, sz = w*h;
 	for(j=0; j < sz; j+=w) dwt_53_1d(&in[j], &out[j], w);
 	dwt_53_2d(out, in, w, h);
-
 }
 
 static inline void idwt_53_2d_one(int16 *in, int16 *out, const uint32 w, const uint32 h, uint32 *loc)
@@ -539,6 +622,31 @@ static inline void idwt_53_2d_one(int16 *in, int16 *out, const uint32 w, const u
 	for(j=0; j < sz; j+=w) idwt_53_1d(&out[j], &in[j], w);
 }
 
+static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief One step 2D 53 DWT.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
+{
+	uint32 j, sz = w*h;
+	for(j=0; j < sz; j+=w) dwt_53_1d(&in[j], &buf[j], w);
+	dwt_53_2d(buf, out, w, h);
+}
+
+static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief One step 53 Haar IDWT.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
+{
+	uint32 j, sz = w*h;
+	idwt_53_2d(in, buf, w, h, 0);
+	for(j=0; j < sz; j+=w) idwt_53_1d(&buf[j], &out[j], w);
+}
 
 static inline void bayer2color_1d(uint8 *in, uint8 *out, const uint32 w)
 ///	\fn static inline void dwt_haar_1d(uint8 *in, uint8 *out, const uint32 w)
@@ -698,18 +806,46 @@ void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
 	//uint8 *img = im->img;
 	uint32 j, k, h = b->h, w = b->w, sz = w*h;
 	//Color transform
-	dwt_53_2d_one(b->pic, c[0].pic, w, h);
+	//printf("C[0].pic = %p\n", c[0].pic);
+	dwt_53_2d_one_new(b->pic, c[0].pic, buf, w, h);
 	if(steps){
 		for(j=0; j < 4; j++){
-			dwt_53_2d_one(c[j].pic, l[0][j].s[0].pic, c[j].w, c[j].h);
+			dwt_53_2d_one_new(c[j].pic, l[0][j].s[0].pic, buf, c[j].w, c[j].h);
 		}
 		for(k=1; k < steps; k++){
 			for(j=0; j < 4; j++){
-				dwt_53_2d_one(l[k-1][j].s[0].pic, l[k][j].s[0].pic, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
+				dwt_53_2d_one_new(l[k-1][j].s[0].pic, l[k][j].s[0].pic, buf, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
 
 			}
 		}
 	}
+}
+
+void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
+//	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
+///	\brief Discrete wavelets transform.
+///	\param im	 		The image structure.
+///	\param buf 			The temporary buffer.
+///	\param steps 		The steps of DWT transform.
+/// \param funwt		The function for one step 2d DWT.
+{
+	//uint8 *img = im->img;
+	uint32 j, k, h = b->h, w = b->w, sz = w*h;
+	if(steps){
+		if(steps > 1){
+			for(k=steps-1; k; k--){
+				for(j=0; j < 4; j++){
+					idwt_53_2d_one_new(l[k][j].s[0].pic, l[k-1][j].s[0].pic, buf, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
+				}
+			}
+		}
+		for(j=0; j < 4; j++){
+			idwt_53_2d_one_new(l[0][j].s[0].pic, c[j].pic, buf, c[j].w, c[j].h);
+		}
+	}
+	//Color transform
+	idwt_53_2d_one_new(c[0].pic, b->pic, buf, w, h);
+
 }
 
 static void dwt_mallet(Image *im, int16 *buf, uint32 steps, funwt dwt_one)
