@@ -71,18 +71,21 @@ uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
 				else if	(i == 1){ x = f->C[0].w; y = 0;}
 				else if (i == 2){ x = 0; y = f->C[0].h;}
 				else			{ x = f->C[0].w; y = f->C[0].h;}
-				if(j == steps-1)
-				drawrect(rgb, f->L[j][i].s[0].pic, x,                      y,                      f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
-				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                      f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[2].pic, x,                      y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
+				if(j == steps-1){
+					if(i) 	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
+					else 	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
+				}
+
+				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                     f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
+				drawrect(rgb, f->L[j][i].s[2].pic, x,                     y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
 				drawrect(rgb, f->L[j][i].s[3].pic, x + f->L[j][i].s[0].w, y + f->L[j][i].s[0].h, f->L[j][i].s[3].w, f->L[j][i].s[3].h, w, 128);
 			}
 		}
 	} else {
 		if(gop->steps == 0){
-			drawrect(rgb, f->C[0].pic, 0,            0,            f->C[0].w, f->C[0].h, w, 0);
-			drawrect(rgb, f->C[1].pic, f->C[0].w, 0,            f->C[1].w, f->C[1].h, w, 128);
-			drawrect(rgb, f->C[2].pic, 0,            f->C[0].h, f->C[2].w, f->C[2].h, w, 128);
+			drawrect(rgb, f->C[0].pic, 0,         0,         f->C[0].w, f->C[0].h, w, 0);
+			drawrect(rgb, f->C[1].pic, f->C[0].w, 0,         f->C[1].w, f->C[1].h, w, 128);
+			drawrect(rgb, f->C[2].pic, 0,         f->C[0].h, f->C[2].w, f->C[2].h, w, 128);
 			drawrect(rgb, f->C[3].pic, f->C[0].w, f->C[0].h, f->C[3].w, f->C[3].h, w, 128);
 		} else {
 			j = steps;
@@ -98,9 +101,11 @@ uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
 					else if (i == 2){ x = 0; y = f->L[j-1][i].s[0].h;}
 					else			{ x = f->L[j-1][i].s[0].w; y = f->L[j-1][i].s[0].h;}
 				}
-				drawrect(rgb, f->L[j][i].s[0].pic, x,                      y,                      f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
-				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                      f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[2].pic, x,                      y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
+				if(i)	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
+				else	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
+				drawrect(rgb, f->L[j][i].s[0].pic, x,                     y,                     f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
+				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                     f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
+				drawrect(rgb, f->L[j][i].s[2].pic, x,                     y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
 				drawrect(rgb, f->L[j][i].s[3].pic, x + f->L[j][i].s[0].w, y + f->L[j][i].s[0].h, f->L[j][i].s[3].w, f->L[j][i].s[3].h, w, 128);
 			}
 

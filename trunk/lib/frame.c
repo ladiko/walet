@@ -22,11 +22,16 @@ void frames_init(GOP *gop, uint32 fr)
 	if(gop->color == BAYER ){
 		f->B.w = w; f->B.h = h;
 		f->B.pic = (int16 *)calloc(f->B.w*f->B.h, sizeof(uint16));
+		f->D.w = w; f->D.h = h;
+		f->D.pic = (int16 *)calloc(f->D.w*f->D.h, sizeof(uint16));
 
 		//Init color components
 		f->C[0].pic = (int16 *)calloc(f->B.w*f->B.h, sizeof(int16));
+		//printf("C = %p\n", f->C[0].pic);
 		for(i=0; i < 4; i++) { f->C[i].w = (w>>1) + bit_check(w, i); f->C[i].h = (h>>1) + bit_check(h, i>>1);}
 		for(i=1; i < 4; i++) f->C[i].pic = f->C[i-1].pic + f->C[i-1].w*f->C[i-1].h;
+			//printf("C = %p\n", f->C[i].pic);
+
 		//Init DWT level components
 		if(gop->steps){
 			f->L = (Level **)calloc(gop->steps, sizeof(Level *));

@@ -3,6 +3,7 @@
 
 typedef struct{
 	Pic16s	B;			//Bayer image 16 bits
+	Pic16s	D;			//Bayer image abter DWT -> quantization -> IDWT
 	Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	Level	**L;		//The levels of DWT transform
 
