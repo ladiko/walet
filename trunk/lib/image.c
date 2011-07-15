@@ -431,39 +431,6 @@ static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w)
 	}
 }
 
-static inline void dwt_53_2d_2row(int16 *in, int16 *d, int16 *out, const uint32 w, const uint32 h)
-///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
-///	\brief 2D 5.3 vertical wavelet transform.
-///	\param in	 		The input image data.
-///	\param out 			The output image data.
-///	\param w 			The image width.
-///	\param h 			The image height.
-{
-	uint32 i, k=1;
-	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
-	int16 *ll, *hl, *lh, *hh;
-	ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
-
-	int kw1, kwi, kw, k1;
-
-	//for(k=3; k < h-1; k+=2){
-
-		k1 = (k>>1)*w1; kw = k*w;
-		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			lh[i] = in[i] - ((in[i-w] + in[i+w])>>1);
-			ll[i] = in[i-w] + ((lh[i -w1] + lh[i])>>2);
-		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
-		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-
-			hh[i] = in[i] - ((in[i-w] + in[i+w])>>1);
-			hl[i] = in[i-w]  + ((hh[i-w2] + hh[i])>>2);
-		}
-	//}
-
-}
 
 static inline void dwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint32 h)
 ///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
@@ -473,64 +440,140 @@ static inline void dwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint32
 ///	\param w 			The image width.
 ///	\param h 			The image height.
 {
-	uint32 i, k=1;
+	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
-	int kw1, kwi, kw, k1;
-
-	s[0] = 0; s[1] = w1*h1; s[2] = s[1] + w2*h1; s[3] = s[2] + w1*h2;
+	int16 *ll, *hl, *lh, *hh;
+	ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
 
 	for(i=0; i<w1; i++){
-		out[s[2]+i] = in[w+i] - ((in[i] + in[i+(w<<1)])>>1);
-		out[s[0]+i] = in[i]  + (out[s[2]+i]>>1);
-		//printf("out[%d] = %d out[%d] = %d \n", s[2]+kw1, out[s[2]+kw1], s[0]+kw1, out[s[0]+kw1]);
+		lh[i] = in[w+i] - ((in[i] + in[i+hw])>>1);
+		ll[i] = in[i]  + (lh[i]>>1);
 	}
 	for(i=0; i<w2; i++){
-		out[s[3]+i] = in[w+w1+i] - ((in[w1+i] + in[i+(w<<1)+w1])>>1);
-		out[s[1]+i] = in[i+w1]  + (out[s[3]+i]>>1);
+		ik = w1+i;
+		hh[i] = in[w+ik] - ((in[ik] + in[ik+hw])>>1);
+		hl[i] = in[i+w1]  + (hh[i]>>1);
 	}
-	for(k=3; k < h-1; k+=2){
-		k1 = (k>>1)*w1; kw = k*w;
+	for(k=3*w, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
+		ik = k; ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[2]+kw1] = in[kwi] - ((in[kwi-w] + in[kwi+w])>>1);
-			out[s[0]+kw1] = in[kwi-w] + ((out[s[2]+kw1 -w1] + out[s[2]+kw1])>>2);
+			lh[ik1] = in[ik] - ((in[ik-w] + in[ik+w])>>1);
+			ll[ik1] = in[ik-w] + ((lh[ik1-w1] + lh[ik1])>>2);
+			ik++; ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[3]+kw1] = in[kwi] - ((in[kwi-w] + in[kwi+w])>>1);
-			out[s[1]+kw1] = in[kwi-w]  + ((out[s[3]+kw1-w2] + out[s[3]+kw1])>>2);
+			hh[ik1] = in[ik] - ((in[ik-w] + in[ik+w])>>1);
+			hl[ik1] = in[ik-w]  + ((hh[ik1-w2] + hh[ik1])>>2);
+			ik++; ik1++;
 		}
 	}
 	if(h&1){
-		k1 = (k>>1)*w1; kw = k*w;
+		ik = k; ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[0]+kw1] = in[kwi-w] + (out[s[2]+kw1 -w1]>>1);
+			ll[ik1] = in[ik-w] + (lh[ik1-w1]>>1);
+			ik++; ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[1]+kw1] = in[kwi-w] + (out[s[3]+kw1-w2]>>1);
+			hl[ik1] = in[ik-w] + (hh[ik1-w2]>>1);
+			ik++; ik1++;
 		}
 	} else{
-		k1 = (k>>1)*w1; kw = k*w;
+		ik = k; ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[2]+kw1] = in[kwi] - in[kwi-w];
-			out[s[0]+kw1] = in[kwi-w] + ((out[s[2]+kw1 -w1] + out[s[2]+kw1])>>2);
+			lh[ik1] = in[ik] - in[ik-w];
+			ll[ik1] = in[ik-w] + ((lh[ik1 -w1] + lh[ik1])>>2);
+			ik++; ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[s[3]+kw1] = in[kwi] - in[kwi-w];
-			out[s[1]+kw1] = in[kwi-w]  + ((out[s[3]+kw1-w2] + out[s[3]+kw1])>>2);
+			hh[ik1] = in[ik] - in[ik-w];
+			hl[ik1] = in[ik-w]  + ((hh[ik1-w2] + hh[ik1])>>2);
+			ik++; ik1++;
 		}
 	}
 }
 
-static inline void idwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint32 h, uint32 *loc)
+static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief 2D 5.3 vertical wavelet transform.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
+{
+	uint32 i,ik, ik1, k = 0, k1, k2, sz = (h-1)*w, hw = w<<1;
+	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
+	uint32 s[4];
+	int16 *ll, *hl, *lh, *hh, *l[3];
+	ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
+
+
+	dwt_53_1d(&in[0],  l[0], w);
+	dwt_53_1d(&in[w],  l[1], w);
+	dwt_53_1d(&in[hw], l[2], w);
+	for(i=0; i<w1; i++){
+		lh[i] = l[1][i] - ((l[0][i] + l[2][i])>>1);
+		ll[i] = l[0][i]  + (lh[i]>>1);
+	}
+	for(i=0; i<w2; i++){
+		ik = w1+i;
+		hh[i] = l[1][ik] - ((l[0][ik] + l[2][ik])>>1);
+		hl[i] = l[0][ik]  + (hh[i]>>1);
+	}
+	for(k=3*w, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
+		l[0] = l[2];
+		dwt_53_1d(&in[k], l[1], w);
+		dwt_53_1d(&in[k+w], l[2], w);
+		ik1 = k1;
+		for(i=0; i<w1; i++){
+			lh[ik1] = l[1][i] - ((l[0][i] + l[2][i])>>1);
+			ll[ik1] = l[0][i] + ((lh[ik1-w1] + lh[ik1])>>2);
+			ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			ik = w1+i;
+			hh[ik1] = l[1][ik] - ((l[0][ik] + l[2][ik])>>1);
+			hl[ik1] = l[0][ik] + ((hh[ik1-w2] + hh[ik1])>>2);
+			ik1++;
+		}
+	}
+	if(h&1){
+		ik1 = k1;
+		for(i=0; i<w1; i++){
+			ll[ik1] = l[2][i] + (lh[ik1-w1]>>1);
+			ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			ik = w1+i;
+			hl[ik1] = l[2][ik] + (hh[ik1-w2]>>1);
+			ik1++;
+		}
+	} else{
+		l[0] = l[2];
+		dwt_53_1d(&in[k], l[1], w);
+		ik1 = k1;
+		for(i=0; i<w1; i++){
+			lh[ik1] = l[1][i] - l[0][i];
+			ll[ik1] = l[0][i] + ((lh[ik1 -w1] + lh[ik1])>>2);
+			ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			ik = w1+i;
+			hh[ik1] = l[1][ik] - l[0][ik];
+			hl[ik1] = l[0][ik]  + ((hh[ik1-w2] + hh[ik1])>>2);
+			ik1++;
+		}
+	}
+}
+
+static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief 2D 5.3 vertical invert wavelet transform.
 ///	\param in	 		The input image data.
@@ -539,59 +582,134 @@ static inline void idwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint3
 ///	\param h 			The image height.
 ///	\param loc 			The subband location.
 {
-	uint32 i, k=0;
+
+	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
-	int kw1, kwi, kw, k1;
+	int16 *ll, *hl, *lh, *hh, *l[3];
+	ll = in; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
 
-	if(loc){ s[0] = loc[0]; s[1] = loc[1]; s[2] = loc[2]; s[3] = loc[3]; }
-	else 	{ s[0] = 0;	s[1] = w1*h1;  s[2] = s[1] + w2*h1; s[3] = s[2] + w1*h2; }
 
 	for(i=0; i<w1; i++){
-		out[i] = in[s[0]+i] - (in[s[2]+i]>>1);
+		l[0][i] = ll[i] - (lh[i]>>1);
 	}
 	for(i=0; i<w2; i++){
-		out[w1+i] = in[s[1]+i] - (in[s[3]+i]>>1);
+		l[0][w1+i] = hl[i] - (hh[i]>>1);
 	}
-	for(k=2; k < h-1; k+=2){
-		k1 = (k>>1)*w1; kw = k*w;
+	//idwt_53_1d(l[0],  out, w);
+	for(k=hw, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
+		ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi  ] = in[s[0]+kw1] - ((in[s[2]+kw1-w1] + in[s[2]+kw1])>>2);
-			out[kwi-w] = in[s[2]+kw1-w1] + ((out[kwi-(w<<1)] + out[kwi])>>1);
+			l[2][i] = ll[ik1] - ((lh[ik1-w1] + lh[ik1])>>2);
+			l[1][i] = lh[ik1-w1] + ((l[0][i] + l[2][i])>>1);
+			ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi  ] = in[s[1]+kw1] - ((in[s[3]+kw1-w2] + in[s[3]+kw1])>>2);
-			out[kwi-w] = in[s[3]+kw1-w2] + ((out[kwi-(w<<1)] + out[kwi])>>1);
+			ik = w1+i;
+			l[2][ik] = hl[ik1] - ((hh[ik1-w2] + hh[ik1])>>2);
+			l[1][ik] = hh[ik1-w2] + ((l[0][ik] + l[2][ik])>>1);
+			ik1++;
+		}
+		idwt_53_1d(l[0], &out[k-hw], w);
+		idwt_53_1d(l[1], &out[k-w], w);
+		l[0] = l[2];
+	}
+	if(h&1){
+		ik1 = k1;
+		for(i=0; i<w1; i++){
+			l[2][i] = ll[ik1] - (lh[ik1-w1]>>1);
+			l[1][i] = lh[ik1-w1] + ((l[0][i] + l[2][i])>>1);
+			ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			ik = w1+i;
+			l[2][ik] = hl[ik1] - (hh[ik1-w2]>>1);
+			l[1][ik] = hh[ik1-w2] + ((l[0][ik] + l[2][ik])>>1);
+			ik1++;
+		}
+		idwt_53_1d(l[0], &out[k-hw], w);
+		idwt_53_1d(l[1], &out[k-w], w);
+		idwt_53_1d(l[2], &out[k], w);
+	} else{
+		ik1 = k1;
+		for(i=0; i<w1; i++){
+			l[1][i] = lh[ik1-w1] + l[0][i];
+			ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			ik = w1+i;
+			l[1][ik] = hh[ik1-w2] + l[0][ik];
+			ik1++;
+		}
+		idwt_53_1d(l[0], &out[k-hw], w);
+		idwt_53_1d(l[1], &out[k-w], w);
+	}
+}
+
+static inline void idwt_53_2d(int16 *in, int16 *out, const uint32 w, const uint32 h)
+///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
+///	\brief 2D 5.3 vertical invert wavelet transform.
+///	\param in	 		The input image data.
+///	\param out 			The output image data.
+///	\param w 			The image width.
+///	\param h 			The image height.
+///	\param loc 			The subband location.
+{
+
+	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
+	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
+	uint32 s[4];
+	int16 *ll, *hl, *lh, *hh;
+	ll = in; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+
+
+	for(i=0; i<w1; i++){
+		out[i] = ll[i] - (lh[i]>>1);
+	}
+	for(i=0; i<w2; i++){
+		out[w1+i] = hl[i] - (hh[i]>>1);
+	}
+	for(k=hw, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
+		ik = k; ik1 = k1;
+		for(i=0; i<w1; i++){
+			out[ik  ] = ll[ik1] - ((lh[ik1-w1] + lh[ik1])>>2);
+			out[ik-w] = lh[ik1-w1] + ((out[ik-hw] + out[ik])>>1);
+			ik++; ik1++;
+		}
+		ik1 = k2;
+		for(i=0; i<w2; i++){
+			out[ik  ] = hl[ik1] - ((hh[ik1-w2] + hh[ik1])>>2);
+			out[ik-w] = hh[ik1-w2] + ((out[ik-hw] + out[ik])>>1);
+			ik++; ik1++;
 		}
 	}
 	if(h&1){
-		k1 = (k>>1)*w1; kw = k*w;
+		ik = k; ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi  ] = in[s[0]+kw1] - (in[s[2]+kw1-w1]>>1);
-			out[kwi-w] = in[s[2]+kw1-w1] + ((out[kwi-(w<<1)] + out[kwi])>>1);
-
+			out[ik  ] = ll[ik1] - (lh[ik1-w1]>>1);
+			out[ik-w] = lh[ik1-w1] + ((out[ik-hw] + out[ik])>>1);
+			ik++; ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi  ] = in[s[1]+kw1] - (in[s[3]+kw1-w2]>>1);
-			out[kwi-w] = in[s[3]+kw1-w2] + ((out[kwi-(w<<1)] + out[kwi])>>1);
+			out[ik  ] = hl[ik1] - (hh[ik1-w2]>>1);
+			out[ik-w] = hh[ik1-w2] + ((out[ik-hw] + out[ik])>>1);
+			ik++; ik1++;
 		}
 	} else{
-		k1 = (k>>1)*w1; kw = k*w;
+		ik = k; ik1 = k1;
 		for(i=0; i<w1; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi-w] = in[s[2]+kw1-w1] + out[kwi-(w<<1)];
-			//if(i==0) printf("k = %d out[%d] = %d in[%d] = %d out[%d] = %d\n", k, kwi-w, out[kwi-w], kw1-w1, in[s[0]+kw1-w1], kwi-w*2, out[kwi-w*2]);
+			out[ik-w] = lh[ik1-w1] + out[ik-hw];
+			ik++; ik1++;
 		}
-		k1 = (k>>1)*w2; kw = k*w+w1;
+		ik1 = k2;
 		for(i=0; i<w2; i++){
-			kw1 = k1+i; kwi = kw+i;
-			out[kwi-w] = in[s[3]+kw1-w2] + out[kwi-(w<<1)];
+			out[ik-w] = hh[ik1-w2] + out[ik-hw];
+			ik++; ik1++;
 		}
 	}
 }
@@ -618,11 +736,11 @@ static inline void idwt_53_2d_one(int16 *in, int16 *out, const uint32 w, const u
 ///	\param h 			The image height.
 {
 	uint32 j, sz = w*h;
-	idwt_53_2d(in, out, w, h, loc);
+	idwt_53_2d(in, out, w, h);
 	for(j=0; j < sz; j+=w) idwt_53_1d(&out[j], &in[j], w);
 }
 
-static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+static inline void dwt_53_2d_one_new_old(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief One step 2D 53 DWT.
 ///	\param in	 		The input image data.
@@ -635,7 +753,7 @@ static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const ui
 	dwt_53_2d(buf, out, w, h);
 }
 
-static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+static inline void idwt_53_2d_one_new_old(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief One step 53 Haar IDWT.
 ///	\param in	 		The input image data.
@@ -644,7 +762,7 @@ static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const u
 ///	\param h 			The image height.
 {
 	uint32 j, sz = w*h;
-	idwt_53_2d(in, buf, w, h, 0);
+	idwt_53_2d(in, buf, w, h);
 	for(j=0; j < sz; j+=w) idwt_53_1d(&buf[j], &out[j], w);
 }
 
