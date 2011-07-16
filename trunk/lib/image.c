@@ -507,10 +507,9 @@ static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const ui
 	uint32 i,ik, ik1, k = 0, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
-	int16 *ll, *hl, *lh, *hh, *l[3];
+	int16 *ll, *hl, *lh, *hh, *l[3], *tm;
 	ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
 	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
-
 
 	dwt_53_1d(&in[0],  l[0], w);
 	dwt_53_1d(&in[w],  l[1], w);
@@ -526,6 +525,7 @@ static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const ui
 	}
 	for(k=3*w, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
 		l[0] = l[2];
+		//tm = l[0]; l[0] = l[2]; l[2] = tm;
 		dwt_53_1d(&in[k], l[1], w);
 		dwt_53_1d(&in[k+w], l[2], w);
 		ik1 = k1;
@@ -586,7 +586,7 @@ static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const u
 	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
-	int16 *ll, *hl, *lh, *hh, *l[3];
+	int16 *ll, *hl, *lh, *hh, *l[3], *tm;
 	ll = in; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
 	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
 
@@ -614,6 +614,7 @@ static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const u
 		}
 		idwt_53_1d(l[0], &out[k-hw], w);
 		idwt_53_1d(l[1], &out[k-w], w);
+		//tm = l[0]; l[0] = l[2]; l[2] = tm;
 		l[0] = l[2];
 	}
 	if(h&1){
