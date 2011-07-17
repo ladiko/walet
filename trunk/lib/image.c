@@ -524,8 +524,8 @@ static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const ui
 		hl[i] = l[0][ik]  + (hh[i]>>1);
 	}
 	for(k=3*w, k1=w1, k2=w2; k < sz; k+=hw, k1+=w1, k2+=w2){
-		l[0] = l[2];
-		//tm = l[0]; l[0] = l[2]; l[2] = tm;
+		//l[0] = l[2];
+		tm = l[0]; l[0] = l[2]; l[2] = tm;
 		dwt_53_1d(&in[k], l[1], w);
 		dwt_53_1d(&in[k+w], l[2], w);
 		ik1 = k1;
@@ -573,7 +573,7 @@ static inline void dwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const ui
 	}
 }
 
-static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const uint32 w, const uint32 h)
+static inline void idwt_53_2d_one_new(int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *out, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief 2D 5.3 vertical invert wavelet transform.
 ///	\param in	 		The input image data.
@@ -586,8 +586,9 @@ static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const u
 	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	uint32 s[4];
-	int16 *ll, *hl, *lh, *hh, *l[3], *tm;
-	ll = in; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+	//int16 *ll, *hl, *lh, *hh, *l[3], *tm;
+	//ll = in; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
+	int16 *l[3], *tm;
 	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
 
 
@@ -614,8 +615,8 @@ static inline void idwt_53_2d_one_new(int16 *in, int16 *out, int16 *buf, const u
 		}
 		idwt_53_1d(l[0], &out[k-hw], w);
 		idwt_53_1d(l[1], &out[k-w], w);
-		//tm = l[0]; l[0] = l[2]; l[2] = tm;
-		l[0] = l[2];
+		tm = l[0]; l[0] = l[2]; l[2] = tm;
+		//l[0] = l[2];
 	}
 	if(h&1){
 		ik1 = k1;
@@ -940,7 +941,7 @@ void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
 	}
 }
 
-void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
+void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps, uint32 istep)
 //	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
 ///	\brief Discrete wavelets transform.
 ///	\param im	 		The image structure.
@@ -950,21 +951,44 @@ void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps)
 {
 	//uint8 *img = im->img;
 	uint32 j, k, h = b->h, w = b->w, sz = w*h;
-	if(steps){
-		if(steps > 1){
-			for(k=steps-1; k; k--){
+	if(istep > steps){
+		printf("istep should be less or equal steps\n");
+		return;
+	}
+	if(steps != istep){
+		if(istep){
+			for(k=steps-1; k > steps-istep-1; k--){
 				for(j=0; j < 4; j++){
-					idwt_53_2d_one_new(l[k][j].s[0].pic, l[k-1][j].s[0].pic, buf, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
+					idwt_53_2d_one_new(l[k][j].s[0].pic, l[k][j].s[1].pic, l[k][j].s[2].pic, l[k][j].s[3].pic,
+							l[k-1][j].s[0].pic, buf, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
 				}
 			}
+			b->w = l[k][0].s[0].w + l[k][1].s[0].w;
+			b->h = l[k][0].s[0].h + l[k][2].s[0].h;
+			idwt_53_2d_one_new(l[k][0].s[0].pic, l[k][1].s[0].pic, l[k][2].s[0].pic, l[k][3].s[0].pic,
+					b->pic, buf, b->w,  b->h);
+		} else {
+			b->w = l[steps-1][0].s[0].w + l[steps-1][1].s[0].w;
+			b->h = l[steps-1][0].s[0].h + l[steps-1][2].s[0].h;
+			idwt_53_2d_one_new(l[steps-1][0].s[0].pic, l[steps-1][1].s[0].pic, l[steps-1][2].s[0].pic, l[steps-1][3].s[0].pic,
+					b->pic, buf, b->w,  b->h);
 		}
-		for(j=0; j < 4; j++){
-			idwt_53_2d_one_new(l[0][j].s[0].pic, c[j].pic, buf, c[j].w, c[j].h);
+	} else {
+		if(steps){
+			if(steps > 1){
+				for(k=steps-1; k; k--){
+					for(j=0; j < 4; j++){
+						idwt_53_2d_one_new(l[k][j].s[0].pic, l[k][j].s[1].pic, l[k][j].s[2].pic, l[k][j].s[3].pic,
+								l[k-1][j].s[0].pic, buf, l[k-1][j].s[0].w, l[k-1][j].s[0].h);
+					}
+				}
+			}
+			for(j=0; j < 4; j++) idwt_53_2d_one_new(l[0][j].s[0].pic, l[0][j].s[1].pic, l[0][j].s[2].pic, l[0][j].s[3].pic,
+					c[j].pic, buf, c[j].w, c[j].h);
 		}
+		//Color transform
+		idwt_53_2d_one_new(c[0].pic, c[1].pic, c[2].pic, c[3].pic, b->pic, buf, w, h);
 	}
-	//Color transform
-	idwt_53_2d_one_new(c[0].pic, b->pic, buf, w, h);
-
 }
 
 static void dwt_mallet(Image *im, int16 *buf, uint32 steps, funwt dwt_one)
