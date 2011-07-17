@@ -34,7 +34,7 @@ uint8* utils_4color_scale_draw		(uint8 *rgb, uint32 w, uint32 h, Pic8u *p0,  Pic
 //uint8* 		utils_4color_draw		(uint8 *img, uint8 *rgb, uint8 **p, uint32 w, uint32 h);
 
 uint8* utils_draw_bayer(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay);
-void utils_resize_bayer_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+void utils_resize_bayer_2x(int16 *img, int16 *img1, uint32 w, uint32 h);
 uint8* utils_bayer_scale_draw(uint8 *rgb, uint32 w, uint32 h, Pic8u *p);
 uint8* utils_color_scale_draw(uint8 *rgb, uint32 w, uint32 h, Pic8u *p);
 void util_bayer_to_rgb(uint8 *img, uint8 *rgb, uint32 w, uint32 h);

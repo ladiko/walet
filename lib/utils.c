@@ -31,6 +31,8 @@ int g[9][2] = {
 
 //#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
+#define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
+
 
 static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
@@ -38,7 +40,7 @@ static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32
 	for(y=0; y < h; y++ ){
 		for(x=0; x < w; x++){
 			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
-			tmp = rnd(shift + pic[y*w+x]);
+			tmp = lb(shift + pic[y*w+x]);
 			//if(tmp > 255) printf("tmp = %d pic = %d\n", tmp, pic[y*w+x]);
 			rgb[3*((y+y0)*size +x0 +x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
 			rgb[3*((y+y0)*size +x0 +x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
@@ -213,9 +215,9 @@ uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i];
-		rgb[j + 1] = img[i];
-		rgb[j + 2] = img[i];
+		rgb[j]     = lb(img[i]);
+		rgb[j + 1] = lb(img[i]);
+		rgb[j + 2] = lb(img[i]);
 	}
 	return rgb;
 }
@@ -236,7 +238,6 @@ uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
 //#define lb(x) (x&0xFF)
-#define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
 uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay)
 /// \fn void bayer_to_rgb(uint8 *rgb)
@@ -570,7 +571,7 @@ void utils_resize_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	}
 }
 
-void utils_resize_bayer_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+void utils_resize_bayer_2x(int16 *img, int16 *img1, uint32 w, uint32 h)
 {
 	uint32 x, y, yx, yx1, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
@@ -581,6 +582,25 @@ void utils_resize_bayer_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+3] 	+ img[yx+w2+1] 		+ img[yx+w2+3])>>2;
 			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+2+w] 	+ img[yx+w2+w] 		+ img[yx+w2+2+w])>>2;
 			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+3+w]	+ img[yx+w2+w+1]	+ img[yx+w2+3+w])>>2;
+			//if(yx1 >= wn*(h>>1)) printf(" ind = %d\n", yx1);
+		}
+	}
+}
+
+void utils_resize_bayer_2x_new(int16 *img, int16 *img1, uint32 w, uint32 h)
+{
+	uint32 x, y, yx, yx1, yx2, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
+	for(y=0; y < h1; y+=w2){
+		for(x=0; x < w1; x+=4){
+			yx = y + x;
+			yx1 = (y>>2) + (x>>1);
+			img1[yx1] 		= ((img[yx]<<1) + img[yx+1+w] + ((img[yx+2] + img[yx+(w<<1)])>>1))>>2;
+			yx2 = yx+3;
+			img1[yx1+1] 	= ((img[yx2]<<1) + ((img[yx2-2] + img[yx2+(w<<1)])>>1) + (img[yx2] + img[yx2-2] + img[yx2+(w<<1)] + img[yx2+(w<<1)-2])>>2)>>2;
+			yx2 = yx+3*w;
+			img1[yx1+wn] 	= ((img[yx2]<<1) + ((img[yx2+2] + img[yx2+(w<<1)])>>1) + (img[yx2] + img[yx2+2] + img[yx2+(w<<1)] + img[yx2+(w<<1)+2])>>2)>>2;
+			yx2 = yx+2+(w<<1);
+			img1[yx1+wn+1]	= ((img[yx2]<<1) + img[yx2+1+w] + ((img[yx2+2] + img[yx2+(w<<1)])>>1))>>2;
 			//if(yx1 >= wn*(h>>1)) printf(" ind = %d\n", yx1);
 		}
 	}

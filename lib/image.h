@@ -50,7 +50,7 @@ void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 
 void pic_copy8(Pic8u *p, uint8 *y);
 void pic_copy16(Pic16s *p, uint8 *y);
 void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps);
-void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps);
+void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps,  uint32 istep);
 
 
 void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
