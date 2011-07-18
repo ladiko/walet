@@ -30,30 +30,28 @@ void frames_init(GOP *gop, uint32 fr)
 		//printf("C = %p\n", f->C[0].pic);
 		for(i=0; i < 4; i++) { f->C[i].w = (w>>1) + bit_check(w, i); f->C[i].h = (h>>1) + bit_check(h, i>>1);}
 		for(i=1; i < 4; i++) f->C[i].pic = f->C[i-1].pic + f->C[i-1].w*f->C[i-1].h;
-			//printf("C = %p\n", f->C[i].pic);
 
 		//Init DWT level components
 		if(gop->steps){
-			f->L = (Level **)calloc(gop->steps, sizeof(Level *));
-			f->L[0] = (Level *)calloc(4, sizeof(Level));
-			//printf("L[0][0] = %p\n", &f->L[0][0]);
+			for(j=0; j < 4; j++) f->L[j] = (Level *)calloc(gop->steps, sizeof(Level ));
+			//f->L[4] = (Level *)calloc(4, sizeof(Level));
 			for(j=0; j < 4; j++){
-				f->L[0][j].s[0].pic = (uint16 *)calloc(f->C[j].w*f->C[j].h, sizeof(uint16));
+				f->L[j][0].s[0].pic = (uint16 *)calloc(f->C[j].w*f->C[j].h, sizeof(uint16));
 				for(i=0; i < 4; i++) {
-					f->L[0][j].s[i].w = (f->C[j].w>>1) + bit_check(f->C[j].w, i);
-					f->L[0][j].s[i].h = (f->C[j].h>>1) + bit_check(f->C[j].h, i>>1);
+					f->L[j][0].s[i].w = (f->C[j].w>>1) + bit_check(f->C[j].w, i);
+					f->L[j][0].s[i].h = (f->C[j].h>>1) + bit_check(f->C[j].h, i>>1);
 				}
-				for(i=1; i < 4; i++) f->L[0][j].s[i].pic = f->L[0][j].s[i-1].pic + f->L[0][j].s[i-1].w*f->L[0][j].s[i-1].h;
+				for(i=1; i < 4; i++) f->L[j][0].s[i].pic = f->L[j][0].s[i-1].pic + f->L[j][0].s[i-1].w*f->L[j][0].s[i-1].h;
 			}
 			for(k=1; k < gop->steps; k++){
-				f->L[k] = (Level *)calloc(4, sizeof(Level));
+				//f->L[k] = (Level *)calloc(4, sizeof(Level));
 				for(j=0; j < 4; j++){
-					f->L[k][j].s[0].pic = (uint16 *)calloc(f->L[k-1][j].s[0].w*f->L[k-1][j].s[0].h, sizeof(uint16));
+					f->L[j][k].s[0].pic = (uint16 *)calloc(f->L[j][k-1].s[0].w*f->L[j][k-1].s[0].h, sizeof(uint16));
 					for(i=0; i < 4; i++) {
-						f->L[k][j].s[i].w = (f->L[k-1][j].s[0].w>>1) + bit_check(f->L[k-1][j].s[0].w, i);
-						f->L[k][j].s[i].h = (f->L[k-1][j].s[0].h>>1) + bit_check(f->L[k-1][j].s[0].h, i>>1);
+						f->L[j][k].s[i].w = (f->L[j][k-1].s[0].w>>1) + bit_check(f->L[j][k-1].s[0].w, i);
+						f->L[j][k].s[i].h = (f->L[j][k-1].s[0].h>>1) + bit_check(f->L[j][k-1].s[0].h, i>>1);
 					}
-					for(i=1; i < 4; i++) f->L[k][j].s[i].pic = f->L[k][j].s[i-1].pic + f->L[k][j].s[i-1].w*f->L[k][j].s[i-1].h;
+					for(i=1; i < 4; i++) f->L[j][k].s[i].pic = f->L[j][k].s[i-1].pic + f->L[j][k].s[i-1].w*f->L[j][k].s[i-1].h;
 				}
 			}
 		}

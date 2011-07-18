@@ -373,7 +373,7 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	idwt_bayer_53(&gw->gop->frames[0].D, gw->gop->frames[0].C, gw->gop->frames[0].L, (int16*)gw->gop->buf, gw->gop->steps, 0);
+	idwt_bayer_53(&gw->gop->frames[0].D, gw->gop->frames[0].C, gw->gop->frames[0].L, (int16*)gw->gop->buf, gw->gop->steps, gw->gop->steps);
     //if(frame_idwt_new(gw->gop, gw->gop->cur_gop_frame, gw->gop->fb, 2)){
 		//if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, gw->gop->fb)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;

@@ -4,18 +4,11 @@
 typedef struct{
 	Pic16s	B;			//Bayer image 16 bits
 	Pic16s	D;			//Bayer image abter DWT -> quantization -> IDWT
-	Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
-	Level	**L;		//The levels of DWT transform
-
-	//BAY8	B8;
-	//BAY16	B16;
-	//YUV8 	YUV;
-	//Level8	**L8;		//The levels of DWT transform
-	//Level16	**L16;		//The levels of DWT transform
+	//Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
+	//Level	*L[4];		//The levels of DWT transform
+	Image 	img[4];	//Pointer to image
 
 	//Old interface
-	Image 	img[3];	//Pointer to image
-
 	Pic8u rgb; // Scaled image for each color
 	Pic8u Y;	// The Y color componets
 	Pic8u grad;	// The gradient
