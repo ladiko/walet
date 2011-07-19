@@ -81,6 +81,7 @@ typedef enum {
   	RANGE_DECODER	= 	1<<7,
   	BITS_ALLOCATION	= 	1<<8,
   	MEDIAN_FILTER	=	1<<9,
+  	COLOR_TRANSFORM = 	1<<10,
 }	CodecState;
 
 /*
@@ -146,8 +147,8 @@ typedef struct {
 
 typedef struct {
 	uint16		marker;			// The walet codec marker
-	uint16 		width;			// Image width
-	uint16 		height;			// Image width
+	uint16 		w;				// Image width
+	uint16 		h;				// Image width
 	uint8		color;			// Color space
 	uint8		bg;				// Bayer grid pattern
 	uint8		bpp;			// Bits per pixel

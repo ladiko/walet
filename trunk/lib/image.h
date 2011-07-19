@@ -53,6 +53,8 @@ extern "C" {
 //New interface
 void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps);
 void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
+void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
+void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 //Old interface
 
 void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);

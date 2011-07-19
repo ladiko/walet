@@ -154,7 +154,7 @@ static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w)
 }
 
 
-static inline void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief 2D 5.3 vertical wavelet transform.
 ///	\param in	 		The input image data.
@@ -232,7 +232,7 @@ static inline void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int
 	}
 }
 
-static inline void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
 ///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
 ///	\brief 2D 5.3 vertical invert wavelet transform.
 ///	\param in	 		The input image data.
@@ -410,7 +410,7 @@ void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 istep
 	}
 }
 
-static void fill_bayer_hist(uint8 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits)
+static void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits)
 {
 //
 //   All RGB cameras use one of these Bayer grids:
@@ -492,7 +492,7 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 	img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
 	for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
 
-	printf("Create frame x = %d y = %d p = %p\n", img->w, img->h, img->pic);
+	printf("Create image x = %d y = %d p = %p\n", img->w, img->h, img->p);
 }
 
 void image_copy(Image *im, uint32 bpp, uint8 *v)
@@ -503,21 +503,9 @@ void image_copy(Image *im, uint32 bpp, uint8 *v)
 ///	\param v 			The input stream buffer.
 {
 	uint32 i, size = im->w*im->h;
-	printf("Start copy  x = %d y = %d p = %p \n", im->w, im->h, im->img);
-	if(bpp > 8) for(i=0; i<size; i++) im->img[i] = (v[i<<1]<<8) | v[(i<<1)+1];
-	else 		 for(i=0; i<size; i++) im->img[i] = v[i];
-}
-
-void pic_copy8(Pic8u *p, uint8 *y)
-{
-	uint32 i, sz = p->h*p->w;
-	for(i=0; i < sz; i++) p->pic[i] = y[i];
-}
-
-void pic_copy16(Pic16s *p, uint8 *y)
-{
-	uint32 i, sz = p->h*p->w;
-	for(i=0; i < sz; i++) p->pic[i] = y[i];
+	printf("Start copy  x = %d y = %d p = %p \n", im->w, im->h, im->p);
+	if(bpp > 8) for(i=0; i<size; i++) im->p[i] = (v[i<<1]<<8) | v[(i<<1)+1];
+	else 		for(i=0; i<size; i++) im->p[i] = v[i];
 }
 
 void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
@@ -529,7 +517,7 @@ void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 ///	\param steps 		The steps of DWT transform.
 {
 	uint32 i, sz, st = ((steps-1)*3+1);
-	uint8 *img = im->img;
+	//int16 *img = im->p;
 	im->qst = 0;
 	Subband *sub = im->sub;
 
@@ -537,7 +525,7 @@ void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 	printf("sz = %d\n  ", sz);
 	for(i=0; i < sz; i++) {
 		printf("%2d  ", i);
-		subband_fill_prob(&img[sub[i].loc], &sub[i]);
+		subband_fill_prob(&im->p[sub[i].loc], &sub[i]);
 		im->qst += sub[i].a_bits-1;
 	}
 	sz = (color == BAYER) ? 4 : 1;
@@ -556,7 +544,7 @@ void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
 	uint32 i, size = im->w*im->h, sz = 1<<bpp, sum;
 	uint32	tmp = size;
 	if(color == BAYER) {
-		fill_bayer_hist(im->img, im->hist, &im->hist[sz], &im->hist[sz*2], im->w, im->h, bg, bpp);
+		fill_bayer_hist(im->p, im->hist, &im->hist[sz], &im->hist[sz*2], im->w, im->h, bg, bpp);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
 		printf("size = %d r = %d ", size, sum);
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
@@ -564,7 +552,7 @@ void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
 		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[(sz<<1)+i]; tmp -= sum;
 		printf("b = %d  diff = %d\n", sum, tmp);
 	}
-	else  for(i=0; i < size; i++) im->hist[im->img[i]]++;
+	else  for(i=0; i < size; i++) im->hist[im->p[i]]++;
 
 }
 
@@ -691,12 +679,12 @@ void image_quantization(Image *im, ColorSpace color, uint32 steps)
 {
 	uint32 i, sz;
 	Subband *sub = im->sub;
-	uint8 *img = im->img;
+	//uint8 *img = im->img;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		//printf("%2d bits = %d q_bits = %d \n", i, sub[i].a_bits, sub[i].q_bits);
-		subband_quantization(&img[sub[i].loc], &sub[i], func);
+		subband_quantization(&im->p[sub[i].loc], &sub[i], func);
 	}
 }
 
@@ -712,7 +700,7 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 {
 	uint32 i, sq, sz;
 	uint32 size = 0, size1=0;
-	uint8 *img = im->img;
+	//uint8 *img = im->img;
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
@@ -722,7 +710,7 @@ uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 		//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, sub[i].a_bits, sub[i].q_bits, (sub[i].a_bits<<4) | sub[i].q_bits);
 		if(sub[i].q_bits >1){
 			subband_encode_table(&sub[i], func);
-			size1 = range_encoder1(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size1 = range_encoder1(&im->p[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 			size += size1;
 			printf("Decode %d a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
 					i, sub[i].a_bits,  sub[i].q_bits, size, size1, sub[i].size.x*sub[i].size.y, subband_size(&sub[i], func)/8 );
@@ -744,7 +732,7 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 {
 	uint32 i, j, sq, sz;
 	uint32 size = 0;
-	uint8 *img = im->img;
+	//uint8 *img = im->img;
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
@@ -753,9 +741,9 @@ uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,
 		sq = sub[i].size.x*sub[i].size.y;
 		if(sub[i].q_bits >1){
 			subband_decode_table(&sub[i], func);
-			size += range_decoder1(&img[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
+			size += range_decoder1(&im->p[sub[i].loc], &sub[i].dist[1<<(bpp+2)],sq, sub[i].a_bits, sub[i].q_bits, &buf[size], sub[i].q);
 			printf("Decode %d a_bits = %d q_bits = %d size = %d\n", i, sub[i].a_bits,  sub[i].q_bits, size);
-		} else for(j=0; j<sq; j++) img[sub[i].loc+j] = 0;
+		} else for(j=0; j<sq; j++) im->p[sub[i].loc+j] = 0;
 		//printf("%d a_bits = %d q_bits = %d size = %d\n", i, sub[i].a_bits, sub[i].q_bits, size);
 	}
 	return size;
@@ -783,7 +771,7 @@ void image_subband_median_filter(Image *im, ColorSpace color, uint32 steps, uint
 ///	\retval				The size of decoded image in bytes.
 {
 	uint32 i, sz;
-	uint8 *img = im->img;
+	//uint8 *img = im->img;
 	Subband *sub = im->sub;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
@@ -803,10 +791,10 @@ void image_grad(Image *im, ColorSpace color, uint32 steps, uint32 th)
 {
 	uint32 i, sz;
 	Subband *sub = im->sub;
-	int16 *img = im->iwt;
+	//int16 *img = im->iwt;
 
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=1; i < sz; i++) {
-		grad(&img[sub[i].loc], &img[sub[i].loc], sub[i].size.x, sub[i].size.y, th);
+		grad(&im->p[sub[i].loc], &im->p[sub[i].loc], sub[i].size.x, sub[i].size.y, th);
 	}
 }

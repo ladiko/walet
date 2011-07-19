@@ -9,6 +9,9 @@ extern "C"
 
 //uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w);
 uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps);
+void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
+
+
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width);
 uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h);
 uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay);
@@ -19,7 +22,7 @@ void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
 
 
-uint8* 		utils_subband_draw		(Image *img, uint8 *rgb, ColorSpace color, uint32 steps);
+//uint8* 		utils_subband_draw		(Image *img, uint8 *rgb, ColorSpace color, uint32 steps);
 //uint8* 		utils_bayer_draw		(uint8 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay, uint8 bpp);
 //uint8* 		utils_bayer_draw_16		(int16 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay);
 
@@ -77,7 +80,6 @@ uint8* YUV420p_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32
 
 
 uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 **img);
-void utils_rgb2bayer(uint8 *rgb, uint8 *bay, uint32 w, uint32 h);
 void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h);
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col);
 
