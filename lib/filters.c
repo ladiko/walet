@@ -29,7 +29,7 @@ static  inline uint8  median_3(uint8 s0, uint8 s1, uint8 s2)
 					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
 }
 
-void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+void filter_median(int16 *img, int16 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
@@ -62,7 +62,7 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	utils_copy_border(img, img1, 1, w, h);
 }
 
-void filter_median_bayer(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
@@ -113,7 +113,7 @@ void filter_median_bayer(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	}
 }
 
-static inline uint8 filter(uint8 *img, uint32 yx, uint32 w, uint32 thresh)
+static inline uint8 filter(int16 *img, uint32 yx, uint32 w, uint32 thresh)
 {
 	uint32 sum;
 	sum = 	(img[yx-w-1] + img[yx-w  ] + img[yx-w+1] +
@@ -122,7 +122,7 @@ static inline uint8 filter(uint8 *img, uint32 yx, uint32 w, uint32 thresh)
 	return sum > thresh ? sum : 0;
 }
 
-void filter_average(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 thresh)
+void filter_average(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 thresh)
 {
 	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
 	for(y=w; y < sq; y+=w){
@@ -172,7 +172,7 @@ static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_b
 	}
 }
 
-void filters_white_balance(uint8 *in, uint8 *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
+void filters_white_balance(int16 *in, int16 *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, x, y, size = h*w;
 	uint16 *c[4];

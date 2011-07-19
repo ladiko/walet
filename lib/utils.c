@@ -32,6 +32,7 @@ int g[9][2] = {
 //#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
 #define lb(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
+#define lb1(x) (((x) < 0) ? 0 : (x))
 
 
 static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
@@ -60,137 +61,60 @@ static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uin
 		}
 	}
 }
+
 uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
 {
 	uint32 i, j, x, y, w;
 	Frame *f = &gop->frames[fr];
 
-	w = f->C[0].w + f->C[1].w;
+	w = f->img[0].w + f->img[1].w;
 	if(steps == gop->steps && gop->steps){
 		for(j=0; j < steps; j++){
 			for(i=0; i < 4; i++){
-				if		(i == 0){ x = 0; y = 0;}
-				else if	(i == 1){ x = f->C[0].w; y = 0;}
-				else if (i == 2){ x = 0; y = f->C[0].h;}
-				else			{ x = f->C[0].w; y = f->C[0].h;}
+				if		(i == 0){ x = 0; 			y = 0;}
+				else if	(i == 1){ x = f->img[0].w; 	y = 0;}
+				else if (i == 2){ x = 0; 			y = f->img[0].h;}
+				else			{ x = f->img[0].w;	 y = f->img[0].h;}
 				if(j == steps-1){
-					if(i) 	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
-					else 	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
+					if(i) 	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 128);
+					else 	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 0);
 				}
-
-				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                     f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[2].pic, x,                     y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[3].pic, x + f->L[j][i].s[0].w, y + f->L[j][i].s[0].h, f->L[j][i].s[3].w, f->L[j][i].s[3].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[1].pic, x + f->img[i].l[j].s[0].w,	y,                     		f->img[i].l[j].s[1].w, f->img[i].l[j].s[1].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[2].pic, x,                     		y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[2].w, f->img[i].l[j].s[2].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[3].pic, x + f->img[i].l[j].s[0].w, 	y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[3].w, f->img[i].l[j].s[3].h, w, 128);
 			}
 		}
 	} else {
 		if(gop->steps == 0){
-			drawrect(rgb, f->C[0].pic, 0,         0,         f->C[0].w, f->C[0].h, w, 0);
-			drawrect(rgb, f->C[1].pic, f->C[0].w, 0,         f->C[1].w, f->C[1].h, w, 128);
-			drawrect(rgb, f->C[2].pic, 0,         f->C[0].h, f->C[2].w, f->C[2].h, w, 128);
-			drawrect(rgb, f->C[3].pic, f->C[0].w, f->C[0].h, f->C[3].w, f->C[3].h, w, 128);
+			drawrect(rgb, f->img[0].p, 0,         		0,         		f->img[0].w, f->img[0].h, w, 0);
+			drawrect(rgb, f->img[1].p, f->img[0].w, 	0,         		f->img[1].w, f->img[1].h, w, 128);
+			drawrect(rgb, f->img[2].p, 0,         		f->img[0].h, 	f->img[2].w, f->img[2].h, w, 128);
+			drawrect(rgb, f->img[3].p, f->img[0].w, 	f->img[0].h, 	f->img[3].w, f->img[3].h, w, 128);
 		} else {
 			j = steps;
 			for(i=0; i < 4; i++){
 				if(steps == 0){
-					if		(i == 0){ x = 0; y = 0;}
-					else if	(i == 1){ x = f->C[0].w; y = 0;}
-					else if (i == 2){ x = 0; y = f->C[0].h;}
-					else			{ x = f->C[0].w; y = f->C[0].h;}
+					if		(i == 0){ x = 0; 			y = 0;}
+					else if	(i == 1){ x = f->img[0].w; 	y = 0;}
+					else if (i == 2){ x = 0; 			y = f->img[0].h;}
+					else			{ x = f->img[0].w; 	y = f->img[0].h;}
 				} else {
-					if		(i == 0){ x = 0; y = 0;}
-					else if	(i == 1){ x = f->L[j-1][i].s[0].w; y = 0;}
-					else if (i == 2){ x = 0; y = f->L[j-1][i].s[0].h;}
-					else			{ x = f->L[j-1][i].s[0].w; y = f->L[j-1][i].s[0].h;}
+					if		(i == 0){ x = 0; 						y = 0;}
+					else if	(i == 1){ x = f->img[i].l[j-1].s[0].w; 	y = 0;}
+					else if (i == 2){ x = 0; 						y = f->img[i].l[j-1].s[0].h;}
+					else			{ x = f->img[i].l[j-1].s[0].w;	y = f->img[i].l[j-1].s[0].h;}
 				}
-				if(i)	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
-				else	drawrect(rgb, f->L[j][i].s[0].pic, x, y, f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 0);
-				drawrect(rgb, f->L[j][i].s[0].pic, x,                     y,                     f->L[j][i].s[0].w, f->L[j][i].s[0].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[1].pic, x + f->L[j][i].s[0].w, y,                     f->L[j][i].s[1].w, f->L[j][i].s[1].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[2].pic, x,                     y + f->L[j][i].s[0].h, f->L[j][i].s[2].w, f->L[j][i].s[2].h, w, 128);
-				drawrect(rgb, f->L[j][i].s[3].pic, x + f->L[j][i].s[0].w, y + f->L[j][i].s[0].h, f->L[j][i].s[3].w, f->L[j][i].s[3].h, w, 128);
+				if(i)	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 128);
+				else	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 0);
+				drawrect(rgb, f->img[i].l[j].s[0].pic, x,                     		y,                     		f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[1].pic, x + f->img[i].l[j].s[0].w, 	y,                 			f->img[i].l[j].s[1].w, f->img[i].l[j].s[1].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[2].pic, x,                     		y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[2].w, f->img[i].l[j].s[2].h, w, 128);
+				drawrect(rgb, f->img[i].l[j].s[3].pic, x + f->img[i].l[j].s[0].w, 	y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[3].w, f->img[i].l[j].s[3].h, w, 128);
 			}
 
 		}
 	}
 
-	return rgb;
-}
-
-uint8* utils_subband_draw(Image *img, uint8 *rgb, ColorSpace color, uint32 steps)
-//For vizualisation only
-{
-	uint32 k, h, w, h0, w0, h1, w1, st;
-	int i;
-	int16* im;
-	Subband *sub = img->sub;
-	//for(i=0; i<=steps*3; i++) printf("sub %d h %d w %d p %p\n",sub[0][i]->subb, sub[0][i]->size.y, sub[0][i]->size.x,  sub[0][i ]);
-	if(color == BAYER ){
-		if(steps > 1){
-			for(k=0; k<4; k++) {
-				st = ((steps-1)*3+1);
-				switch(k){
-				case 0 : {h1 = 0; w1 = 0; break;}
-				case 1 : {h1 = 0; w1 = sub[3*(steps-1)-1].size.x + sub[3*(steps-1)-2].size.x; break;}
-				case 2 : {h1 = sub[3*(steps-1)-2].size.y + sub[3*(steps-1)-1].size.y; w1 = 0; break;}
-				case 3 : {h1 = sub[3*(steps-1)-2].size.y + sub[3*(steps-1)-1].size.y;
-						  w1 = sub[3*(steps-1)-1].size.x + sub[3*(steps-1)-2].size.x; break;}
-				}
-				for(i=(steps-1); i>0; i--){
-					h0 = sub[k*st + 3*i-2].size.y; w0 = sub[k*st + 3*i-1].size.x;
-					h  = sub[k*st + 3*i-2].size.y;  w = sub[k*st + 3*i-2].size.x;
-					im = &img->iwt[sub[k*st + 3*i-2].loc];
-					drawrect(rgb, im, w1+w0, h1, w, h, img->width, 128);
-
-					h = sub[k*st + 3*i-1].size.y; w = sub[k*st + 3*i-1].size.x;
-					im = &img->iwt[sub[k*st + 3*i-1].loc];
-					drawrect(rgb, im, w1, h1+h0, w, h, img->width, 128);
-
-					h = sub[k*st + 3*i].size.y; w = sub[k*st + 3*i].size.x;
-					im = &img->iwt[sub[k*st + 3*i].loc];
-					drawrect(rgb, im, w1+w0, h1+h0, w, h, img->width, 128);
-				}
-				h = sub[k*st ].size.y; w = sub[k*st].size.x;
-				im = &img->iwt[sub[k*st].loc];
-				drawrect(rgb, im, w1, h1, w, h, img->width, 128);
-			}
-		} else {
-			h0 = sub[0].size.y; w0 = sub[0].size.x;
-			h  = sub[1].size.y; w  = sub[1].size.x;
-			im = &img->iwt[sub[1].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
-
-			h = sub[2].size.y; w = sub[2].size.x;
-			im = &img->iwt[sub[2].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
-
-			h = sub[3].size.y; w = sub[3].size.x;
-			im = &img->iwt[sub[3].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
-
-			h = sub[0].size.y; w = sub[0].size.x;
-			im = &img->iwt[sub[0].loc];
-			drawrect(rgb, im, 0, 0, w, h, img->width, 0);
-		}
-	} else {
-		for(i=steps; i>0; i--){
-			h0 = sub[3*i-2].size.y; w0 = sub[3*i-1].size.x;
-			h  = sub[3*i-2].size.y; w  = sub[3*i-2].size.x;
-			im = &img->iwt[sub[3*i-2].loc];
-			drawrect(rgb, im, w0, 0, w, h, img->width, 128);
-
-			h = sub[3*i-1].size.y; w = sub[3*i-1].size.x;
-			im = &img->iwt[sub[3*i-1].loc];
-			drawrect(rgb, im, 0, h0, w, h, img->width, 128);
-
-			h = sub[3*i].size.y; w = sub[3*i].size.x;
-			im = &img->iwt[sub[3*i].loc];
-			drawrect(rgb, im, w0, h0, w, h, img->width, 128);
-		}
-		h = sub[0].size.y; w = sub[0].size.x;
-		im = &img->iwt[sub[0].loc];
-		drawrect(rgb, im, 0, 0, w, h, img->width, 0);
-	}
 	return rgb;
 }
 
@@ -232,8 +156,6 @@ uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 	}
 	return rgb;
 }
-
-
 
 
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
@@ -280,53 +202,6 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	return rgb;
 }
 
-uint8* utils_draw_bayer(uint8 *img, uint8 *rgb, uint32 w, uint32 h,  BayerGrid bay)
-/*! \fn void bayer_to_rgb(uint8 *rgb)
-	\brief DWT picture transform.
-  	\param	rgb 	The pointer to rgb array.
-*/
-{
-/*
-   All RGB cameras use one of these Bayer grids:
-
-	BGGR  0         GRBG 1          GBRG  2         RGGB 3
-	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
-	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
-	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
-	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
-	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
- */
-	uint32 y, x, yx, yw, yx3, i, sq = w*h - w, w1 = w-1;
-	switch(bay){
-		case BGGR :
-			for(yw=w, y=1; yw < sq; y++, yw+=w){
-				for(x=1; x < w1; x++){
-					yx = yw + x;
-					yx3 = yx*3;
-					rgb[yx3  ] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-								 (!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
-					rgb[yx3+1] = ((y&1 && !(x&1)) || (!(y&1) && x&1)) ? (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2 : img[yx];
-					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-								 (x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
-				}
-			}
-		//case GRBG :
-		//case GBRG :
-		case RGGB :
-			for(yw=w, y=1; yw < sq; y++, yw+=w){
-				for(x=1; x < w1; x++){
-					yx = yw + x;
-					yx3 = yx*3;
-					rgb[yx3  ] = (!(x&1) && !(y&1)) ? img[yx] : ((x&1 && y&1) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-								 (x&1 && !(y&1) ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
-					rgb[yx3+1] = ((!(x&1) && y&1) || ( x&1 && !(y&1))) ? img[yx] : (img[yx-1] + img[yx-w] + img[yx+1] + img[yx+w])>>2;
-					rgb[yx3+2] = (x&1 && y&1) ? img[yx] : ((!(x&1) && !(y&1)) ? (img[yx-1-w] + img[yx+1-w] + img[yx-1+w] + img[yx+1+w])>>2 :
-								 (!(x&1) && y&1 ? (img[yx-1] + img[yx+1])>>1 : (img[yx-w] + img[yx+w])>>1));
-				}
-			}
-	}
-	return rgb;
-}
 
 uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay)
 /*! \fn void bayer_to_rgb(uint8 *rgb)
@@ -1663,7 +1538,7 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 	return byts;
 }
 
-void utils_rgb2bayer(uint8 *rgb, uint8 *bay, uint32 w, uint32 h)
+void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h)
 {
 	uint32 w1 = w<<1, h1 = h<<1, w3 = w*3, x, x1, y, y1, yx, yx1;
 	for(y=0, y1=0; y < h1; y+=2, y1++){

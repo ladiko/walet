@@ -2,8 +2,8 @@
 #define _FRAME_H_
 
 typedef struct{
-	Pic16s	B;			//Bayer image 16 bits
-	Pic16s	D;			//Bayer image abter DWT -> quantization -> IDWT
+	Pic16s	b;			//Bayer image 16 bits
+	Pic16s	d;			//Bayer image abter DWT -> quantization -> IDWT
 	//Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
 	Image 	img[4];	//Pointer to image
@@ -20,7 +20,7 @@ typedef struct{
 	//uchar 	*mmb;	//The motion much buffer
 
 	Pixel	*pixs;		//The array of the pixeles
-	Edge	*edges;		//The array of adges
+	Edge	*edges;		//The array of edges
 	uint32 	nedge;		//The number of edges
 	uint32 	size;	//The number of pixels.
 	uint8 *buf;	//The pointer to temporary buffer in GOP structure
@@ -38,14 +38,17 @@ typedef struct{
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+//New interface
+uint32 frame_dwt(GOP *gop, uint32 fr);
+uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps);
 
-uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb);
-uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep);
+
+//Old interface
 
 void 	frames_init			(GOP *gop, uint32 fr);
-void 	frame_copy			(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v);
-uint32 	frame_dwt			(GOP *gop, uint32 fr, FilterBank fb);
-uint32 	frame_idwt			(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
+void 	frame_copy			(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v);
+//uint32 	frame_dwt			(GOP *gop, uint32 fr, FilterBank fb);
+//uint32 	frame_idwt			(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
 uint32 	frame_fill_subb		(GOP *gop, uint32 fr);
 uint32	frame_bits_alloc	(GOP *gop, uint32 fr, uint32 times);
 uint32 	frame_quantization	(GOP *gop, uint32 fr);

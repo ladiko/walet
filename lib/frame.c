@@ -17,50 +17,25 @@ void frames_init(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 {
 	Frame *f = &gop->frames[fr];
-	uint32 i, j, k, w = gop->width, h = gop->height;
+	uint32 i, j, k, w = gop->w, h = gop->h;
 	//New init
+
 	if(gop->color == BAYER ){
-		f->B.w = w; f->B.h = h;
-		f->B.pic = (int16 *)calloc(f->B.w*f->B.h, sizeof(uint16));
-		f->D.w = w; f->D.h = h;
-		f->D.pic = (int16 *)calloc(f->D.w*f->D.h, sizeof(uint16));
-
+	    f->b.w = w; f->b.h = h;
+	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(uint16));
+	    f->d.w = w; f->d.h = h;
+	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(uint16));
 		//Init color components
-		f->C[0].pic = (int16 *)calloc(f->B.w*f->B.h, sizeof(int16));
-		//printf("C = %p\n", f->C[0].pic);
-		for(i=0; i < 4; i++) { f->C[i].w = (w>>1) + bit_check(w, i); f->C[i].h = (h>>1) + bit_check(h, i>>1);}
-		for(i=1; i < 4; i++) f->C[i].pic = f->C[i-1].pic + f->C[i-1].w*f->C[i-1].h;
-
-		//Init DWT level components
-		if(gop->steps){
-			for(j=0; j < 4; j++) f->L[j] = (Level *)calloc(gop->steps, sizeof(Level ));
-			//f->L[4] = (Level *)calloc(4, sizeof(Level));
-			for(j=0; j < 4; j++){
-				f->L[j][0].s[0].pic = (uint16 *)calloc(f->C[j].w*f->C[j].h, sizeof(uint16));
-				for(i=0; i < 4; i++) {
-					f->L[j][0].s[i].w = (f->C[j].w>>1) + bit_check(f->C[j].w, i);
-					f->L[j][0].s[i].h = (f->C[j].h>>1) + bit_check(f->C[j].h, i>>1);
-				}
-				for(i=1; i < 4; i++) f->L[j][0].s[i].pic = f->L[j][0].s[i-1].pic + f->L[j][0].s[i-1].w*f->L[j][0].s[i-1].h;
-			}
-			for(k=1; k < gop->steps; k++){
-				//f->L[k] = (Level *)calloc(4, sizeof(Level));
-				for(j=0; j < 4; j++){
-					f->L[j][k].s[0].pic = (uint16 *)calloc(f->L[j][k-1].s[0].w*f->L[j][k-1].s[0].h, sizeof(uint16));
-					for(i=0; i < 4; i++) {
-						f->L[j][k].s[i].w = (f->L[j][k-1].s[0].w>>1) + bit_check(f->L[j][k-1].s[0].w, i);
-						f->L[j][k].s[i].h = (f->L[j][k-1].s[0].h>>1) + bit_check(f->L[j][k-1].s[0].h, i>>1);
-					}
-					for(i=1; i < 4; i++) f->L[j][k].s[i].pic = f->L[j][k].s[i-1].pic + f->L[j][k].s[i-1].w*f->L[j][k].s[i-1].h;
-				}
-			}
-		}
+		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[3], (w>>1)        , (h>>1)        , gop->color, gop->bpp, gop->steps);
+	} else if(gop->color == CS420){
+		image_init(&f->img[0], w,    h,    gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[1], w>>1, h>>1, gop->color, gop->bpp, gop->steps);
+		image_init(&f->img[2], w>>1, h>>1, gop->color, gop->bpp, gop->steps);
 	}
 
-
-	//Old init
-	//(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
-	image_init(&f->img[0], w, h, gop->color, gop->bpp, gop->steps);
 	f->size = w*h;
 
 	f->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
@@ -106,7 +81,7 @@ void frames_init(GOP *gop, uint32 fr)
 	f->state = 0;
 }
 
-void frame_copy_old(GOP *gop, uint32 fr, char *y, char *u, char *v)
+void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\fn	void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\brief	Fill frame from the stream.
 ///	\param	gop			The GOP structure.
@@ -115,135 +90,55 @@ void frame_copy_old(GOP *gop, uint32 fr, char *y, char *u, char *v)
 ///	\param	u			The pointer to green or U  image data
 ///	\param	v			The pointer to blue or V  image data
 {
+	Frame *f = &gop->frames[fr];
+	uint32 i, size = gop->w*gop->h;
 	if(gop == NULL ) return;
-	Frame *frame = &gop->frames[fr];
 
-	printf("Start frame copy \n");
-	image_copy(&frame->img[0], gop->bpp, y);
-	if(gop->color != GREY  && gop->color != BAYER) {
-		image_copy(&frame->img[1], gop->bpp, u);
-		image_copy(&frame->img[2], gop->bpp, v);
+	if(gop->color == BAYER) {
+		//if(gop->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = (v[i<<1]<<8) | v[(i<<1)+1];
+		//else
+		for(i=0; i<size; i++) f->b.pic[i] = y[i];
+
+	} else {
+		image_copy(&f->img[0], gop->bpp, y);
+		if(gop->color != GREY  && gop->color != BAYER) {
+			image_copy(&f->img[1], gop->bpp, u);
+			image_copy(&f->img[2], gop->bpp, v);
+		}
 	}
-	frame->state = FRAME_COPY;
+	f->state = FRAME_COPY;
+	printf("Finesh frame copy \n");
 }
 
-void frame_copy(GOP *gop, uint32 fr, int8 *y, int8 *u, int8 *v)
-///	\fn	void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
-///	\brief	Fill frame from the stream.
-///	\param	gop			The GOP structure.
-///	\param	fr			The frame number.
-///	\param	y			The pointer to Bayer, gray, red or Y  image data
-///	\param	u			The pointer to green or U  image data
-///	\param	v			The pointer to blue or V  image data
-{
-	if(gop == NULL ) return;
-	Frame *frame = &gop->frames[fr];
-
-	if(gop->color == BAYER) pic_copy16(&frame->B, y);
-	frame->state = FRAME_COPY;
-	printf("Finished frame copy \n");
-}
-
-uint32 frame_dwt_new(GOP *gop, uint32 fr, FilterBank fb)
+uint32 frame_dwt(GOP *gop, uint32 fr)
 ///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\brief	Discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	uint32 i, j, k;
+	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
+	//DWT taransform
 	if(check_state(f->state, FRAME_COPY | IDWT)){
-		if(gop->fb == FR_HAAR){
-			printf("Start dwt_2d_haar16\n");
-			//Befor DWT shift all image on 128
-			//shift_b_to_w(f->B8.B.pic, (int8*)gop->buf, -128, f->B8.B.w*f->B8.B.h);
-			dwt_2d_haar16(f->B.pic, f->B.w, f->B.h, f->C[0].pic, f->C[1].pic, f->C[2].pic, f->C[3].pic);
-			//dwt_2d_haar16(f->B.pic, f->B.w, f->B.h, f->C[0].pic, f->C[1].pic, f->C[2].pic, f->C[3].pic, 1216);
-			if(gop->steps){
-				for(j=0; j < 4; j++){
-					dwt_2d_haar16(f->C[j].pic, f->C[j].w, f->C[j].h,
-							f->L[0][j].s[0].pic, f->L[0][j].s[1].pic, f->L[0][j].s[2].pic, f->L[0][j].s[3].pic);
-				}
-				for(k=1; k < gop->steps; k++){
-					for(j=0; j < 4; j++){
-						dwt_2d_haar16(f->L[k-1][j].s[0].pic, f->L[k-1][j].s[0].w, f->L[k-1][j].s[0].h,
-								f->L[k][j].s[0].pic, f->L[k][j].s[1].pic, f->L[k][j].s[2].pic, f->L[k][j].s[3].pic);
-					}
-				}
-			}
-			f->state = DWT;
-			return 1;
-
+		if(gop->color == BAYER || gop->color == RGB) {
+			//Color transform
+			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)gop->buf, f->b.w, f->b.h);
+			for(i=0; i < 4; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
+		} else if (gop->color == GREY) {
+			image_dwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps);
 		}
-	} else return 0;
-}
-
-uint32 frame_idwt_new(GOP *gop, uint32 fr, FilterBank fb, uint32 istep)
-///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
-///	\brief	Discrete wavelets frame transform.
-///	\param	gop			The GOP structure.
-///	\param	fr			The frame number.
-///	\retval				1 - if all OK, 0 - if not OK
-{
-	uint32 i, j, k;
-	if(gop == NULL ) return 0;
-	Frame *f = &gop->frames[fr];
-	if(check_state(f->state, FRAME_COPY | DWT)){
-		if(gop->fb == FR_HAAR){
-			printf("Start idwt_2d_haar16\n");
-			if(gop->steps){
-				if(gop->steps > 1){
-					for(k=gop->steps-1; k; k--){
-						for(j=0; j < 4; j++){
-							idwt_2d_haar16(f->L[k-1][j].s[0].pic, f->L[k-1][j].s[0].w, f->L[k-1][j].s[0].h,
-								f->L[k][j].s[0].pic, f->L[k][j].s[1].pic, f->L[k][j].s[2].pic, f->L[k][j].s[3].pic);
-						}
-					}
-				}
-				for(j=0; j < 4; j++){
-					idwt_2d_haar16(f->C[j].pic, f->C[j].w, f->C[j].h,
-						f->L[0][j].s[0].pic, f->L[0][j].s[1].pic, f->L[0][j].s[2].pic, f->L[0][j].s[3].pic);
-				}
-			}
-			idwt_2d_haar16((int16*)gop->buf, f->B.w, f->B.h, f->C[0].pic, f->C[1].pic, f->C[2].pic, f->C[3].pic);
-			//shift((int8*)gop->buf, f->B8.B.pic, 128, f->B8.B.w*f->B8.B.h);
-			//shift_w_to_b((int8*)gop->buf, gop->buf, 128, f->B8.B.w*f->B8.B.h);
-
-			f->state = IDWT;
-			return 1;
-
-		}
-	} else return 0;
-}
-
-uint32 frame_dwt(GOP *gop, uint32 fr, FilterBank fb)
-///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
-///	\brief	Discrete wavelets frame transform.
-///	\param	gop			The GOP structure.
-///	\param	fr			The frame number.
-///	\retval				1 - if all OK, 0 - if not OK
-{
-	if(gop == NULL ) return 0;
-	Frame *frame = &gop->frames[fr];
-	if(check_state(frame->state, FRAME_COPY | IDWT)){
-		frame->img[0].sub = gop->sub[0]; 	//Set current image for DWT transform
-		if		(gop->color == BAYER) 	image_dwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, MALLET, fb); //MALLET
-		else if (gop->color == GREY) 	image_dwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
 		else {
-			frame->img[1].sub = gop->sub[1]; 	//Set current image for DWT transform
-			frame->img[2].sub = gop->sub[2]; 	//Set current image for DWT transform
-			image_dwt(&frame->img[1], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
-			image_dwt(&frame->img[2], gop->color, gop->steps, (int16*)gop->buf, CLASSIC, fb);
+			for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
 		}
-		frame->state = DWT;
+		f->state = DWT;
 		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
 	} else return 0;
 }
 
-uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
+uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps)
 ///	\fn	void frame_idwt_53(GOP *gop, uint32 fr, uint32 step)
 ///	\brief	Invert discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
@@ -251,19 +146,25 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 /// \param	isteps		The steps of IDWT should be lees or equal DWT steps
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i;
 	if(gop == NULL ) return 0;
-	Frame *frame = &gop->frames[fr];
-	if(check_state(frame->state, RANGE_DECODER | DWT | QUANTIZATION)){
-		frame->img[0].sub = gop->sub[0]; //Set current image for IDWT transform
-		if		(gop->color == BAYER) 	image_idwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, isteps, MALLET, fb);
-		else if (gop->color == GREY) 	image_idwt(&frame->img[0], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
-		else {
-			frame->img[1].sub = gop->sub[1]; //Set current image for IDWT transform
-			frame->img[2].sub = gop->sub[2]; //Set current image for IDWT transform
-			image_idwt(&frame->img[1], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
-			image_idwt(&frame->img[2], gop->color, gop->steps, (int16*)gop->buf, isteps, CLASSIC, fb);
+	Frame *f = &gop->frames[fr];
+	if(check_state(f->state, DWT)){
+		if(gop->color == BAYER || gop->color == RGB) {
+			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
+			//Color transform
+			f->d.w = f->img[0].d.w + f->img[1].d.w;
+			f->d.h = f->img[0].d.h + f->img[2].d.h;
+			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic,
+					(int16*)gop->buf, f->d.w, f->d.h);
+		} else if (gop->color == GREY) {
+			image_idwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps, isteps);
 		}
-		frame->state = IDWT;
+		else {
+			for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
+		}
+		f->state = IDWT;
+		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
 	} else return 0;
 }
@@ -440,8 +341,9 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 {
 	Image *im = &gop->frames[fr].img[0];
 	if(gop->color == BAYER){
-		image_fill_hist(im, gop->color, gop->bg, gop->bpp);
-		filters_white_balance(im->img, im->img, im->width, im->height, gop->bg, im->hist, im->look, gop->bpp, out_bits, gamma);
+		image_fill_hist(gop->frames[fr].b.pic, gop->color, gop->bg, gop->bpp);
+		filters_white_balance(gop->frames[fr].b.pic, gop->frames[fr].b.pic, gop->frames[fr].b.w, gop->frames[fr].b.h,
+				gop->bg, im->hist, im->look, gop->bpp, out_bits, gamma);
 	}
 }
 
@@ -463,7 +365,7 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		utils_bayer_to_Y(im->img, gop->buf, gop->width, gop->height);
+		utils_bayer_to_Y(im->p, gop->buf, gop->w, gop->h);
 		filter_median(gop->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
 		seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
 		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
@@ -487,7 +389,7 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 {
-	uint32 j, i, ncors=0, beg, diff, k, sq = gop->width*gop->height;
+	uint32 j, i, ncors=0, beg, diff, k, sq = gop->w*gop->h;
 	Frame *frm1 = &gop->frames[fr1];
 	Frame *frm2 = &gop->frames[fr2];
 	clock_t start, end;
@@ -627,7 +529,7 @@ void frame_compress(GOP *gop, uint32 fr, uint32 times, FilterBank fb)
 	uint32 size;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt			(gop, fr, fb);
+	frame_dwt			(gop, fr);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("DWT time             = %f\n", tmp);
@@ -668,7 +570,7 @@ void frame_decompress(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb)
 	printf("Range decoder time    = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_idwt			(gop, fr, isteps, fb);
+	frame_idwt			(gop, fr, isteps);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("IDWT time             = %f\n", tmp);

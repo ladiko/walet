@@ -4,8 +4,8 @@
 typedef struct {
 	//WaletHeader 	wh;
 	//Paremeters for decoder and encoder
-	uint16 			width;			// Image width
-	uint16 			height;			// Image width
+	uint16 			w;			// Image width
+	uint16 			h;			// Image height
 	ColorSpace		color;			// Color space
 	BayerGrid		bg;				// Bayer grid pattern
 	uint32			bpp;			// Bits per pixel

@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GOP* walet_decoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb)
+GOP* walet_decoder_init(uint32 w, uint32 h, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb)
 {
 }
 
 
-GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uint8 mvs)
+GOP* walet_encoder_init(uint32 w, uint32 h, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb, uint8 mvs)
 {
 	int i;
 	GOP *gop = (GOP*) malloc(sizeof(GOP));
-	gop->width  	= width;
-	gop->height 	= height;
+	gop->w  		= w;
+	gop->h 			= h;
 	gop->color  	= color;
 	gop->bg			= bg;
 	gop->bpp		= bpp;
@@ -25,7 +25,7 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	gop->mvs		= mvs;
 
 	//Temp buffer init
-	gop->buf = (uint8 *)calloc(width*height*3, sizeof(uint8));
+	gop->buf = (uint8 *)calloc(w*h*3, sizeof(uint8));
 	gop->q = (int *)calloc(1<<(bpp+3)+1, sizeof(int));
 	gop->mmb = (uint8 *)calloc(((gop->mvs<<1)+1)*((gop->mvs<<1)+1)*6, sizeof(uint8));
 	//The memory for segmentation
@@ -50,14 +50,14 @@ GOP* walet_encoder_init(uint32 width, uint32 height, ColorSpace color, BayerGrid
 	printf("Frames  init\n");
 
 	//Segmentation parts init
-	gop->subs.w  = width>>1;
-	gop->subs.h = height>>1;
+	gop->subs.w  = w>>1;
+	gop->subs.h = h>>1;
 	gop->subs.pic = (uint8 *)calloc(gop->subs.w*gop->subs.h, sizeof(uint8));
-	gop->grad.w  = width>>1;
-	gop->grad.h = height>>1;
+	gop->grad.w  = w>>1;
+	gop->grad.h = h>>1;
 	gop->grad.pic = (uint8 *)calloc(gop->grad.w*gop->grad.h, sizeof(uint8));
-	gop->con.w  = width>>1;
-	gop->con.h = height>>1;
+	gop->con.w  = w>>1;
+	gop->con.h = h>>1;
 	gop->con.pic = (uint8 *)calloc(gop->con.w*gop->con.h, sizeof(uint8));
 
 	/*
@@ -102,8 +102,8 @@ uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
     uint64 size = 0;
 
     wh.marker	= 0x776C;
-    wh.width	= gop->width;
-    wh.height	= gop->height;
+    wh.w		= gop->w;
+    wh.h		= gop->h;
     wh.color	= gop->color;
     wh.bg		= gop->bg;
     wh.bpp		= gop->bpp;
@@ -126,7 +126,7 @@ uint32 walet_write_stream(GOP *gop, uint32 num, const char *filename)
     fclose(wl);
     printf("Write size = %Ld\n", size);
 	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d\n",
-			wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
+			wh.w, wh.h, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
 
     return size;
 }
@@ -149,9 +149,9 @@ uint32 walet_read_stream(GOP **gop, uint32 num, const char *filename)
     size += sizeof(wh);
     printf("size = %Ld\n", size);
     if(wh.marker != 0x776C ) { printf("It's not walet format file\n"); return; }
-    *gop = walet_decoder_init(wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
+    *gop = walet_decoder_init(wh.w, wh.h, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
 	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d\n",
-			wh.width, wh.height, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
+			wh.w, wh.h, wh.color, wh.bg, wh.bpp, wh.steps, wh.gop_size, wh.rates, wh.comp, wh.fb);
 
     //Write frames
     for(i=0; i < num; i++) size += frame_read(*gop, i, wl);
