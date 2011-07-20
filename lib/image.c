@@ -326,6 +326,7 @@ void dwt(Image *img, int16 *buf, fundwt dwt_one, uint32 steps)
 	if(steps){
 		(*dwt_one)(img->p, img->l[0].s[0].pic, img->l[0].s[1].pic, img->l[0].s[2].pic, img->l[0].s[3].pic, buf, img->w, img->h);
 		for(k=1; k < steps; k++){
+			printf("k = %d\n",k);
 			(*dwt_one)(img->l[k-1].s[0].pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf,
 					img->l[k-1].s[0].w, img->l[k-1].s[0].h);
 
@@ -342,24 +343,25 @@ void idwt(Image *img, int16 *buf, funidwt idwt_one, uint32 steps, uint32 istep)
 /// \param funwt		The function for one step 2d DWT.
 {
 	//uint8 *img = im->img;
-	uint32 j, k;
+	int j, k;
 	if(istep > steps){
 		printf("istep should be less or equal steps\n");
 		return;
 	}
-	for(k=steps-1; k > steps-istep-1; k--){
+	printf("steps-istep-1 = %d\n", steps-istep-1);
+	for(k=steps-1; k > steps-istep; k--){
+		printf("in k = %d\n", k);
 		(*idwt_one)(img->l[k-1].s[0].pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic,
 				 buf, img->l[k-1].s[0].w, img->l[k-1].s[0].h);
 	}
+	printf("out k = %d\n", k);
 	img->d.w = img->l[k].s[0].w + img->l[k].s[1].w;
 	img->d.h = img->l[k].s[0].h + img->l[k].s[2].h;
 	(*idwt_one)(img->d.pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf, img->d.w, img->d.h);
 
 		//Color transform
 		//idwt_53_2d_one_new(c[0].pic, c[1].pic, c[2].pic, c[3].pic, b->pic, buf, w, h);
-
 }
-
 
 void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps)
 ///	\fn void image_dwt_53(Image *im, ColorSpace color, uint32 steps, uint8 *buf)
@@ -375,7 +377,7 @@ void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps)
 			break;
 		}
 		case(FR_5_3):{
-			dwt(im, buf, *dwt_53_2d_one, steps);
+			dwt(im, buf, &dwt_53_2d_one, steps);
 			break;
 		}
 		default:{
@@ -459,25 +461,26 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 {
 	int i, k, num;
 	img->w = w; img->h = h;
-
 	img->p = (int16 *)calloc(w*h, sizeof(int16));
-	img->l = (Level *)calloc(steps, sizeof(Level));
 
 	img->d.w = w; img->d.h = h;
 	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
 
-	img->l[0].s[0].pic = (uint16 *)calloc(w*h, sizeof(uint16));
-	for(i=0; i < 4; i++) {
-		img->l[0].s[i].w = (w>>1) + bit_check(w, i);
-		img->l[0].s[i].h = (h>>1) + bit_check(h, i>>1);
-	}
-	for(i=1; i < 4; i++) img->l[0].s[i].pic = img->l[0].s[i-1].pic + img->l[0].s[i-1].w*img->l[0].s[i-1].h;
-	for(k=1; k < steps; k++){
-		img->l[k].s[0].pic = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
+	if(steps){
+		img->l = (Level *)calloc(steps, sizeof(Level));
+		img->l[0].s[0].pic = (uint16 *)calloc(w*h, sizeof(uint16));
 		for(i=0; i < 4; i++) {
-			img->l[k].s[i].w = (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i);
-			img->l[k].s[i].h = (img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1);
-			for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
+			img->l[0].s[i].w = (w>>1) + bit_check(w, i);
+			img->l[0].s[i].h = (h>>1) + bit_check(h, i>>1);
+		}
+		for(i=1; i < 4; i++) img->l[0].s[i].pic = img->l[0].s[i-1].pic + img->l[0].s[i-1].w*img->l[0].s[i-1].h;
+		for(k=1; k < steps; k++){
+			img->l[k].s[0].pic = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
+			for(i=0; i < 4; i++) {
+				img->l[k].s[i].w = (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i);
+				img->l[k].s[i].h = (img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1);
+				for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
+			}
 		}
 	}
 
