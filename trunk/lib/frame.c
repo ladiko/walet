@@ -62,7 +62,7 @@ void frames_init(GOP *gop, uint32 fr)
 	f->vec.h = h;
 	f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
 	//f->pixp = (uint32 *)calloc(f->vec.width*f->vec.height, sizeof(uint32));
-
+	/*
 	if(gop->color == CS444 || gop->color == RGB) {
 		image_init(&f->img[1], w, h, gop->color, gop->bpp, gop->steps);
 		image_init(&f->img[2], w, h, gop->color, gop->bpp, gop->steps);
@@ -77,7 +77,7 @@ void frames_init(GOP *gop, uint32 fr)
 		image_init(&f->img[1], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
 		image_init(&f->img[2], w>>1 , h>>1, gop->color, gop->bpp, gop->steps);
 		f->size = (f->size*3)>>1;
-	}
+	}*/
 	f->state = 0;
 }
 
@@ -125,7 +125,10 @@ uint32 frame_dwt(GOP *gop, uint32 fr)
 		if(gop->color == BAYER || gop->color == RGB) {
 			//Color transform
 			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)gop->buf, f->b.w, f->b.h);
-			for(i=0; i < 4; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
+			for(i=0; i < 4; i++) {
+				printf("img[%d]\n",i);
+				image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
+			}
 		} else if (gop->color == GREY) {
 			image_dwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps);
 		}
