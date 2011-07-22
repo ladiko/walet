@@ -389,17 +389,6 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 
-   	//utils_grey_draw(gw->gop->frames[0].B8.B.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].B8.B.w, gw->gop->frames[0].B8.B.h);
-
-    	//utils_bayer_draw_16(gw->gop->frames[0].img[0].iwt, gdk_pixbuf_get_pixels(gw->orig[1]->pxb),
-    	//		gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
-    	//new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-    	//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-    	//new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-        //utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->color, 1);
-        //new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);
-        //utils_bayer_draw(gw->gop->frames[0].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
-           //               gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
 		printf("APE = %f\n",utils_ape_16(gw->gop->frames[0].b.pic, gw->gop->frames[0].d.pic, gw->gop->frames[0].b.w*gw->gop->frames[0].b.h, 1));
     }
 }

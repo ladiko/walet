@@ -319,14 +319,13 @@ void dwt(Image *img, int16 *buf, fundwt dwt_one, uint32 steps)
 ///	\param steps 		The steps of DWT transform.
 /// \param funwt		The function for one step 2d DWT.
 {
-	uint32 k;
+	uint32 k, i;
 	//Color transform
 	//printf("C[0].pic = %p\n", c[0].pic);
 	//dwt_53_2d_one_new(b->pic, c[0].pic, c[1].pic, c[2].pic, c[3].pic, buf, w, h);
 	if(steps){
 		(*dwt_one)(img->p, img->l[0].s[0].pic, img->l[0].s[1].pic, img->l[0].s[2].pic, img->l[0].s[3].pic, buf, img->w, img->h);
 		for(k=1; k < steps; k++){
-			printf("k = %d\n",k);
 			(*dwt_one)(img->l[k-1].s[0].pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf,
 					img->l[k-1].s[0].w, img->l[k-1].s[0].h);
 
@@ -348,19 +347,13 @@ void idwt(Image *img, int16 *buf, funidwt idwt_one, uint32 steps, uint32 istep)
 		printf("istep should be less or equal steps\n");
 		return;
 	}
-	printf("steps-istep-1 = %d\n", steps-istep-1);
 	for(k=steps-1; k > steps-istep; k--){
-		printf("in k = %d\n", k);
 		(*idwt_one)(img->l[k-1].s[0].pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic,
 				 buf, img->l[k-1].s[0].w, img->l[k-1].s[0].h);
 	}
-	printf("out k = %d\n", k);
 	img->d.w = img->l[k].s[0].w + img->l[k].s[1].w;
 	img->d.h = img->l[k].s[0].h + img->l[k].s[2].h;
 	(*idwt_one)(img->d.pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf, img->d.w, img->d.h);
-
-		//Color transform
-		//idwt_53_2d_one_new(c[0].pic, c[1].pic, c[2].pic, c[3].pic, b->pic, buf, w, h);
 }
 
 void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps)
@@ -479,8 +472,8 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 			for(i=0; i < 4; i++) {
 				img->l[k].s[i].w = (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i);
 				img->l[k].s[i].h = (img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1);
-				for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
 			}
+			for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
 		}
 	}
 

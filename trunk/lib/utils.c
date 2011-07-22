@@ -75,18 +75,13 @@ uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
 				else if	(i == 1){ x = f->img[0].w; 	y = 0;}
 				else if (i == 2){ x = 0; 			y = f->img[0].h;}
 				else			{ x = f->img[0].w;	y = f->img[0].h;}
-				printf("img[%d].l[%d]\n", i, j);
 				if(j == steps-1){
 					if(i) 	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 128);
 					else 	drawrect(rgb, f->img[i].l[j].s[0].pic, x, y, f->img[i].l[j].s[0].w, f->img[i].l[j].s[0].h, w, 0);
-					printf("x = %4d y = %4d\n", x , y);
 				}
 				drawrect(rgb, f->img[i].l[j].s[1].pic, x + f->img[i].l[j].s[0].w,	y,                     		f->img[i].l[j].s[1].w, f->img[i].l[j].s[1].h, w, 128);
-				printf("x = %4d y = %4d p = %d\n", x + f->img[i].l[j].s[0].w, y, f->img[i].l[j].s[0].pic - f->img[i].l[j].s[1].pic);
 				drawrect(rgb, f->img[i].l[j].s[2].pic, x,                     		y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[2].w, f->img[i].l[j].s[2].h, w, 128);
-				printf("x = %4d y = %4d p = %d\n", x , y + f->img[i].l[j].s[0].h, f->img[i].l[j].s[0].pic - f->img[i].l[j].s[1].pic);
 				drawrect(rgb, f->img[i].l[j].s[3].pic, x + f->img[i].l[j].s[0].w, 	y + f->img[i].l[j].s[0].h, 	f->img[i].l[j].s[3].w, f->img[i].l[j].s[3].h, w, 128);
-				printf("x = %4d y = %4d p = %d\n", x + f->img[i].l[j].s[0].w, y + f->img[i].l[j].s[0].h, f->img[i].l[j].s[0].pic - f->img[i].l[j].s[1].pic);
 			}
 		}
 	} else {
