@@ -453,12 +453,14 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 
 {
 	int i, k, num;
+	int16 *tmp;
 	img->w = w; img->h = h;
 	img->p = (int16 *)calloc(w*h, sizeof(int16));
 
 	img->d.w = w; img->d.h = h;
 	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
 
+	/*
 	if(steps){
 		img->l = (Level *)calloc(steps, sizeof(Level));
 		img->l[0].s[0].pic = (uint16 *)calloc(w*h, sizeof(uint16));
@@ -474,6 +476,23 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 				img->l[k].s[i].h = (img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1);
 			}
 			for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
+		}
+	}
+	*/
+	if(steps){
+		img->l = (Level *)calloc(steps, sizeof(Level));
+		tmp = (uint16 *)calloc(w*h, sizeof(uint16));
+		for(i=0; i < 4; i++) {
+			subband_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
+			tmp = tmp + img->l[0].s[i-1].w*img->l[0].s[i-1].h;
+		}
+		for(k=1; k < steps; k++){
+			tmp = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
+			for(i=0; i < 4; i++) {
+				subband_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
+						(img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1), bpp);
+				tmp = tmp + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
+			}
 		}
 	}
 
@@ -505,6 +524,30 @@ void image_copy(Image *im, uint32 bpp, uint8 *v)
 }
 
 void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
+///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
+///	\brief Fill distribution probability array for each subband after DWT
+///			and calculate the number of quantization steps.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+{
+	uint32 i, sz, st = ((steps-1)*3+1);
+	//int16 *img = im->p;
+	//im->qst = 0;
+	//Subband *sub = im->sub;
+
+	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
+	printf("sz = %d\n  ", sz);
+	for(i=0; i < sz; i++) {
+		printf("%2d  ", i);
+		subband_fill_prob(&im->p[sub[i].loc], &sub[i]);
+		im->qst += sub[i].a_bits-1;
+	}
+	sz = (color == BAYER) ? 4 : 1;
+	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all LL subbands from quantization
+}
+
+void image_fill_subb_old(Image *im, ColorSpace color, uint32 steps)
 ///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 ///	\brief Fill distribution probability array for each subband after DWT
 ///			and calculate the number of quantization steps.
