@@ -6,7 +6,18 @@
 #include <math.h>
 #include <utils.h>
 
-static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 bits, uint32 ofset, int *q)
+
+void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp, int *q)
+{
+	sub->dist = (uint32 *)calloc((1<<(bpp+2))*3, sizeof(uint32));
+	sub->q = q;
+	sub->d_bits = bpp+2;
+	sub->pic = img;
+	sub->w = w;
+	sub->h = h;
+}
+
+static void subband_ini_old(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 bits, uint32 ofset, int *q)
 {
 	uint32  i, st = steps*3+1;
 	uint32  s[4], sh[4], h[2], w[2];
@@ -16,11 +27,11 @@ static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 b
 		h[1] = (h[0]>>1), h[0] = (h[0]>>1) + (h[0]&1), w[1] = (w[0]>>1), w[0] = (w[0]>>1) + (w[0]&1);
 		s[0] = ofset; s[1] = s[0] + w[0]*h[0]; s[2] = s[1] + w[1]*h[0]; s[3] = s[2] + w[0]*h[1];
 
-		sub[3*i  ].size.x = w[1]; sub[3*i  ].size.y = h[1]; sub[3*i  ].loc = s[3];
-		sub[3*i-1].size.x = w[0]; sub[3*i-1].size.y = h[1]; sub[3*i-1].loc = s[2];
-		sub[3*i-2].size.x = w[1]; sub[3*i-2].size.y = h[0]; sub[3*i-2].loc = s[1];
+		//sub[3*i  ].size.x = w[1]; sub[3*i  ].size.y = h[1]; sub[3*i  ].loc = s[3];
+		//sub[3*i-1].size.x = w[0]; sub[3*i-1].size.y = h[1]; sub[3*i-1].loc = s[2];
+		//sub[3*i-2].size.x = w[1]; sub[3*i-2].size.y = h[0]; sub[3*i-2].loc = s[1];
 	}
-	sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = ofset;
+	//sub[0].size.x = w[0]; sub[0].size.y = h[0]; sub[0].loc = ofset;
 	for(i=0; i<st; i++){
 		sub[i].dist = (uint32 *)calloc((1<<(bits+2))*3, sizeof(uint32));
 		sub[i].q = q;
@@ -29,7 +40,7 @@ static void subband_ini(Subband *sub, uint32 x, uint32 y, uint32 steps, uint32 b
 	//printf("sub %d h %d w %d s %d p %p\n",sub[0][0]->subb, sub[0][0]->size.y, sub[0][0]->size.x, s[0], sub[0][0]);
 }
 
-void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q)
+void subband_init_old(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q)
 {
 	uint32  j, k,st;
 	uint32  s[4], h[2], w[2];
@@ -61,19 +72,19 @@ void subband_init(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 
 	//			k, j, sub[num][j+((steps-1)*3+1)*k].loc, sub[num][j+((steps-1)*3+1)*k].size.x, sub[num][j+((steps-1)*3+1)*k].size.y, &sub[num][j+((steps-1)*3+1)*k]);
 }
 
-void subband_fill_prob(uint8 *img, Subband *sub)
+void subband_fill_prob(Subband *sub)
 ///	\fn void subband_fill_prob(uint8 *img, Subband *sub)
 ///	\brief Fill distribution probability arrays.
 ///	\param img	 		The pointer to image.
 ///	\param sub 			Pointer to filling subband.
 {
 	int i,  ds = 1<<sub->d_bits, half = ds>>1;
-	int min, max, diff, size = sub->size.x*sub->size.y;
+	int min, max, diff, size = sub->w*sub->h;
 
 	memset(sub->dist, 0, sizeof(uint32)*ds);
 
 	for(i=0; i < size; i++) {
-		sub->dist[img[i] + half]++;
+		sub->dist[sub->pic[i] + half]++;
 	}
 	for(i=0   ; ; i++) if(sub->dist[i] != 0) {min = i - half; break; }
 	for(i=ds-1; ; i--) if(sub->dist[i] != 0) {max = i - half; break; }
