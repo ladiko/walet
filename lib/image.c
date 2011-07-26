@@ -523,7 +523,7 @@ void image_copy(Image *im, uint32 bpp, uint8 *v)
 	else 		for(i=0; i<size; i++) im->p[i] = v[i];
 }
 
-void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
+void image_fill_subb(Image *im, uint32 steps)
 ///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 ///	\brief Fill distribution probability array for each subband after DWT
 ///			and calculate the number of quantization steps.
@@ -531,44 +531,13 @@ void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 ///	\param color 		The color space of the stream.
 ///	\param steps 		The steps of DWT transform.
 {
-	uint32 i, sz, st = ((steps-1)*3+1);
-	//int16 *img = im->p;
-	//im->qst = 0;
-	//Subband *sub = im->sub;
-
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	printf("sz = %d\n  ", sz);
-	for(i=0; i < sz; i++) {
-		printf("%2d  ", i);
-		subband_fill_prob(&im->p[sub[i].loc], &sub[i]);
-		im->qst += sub[i].a_bits-1;
+	uint32 i, j;
+	for(i=0; i < steps; i++) {
+		for(j=1; j < 4; j++) {
+			subband_fill_prob(&im->l[i].s[j]);
+			im->qst += im->l[i].s[j].a_bits-1;
+		}
 	}
-	sz = (color == BAYER) ? 4 : 1;
-	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all LL subbands from quantization
-}
-
-void image_fill_subb_old(Image *im, ColorSpace color, uint32 steps)
-///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
-///	\brief Fill distribution probability array for each subband after DWT
-///			and calculate the number of quantization steps.
-///	\param im	 		The image structure.
-///	\param color 		The color space of the stream.
-///	\param steps 		The steps of DWT transform.
-{
-	uint32 i, sz, st = ((steps-1)*3+1);
-	//int16 *img = im->p;
-	im->qst = 0;
-	Subband *sub = im->sub;
-
-	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
-	printf("sz = %d\n  ", sz);
-	for(i=0; i < sz; i++) {
-		printf("%2d  ", i);
-		subband_fill_prob(&im->p[sub[i].loc], &sub[i]);
-		im->qst += sub[i].a_bits-1;
-	}
-	sz = (color == BAYER) ? 4 : 1;
-	for(i=0; i <sz; i++) im->qst -= sub[i*st].a_bits-1; //Remove all LL subbands from quantization
 }
 
 void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
@@ -647,7 +616,7 @@ void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qs
 	}
 }
 
-QI func = q_i_uniform;
+//QI func = q_i_uniform;
 //QI func = q_i_nonuniform;
 //QI func = q_i_nonuniform1;
 
@@ -660,7 +629,7 @@ uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\param qstep 		The quantization step  (0 <= qstep < qst).
 ///	\retval				The size of image in bits.
 {
-	uint32 i, sz, s=0, s1;
+	uint32 i, j, sz, s=0, s1;
 	Subband *sub = im->sub;
 
 	if(qstep) image_bits_per_subband(im, color, steps,  qstep);
@@ -668,7 +637,7 @@ uint32 image_size(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		if(sub[i].q_bits > 1) {
-			s1 = subband_size(&sub[i], func);
+			s1 = subband_size(&sub[i]);
 			s += s1;
 		}
 	}
@@ -704,7 +673,7 @@ void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uin
 	sz = (color == BAYER) ? ((steps-1)*3+1)<<2 : steps*3 + 1;
 	for(i=0; i < sz; i++) {
 		if(sub[i].q_bits > 1) printf("%2d %d size = %d entropy = %f q_bits = %d\n", i,
-				sub[i].size.x*sub[i].size.y, subband_size(&sub[i], func)>>3, (double)subband_size(&sub[i], func)/(double)(sub[i].size.x*sub[i].size.y), sub[i].q_bits);
+				sub[i].w*sub[i].h, subband_size(&sub[i])>>3, (double)subband_size(&sub[i])/(double)(sub[i].w*sub[i].h), sub[i].q_bits);
 	}
 	//--------------------------------------------------------
 }

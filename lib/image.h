@@ -51,8 +51,13 @@ extern "C" {
 
 
 //New interface
-void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps);
-void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
+void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
+void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
+void 	image_dwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps);
+void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
+void 	image_fill_subb		(Image *im, uint32 steps);
+
+
 void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 //Old interface
@@ -67,11 +72,9 @@ void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps);
 void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps,  uint32 istep);
 
 
-void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
-void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 //void 	image_dwt			(Image *im, ColorSpace color, uint32 steps, int16 *buf, TransformType tt, FilterBank fb);
 //void 	image_idwt			(Image *im, ColorSpace color, uint32 steps, int16 *buf, uint32 isteps, TransformType tt, FilterBank fb);
-void 	image_fill_subb		(Image *im, ColorSpace color, uint32 steps);
+//void 	image_fill_subb		(Image *im, ColorSpace color, uint32 steps);
 void 	image_fill_hist		(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp);
 //void 	image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep);
 //uint32 	image_size			(Image *im, ColorSpace color, uint32 steps, uint32 qstep);

@@ -34,21 +34,25 @@ typedef void (*QI)(Subband *);
 extern "C" {
 #endif /* __cplusplus */
 
-void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp, int *q);
-void subband_fill_prob(Subband *sub);
+void 	subband_init		(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp);
+void 	subband_fill_prob	(Subband *sub);
+uint32 	subband_size		(Subband *sub);
+void  	subband_encode_table(Subband *sub);
+void  	subband_decode_table(Subband *sub);
+void  	subband_quantization(Subband *sub);
 
 //Old interface
 //void 	subband_init			(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q);
 
 //void 	subband_fill_prob		(uint8 *img, Subband *sub);
-uint32 	subband_size			(Subband *sub, QI q_i);
-void  	subband_encode_table	(Subband *sub, QI q_i);
-void  	subband_decode_table	(Subband *sub, QI q_i);
-void  	subband_quantization	(uint8 *img, Subband *sub, QI q_i);
 
-void 	q_i_uniform(Subband *sub);
-void 	q_i_nonuniform(Subband *sub);
-void 	q_i_nonuniform1(Subband *sub);
+//void  	subband_encode_table	(Subband *sub, QI q_i);
+//void  	subband_decode_table	(Subband *sub, QI q_i);
+//void  	subband_quantization	(uint8 *img, Subband *sub, QI q_i);
+
+//void 	q_i_uniform(Subband *sub);
+//void 	q_i_nonuniform(Subband *sub);
+//void 	q_i_nonuniform1(Subband *sub);
 
 #ifdef __cplusplus
 }
