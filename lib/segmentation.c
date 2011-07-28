@@ -887,7 +887,6 @@ void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 				nline++;
 			}
 	}
-
 	for(i=0; i < w*h; i++){
 		if(pix[i].nout || pix[i].nin){
 		//if(pix[i].nout){

@@ -1,5 +1,19 @@
 #include <walet.h>
 
+// Energy of one level DWT transform
+// |--------|--------|
+// |   LL   |   HL   |
+// |   4    |   2    |
+// |        |        |
+// |--------|--------|
+// |   LH   |   HH   |
+// |   2    |   1    |
+// |        |        |
+// |--------|--------|
+
+//The order of bit allocation for subband
+qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, };
+
 static uint32 check_state(uint32 state, uint32 check)
 {
 	if(state & check) {
