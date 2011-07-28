@@ -4,8 +4,21 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define lim(max,min, x)  	((x)>max ? max :((x)<min ? min : (x)))
-#define max(x, m) 			((x>m) ? (m) : (x))
+//|----|----|---------|
+//|    | 4  |         |
+//|----|----|    2    |
+//|  4 | 2  |         |
+//|----|----|---------|
+//|         |         |
+//|    2    |    1    |
+//|         |         |
+//|---------|---------|
+
+//The order of image sabbund quantization
+uint32 qo[4] = { 1, 2, 1, 2};
+
+#define lim(max,min, x)  	((x) > max ? max :((x) < min ? min : (x)))
+#define max(x, m) 			(((x) > m) ? (m) : (x))
 
 
 void dwt_haar_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
@@ -583,6 +596,9 @@ void image_bits_per_subband(Image *im, uint32 steps, uint32 qstep)
 		for(j=1; j < 4; j++) {
 			im->l[i].s[j].q_bits = im->l[i].s[j].a_bits;
 		}
+	}
+	while(!qstep){
+
 	}
 
 	for(i=0; ; i++){
