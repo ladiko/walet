@@ -23,8 +23,8 @@ void subband_fill_prob(Subband *sub)
 ///	\param img	 		The pointer to image.
 ///	\param sub 			Pointer to filling subband.
 {
-	int i,  ds = 1<<sub->d_bits, half = ds>>1;
-	int min, max, diff, size = sub->w*sub->h;
+	int i, ds = 1<<sub->d_bits, half = ds>>1;
+	int min, max, tmp, size = sub->w*sub->h;
 
 	memset(sub->dist, 0, sizeof(uint32)*ds);
 
@@ -34,15 +34,12 @@ void subband_fill_prob(Subband *sub)
 	for(i=0   ; ; i++) if(sub->dist[i] != 0) {min = i - half; break; }
 	for(i=ds-1; ; i--) if(sub->dist[i] != 0) {max = i - half; break; }
 	//for(i=0; i< (1<<bits); i++) if(dist[i]) printf("dist[%d] = %d\n", i, dist[i]);
-	diff = (max+min) > 0 ? max : -min;
-	for(i=0; diff; i++) diff>>=1;
+	sub->max = (max + min) > 0 ? max : -min;
+	tmp = sub->max;
+	for(i=0; tmp; i++, tmp>>=1);
 	printf("min = %d max = %d  tot = %d bits = %i\n", min, max, max-min, i+1);
 	sub->a_bits = i+1;
 	sub->q_bits = sub->a_bits;
-	//sub->min = min;
-	sub->max = max > -min ? max : -min;
-	//return i+1;
-	//for(int i = 0; i<DIM; i++) if(dist[i]) printf("dist[%4d] = %8d\n",i - HALF, dist[i]);
 }
 /*
 void q_i_uniform(Subband *sub)
@@ -114,7 +111,6 @@ uint32 subband_size(Subband *sub)
 	//int *in = &sub->q[1<<sub->d_bits];
 
 	//q_i(sub);
-
 	if(sub->q_bits == 0){
 		printf("q_bits should be more than 0\n");
 		return 0;

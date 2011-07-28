@@ -122,19 +122,16 @@ uint32 frame_dwt(GOP *gop, uint32 fr)
 	Frame *f = &gop->frames[fr];
 	//DWT taransform
 	if(check_state(f->state, FRAME_COPY | IDWT)){
-		if(gop->color == BAYER || gop->color == RGB) {
+		if (gop->color == GREY) image_dwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps);
+		else if(gop->color == BAYER) {
 			//Color transform
 			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)gop->buf, f->b.w, f->b.h);
 			for(i=0; i < 4; i++) {
 				printf("img[%d]\n",i);
 				image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
 			}
-		} else if (gop->color == GREY) {
-			image_dwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps);
-		}
-		else {
-			for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
-		}
+		} else for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
+
 		f->state = DWT;
 		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
@@ -153,19 +150,17 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps)
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
 	if(check_state(f->state, DWT)){
-		if(gop->color == BAYER || gop->color == RGB) {
+		if (gop->color == GREY) image_idwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps, isteps);
+		else if(gop->color == BAYER ) {
 			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
 			//Color transform
 			f->d.w = f->img[0].d.w + f->img[1].d.w;
 			f->d.h = f->img[0].d.h + f->img[2].d.h;
 			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic,
 					(int16*)gop->buf, f->d.w, f->d.h);
-		} else if (gop->color == GREY) {
-			image_idwt(&f->img[0], (int16*)gop->buf, gop->fb, gop->steps, isteps);
 		}
-		else {
-			for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
-		}
+		else for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
+
 		f->state = IDWT;
 		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
@@ -179,15 +174,14 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	unit i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, DWT)){
-		image_fill_subb(&frame->img[0], gop->color, gop->steps);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			image_fill_subb(&frame->img[1], gop->color, gop->steps);
-			image_fill_subb(&frame->img[2], gop->color, gop->steps);
-		}
+		if(gop->color == GREY) image_fill_subb(&frame->img[0], gop->steps);
+		else if(gop->color == BAYER) for(i=0; i < 4; i++)  image_fill_subb(&frame->img[i], gop->steps);
+		else for(i=0; i < 3; i++)  image_fill_subb(&frame->img[i], gop->steps);
 		frame->state |= FILL_SUBBAND;
 		return 1;
 	} else return 0;

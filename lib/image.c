@@ -564,7 +564,7 @@ void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
 
 }
 
-void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+void image_bits_per_subband(Image *im, uint32 steps, uint32 qstep)
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
@@ -575,36 +575,17 @@ void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qs
 	uint32 i, j, k, sz, df;
 	Subband *sub = im->sub;
 	//qst = 0;
-	if(color == BAYER) {
-		sz = (steps-1)*3;
-		for(i=0; i < ((sz+1)<<2); i++) sub[i].q_bits = sub[i].a_bits;
-		//printf("qstep = %d\n", qstep);
-		qstep = max(qstep, im->qst);
-		for(i=0; ; i++){
-			for(k=0; k<4; k++){
-				switch(k){
-					case(0):{ df = im->qfl[max(i,steps-1)]; break;}
-					case(1):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
-					case(2):{ df = i>0 ? im->qfl[max(i-1,steps-1)] : 0; break;}
-					case(3):{ df = i>1 ? im->qfl[max(i-2,steps-1)] : 0; break;}
-				}
-				for(j=0; j < df; j++){
-					//if(sub[3-k][sz-j].q_bits > 1) { sub[3-k][sz-j].q_bits--; qstep--;}
-					if(sub[(3-k)*(sz+1)+sz-j].q_bits > 1) { sub[(3-k)*(sz+1)+sz-j].q_bits--; qstep--;}
-					if(!qstep) break;
-				}
-				//printf("qstep = %d df = %d q_bits[%d] = %d\n", qstep, df, (3-k)*(sz+1)+sz-j, sub[(3-k)*(sz+1)+sz-j].q_bits);
-				if(!qstep) break;
-			}
-			if(!qstep) break;
+	for(i=0; i < (sz+1); i++) sub[i].q_bits = sub[i].a_bits;
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) im->l[i].s[j].q_bits = im->l[i].s[j].a_bits;
+	//printf("stmax = %d\n", stmax);
+	qstep = max(qstep, im->qst);
+	for(i=0; i < steps; i++) {
+		for(j=1; j < 4; j++) {
+			im->l[i].s[j].q_bits = im->l[i].s[j].a_bits;
 		}
-		//for(i=0; i < (sz+1)*4; i++) printf("a_bits = %d q_bits = %2d\n", sub[i].a_bits, sub[i].q_bits);
-	} else {
-		sz = steps*3;
-		for(i=0; i < (sz+1); i++) sub[i].q_bits = sub[i].a_bits;
-		//printf("stmax = %d\n", stmax);
-		qstep = max(qstep, im->qst);
-		for(i=0; ; i++){
+	}
+
+	for(i=0; ; i++){
 			for(j=0; j < im->qfl[max(i,steps)]; j++){
 				if(sub[sz-j].q_bits > 1) { sub[sz-j].q_bits--; qstep--;}
 				if(!qstep) break;
@@ -613,7 +594,6 @@ void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qs
 		}
 		//for(i=0; i < sz+1; i++) printf("%2d ", sub[0][i].q_bits);
 		//printf("\n");
-	}
 }
 
 //QI func = q_i_uniform;
