@@ -14,14 +14,14 @@ typedef struct {
 	uint16 		w;		//Image width
 	uint16 		h;		//Image width
 	Level		*l;		//The levels of DWT transform
+	uint32 		*qfl;		//The quantization floor
+	uint32 		qst;		//The number of quantization steps.
 	//Old interface
 	Dim 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
 	//uint8 		*img;		//Pointer to image
 	//int16		*iwt;		//DWT of image
 	uint32 		*hist;		//distribution probabilities array for white balancing
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
-	uint32 		*qfl;		//The quantization floor
-	uint32 		qst;		//The number of quantization steps.
 	Subband 	*sub;		//Pointer to subband array
 	uint32 		c_size;		//The size of compressed image in the  buffer.
 	//uint32 		snum;	//Number of subbands.

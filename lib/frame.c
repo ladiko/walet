@@ -12,7 +12,7 @@
 // |--------|--------|
 
 //The order of bit allocation for subband
-qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, };
+qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
 
 static uint32 check_state(uint32 state, uint32 check)
 {
@@ -191,11 +191,21 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 	unit i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
+	frame->qst = 0;
 
 	if(check_state(frame->state, DWT)){
-		if(gop->color == GREY) image_fill_subb(&frame->img[0], gop->steps);
-		else if(gop->color == BAYER) for(i=0; i < 4; i++)  image_fill_subb(&frame->img[i], gop->steps);
-		else for(i=0; i < 3; i++)  image_fill_subb(&frame->img[i], gop->steps);
+		if(gop->color == GREY) {
+			image_fill_subb(&frame->img[0], gop->steps);
+			frame->qst += frame->img[0].qst;
+		}
+		else if(gop->color == BAYER) for(i=0; i < 4; i++)  {
+			image_fill_subb(&frame->img[i], gop->steps);
+			frame->qst += frame->img[i].qst;
+		}
+		else for(i=0; i < 3; i++)  {
+			image_fill_subb(&frame->img[i], gop->steps);
+			frame->qst += frame->img[i].qst;
+		}
 		frame->state |= FILL_SUBBAND;
 		return 1;
 	} else return 0;
@@ -209,10 +219,31 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\param	times		Compression times.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i, size, qs;
+	uint32 bl[4];
 	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
+	size = (gop->w*gop->w->h*gop->bpp)/times;
+	for(i=0; i < 4; i++) bl[i] = 0;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
+		if (gop->color == BAYER){
+			qs = frame->qst>>1;
+			//Bits allocation between 4 color image
+			for(i=0, j=0; i < qs; i++) {
+				if(bl[qo[j]] < frame->img[qo[j]]) bl[qo[j]]++;
+				else i--;
+				j = (j == 8) ? 0 : j + 1;
+			}
+
+			for(i=2;;i++){
+				s = image_size(im, color, steps, qstep);
+			printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size>>3, qstep, s>>3);
+			qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
+			if(!(im->qst>>i)) break;
+		}
+		}
+
 		image_bits_alloc(&frame->img[0], gop->color, gop->steps, gop->bpp, times);
 		if(gop->color != GREY  && gop->color != BAYER) {
 			image_bits_alloc(&frame->img[1], gop->color, gop->steps, gop->bpp, times);

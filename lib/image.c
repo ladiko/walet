@@ -15,7 +15,7 @@
 //|---------|---------|
 
 //The order of image sabbund quantization
-uint32 qo[4] = { 1, 2, 1, 2};
+uint32 qo[5] = { 1, 2, 1, 2, 3};
 
 #define lim(max,min, x)  	((x) > max ? max :((x) < min ? min : (x)))
 #define max(x, m) 			(((x) > m) ? (m) : (x))
@@ -509,16 +509,16 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 		}
 	}
 
+	img->qfl  = (uint32 *)calloc(steps, sizeof(uint32));
 	//Old interface
 	//img->imgg = (uint8 *)calloc(w*h, sizeof(uint8));
 	//img->iwt = (int16 *)calloc(w*h, sizeof(int16));
 	img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bpp, sizeof(uint32));
 	img->look = (color == BAYER) ? (uint16 *)calloc((1<<bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bpp, sizeof(uint16));
 	//imgg->qfl[steps] = 1; for(i=steps-1; i; i--) imgg->qfl[i] += imgg->qfl[i+1]+3; imgg->qfl[0] = imgg->qfl[1]+2;
-	num = (color == BAYER) ? steps : steps+1;
-	img->qfl  = (uint32 *)calloc(num, sizeof(uint32));
-	img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
-	for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
+	//num = (color == BAYER) ? steps : steps+1;
+	//img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
+	//for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
 
 	printf("Create image x = %d y = %d p = %p\n", img->w, img->h, img->p);
 }
@@ -584,32 +584,65 @@ void image_bits_per_subband(Image *im, uint32 steps, uint32 qstep)
 ///	\param color 		The color space of the stream.
 ///	\param steps 		The steps of DWT transform.
 ///	\param qstep 		The quantization step  (0 <= qstep < qst).
+
+//The quantization sequence
+//|----|----|---------| |----|----|---------| |----|----|---------| |----|----|---------|-------------------|
+//|    | 1  |         | |    | 2  |         | |    | 3  |         | |    | 4  |         |                   |
+//|----|----|         | |----|----|    1    | |----|----|    1    | |----|----|    2    |                   |
+//|  1 |    |         | |  2 | 1  |         | |  3 | 1  |         | |  4 | 2  |         |                   |
+//|----|----|---------| |----|----|---------| |----|----|---------| |----|----|---------|         1         |
+//|         |         | |         |         | |         |         | |         |         |                   |
+//|         |         | |    1    |         | |    1    |         | |    2    |    1    |                   |
+//|         |         | |         |         | |         |         | |         |         |                   |
+//|---------|---------| |---------|---------| |---------|---------| |---------|---------|-------------------|
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |         1         |                   |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |-------------------|-------------------|
+
+//|----|----|---------| |----|----|---------| |----|----|---------| |----|----|---------|-------------------|
+//|    | 5  |         | |    | 6  |         | |    | 7  |         | |    | 8  |         |                   |
+//|----|----|    2    | |----|----|    3    | |----|----|    3    | |----|----|    4    |                   |
+//|  5 | 2  |         | |  6 | 3  |         | |  7 | 3  |         | |  8 | 4  |         |                   |
+//|----|----|---------| |----|----|---------| |----|----|---------| |----|----|---------|         2         |
+//|         |         | |         |         | |         |         | |         |         |                   |
+//|    2    |    1    | |    3    |    1    | |    3    |         | |    4    |    2    |                   |
+//|         |         | |         |         | |         |         | |         |         |                   |
+//|---------|---------| |---------|---------| |---------|---------| |---------|---------|-------------------|
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |         2         |         1         |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |                   |                   |
+//                                                                  |-------------------|-------------------|
+
+
 {
-	uint32 i, j, k, sz, df;
-	Subband *sub = im->sub;
-	//qst = 0;
-	for(i=0; i < (sz+1); i++) sub[i].q_bits = sub[i].a_bits;
-	for(i=0; i < steps; i++) for(j=1; j < 4; j++) im->l[i].s[j].q_bits = im->l[i].s[j].a_bits;
+	uint32 i, j, k, *st;
+	st = im->qfl;
+	for(i=0; i < steps; i++) st[i] = 0;
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) im->l[i].s[j].q_bits = 0;
 	//printf("stmax = %d\n", stmax);
-	qstep = max(qstep, im->qst);
-	for(i=0; i < steps; i++) {
-		for(j=1; j < 4; j++) {
-			im->l[i].s[j].q_bits = im->l[i].s[j].a_bits;
-		}
-	}
-	while(!qstep){
 
-	}
+	for(k=0, i = 0; k < qstep; k++){
+		j = qo[st[i]];
+		if(im->l[i].s[j].q_bits < im->l[i].s[j].a_bits) im->l[i].s[j].q_bits = im->l[i].s[j].q_bits ? im->l[i].s[j].q_bits + 1 : 2;
+		else k--;
 
-	for(i=0; ; i++){
-			for(j=0; j < im->qfl[max(i,steps)]; j++){
-				if(sub[sz-j].q_bits > 1) { sub[sz-j].q_bits--; qstep--;}
-				if(!qstep) break;
-			}
-			if(!qstep) break;
+		if(st[i] == 1) i = 0;
+		if(st[i] == 4){
+			if(i == steps - 1) i = 0;
+			else i++;
 		}
-		//for(i=0; i < sz+1; i++) printf("%2d ", sub[0][i].q_bits);
-		//printf("\n");
+		st[i]++;
+		st[i] = (st[i] == 4) ? 0 : st[i] + 1;
+	}
 }
 
 //QI func = q_i_uniform;
