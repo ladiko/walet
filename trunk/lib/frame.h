@@ -7,6 +7,8 @@ typedef struct{
 	//Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
 	Image 	img[4];	//Pointer to image
+	uint32 		qst;		//The number of quantization steps.
+
 
 	//Old interface
 	Pic8u rgb; // Scaled image for each color
