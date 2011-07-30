@@ -16,6 +16,7 @@ typedef struct {
 	Level		*l;		//The levels of DWT transform
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
+	uint32 		c_size;		//The size of compressed image in the  buffer.
 	//Old interface
 	Dim 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
 	//uint8 		*img;		//Pointer to image
@@ -23,7 +24,6 @@ typedef struct {
 	uint32 		*hist;		//distribution probabilities array for white balancing
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
 	Subband 	*sub;		//Pointer to subband array
-	uint32 		c_size;		//The size of compressed image in the  buffer.
 	//uint32 		snum;	//Number of subbands.
 }	Image;
 
@@ -56,36 +56,42 @@ void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 void 	image_dwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps);
 void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
 void 	image_fill_subb		(Image *im, uint32 steps);
+uint32 	image_size			(Image *im, uint32 steps, uint32 qstep);
+void 	image_quantization	(Image *im, uint32 steps);
+uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf);
+uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf);
+void 	image_median_filter	(Image *im, uint8 *buf);
 
 
 void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 //Old interface
 
-void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
-void dwt_2d_haar16(int16 *in, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
-void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
-void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
-void pic_copy8(Pic8u *p, uint8 *y);
-void pic_copy16(Pic16s *p, uint8 *y);
-void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps);
-void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps,  uint32 istep);
+//void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
+//void dwt_2d_haar16(int16 *in, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
+//void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh);
+//void idwt_2d_haar16(int16 *out, uint16 w, uint16 h, int16 *ll, int16 *hl, int16 *lh, int16 *hh);
+//void pic_copy8(Pic8u *p, uint8 *y);
+//void pic_copy16(Pic16s *p, uint8 *y);
+//void dwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps);
+//void idwt_bayer_53(Pic16s *b, Pic16s *c, Level **l, int16 *buf, uint32 steps,  uint32 istep);
+
 
 
 //void 	image_dwt			(Image *im, ColorSpace color, uint32 steps, int16 *buf, TransformType tt, FilterBank fb);
 //void 	image_idwt			(Image *im, ColorSpace color, uint32 steps, int16 *buf, uint32 isteps, TransformType tt, FilterBank fb);
 //void 	image_fill_subb		(Image *im, ColorSpace color, uint32 steps);
-void 	image_fill_hist		(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp);
+//void 	image_fill_hist		(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp);
 //void 	image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep);
 //uint32 	image_size			(Image *im, ColorSpace color, uint32 steps, uint32 qstep);
-void 	image_bits_alloc	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint32 times);
-void 	image_quantization	(Image *im, ColorSpace color, uint32 steps);
-uint32 	image_range_encode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint8 *buf);
-uint32	image_range_decode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint8 *buf);
-void 	image_median_filter	(Image *im, ColorSpace color, BayerGrid bg, uint8 *buf);
-void 	image_subband_median_filter	(Image *im, ColorSpace color, uint32 steps, uint8 *buf);
+//void 	image_bits_alloc	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint32 times);
+//void 	image_quantization	(Image *im, ColorSpace color, uint32 steps);
+//uint32 	image_range_encode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint8 *buf);
+//uint32	image_range_decode	(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uint8 *buf);
+//void 	image_median_filter	(Image *im, ColorSpace color, BayerGrid bg, uint8 *buf);
+//void 	image_subband_median_filter	(Image *im, ColorSpace color, uint32 steps, uint8 *buf);
 
-void image_grad(Image *im, ColorSpace color, uint32 steps, uint32 th);
+//void image_grad(Image *im, ColorSpace color, uint32 steps, uint32 th);
 
 //void	image_init				(Image *im, StreamData *sd, uint32 x, uint32 y);
 //void 	image_copy				(Image *im, StreamData *sd, uint8 *v);
