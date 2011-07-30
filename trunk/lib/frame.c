@@ -1,18 +1,5 @@
 #include <walet.h>
 
-// Energy of one level DWT transform
-// |--------|--------|
-// |   LL   |   HL   |
-// |   4    |   2    |
-// |        |        |
-// |--------|--------|
-// |   LH   |   HH   |
-// |   2    |   1    |
-// |        |        |
-// |--------|--------|
-
-//The order of bit allocation for subband
-qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
 
 static uint32 check_state(uint32 state, uint32 check)
 {
@@ -188,7 +175,7 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	unit i;
+	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 	frame->qst = 0;
@@ -198,11 +185,13 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 			image_fill_subb(&frame->img[0], gop->steps);
 			frame->qst += frame->img[0].qst;
 		}
-		else if(gop->color == BAYER) for(i=0; i < 4; i++)  {
+		else if(gop->color == BAYER)
+			for(i=0; i < 4; i++)  {
 			image_fill_subb(&frame->img[i], gop->steps);
 			frame->qst += frame->img[i].qst;
 		}
-		else for(i=0; i < 3; i++)  {
+		else
+			for(i=0; i < 3; i++)  {
 			image_fill_subb(&frame->img[i], gop->steps);
 			frame->qst += frame->img[i].qst;
 		}
@@ -218,36 +207,43 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\param	fr			The frame number.
 ///	\param	times		Compression times.
 ///	\retval				1 - if all OK, 0 - if not OK
+// Energy of one level DWT transform
+// |--------|--------|
+// |   LL   |   HL   |
+// |   4    |   2    |
+// |        |        |
+// |--------|--------|
+// |   LH   |   HH   |
+// |   2    |   1    |
+// |        |        |
+// |--------|--------|
 {
-	uint32 i, size, qs;
+	//The order of bit allocation for subband
+	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
+	uint32 i, j, size, qs, s;
 	uint32 bl[4];
 	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
-	size = (gop->w*gop->w->h*gop->bpp)/times;
+	size = (gop->w*gop->h*gop->bpp)/times;
 	for(i=0; i < 4; i++) bl[i] = 0;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		if (gop->color == BAYER){
 			qs = frame->qst>>1;
-			//Bits allocation between 4 color image
-			for(i=0, j=0; i < qs; i++) {
-				if(bl[qo[j]] < frame->img[qo[j]]) bl[qo[j]]++;
-				else i--;
-				j = (j == 8) ? 0 : j + 1;
-			}
-
 			for(i=2;;i++){
-				s = image_size(im, color, steps, qstep);
-			printf("qst = %d size = %d qstep = %d s = %d\n", im->qst, size>>3, qstep, s>>3);
-			qstep = (s < size) ? qstep - (im->qst>>i) : qstep + (im->qst>>i);
-			if(!(im->qst>>i)) break;
-		}
-		}
+				//Bits allocation between 4 color image
+				for(i=0, j=0; i < qs; i++) {
+					if(bl[qo[j]] < frame->img[qo[j]].qst) bl[qo[j]]++;
+					else i--;
+					j = (j == 8) ? 0 : j + 1;
+				}
+				s = 0;
+				for(j=0; j < 4; j++) s += image_size(&frame->img[j], gop->steps, bl[j]);
 
-		image_bits_alloc(&frame->img[0], gop->color, gop->steps, gop->bpp, times);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			image_bits_alloc(&frame->img[1], gop->color, gop->steps, gop->bpp, times);
-			image_bits_alloc(&frame->img[2], gop->color, gop->steps, gop->bpp, times);
+				printf("qst = %d size = %d qstep = %d s = %d\n", frame->qst, size, qs, s);
+				qs = (s < size) ? qs + (frame->qst>>i) : qs - (frame->qst>>i);
+				if(!(frame->qst>>i)) break;
+			}
 		}
 		frame->state |= BITS_ALLOCATION;
 		return 1;
@@ -261,15 +257,17 @@ uint32 frame_quantization(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, BITS_ALLOCATION)){
-		image_quantization(&frame->img[0], gop->color, gop->steps);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			image_quantization(&frame->img[1], gop->color, gop->steps);
-			image_quantization(&frame->img[2], gop->color, gop->steps);
-		}
+		if(gop->color == GREY) image_quantization(&frame->img[0], gop->steps);
+		else if(gop->color == BAYER)
+			for(i=0; i < 4; i++)  image_quantization(&frame->img[i], gop->steps);
+		else
+			for(i=0; i < 3; i++)  image_quantization(&frame->img[i], gop->steps);
+
 		frame->state |= QUANTIZATION;
 		return 1;
 	} else return 0;
@@ -283,18 +281,18 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 //	\param	size		The size of encoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		*size = 0;
-		frame->img[0].c_size = image_range_encode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-		*size += frame->img[0].c_size;
-		if(gop->color != GREY  && gop->color != BAYER) {
-			frame->img[1].c_size = image_range_encode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-			frame->img[2].c_size = image_range_encode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-			*size += frame->img[1].c_size + frame->img[2].c_size;
-		}
+		if(gop->color == GREY) *size += image_range_encode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
+		else if(gop->color == BAYER)
+			for(i=0; i < 4; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+		else
+			for(i=0; i < 3; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+
 		frame->state |= RANGE_ENCODER;
 		return 1;
 	} else return 0;
@@ -308,16 +306,17 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 //	\param	size		The size of decoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
-		*size += image_range_decode(&frame->img[0], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			*size += image_range_decode(&frame->img[1], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-			*size += image_range_decode(&frame->img[2], gop->color, gop->steps, gop->bpp, (uint8*)gop->buf);
-		}
+		if(gop->color == GREY) *size += image_range_decode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
+		else if(gop->color == BAYER)
+			for(i=0; i < 4; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+		else
+			for(i=0; i < 3; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
 		frame->state |= RANGE_DECODER;
 		return 1;
 	} else return 0;
@@ -330,6 +329,7 @@ uint32 frame_median_filter(GOP *gop, uint32 fr)
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
+	uint32 i;
 	clock_t start, end;
 	double time=0., tmp;
 	struct timeval tv;
@@ -339,11 +339,14 @@ uint32 frame_median_filter(GOP *gop, uint32 fr)
 
 	if(check_state(frame->state, IDWT | FRAME_COPY)){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		image_median_filter(&frame->img[0], gop->color, gop->bg, gop->buf);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			image_median_filter(&frame->img[1], gop->color, gop->bg, gop->buf);
-			image_median_filter(&frame->img[2], gop->color, gop->bg, gop->buf);
-		}
+
+		if(gop->color == GREY) image_median_filter(&frame->img[0], gop->buf);
+		else if(gop->color == BAYER)
+			filter_median_bayer(frame->b.pic, (int16*)gop->buf, gop->w, gop->h);
+		else
+			for(i=0; i < 3; i++)  image_median_filter(&frame->img[i], gop->buf);
+
+		frame->state |= RANGE_DECODER;
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Median filter time  = %f\n", (double)(end-start)/1000000.);
 
@@ -352,26 +355,32 @@ uint32 frame_median_filter(GOP *gop, uint32 fr)
 	} else return 0;
 }
 
-uint32 frame_subband_median_filter(GOP *gop, uint32 fr)
-///	\fn	void frame_quantization(GOP *gop, uint32 fr)
-///	\brief	Frame quantization.
-///	\param	gop			The GOP structure.
-///	\param	fr			The frame number.
-///	\retval				1 - if all OK, 0 - if not OK
+/*
+void frame_fill_hist(GOP *gop, uint32 fr)
+///	\fn void image_fill_hist(Image *im, ColorSpace color, BayerGrid bg, uint32 bpp)
+///	\brief Fill color histogram for white balancing.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param bpp 			The bits per pixel.
+///	\param bg			The bayer grid pattern
+///	\param bpp 			The bits per pixel.
 {
-	if(gop == NULL ) return 0;
-	Frame *frame = &gop->frames[fr];
+	uint32 i, size = im->w*im->h, sz = 1<<bpp, sum;
+	uint32	tmp = size;
+	if(color == BAYER) {
+		fill_bayer_hist(im->p, im->hist, &im->hist[sz], &im->hist[sz*2], im->w, im->h, bg, bpp);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[i]; tmp -= sum;
+		printf("size = %d r = %d ", size, sum);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[sz+i]; tmp -= sum;
+		printf("g = %d ", sum);
+		sum = 0; for(i=0; i<sz; i++) sum +=im->hist[(sz<<1)+i]; tmp -= sum;
+		printf("b = %d  diff = %d\n", sum, tmp);
+	}
+	else  for(i=0; i < size; i++) im->hist[im->p[i]]++;
 
-	if(check_state(frame->state, DWT )){
-		image_subband_median_filter(&frame->img[0], gop->color, gop->steps, gop->buf);
-		if(gop->color != GREY  && gop->color != BAYER) {
-			image_subband_median_filter(&frame->img[1], gop->color, gop->steps, gop->buf);
-			image_subband_median_filter(&frame->img[2], gop->color, gop->steps, gop->buf);
-		}
-		frame->state |= MEDIAN_FILTER;
-		return 1;
-	} else return 0;
 }
+*/
+
 
 void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
@@ -383,7 +392,7 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 {
 	Image *im = &gop->frames[fr].img[0];
 	if(gop->color == BAYER){
-		image_fill_hist(gop->frames[fr].b.pic, gop->color, gop->bg, gop->bpp);
+		//image_fill_hist(gop->frames[fr].b.pic, gop->color, gop->bg, gop->bpp);
 		filters_white_balance(gop->frames[fr].b.pic, gop->frames[fr].b.pic, gop->frames[fr].b.w, gop->frames[fr].b.h,
 				gop->bg, im->hist, im->look, gop->bpp, out_bits, gamma);
 	}
@@ -407,9 +416,10 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	if(gop->color == BAYER){
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-		utils_bayer_to_Y(im->p, gop->buf, gop->w, gop->h);
-		filter_median(gop->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
-		seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
+		//utils_bayer_to_Y(im->p, gop->buf, gop->w, gop->h);
+		//filter_median(gop->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
+		//seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
+
 		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
 
 		//seg_fall_forest(frm->grad[0].pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);

@@ -162,7 +162,7 @@ void  subband_decode_table(Subband *sub)
 	int  half = 1<<(sub->q_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
 
-	q_i(sub);
+	//q_i(sub);
 
 	sub->q[half] = 0;
 	for(j=0; j < half; j++) {
