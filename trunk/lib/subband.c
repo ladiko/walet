@@ -11,7 +11,7 @@ void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 {
 	sub->d_bits = bpp+2;
 	sub->dist = (uint32 *)calloc((1<<sub->d_bits)*3, sizeof(uint32));
-	sub->q = (int *)calloc(1<<sub->d_bits, sizeof(int));;
+	sub->q = (int *)calloc(1<<sub->d_bits, sizeof(int));
 	sub->pic = img;
 	sub->w = w;
 	sub->h = h;
@@ -37,7 +37,7 @@ void subband_fill_prob(Subband *sub)
 	sub->max = (max + min) > 0 ? max : -min;
 	tmp = sub->max;
 	for(i=0; tmp; i++, tmp>>=1);
-	printf("min = %d max = %d  tot = %d bits = %i\n", min, max, max-min, i+1);
+	printf("min = %4d max = %4d  tot = %4d bits = %4i\n", min, max, max-min, i+1);
 	sub->a_bits = i+1;
 	sub->q_bits = sub->a_bits;
 }

@@ -128,8 +128,8 @@ uint32 frame_dwt(GOP *gop, uint32 fr)
 			//Color transform
 			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)gop->buf, f->b.w, f->b.h);
 			for(i=0; i < 4; i++) {
-				printf("img[%d]\n",i);
 				image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
+				printf("img[%d]\n",i);
 			}
 		} else for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
 
@@ -163,7 +163,6 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps)
 		else for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps, isteps);
 
 		f->state = IDWT;
-		//image_grad(&frame->img[0], BAYER, gop->steps, 2);
 		return 1;
 	} else return 0;
 }
@@ -185,10 +184,12 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 			image_fill_subb(&frame->img[0], gop->steps);
 			frame->qst += frame->img[0].qst;
 		}
-		else if(gop->color == BAYER)
+		else if(gop->color == BAYER){
 			for(i=0; i < 4; i++)  {
 			image_fill_subb(&frame->img[i], gop->steps);
 			frame->qst += frame->img[i].qst;
+			}
+			printf("iframe->qst = %d\n", frame->qst);
 		}
 		else
 			for(i=0; i < 3; i++)  {
@@ -220,17 +221,17 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 {
 	//The order of bit allocation for subband
 	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
-	uint32 i, j, size, qs, s;
+	uint32 i, j, k, size, qs, s;
 	uint32 bl[4];
 	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
-	size = (gop->w*gop->h*gop->bpp)/times;
+	size = (gop->w*gop->h*8)/times;
 	for(i=0; i < 4; i++) bl[i] = 0;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		if (gop->color == BAYER){
 			qs = frame->qst>>1;
-			for(i=2;;i++){
+			for(k=2;;k++){
 				//Bits allocation between 4 color image
 				for(i=0, j=0; i < qs; i++) {
 					if(bl[qo[j]] < frame->img[qo[j]].qst) bl[qo[j]]++;
@@ -238,11 +239,13 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 					j = (j == 8) ? 0 : j + 1;
 				}
 				s = 0;
+				printf("times = %d qst = %d size = %d qstep = %d s = %d\n", times, frame->qst, size, qs, s);
+				for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
 				for(j=0; j < 4; j++) s += image_size(&frame->img[j], gop->steps, bl[j]);
+				printf("Frame size = %d\n", s);
 
-				printf("qst = %d size = %d qstep = %d s = %d\n", frame->qst, size, qs, s);
-				qs = (s < size) ? qs + (frame->qst>>i) : qs - (frame->qst>>i);
-				if(!(frame->qst>>i)) break;
+				qs = (s < size) ? qs + (frame->qst>>k) : qs - (frame->qst>>k);
+				if(!(frame->qst>>k)) break;
 			}
 		}
 		frame->state |= BITS_ALLOCATION;

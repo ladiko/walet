@@ -496,14 +496,16 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 		tmp = (uint16 *)calloc(w*h, sizeof(uint16));
 		for(i=0; i < 4; i++) {
 			subband_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
-			tmp = tmp + img->l[0].s[i-1].w*img->l[0].s[i-1].h;
+			//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[0].s[i].w, img->l[0].s[i].h);
+			tmp = tmp + img->l[0].s[i].w*img->l[0].s[i].h;
 		}
 		for(k=1; k < steps; k++){
 			tmp = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
 			for(i=0; i < 4; i++) {
 				subband_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
 						(img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1), bpp);
-				tmp = tmp + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
+				//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[k].s[i].w, img->l[k].s[i].h);
+				tmp = tmp + img->l[k].s[i].w*img->l[k].s[i].h;
 			}
 		}
 	}
@@ -546,10 +548,12 @@ void image_fill_subb(Image *im, uint32 steps)
 	uint32 i, j;
 	for(i=0; i < steps; i++) {
 		for(j=1; j < 4; j++) {
+			printf("l[%2d][%2d] ", i, j);
 			subband_fill_prob(&im->l[i].s[j]);
 			im->qst += im->l[i].s[j].a_bits-1;
 		}
 	}
+	printf("im->qst = %d\n", im->qst);
 }
 
 uint32 image_size(Image *im, uint32 steps, uint32 qstep)
@@ -599,10 +603,12 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 
 
 {
-	//The order of image sabbund quantization
+	//The order of subband bits allocation
 	uint32 qo[5] = { 1, 2, 1, 2, 3};
-	uint32 i, j, k, *st, size = 0;
+	uint32 i, j, k, size = 0, size1;
+	int *st;
 	st = im->qfl;
+	// Levels bits counter should be less than 5
 	for(i=0; i < steps; i++) st[i] = 0;
 	for(i=0; i < steps; i++) for(j=1; j < 4; j++) im->l[i].s[j].q_bits = 0;
 	//printf("stmax = %d\n", stmax);
@@ -612,17 +618,31 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 		j = qo[st[i]];
 		if(im->l[i].s[j].q_bits < im->l[i].s[j].a_bits) im->l[i].s[j].q_bits = im->l[i].s[j].q_bits ? im->l[i].s[j].q_bits + 1 : 2;
 		else k--;
+		//st[i]++;
+		//printf("k = %d st[%d] = %d  l[%d].s[%d].q_bits = %d\n", k, i, st[i], i, j, im->l[i].s[j].q_bits);
 
-		if(st[i] == 1) i = 0;
+		if(st[i] == 1 ){
+			if(i) {
+				st[0] = -1;
+				st[i]++;
+			}
+			i = 0;
+		}
 		if(st[i] == 4){
+			st[i] = 0;
 			if(i == steps - 1) i = 0;
 			else i++;
-		}
-		st[i]++;
-		st[i] = (st[i] == 4) ? 0 : st[i] + 1;
+		} else st[i]++;
+
+
+		//st[i] = (st[i] == 4) ? 0 : st[i] + 1;
 	}
 	//Calculate image size for given quantization step (qstep)
-	for(i=0; i < steps; i++) for(j=1; j < 4; j++) size += subband_size(&im->l[i].s[j]);
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
+		size1 = subband_size(&im->l[i].s[j]);
+		size += size1;
+		printf("q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].q_bits, i, j, size1);
+	}
 	return size;
 }
 
