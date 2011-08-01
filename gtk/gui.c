@@ -351,11 +351,12 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
 		new_buffer (gw->orig[2], gw->gop->w, gw->gop->h);
+		utils_dwt_draw(gw->gop, 0,  gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 		//utils_one_dwt_draw_8(&gw->gop->frames[0].B8.C[0], &gw->gop->frames[0].B8.C[1],  &gw->gop->frames[0].B8.C[2], &gw->gop->frames[0].B8.C[3],
 		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
 		//utils_dwt_draw(&gw->gop->frames[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps, gw->gop->bpp);
 		//utils_dwt_draw(&gw->gop->frames[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps, gw->gop->bpp);
-		utils_dwt_draw(gw->gop, 0,  gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps);
 
 
 		//printf("L8[0][0] = %p\n", &gw->gop->frames[0].L8[0][0]);
@@ -364,7 +365,6 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
 
 		//utils_dwt_draw_8(gw->gop->frames[0].L8, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 1);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 	}
 }
@@ -379,9 +379,9 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[1], gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
-		utils_grey_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
-		gtk_widget_queue_draw(gw->drawingarea[1]);
+		new_buffer (gw->orig[2], gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
+		utils_grey_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 
 		new_buffer (gw->orig[3], gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
@@ -396,23 +396,36 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_fill_subb(gw->gop, gw->gop->cur_gop_frame);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Fill subband time = %f\n",(double)(end-start)/1000000.);
 }
 
 void on_bits_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gw->gop->comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, gw->gop->comp);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("Bits allocation time = %f\n",(double)(end-start)/1000000.);
 }
 
 void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame)){
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("Quantization time = %f\n",(double)(end-start)/1000000.);
+
 		new_buffer (gw->orig[3], gw->gop->w, gw->gop->h);
-		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
+		utils_dwt_draw(gw->gop, 0,  gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->steps);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
+		//new_buffer (gw->orig[3], gw->gop->w, gw->gop->h);
+		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
+		//gtk_widget_queue_draw(gw->drawingarea[3]);
 	}
 }
 

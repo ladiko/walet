@@ -129,7 +129,7 @@ uint32 frame_dwt(GOP *gop, uint32 fr)
 			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)gop->buf, f->b.w, f->b.h);
 			for(i=0; i < 4; i++) {
 				image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
-				printf("img[%d]\n",i);
+				//printf("img[%d]\n",i);
 			}
 		} else for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)gop->buf, gop->fb, gop->steps);
 
@@ -189,7 +189,7 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 			image_fill_subb(&frame->img[i], gop->steps);
 			frame->qst += frame->img[i].qst;
 			}
-			printf("iframe->qst = %d\n", frame->qst);
+			//printf("iframe->qst = %d\n", frame->qst);
 		}
 		else
 			for(i=0; i < 3; i++)  {
@@ -221,33 +221,47 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 {
 	//The order of bit allocation for subband
 	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
-	uint32 i, j, k, size, qs, s;
+	uint32 i, j, k, size, qs, qs1, df, s, df1;
 	uint32 bl[4];
 	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
 	size = (gop->w*gop->h*8)/times;
-	for(i=0; i < 4; i++) bl[i] = 0;
+	df1 = size;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		if (gop->color == BAYER){
 			qs = frame->qst>>1;
 			for(k=2;;k++){
+				for(i=0; i < 4; i++) bl[i] = 0;
 				//Bits allocation between 4 color image
 				for(i=0, j=0; i < qs; i++) {
 					if(bl[qo[j]] < frame->img[qo[j]].qst) bl[qo[j]]++;
 					else i--;
 					j = (j == 8) ? 0 : j + 1;
 				}
+				//for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
 				s = 0;
-				printf("times = %d qst = %d size = %d qstep = %d s = %d\n", times, frame->qst, size, qs, s);
-				for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
 				for(j=0; j < 4; j++) s += image_size(&frame->img[j], gop->steps, bl[j]);
-				printf("Frame size = %d\n", s);
+				printf("times = %d qst = %d size = %d qs = %d s = %d\n", times, frame->qst, size, qs, s);
+				//printf("Frame size = %d now = %d\n", size, s);
 
-				qs = (s < size) ? qs + (frame->qst>>k) : qs - (frame->qst>>k);
-				if(!(frame->qst>>k)) break;
+				if(!(frame->qst>>k)) {
+					//Fine tuning of the bit allocation
+
+					df = abs(size - s);
+					qs1 = qs;
+					qs = (s < size) ? qs + 1 : qs - 1;
+					printf("qs = %d qs1 = %d\n", qs, qs1);
+					if(df  > df1 ){
+						qs = qs1;
+						break;
+					}
+					df1 = df;
+				}
+				else qs = (s < size) ? qs + (frame->qst>>k) : qs - (frame->qst>>k);
 			}
 		}
+		printf("Frame size = %d bits  %d bites qs = %d\n", s, s/8, qs);
 		frame->state |= BITS_ALLOCATION;
 		return 1;
 	} else return 0;
