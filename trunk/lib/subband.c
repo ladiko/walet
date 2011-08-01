@@ -37,7 +37,7 @@ void subband_fill_prob(Subband *sub)
 	sub->max = (max + min) > 0 ? max : -min;
 	tmp = sub->max;
 	for(i=0; tmp; i++, tmp>>=1);
-	printf("min = %4d max = %4d  tot = %4d bits = %4i\n", min, max, max-min, i+1);
+	//printf("min = %4d max = %4d  tot = %4d bits = %4i\n", min, max, max-min, i+1);
 	sub->a_bits = i+1;
 	sub->q_bits = sub->a_bits;
 }
@@ -106,27 +106,31 @@ uint32 subband_size(Subband *sub)
 
 	double s = 0., s0 = log2(sub->h*sub->w);
 	uint32  en=0;
-	int i, j, st = 1 <<(sub->a_bits - sub->q_bits);
+	int i, j, st = (sub->a_bits - sub->q_bits);
 	int rest = 1<<(sub->q_bits-1), half = (1<<(sub->d_bits-1));;
 	//int *in = &sub->q[1<<sub->d_bits];
 
 	//q_i(sub);
 	if(sub->q_bits == 0){
-		printf("q_bits should be more than 0\n");
+		//printf("q_bits should be more than 0\n");
 		return 0;
 	}
-
-	for(j=(1-(1<<st)); j< (1<<st); j++) en += sub->dist[half+j];
+	//printf("a_bits = %2d q_bits  = %2d st = %d 1<<st = %d\n", sub->a_bits, sub->q_bits, st, 1<<st);
+	for(j=(1-(1<<st)); j < (1<<st); j++) en += sub->dist[half+j];
 	if(en) s -= en*(log2(en) - s0);
+	//printf("%5d %5d %f\n", 1-(1<<st), (1<<st), s);
 
-	for(i=1; i < rest-1; i++){
+	for(i=1; i < rest; i++){
 		en = 0;
-		for(j= (i<<st); j< ((i+1)<<st); j++) en += sub->dist[half+j];
+		for(j= (i<<st); j < ((i+1)<<st); j++) en += sub->dist[half+j];
 		if(en) s -= en*(log2(en) - s0);
+		//printf("%5d %5d %f\n", (i<<st), ((i+1)<<st), s);
 		en=0;
-		for(j= (i<<st); j< ((i+1)<<st); j++) en += sub->dist[half-j];
+		for(j= (i<<st); j < ((i+1)<<st); j++) en += sub->dist[half-j];
 		if(en) s -= en*(log2(en) - s0);
+		//printf("%5d %5d %f\n", -(i<<st), -((i+1)<<st), s);
 	}
+	//printf("s = %f\n", s);
 	return (uint32)s;
 }
 
@@ -136,20 +140,20 @@ void  subband_encode_table(Subband *sub)
 ///	\param sub 			Pointer to subband.
 /// \param q			The quantization array.
 {
-	int i, j, st = 1 <<(sub->a_bits - sub->q_bits);
+	int i, j, st = (sub->a_bits - sub->q_bits);
 	int range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);;
 	//int *in = &sub->q[1<<sub->d_bits];
-
 	//q_i(sub);
 
 	for(j=(1-(1<<st)); j< (1<<st); j++) sub->q[range+j] = half;
-	for(i=0; i < half-1; i++){
+	for(i=1; i < half; i++){
 		for(j= (i<<st); j< ((i+1)<<st); j++) {
-			sub->q[range+j] = half + i + 1;
-			sub->q[range-j] = half - i - 1;
+			sub->q[range+j] = half + i;
+			sub->q[range-j] = half - i;
 		}
 	}
-	sub->q[range-j] = sub->q[range-j+1];
+	sub->q[0] = sub->q[1];
+	//for(i=-range; i < range; i++) printf("%d  ", sub->q[range+i]);
 }
 
 void  subband_decode_table(Subband *sub)
@@ -158,20 +162,18 @@ void  subband_decode_table(Subband *sub)
 ///	\param sub 			Pointer to subband.
 /// \param q			The quantization array.
 {
-	int j, st = 1 <<(sub->a_bits - sub->q_bits);
+	int j, st = (sub->a_bits - sub->q_bits);
 	int  half = 1<<(sub->q_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
 
 	//q_i(sub);
-
 	sub->q[half] = 0;
-	for(j=0; j < half; j++) {
-		//sub->q[half+j+1] =  ( in[j] + in[j+1])>>1;
-		//sub->q[half-j-1] = -((in[j] + in[j+1])>>1);
-		sub->q[half+j+1] =  ((j<<st) + ((j+1)<<st))>>1;
-		sub->q[half-j-1] = -(((j<<st) + ((j+1)<<st))>>1);
+	for(j=1; j < half; j++) {
+		sub->q[half+j] =  ((j<<st) + ((j+1)<<st))>>1;
+		sub->q[half-j] = -(((j<<st) + ((j+1)<<st))>>1);
 	}
-	sub->q[half-j] = sub->q[half-j+1];
+	sub->q[0] = sub->q[1];
+	//for(j=-half; j < half; j++) printf("%d  ", sub->q[half+j]);
 }
 
 void  subband_quantization(Subband *sub)
@@ -181,7 +183,7 @@ void  subband_quantization(Subband *sub)
 ///	\param sub 			Pointer to subband.
 
 {
-	int i, j, size = sub->w*sub->h, st = 1 <<(sub->a_bits - sub->q_bits);
+	int i, j, size = sub->w*sub->h, st = (sub->a_bits - sub->q_bits);
 	int range = 1<<(sub->q_bits-1), half = 1<<(sub->a_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
 	//printf("d_bits = %d\n", 1<<sub->d_bits);
@@ -189,12 +191,11 @@ void  subband_quantization(Subband *sub)
 	if(sub->a_bits != sub->q_bits){
 		if(sub->q_bits > 1) {
 			//q_i(sub);
-
 			for(j=(1-(1<<st)); j< (1<<st); j++) sub->q[half+j] = 0;
-			for(i=0; i < range-1; i++){
+			for(i=1; i < range-1; i++){
 				for(j= (i<<st); j< ((i+1)<<st); j++) {
-					sub->q[half+j] =  ((j<<st) + ((j+1)<<st))>>1;
-					sub->q[half-j] = -(((j<<st) + ((j+1)<<st))>>1);
+					sub->q[half+j] =  ((i<<st) + ((i+1)<<st))>>1;
+					sub->q[half-j] = -(((i<<st) + ((i+1)<<st))>>1);
 					//if(half+j >=1024 || half-j < 0) printf("half = %d j = %d in[%d] = %d in[%d] = %d \n", half, j, i, in[i], i+1, in[i+1]);
 				}
 			}

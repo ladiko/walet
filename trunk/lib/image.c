@@ -548,12 +548,12 @@ void image_fill_subb(Image *im, uint32 steps)
 	uint32 i, j;
 	for(i=0; i < steps; i++) {
 		for(j=1; j < 4; j++) {
-			printf("l[%2d][%2d] ", i, j);
+			//printf("l[%2d][%2d] ", i, j);
 			subband_fill_prob(&im->l[i].s[j]);
 			im->qst += im->l[i].s[j].a_bits-1;
 		}
 	}
-	printf("im->qst = %d\n", im->qst);
+	//printf("im->qst = %d\n", im->qst);
 }
 
 uint32 image_size(Image *im, uint32 steps, uint32 qstep)
@@ -605,7 +605,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 {
 	//The order of subband bits allocation
 	uint32 qo[5] = { 1, 2, 1, 2, 3};
-	uint32 i, j, k, size = 0, size1;
+	uint32 i, j, k, l, size = 0, size1;
 	int *st;
 	st = im->qfl;
 	// Levels bits counter should be less than 5
@@ -616,7 +616,8 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 	//Bits allocation for each subband
 	for(k=0, i = 0; k < qstep; k++){
 		j = qo[st[i]];
-		if(im->l[i].s[j].q_bits < im->l[i].s[j].a_bits) im->l[i].s[j].q_bits = im->l[i].s[j].q_bits ? im->l[i].s[j].q_bits + 1 : 2;
+		l = steps-1-i;
+		if(im->l[l].s[j].q_bits < im->l[l].s[j].a_bits) im->l[l].s[j].q_bits = im->l[l].s[j].q_bits ? im->l[l].s[j].q_bits + 1 : 2;
 		else k--;
 		//st[i]++;
 		//printf("k = %d st[%d] = %d  l[%d].s[%d].q_bits = %d\n", k, i, st[i], i, j, im->l[i].s[j].q_bits);
@@ -641,8 +642,9 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
 		size1 = subband_size(&im->l[i].s[j]);
 		size += size1;
-		printf("q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].q_bits, i, j, size1);
+		//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 	}
+	//printf("\n");
 	return size;
 }
 
