@@ -212,7 +212,7 @@ uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 		//cu = get_freq(im, d, q_bits);
 		//set_freq(im, d, q_bits);
 		low += range*cu;
-		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d cu = %8X sz = %8X\n", i, low, low1, range, im, img[i], cu, sz);
+		if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d cu = %8X sz = %8X\n", i, low, low1, range, im, img[i], cu, sz);
 		range = range*(d[im]-1);
 		//range = range*d[im];
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}

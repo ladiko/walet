@@ -225,7 +225,7 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 	uint32 bl[4];
 	if(gop == NULL || times == 1) return 0;
 	Frame *frame = &gop->frames[fr];
-	size = (gop->w*gop->h*8)/times;
+	size = (gop->w*gop->h*gop->bpp)/times;
 	df1 = size;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
@@ -246,8 +246,9 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 				//printf("Frame size = %d now = %d\n", size, s);
 
 				if(!(frame->qst>>k)) {
+					break;
 					//Fine tuning of the bit allocation
-
+					/*
 					df = abs(size - s);
 					qs1 = qs;
 					qs = (s < size) ? qs + 1 : qs - 1;
@@ -256,7 +257,7 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 						qs = qs1;
 						break;
 					}
-					df1 = df;
+					df1 = df;*/
 				}
 				else qs = (s < size) ? qs + (frame->qst>>k) : qs - (frame->qst>>k);
 			}
