@@ -136,7 +136,7 @@ static inline void init_prob( uint32 *d, uint32 bits, uint32 **c)
 	}
 }
 
-static inline uint32 get_cum(uint8 img, uint32 **c, uint32 bits)
+static inline uint32 get_cum(uint16 img, uint32 **c, uint32 bits)
 //Get the cumulative frequency and update array
 {
 	uint32 i, cf=0, ind;
@@ -175,7 +175,7 @@ static inline void fill_prob( uint8 *img, uint32 *d, uint32 bits, uint32 a_bits,
 }
 */
 
-uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32 range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -202,19 +202,12 @@ uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 	//Start encoding
 	for(i=0; i<size; i++) {
 		im = q[img[i] + half];
-
-		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
-		//range = division(range, sz, bits);
 		range = range/sz;
 		low1 = low;
 		cu = get_cum(im, c, q_bits);
-		//cu = get_cum1(im, c, q_bits);
-		//cu = get_freq(im, d, q_bits);
-		//set_freq(im, d, q_bits);
 		low += range*cu;
-		if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d cu = %8X sz = %8X\n", i, low, low1, range, im, img[i], cu, sz);
+		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  im = %4d img = %4d cu = %8X sz = %8X\n", i, low, low1, range, im, img[i], cu, sz);
 		range = range*(d[im]-1);
-		//range = range*d[im];
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
 			while(range <= bot) {
@@ -265,14 +258,7 @@ uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 			range <<=sh;
 			low = (low<<sh) | (uint32)buff[j++];
 		}
-		//if(tmp & sz) { bits++; tmp = 1<<(bits+1); }
-		//range = division(range, sz, bits);
-		//out2 = (low/range)*sz;
 		range = range/sz;
-		//out = division(low, range, find_msb_bit(range));
-		//out = nr_divide1(low, range, find_msb_bit(range));
-		//out += division(low - out*range, range, find_msb_bit(range));
-		//if((out+1)*range <= low) out++;
 		out = low/range;
 		out1 = get_pix(out, c, q_bits, &f, &cf);
 		//if(img[i]-q[out1]) {

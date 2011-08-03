@@ -307,9 +307,9 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 		*size = 0;
 		if(gop->color == GREY) *size += image_range_encode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
 		else if(gop->color == BAYER)
-			for(i=0; i < 4; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+			for(i=0; i < 4; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
 		else
-			for(i=0; i < 3; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+			for(i=0; i < 3; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
 
 		frame->state |= RANGE_ENCODER;
 		return 1;
@@ -332,9 +332,9 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 		*size = 0;
 		if(gop->color == GREY) *size += image_range_decode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
 		else if(gop->color == BAYER)
-			for(i=0; i < 4; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+			for(i=0; i < 4; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
 		else
-			for(i=0; i < 3; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)gop->buf);
+			for(i=0; i < 3; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
 		frame->state |= RANGE_DECODER;
 		return 1;
 	} else return 0;

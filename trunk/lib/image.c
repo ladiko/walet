@@ -548,9 +548,9 @@ void image_fill_subb(Image *im, uint32 steps)
 	uint32 i, j;
 	for(i=0; i < steps; i++) {
 		for(j=1; j < 4; j++) {
-			//printf("l[%2d][%2d] ", i, j);
 			subband_fill_prob(&im->l[i].s[j]);
 			im->qst += im->l[i].s[j].a_bits-1;
+			//printf("l[%2d][%2d] a_bits = %d\n", i, j, im->l[i].s[j].a_bits);
 		}
 	}
 	//printf("im->qst = %d\n", im->qst);
@@ -744,10 +744,10 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
 				subband_encode_table(&im->l[i].s[j]);
-				size1 = range_encoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
+				size1 = range_encoder(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
-					i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size, size1, sq, subband_size(&im->l[i].s[j])/8 );
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size, size1, sq, subband_size(&im->l[i].s[j])/8 );
 			}
 	}
 	//printf("Finish range_encoder\n");
@@ -774,9 +774,8 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
 				subband_decode_table(&im->l[i].s[j]);
-				size += range_decoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
-
-				printf("Decode %d a_bits = %d q_bits = %d size = %d\n", i, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
+				size += range_decoder(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
+				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
 	return size;
