@@ -28,9 +28,8 @@ void subband_fill_prob(Subband *sub)
 
 	memset(sub->dist, 0, sizeof(uint32)*ds);
 
-	for(i=0; i < size; i++) {
-		sub->dist[sub->pic[i] + half]++;
-	}
+	for(i=0; i < size; i++) sub->dist[sub->pic[i] + half]++;
+
 	for(i=0   ; ; i++) if(sub->dist[i] != 0) {min = i - half; break; }
 	for(i=ds-1; ; i--) if(sub->dist[i] != 0) {max = i - half; break; }
 	//for(i=0; i< (1<<bits); i++) if(dist[i]) printf("dist[%d] = %d\n", i, dist[i]);
