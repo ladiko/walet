@@ -547,7 +547,7 @@ void image_fill_subb(Image *im, uint32 steps)
 {
 	uint32 i, j;
 	for(i=0; i < steps; i++) {
-		for(j=1; j < 4; j++) {
+		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			subband_fill_prob(&im->l[i].s[j]);
 			im->qst += im->l[i].s[j].a_bits-1;
 			//printf("l[%2d][%2d] a_bits = %d\n", i, j, im->l[i].s[j].a_bits);
@@ -639,7 +639,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 		//st[i] = (st[i] == 4) ? 0 : st[i] + 1;
 	}
 	//Calculate image size for given quantization step (qstep)
-	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
+	for(i=0; i < steps; i++) for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 		size1 = subband_size(&im->l[i].s[j]);
 		size += size1;
 		//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
@@ -735,16 +735,17 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of encoded image in bytes.
 {
-	uint32 i, j, sq, sz;
+	int i, j, sq, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0, size1=0;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
-	for(i=0; i < steps; i++)
-		for(j=1; j < 4; j++) {
+	for(i=steps-1; i+1; i--)
+		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
 				subband_encode_table(&im->l[i].s[j]);
-				size1 = range_encoder(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
+				//size1 = range_encoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
+				size1 = range_encoder(im->l[i].s[j].pic, (uint32 *)&buf[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)&buf[sz1]);
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size, size1, sq, subband_size(&im->l[i].s[j])/8 );
@@ -764,17 +765,18 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of decoded image in bytes.
 {
-	uint32 i, j, sq, sz;
+	int i, j, sq, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
 
-	for(i=0; i < steps; i++)
-		for(j=1; j < 4; j++) {
+
+	for(i=steps-1; i+1; i--)
+		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
 				subband_decode_table(&im->l[i].s[j]);
-				size += range_decoder(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
+				size += range_decoder(im->l[i].s[j].pic, (uint32 *)&buf[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)&buf[sz1]);
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}

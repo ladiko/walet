@@ -10,7 +10,8 @@
 void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 {
 	sub->d_bits = bpp+2;
-	sub->dist = (uint32 *)calloc((1<<sub->d_bits)*3, sizeof(uint32));
+	//sub->dist = (uint32 *)calloc((1<<sub->d_bits)*3, sizeof(uint32));
+	sub->dist = (uint32 *)calloc(1<<sub->d_bits, sizeof(uint32));
 	sub->q = (int *)calloc(1<<sub->d_bits, sizeof(int));
 	sub->pic = img;
 	sub->w = w;
