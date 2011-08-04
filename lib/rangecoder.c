@@ -513,7 +513,8 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	init_alphabet(img, d, ds, ab, sw, q, size_ab, q_bits, &get, &swc);
 	*/
 	sz = make_distrib(img, d, size, a_bits, q_bits, q);
-	//tmp = write_distrib(d, q_bits, buff);
+	tmp = write_distrib(d, q_bits, buff);
+	buff = &buff[tmp];
 	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
 	//printf("dist_size = %d bits %d byts\n", tmp, j);
 	j=0;
@@ -546,7 +547,7 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	buff[j++] = (low>>16) & 0xFF;
 	buff[j++] = (low>>8)  & 0xFF;
 	buff[j++] = low & 0xFF;
-	return j;
+	return j+tmp;
 }
 
 uint32  range_decoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
