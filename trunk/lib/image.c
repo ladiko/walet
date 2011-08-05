@@ -711,7 +711,7 @@ void image_bits_alloc(Image *im, ColorSpace color, uint32 steps, uint32 bpp, uin
 	//--------------------------------------------------------
 }
 */
-void image_quantization(Image *im, uint32 steps)
+void image_quantization(Image *im, uint32 steps, uint8 *buf)
 ///	\fn void image_quantization(Image *im, ColorSpace color, uint32 steps)
 ///	\brief Image quantization.
 ///	\param im	 		The image structure.
@@ -721,11 +721,11 @@ void image_quantization(Image *im, uint32 steps)
 	uint32 i, j;
 	//Subband *sub = im->sub;
 	//uint8 *img = im->img;
-	for(i=0; i < steps; i++) for(j=1; j < 4; j++) subband_quantization(&im->l[i].s[j]);
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) subband_quantization(&im->l[i].s[j], (int *)buf);
 
 }
 
-uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
+uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1)
 ///	\fn uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,  *buf)
 ///	\brief Image range encoder.
 ///	\param im	 		The image structure.
@@ -735,7 +735,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of encoded image in bytes.
 {
-	int i, j, sq, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+	int i, j, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0, size1=0;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
@@ -743,9 +743,9 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
-				subband_encode_table(&im->l[i].s[j]);
+				subband_encode_table(&im->l[i].s[j], (int *)buf1);
 				//size1 = range_encoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
-				size1 = range_encoder(im->l[i].s[j].pic, (uint32 *)&buf[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)&buf[sz1]);
+				size1 = range_encoder1(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size, size1, sq, subband_size(&im->l[i].s[j])/8 );
@@ -755,7 +755,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 	return size;
 }
 
-uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
+uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1)
 ///	\fn uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,  *buf)
 ///	\brief Image range decoder.
 ///	\param im	 		The image structure.
@@ -765,7 +765,7 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of decoded image in bytes.
 {
-	int i, j, sq, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+	int i, j, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
@@ -775,8 +775,8 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf)
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
-				subband_decode_table(&im->l[i].s[j]);
-				size += range_decoder(im->l[i].s[j].pic, (uint32 *)&buf[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)&buf[sz1]);
+				subband_decode_table(&im->l[i].s[j], (int *)buf1);
+				size += range_decoder(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
