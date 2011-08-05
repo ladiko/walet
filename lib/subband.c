@@ -12,7 +12,7 @@ void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	sub->d_bits = bpp+2;
 	//sub->dist = (uint32 *)calloc((1<<sub->d_bits)*3, sizeof(uint32));
 	sub->dist = (uint32 *)calloc(1<<sub->d_bits, sizeof(uint32));
-	sub->q = (int *)calloc(1<<sub->d_bits, sizeof(int));
+	//sub->q = (int *)calloc(1<<sub->d_bits, sizeof(int));
 	sub->pic = img;
 	sub->w = w;
 	sub->h = h;
@@ -134,7 +134,7 @@ uint32 subband_size(Subband *sub)
 	return (uint32)s;
 }
 
-void  subband_encode_table(Subband *sub)
+void  subband_encode_table(Subband *sub, int *q)
 /// \fn void  subband_encode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for encoder.
 ///	\param sub 			Pointer to subband.
@@ -145,18 +145,18 @@ void  subband_encode_table(Subband *sub)
 	//int *in = &sub->q[1<<sub->d_bits];
 	//q_i(sub);
 
-	for(j=(1-(1<<st)); j< (1<<st); j++) sub->q[range+j] = half;
+	for(j=(1-(1<<st)); j< (1<<st); j++) q[range+j] = half;
 	for(i=1; i < half; i++){
 		for(j= (i<<st); j< ((i+1)<<st); j++) {
-			sub->q[range+j] = half + i;
-			sub->q[range-j] = half - i;
+			q[range+j] = half + i;
+			q[range-j] = half - i;
 		}
 	}
-	sub->q[0] = sub->q[1];
+	q[0] = q[1];
 	//for(i=-range; i < range; i++) printf("%d  ", sub->q[range+i]);
 }
 
-void  subband_decode_table(Subband *sub)
+void  subband_decode_table(Subband *sub, int *q)
 /// \fn void  subband_decode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for decoder.
 ///	\param sub 			Pointer to subband.
@@ -167,16 +167,16 @@ void  subband_decode_table(Subband *sub)
 	//int *in = &sub->q[1<<sub->d_bits];
 
 	//q_i(sub);
-	sub->q[half] = 0;
+	q[half] = 0;
 	for(j=1; j < half; j++) {
-		sub->q[half+j] =  ((j<<st) + ((j+1)<<st))>>1;
-		sub->q[half-j] = -(((j<<st) + ((j+1)<<st))>>1);
+		q[half+j] =  ((j<<st) + ((j+1)<<st))>>1;
+		q[half-j] = -(((j<<st) + ((j+1)<<st))>>1);
 	}
-	sub->q[0] = sub->q[1];
+	q[0] = q[1];
 	//for(j=-half; j < half; j++) printf("%d  ", sub->q[half+j]);
 }
 
-void  subband_quantization(Subband *sub)
+void  subband_quantization(Subband *sub, int *q)
 /// \fn void  subband_quantization(uint8 *img, Subband *sub)
 ///	\brief Subband quantization.
 ///	\param img			The pointer to subband
@@ -191,16 +191,16 @@ void  subband_quantization(Subband *sub)
 	if(sub->a_bits != sub->q_bits){
 		if(sub->q_bits > 1) {
 			//q_i(sub);
-			for(j=(1-(1<<st)); j< (1<<st); j++) sub->q[half+j] = 0;
+			for(j=(1-(1<<st)); j< (1<<st); j++) q[half+j] = 0;
 			for(i=1; i < range-1; i++){
 				for(j= (i<<st); j< ((i+1)<<st); j++) {
-					sub->q[half+j] =  ((i<<st) + ((i+1)<<st))>>1;
-					sub->q[half-j] = -(((i<<st) + ((i+1)<<st))>>1);
+					q[half+j] =  ((i<<st) + ((i+1)<<st))>>1;
+					q[half-j] = -(((i<<st) + ((i+1)<<st))>>1);
 					//if(half+j >=1024 || half-j < 0) printf("half = %d j = %d in[%d] = %d in[%d] = %d \n", half, j, i, in[i], i+1, in[i+1]);
 				}
 			}
-			sub->q[half-j] = sub->q[half-j+1];
-			for(i=0; i < size; i++ ) sub->pic[i] = sub->q[sub->pic[i] + half];
+			q[half-j] = q[half-j+1];
+			for(i=0; i < size; i++ ) sub->pic[i] = q[sub->pic[i] + half];
 		} else for(i=0; i < size; i++ ) sub->pic[i] = 0;
 	}
 }

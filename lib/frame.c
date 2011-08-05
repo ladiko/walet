@@ -280,11 +280,11 @@ uint32 frame_quantization(GOP *gop, uint32 fr)
 	Frame *frame = &gop->frames[fr];
 
 	if(check_state(frame->state, BITS_ALLOCATION)){
-		if(gop->color == GREY) image_quantization(&frame->img[0], gop->steps);
+		if(gop->color == GREY) image_quantization(&frame->img[0], gop->steps, gop->buf);
 		else if(gop->color == BAYER)
-			for(i=0; i < 4; i++)  image_quantization(&frame->img[i], gop->steps);
+			for(i=0; i < 4; i++)  image_quantization(&frame->img[i], gop->steps, gop->buf);
 		else
-			for(i=0; i < 3; i++)  image_quantization(&frame->img[i], gop->steps);
+			for(i=0; i < 3; i++)  image_quantization(&frame->img[i], gop->steps, gop->buf);
 
 		frame->state |= QUANTIZATION;
 		return 1;
@@ -299,17 +299,18 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 //	\param	size		The size of encoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	uint32 i;
+	uint32 i, sz;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
+	sz = gop->w*gop->h*2;
 
 	if(check_state(frame->state, FILL_SUBBAND)){
 		*size = 0;
-		if(gop->color == GREY) *size += image_range_encode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
+		if(gop->color == GREY) *size += image_range_encode(&frame->img[0], gop->steps, gop->bpp, gop->buf, &gop->buf[sz]);
 		else if(gop->color == BAYER)
-			for(i=0; i < 4; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
+			for(i=0; i < 4; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, &gop->buf[*size], &gop->buf[sz]);
 		else
-			for(i=0; i < 3; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
+			for(i=0; i < 3; i++)  *size += image_range_encode(&frame->img[i], gop->steps, gop->bpp, &gop->buf[*size], &gop->buf[sz]);
 
 		frame->state |= RANGE_ENCODER;
 		return 1;
@@ -324,17 +325,18 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 //	\param	size		The size of decoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
 {
-	uint32 i;
+	uint32 i, sz;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
+	sz = gop->w*gop->h*2;
 
 	if(check_state(frame->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
-		if(gop->color == GREY) *size += image_range_decode(&frame->img[0], gop->steps, gop->bpp, (uint8*)gop->buf);
+		if(gop->color == GREY) *size += image_range_decode(&frame->img[0], gop->steps, gop->bpp, gop->buf, &gop->buf[sz]);
 		else if(gop->color == BAYER)
-			for(i=0; i < 4; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
+			for(i=0; i < 4; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, &gop->buf[*size], &gop->buf[sz]);
 		else
-			for(i=0; i < 3; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, (uint8*)(&gop->buf[*size]));
+			for(i=0; i < 3; i++)  *size += image_range_decode(&frame->img[i], gop->steps, gop->bpp, &gop->buf[*size], &gop->buf[sz]);
 		frame->state |= RANGE_DECODER;
 		return 1;
 	} else return 0;

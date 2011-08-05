@@ -16,7 +16,7 @@ typedef struct {	// Signed picture 16bit
 	uint16 w;
 	uint16 h;
 	short int *pic;
-	int *q;				//Quantization value array
+	//int *q;				//Quantization value array
 	uint32 *dist;		//Distribution probabilities array
 	uint32 d_bits;		//The max bit per pixel after DWT
 	uint32 a_bits;		//Real bits per pixels
@@ -37,9 +37,9 @@ extern "C" {
 void 	subband_init		(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp);
 void 	subband_fill_prob	(Subband *sub);
 uint32 	subband_size		(Subband *sub);
-void  	subband_encode_table(Subband *sub);
-void  	subband_decode_table(Subband *sub);
-void  	subband_quantization(Subband *sub);
+void  	subband_encode_table(Subband *sub, int *q);
+void  	subband_decode_table(Subband *sub, int *q);
+void  	subband_quantization(Subband *sub, int *q);
 
 //Old interface
 //void 	subband_init			(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q);
