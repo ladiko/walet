@@ -747,8 +747,9 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 				//size1 = range_encoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
 				size1 = range_encoder1(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
 				size += size1;
-				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d comp = %d decom = %d entropy = %d\n",
-						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size, size1, sq, subband_size(&im->l[i].s[j])/8 );
+				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
+						((float)size1/(float)sq), ((float)(subband_size(&im->l[i].s[j])>>3)/(float)size1));
 			}
 	}
 	//printf("Finish range_encoder\n");
@@ -776,7 +777,7 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
 				subband_decode_table(&im->l[i].s[j], (int *)buf1);
-				size += range_decoder(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
+				size += range_decoder1(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
