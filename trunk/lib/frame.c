@@ -92,13 +92,14 @@ void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\param	v			The pointer to blue or V  image data
 {
 	Frame *f = &gop->frames[fr];
-	uint32 i, size = gop->w*gop->h;
+	uint32 i, size = gop->w*gop->h, shift = 1<<(gop->bpp-1);;
 	if(gop == NULL ) return;
 
+
 	if(gop->color == BAYER) {
-		//if(gop->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = (v[i<<1]<<8) | v[(i<<1)+1];
-		//else
-		for(i=0; i<size; i++) f->b.pic[i] = y[i];
+		if(gop->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = ((v[i<<1]<<8) | v[(i<<1)+1]) - shift;
+		else for(i=0; i<size; i++) f->b.pic[i] = y[i] - shift;
+		//image_copy(f->b.pic, gop->bpp, y);
 
 	} else {
 		image_copy(&f->img[0], gop->bpp, y);

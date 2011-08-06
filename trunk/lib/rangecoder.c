@@ -324,6 +324,62 @@ static uint32 make_distrib(int16 *img, uint32 *d, uint32 size, uint32 a_bits ,ui
 	return bits;
 }
 
+static uint32 make_distrib1(uint32 *d, uint32 q_bits)
+/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
+	\brief Range encoder.
+    \param img	 	The pointer to encoding message data.
+    \param d		The pointer to array of distribution probabilities of the message.
+	\param size		The size of the  message
+	\param a_bits	Bits per symbols befor quantization.
+	\param q_bits	Bits per symbols after quantization.
+	\param buff		The encoded output  buffer
+*/
+{
+	uint32 i, num = 1<<q_bits, max, maxi, msb , sum = 0, sum1, sum2 = 0, bits, half, np;
+	//uint32 *cu = &d[num];
+	//memset(d, 0, sizeof(uint32)*num);
+	//Fill distribution array after quantization
+	//for(i=0; i<size; i++) d[q[img[i] + half]]++;
+	//Find sum and max element of array
+	max = d[0]; sum += d[0];
+	for(i=1; i<num; i++)  {
+		if(max < d[i]) { max = d[i]; maxi = i; }
+		sum += d[i];
+	}
+	bits = find_msb_bit(sum)+1;
+	sum1 = 1<<bits;
+	msb = (sum1<<8)/sum;
+	//Make distribution with total cumulative frequency power of 2
+	for(i=0; i<num; i++) {
+		d[i] = d[i]*msb>>8;
+		sum2 += d[i];
+	}
+	d[maxi] += sum1 - sum2;
+	//Make distribution with each frequency power of 2
+	for(i=(num>>1); i<num; i++){
+		bits = find_msb_bit(d[i]);
+		half = 1<<bits;
+		//np numbers of pixels to get of give then d[i] should be power of 2
+		np = d[i] - half;
+		if(d[i] - half > (half>>1)){
+			//Should get pixels from neighbors
+			np = (half<<1) - d[i];
+		} else {
+			//Should give pixels to neighbors
+
+		}
+	}
+
+
+	cu[0] = 0;
+	for(i=1; i<=num; i++)  {
+		cu[i] = cu[i-1] + d[i-1];
+		//printf(" cu[%d] = %d ", i, cu[i]);
+	}
+	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
+	return bits;
+}
+
 static inline write_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
 {
 	uint32 i, rest, mask;
@@ -372,7 +428,9 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uint8 *buff)
 			z++;
 			if(z == 127) { write_bits_poz(buff, &poz, &z, 8); z = 0;}
 		}
+		printf("%d ", d[i]);
 	}
+	printf("\n");
 	return poz;
 }
 
@@ -513,6 +571,8 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	init_alphabet(img, d, ds, ab, sw, q, size_ab, q_bits, &get, &swc);
 	*/
 	sz = make_distrib(img, d, size, a_bits, q_bits, q);
+	//printf("finesh make_distrib\n");
+
 	tmp = write_distrib(d, q_bits, buff);
 	buff = &buff[tmp];
 	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
