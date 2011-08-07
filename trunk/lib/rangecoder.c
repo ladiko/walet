@@ -175,7 +175,7 @@ static inline void fill_prob( uint8 *img, uint32 *d, uint32 bits, uint32 a_bits,
 }
 */
 
-uint32 range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32 range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -226,7 +226,7 @@ uint32 range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 
 	return j;
 }
 
-uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range decoder.
     \param img	 	The pointer to encoding message data.
@@ -276,7 +276,7 @@ uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 	return j;
 }
 
-static uint32 make_distrib(int16 *img, uint32 *d, uint32 size, uint32 a_bits ,uint32 q_bits, int *q)
+static uint32 make_distrib(int16 *img, uint32 *d, uint32 *cu, uint32 size, uint32 a_bits ,uint32 q_bits, int *q)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -287,11 +287,16 @@ static uint32 make_distrib(int16 *img, uint32 *d, uint32 size, uint32 a_bits ,ui
 	\param buff		The encoded output  buffer
 */
 {
-	uint32 i, num = 1<<q_bits, half = 1<<a_bits-1, max, maxi, msb , sum = 0, sum1, sum2 = 0, bits;
-	uint32 *cu = &d[num];
-	memset(d, 0, sizeof(uint32)*num);
+	uint32 i, num = 1<<q_bits, half = 1<<(a_bits-1), max, maxi, msb , sum = 0, sum1, sum2 = 0, bits;
+	//uint32 *cu = &d[num];
+	//for(i=0; i < num; i++) printf("%d ", q[i]);
+	//printf("\n");
+	memset(d, 0, num);
 	//Fill distribution array after quantization
-	for(i=0; i<size; i++) d[q[img[i] + half]]++;
+	for(i=0; i < size; i++) d[q[img[i] + half]]++;
+	//for(i=0; i < num; i++) printf("%d ", d[i]);
+	//printf("img = %d half = %d q = %d d = %d", img[i], half, q[img[i] + half], d[q[img[i] + half]]);
+
 	//Find sum and max element of array
 	max = d[0]; sum += d[0];
 	for(i=1; i<num; i++)  {
@@ -301,7 +306,7 @@ static uint32 make_distrib(int16 *img, uint32 *d, uint32 size, uint32 a_bits ,ui
 	bits = find_msb_bit(sum)+1;
 	sum1 = 1<<bits;
 	msb = (sum1<<8)/sum;
-	//Make distribution with cumulitive friquency power of 2
+	//Make distribution with cumulative frequency power of 2
 	for(i=0; i<num; i++) {
 		//printf(" d[%d] = %d ", i, d[i]);
 		if(d[i]) {
@@ -324,7 +329,7 @@ static uint32 make_distrib(int16 *img, uint32 *d, uint32 size, uint32 a_bits ,ui
 	return bits;
 }
 
-static uint32 make_distrib1(uint32 *d, uint32 q_bits)
+static uint32 make_distrib1(uint32 *d, uint32 *cu, uint32 a_bits, uint32 q_bits, uint32 *buff)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -335,12 +340,14 @@ static uint32 make_distrib1(uint32 *d, uint32 q_bits)
 	\param buff		The encoded output  buffer
 */
 {
-	uint32 i, num = 1<<q_bits, max, maxi, msb , sum = 0, sum1, sum2 = 0, bits, half, np;
-	//uint32 *cu = &d[num];
-	//memset(d, 0, sizeof(uint32)*num);
+	uint32 i, j=0, num = 1<<a_bits, max, maxi, msb , sum = 0, sum1, sum2 = 0, bits, half, np;
+	uint32 *d1 = buff, *d2 = &buff[num];
+	int cn = 0, co = 0, t1 = 0, t2 = 0;
+	//memset(d1, 0, sizeof(uint32)*num);
 	//Fill distribution array after quantization
 	//for(i=0; i<size; i++) d[q[img[i] + half]]++;
 	//Find sum and max element of array
+	printf("num = %d\n", num);
 	max = d[0]; sum += d[0];
 	for(i=1; i<num; i++)  {
 		if(max < d[i]) { max = d[i]; maxi = i; }
@@ -355,21 +362,35 @@ static uint32 make_distrib1(uint32 *d, uint32 q_bits)
 		sum2 += d[i];
 	}
 	d[maxi] += sum1 - sum2;
-	//Make distribution with each frequency power of 2
-	for(i=(num>>1); i<num; i++){
-		bits = find_msb_bit(d[i]);
-		half = 1<<bits;
-		//np numbers of pixels to get of give then d[i] should be power of 2
-		np = d[i] - half;
-		if(d[i] - half > (half>>1)){
-			//Should get pixels from neighbors
-			np = (half<<1) - d[i];
-		} else {
-			//Should give pixels to neighbors
 
+	for(i=0; i < num; i++) d1[i] = d[i];
+	//Make distribution with each frequency power of 2
+	for(i=0; i < num; i++){
+		if(d1[i]){
+			bits = find_msb_bit(d1[i]);
+			half = 1<<bits;
+			if(d1[i] != half){
+				//np numbers of pixels to get of give then d[i] should be power of 2
+				np = d1[i] - half;
+				if(d1[i] - half > (half>>1)){
+					//Should get pixels from neighbors
+					np = (half<<1) - d1[i];
+					if(d1[i+1]) { d1[i] += np; d1[i+1] -= np;}
+					else cn += np;
+				} else {
+					//Should give pixels to neighbors
+					if(d1[i+1]) { d1[i] -= np; d1[i+1] += np;}
+					else cn -= np;
+				}
+			} else {
+				//d1[i] = d[i];
+				//Count all d with 1
+				if(d1[i] == 1) { d2[j++] = i; co++; }
+			}
 		}
 	}
-
+	for(i=0; i < num; i++) { printf("%d %d  ", d[i], d1[i]); t1+=d[i]; t2+=d1[i]; }
+	printf("Ones = %d counts = %d d = %d d1 = %d\n", co, cn, t1, t2);
 
 	cu[0] = 0;
 	for(i=1; i<=num; i++)  {
@@ -540,7 +561,7 @@ static inline uint32 get_cum_f1(uint32 out, uint32 *cu, uint32 i, uint32 j)
 	}
 }
 
-uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
 	\brief Range encoder.
     \param img	 	The pointer to encoding message data.
@@ -555,7 +576,7 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
 	uint32 i, j, k=0 , bits, tmp;
-	uint32 half = 1<<(a_bits-1), *cu = &d[num];
+	uint32 half = 1<<(a_bits-1), *cu = &buff1[num];
 	int im;
 
 	//Encoder setup
@@ -570,10 +591,11 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	for(i=0; i < size_ab; i++) ab[i] = i;
 	init_alphabet(img, d, ds, ab, sw, q, size_ab, q_bits, &get, &swc);
 	*/
-	sz = make_distrib(img, d, size, a_bits, q_bits, q);
-	//printf("finesh make_distrib\n");
+	sz = make_distrib(img, buff1, cu, size, a_bits, q_bits, q);
+	//sz = make_distrib1(d, cu, a_bits, q_bits, &buff1[half<<1]);
+	printf("finesh make_distrib sz = %d num = %d\n", sz, num);
 
-	tmp = write_distrib(d, q_bits, buff);
+	tmp = write_distrib(buff1, q_bits, buff);
 	buff = &buff[tmp];
 	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
 	//printf("dist_size = %d bits %d byts\n", tmp, j);
@@ -582,16 +604,20 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	//init_prob(d, q_bits, c);
 	range = top; low = 0;
 
+	for(i=0; i < num; i++) printf("%d ", q[i]);
+	printf("\n");
+	for(i=0; i < num; i++) printf("%d ", d[i]);
+	printf("\n");
 	//Start encoding
 	for(i=0; i<size; i++) {
 		im = q[img[i] + half];
-		//printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d\n", i, img[i], half, sz, im, cu[im]);
+		printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im]);
 
 		range = range>>sz;
 		//cu = get_cum(im, c, q_bits);
 		low1 = low;
 		low += range*cu[im];
-		//if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
+		if(i<100)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
 		range = range*d[im];
 		//update_dist(im, d, ds, ab, sw, size_ab, &get, &set, &swc);
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
