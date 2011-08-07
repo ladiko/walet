@@ -725,7 +725,7 @@ void image_quantization(Image *im, uint32 steps, uint8 *buf)
 
 }
 
-uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1)
+uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf)
 ///	\fn uint32 image_range_encode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,  *buf)
 ///	\brief Image range encoder.
 ///	\param im	 		The image structure.
@@ -737,15 +737,17 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 {
 	int i, j, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0, size1=0;
+	int *q = ibuf;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
 	for(i=steps-1; i+1; i--)
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
-				subband_encode_table(&im->l[i].s[j], (int *)buf1);
-				//size1 = range_encoder1(im->l[i].s[j].pic, &im->l[i].s[j].dist[1<<(bpp+2)],sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], im->l[i].s[j].q);
-				size1 = range_encoder1(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
+				subband_encode_table(&im->l[i].s[j], q);
+				size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
+				//size1 = range_encoder1(im->l[i].s[j].pic, im->l[i].s[j].dist, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits,
+				//		&buf[size], q, &ibuf[1<<(bpp+2)]);
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
@@ -756,7 +758,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 	return size;
 }
 
-uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1)
+uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf)
 ///	\fn uint32 image_range_decode(Image *im, ColorSpace color, uint32 steps, uint32 bpp,  *buf)
 ///	\brief Image range decoder.
 ///	\param im	 		The image structure.
@@ -768,6 +770,7 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 {
 	int i, j, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0;
+	int *q = ibuf;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
 
@@ -776,8 +779,8 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
-				subband_decode_table(&im->l[i].s[j], (int *)buf1);
-				size += range_decoder1(im->l[i].s[j].pic, (uint32 *)&buf1[sz], sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], (int *)buf1);
+				subband_decode_table(&im->l[i].s[j], q);
+				size += range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}

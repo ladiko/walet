@@ -152,8 +152,9 @@ void  subband_encode_table(Subband *sub, int *q)
 			q[range-j] = half - i;
 		}
 	}
-	q[0] = q[1];
-	//for(i=-range; i < range; i++) printf("%d  ", sub->q[range+i]);
+	//q[0] = q[1];
+	q[0] = 0;
+	//for(i=-range; i < range; i++) printf("%d  ", q[range+i]);
 }
 
 void  subband_decode_table(Subband *sub, int *q)
@@ -172,6 +173,7 @@ void  subband_decode_table(Subband *sub, int *q)
 		q[half+j] =  ((j<<st) + ((j+1)<<st))>>1;
 		q[half-j] = -(((j<<st) + ((j+1)<<st))>>1);
 	}
+	q[0] = 0;
 	q[0] = q[1];
 	//for(j=-half; j < half; j++) printf("%d  ", sub->q[half+j]);
 }

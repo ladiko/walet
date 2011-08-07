@@ -58,8 +58,8 @@ void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 i
 void 	image_fill_subb		(Image *im, uint32 steps);
 uint32 	image_size			(Image *im, uint32 steps, uint32 qstep);
 void 	image_quantization	(Image *im, uint32 steps, uint8 *buf);
-uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1);
-uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, uint8 *buf1);
+uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf);
+uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf);
 void 	image_median_filter	(Image *im, uint8 *buf);
 
 
