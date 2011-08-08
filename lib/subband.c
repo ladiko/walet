@@ -40,6 +40,8 @@ void subband_fill_prob(Subband *sub)
 	//printf("min = %4d max = %4d  tot = %4d bits = %4i\n", min, max, max-min, i+1);
 	sub->a_bits = i+1;
 	sub->q_bits = sub->a_bits;
+	//printf("d_bits = %d a_bits = %d shift =%d\n", sub->d_bits, sub->a_bits, (1<<(sub->d_bits-1)) - (1<<(sub->a_bits-1)));
+	sub->dist = &sub->dist[(1<<(sub->d_bits-1)) - (1<<(sub->a_bits-1))];
 }
 /*
 void q_i_uniform(Subband *sub)
@@ -107,7 +109,7 @@ uint32 subband_size(Subband *sub)
 	double s = 0., s0 = log2(sub->h*sub->w);
 	uint32  en=0;
 	int i, j, st = (sub->a_bits - sub->q_bits);
-	int rest = 1<<(sub->q_bits-1), half = (1<<(sub->d_bits-1));;
+	int rest = 1<<(sub->q_bits-1), half = (1<<(sub->a_bits-1)); //half = (1<<(sub->d_bits-1));
 	//int *in = &sub->q[1<<sub->d_bits];
 
 	//q_i(sub);
@@ -141,7 +143,7 @@ void  subband_encode_table(Subband *sub, int *q)
 /// \param q			The quantization array.
 {
 	int i, j, st = (sub->a_bits - sub->q_bits);
-	int range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);;
+	int range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
 	//q_i(sub);
 
@@ -186,7 +188,7 @@ void  subband_quantization(Subband *sub, int *q)
 
 {
 	int i, j, size = sub->w*sub->h, st = (sub->a_bits - sub->q_bits);
-	int range = 1<<(sub->q_bits-1), half = 1<<(sub->a_bits-1);
+	int range = 1<<(sub->q_bits-1), half = 1<<(sub->a_bits-1); //half = 1<<(sub->a_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
 	//printf("d_bits = %d\n", 1<<sub->d_bits);
 
