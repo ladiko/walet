@@ -23,9 +23,9 @@ void frames_init(GOP *gop, uint32 fr)
 
 	if(gop->color == BAYER ){
 	    f->b.w = w; f->b.h = h;
-	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(uint16));
+	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(int16));
 	    f->d.w = w; f->d.h = h;
-	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(uint16));
+	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 		//Init color components
 		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), gop->color, gop->bpp, gop->steps);
 		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), gop->color, gop->bpp, gop->steps);
@@ -92,7 +92,7 @@ void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\param	v			The pointer to blue or V  image data
 {
 	Frame *f = &gop->frames[fr];
-	uint32 i, size = gop->w*gop->h, shift = 1<<(gop->bpp-1);;
+	uint32 i, size = gop->w*gop->h, shift = 1<<(gop->bpp-1);
 	if(gop == NULL ) return;
 
 
