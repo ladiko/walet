@@ -381,7 +381,7 @@ static uint32 make_distrib1(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, ui
 		if(max < dq[i]) { max = dq[i]; maxi = i; }
 		sum += dq[i];
 	}
-	*msb = find_msb_bit(max);
+	//The max bits for distribution representation
 	bits = find_msb_bit(sum)+1;
 	sum1 = 1<<bits;
 	pw = (sum1<<8)/sum;
@@ -391,6 +391,7 @@ static uint32 make_distrib1(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, ui
 		sum2 += dq[i];
 	}
 	dq[maxi] += sum1 - sum2;
+	*msb = find_msb_bit(dq[maxi]);
 
 	for(i=0; i < num; i++) d1[i] = dq[i];
 	//Make distribution with each frequency power of 2
@@ -424,7 +425,7 @@ static uint32 make_distrib1(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, ui
 		cu[i] = cu[i-1] + dq[i-1];
 		//printf(" cu[%d] = %d ", i, cu[i]);
 	}
-	//for(i=0; i < num; i++) { printf("%d  ", d[i]); }
+	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
 	//printf("num = %d\n", num);
 	//for(i=0; i < num; i++) { printf("%d %d  ", d[i], d1[i]); t1+=d[i]; t2+=d1[i]; }
 	//printf("Ones = %d counts = %d d = %d d1 = %d\n", co, cn, t1, t2);
@@ -432,7 +433,7 @@ static uint32 make_distrib1(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, ui
 	return bits;
 }
 
-static inline write_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
+static inline write_bits_poz1(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
 {
 	uint32 i, rest, mask;
 	for(;;){
@@ -444,22 +445,49 @@ static inline write_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
 	}
 }
 
+static inline write_bits_poz(uint8 *buff, uint32 *poz, uint32 st, uint32 bits)
+{
+	uint32 p, i, rest, mask;
+	for(;;){
+		p = *poz&7; i = *poz>>3;
+		if(!p) buff[i] = 0;
+		rest = 8 - p;
+		mask = (1<<rest) - 1;
+		//printf("buff = %d %d\n",buff[i],  mask & st);
+		buff[i] |= mask & st;
+		if(rest >= bits) { *poz += bits; break;
+		printf("buff[%d + %d] = %3d\n", *poz>>3, (*poz-bits)&7, buff[(*poz>>3)]);
+		}
+		else { *poz += rest; bits = bits - rest; st>>=rest;
+			printf("buff[%d + %d] = %3d\n", *poz>>3, *poz&7, buff[*poz>>3]);
+		}
+	}
+	//printf("\n");
+}
+
+static inline read_bits_poz(uint8 *buff, uint32 *poz, uint32 *st, uint32 bits)
+{
+	uint32 p, i, rest, mask, sd = 0;
+	*st = 0;
+	for(;;){
+		p = *poz&7; i = *poz>>3;
+		rest = 8 - p;
+		mask = (1<<rest) - 1 ;
+		*st |= (((buff[i] & mask)>>p)<<sd);
+		if(rest >= bits) { *poz += bits; break;
+		printf("buff[%d + %d] = %3d\n", *poz>>3, *poz&7, buff[(*poz>>3)]);
+		}
+		else { *poz += rest; bits = bits - rest; sd +=rest;
+		printf("buff[%d + %d] = %3d\n", *poz>>3, *poz&7, buff[(*poz>>3)]);
+		}
+	}
+}
+
 static inline uint32 check_bit_poz(uint8 *buff, uint32 *poz)
 {
 	uint32 ch =  (1<<(7-(*poz&7))) & buff[*poz&7 ? (*poz>>3) + 1 : *poz>>3];
 	*poz++;
 	return ch;
-}
-
-static inline read_bits_poz(uint8 *buff, uint32 *poz, uint8 *st, uint32 bits)
-{
-	uint32 i, rest, mask, bit;
-	for(;;){
-		bit = (1<<rest-1) & buff[*poz>>3];
-		buff[*poz>>3] += mask & st[bits>>3];
-		if(rest >= bits) { *poz += bits; break; }
-		else { *poz += rest; bits = bits - rest; }
-	}
 }
 
 uint32 write_distrib1(uint32 *d, uint32 q_bits, uint8 *buff)
@@ -469,16 +497,16 @@ uint32 write_distrib1(uint32 *d, uint32 q_bits, uint8 *buff)
 	//Write distribution
 	for(i=0; i < num; i++) {
 		if(d[i]) {
-			write_bits_poz(buff, &poz, &z, 8); z = 0;
+			write_bits_poz1(buff, &poz, &z, 8); z = 0;
 			msb = find_msb_bit(d[i]);
 			st = 0x80000000;
 			st = st | (msb<<26);
 			st = st | (d[i]<<26-msb);
 			bits = 6+msb;
-			write_bits_poz(buff, &poz, (uint8*)&st, bits);
+			write_bits_poz1(buff, &poz, (uint8*)&st, bits);
 		} else {
 			z++;
-			if(z == 127) { write_bits_poz(buff, &poz, &z, 8); z = 0;}
+			if(z == 127) { write_bits_poz1(buff, &poz, &z, 8); z = 0;}
 		}
 		//printf("%d ", d[i]);
 	}
@@ -489,23 +517,25 @@ uint32 write_distrib1(uint32 *d, uint32 q_bits, uint8 *buff)
 uint32 write_distrib(uint32 *d, uint32 q_bits, uint32 msb, uint8 *buff)
 {
 	uint32 i, il, ir, num = 1<<q_bits, poz = 0;
-	uint8 z = 0;
+
 	//Write msb
-	write_bits_poz(buff, &poz, (uint8*)&msb, 8);
+	write_bits_poz(buff, &poz, msb, 8);
+
 	//Write left zero counts
-	for(i=0; ; i++) { z++; if(d[i]) break; }
-	if(z < 256) { write_bits_poz(buff, &poz, &z, 8); il = i; }
-	else  { z = 255; write_bits_poz(buff, &poz, &z, 8); il = 256; }
+	for(i=0; ; i++) if(d[i]) break;
+	if(i < 256) { il = i; 	write_bits_poz(buff, &poz, il, 8);}
+	else  		{ il = 255; write_bits_poz(buff, &poz, il, 8);}
 
 	//Write right  zero counts
-	z = 0;
-	for(i=num-1; ; i--) { z++; if(d[i]) break; }
-	if(z < 256)  { write_bits_poz(buff, &poz, &z, 8);  ir = i; }
-	else  { z = 255; write_bits_poz(buff, &poz, &z, 8); ir = 256; }
+	for(i=0; ; i++) if(d[num-1-i]) break;
+	if(i < 256) { ir = i; 	write_bits_poz(buff, &poz, ir, 8);}
+	else  		{ ir = 255;	write_bits_poz(buff, &poz, ir, 8);}
 
+	printf("msb = %d il = %d ir = %d \n", msb, il, ir);
 	//Write all another
 	for(i=il; i < num - ir; i++) {
-		write_bits_poz(buff, &poz, (uint8*)&d[i], msb);
+		write_bits_poz(buff, &poz, d[i], msb);
+		//printf("poz = %d ", poz);
 	}
 	//printf("\n");
 	return (poz>>3) + 1;
@@ -514,15 +544,19 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uint32 msb, uint8 *buff)
 static uint32 read_distrib(uint32 *d, uint32 q_bits, uint8 *buff)
 {
 	uint32 i, il, ir, num = 1<<q_bits, poz = 0, msb;
-	uint8 z = 0;
 
-	write_bits_poz(buff, &poz, (uint8*)&msb, 8);
-	read_bits_poz(buff, &poz, (uint8*)&il, 8);
-	read_bits_poz(buff, &poz, (uint8*)&ir, 8);
+	read_bits_poz(buff, &poz, &msb, 8);
+	read_bits_poz(buff, &poz, &il, 8);
+	read_bits_poz(buff, &poz, &ir, 8);
+
+	printf("msb = %d il = %d ir = %d \n", msb, il, ir);
+	for(i=0; i < il; i++) d[i] = 0;
 
 	for(i=il; i < num - ir; i++) {
-		read_bits_poz(buff, &poz, (uint8*)&d[i], msb);
+		read_bits_poz(buff, &poz, &d[i], msb);
+		//printf("poz = %d ", poz);
 	}
+	for(i=num - ir; i < num; i++) d[i] = 0;
 	//printf("\n");
 	return (poz>>3) + 1;
 }
@@ -658,7 +692,15 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	//printf("finesh make_distrib sz = %d num = %d\n", sz, num);
 
 	tmp = write_distrib(dq, q_bits, msb, buff);
-	buff = &buff[tmp];
+	printf("write = %d msb = %d\n", tmp, msb);
+	for(i=0; i < num; i++) printf("%d ", dq[i]);
+	printf("\n");
+	tmp = read_distrib(dq, q_bits, buff);
+	printf("read = %d\n", tmp);
+	for(i=0; i < num; i++) printf("%d ", dq[i]);
+	printf("\n");
+
+	buff = &buff[tmp+1];
 
 	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
 	//printf("dist_size = %d bits %d byts\n", tmp, j);
