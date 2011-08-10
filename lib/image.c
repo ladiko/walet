@@ -553,6 +553,8 @@ void image_fill_subb(Image *im, uint32 steps)
 			//printf("l[%2d][%2d] a_bits = %d\n", i, j, im->l[i].s[j].a_bits);
 		}
 	}
+	//Remove LL subband from quantization
+	im->qst -= (im->l[steps-1].s[0].a_bits-1);
 	//printf("im->qst = %d\n", im->qst);
 }
 
@@ -623,10 +625,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 		//printf("k = %d st[%d] = %d  l[%d].s[%d].q_bits = %d\n", k, i, st[i], i, j, im->l[i].s[j].q_bits);
 
 		if(st[i] == 1 ){
-			if(i) {
-				st[0] = -1;
-				st[i]++;
-			}
+			if(i) { st[0] = -1; st[i]++; }
 			i = 0;
 		}
 		if(st[i] == 4){
@@ -634,7 +633,6 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep)
 			if(i == steps - 1) i = 0;
 			else i++;
 		} else st[i]++;
-
 
 		//st[i] = (st[i] == 4) ? 0 : st[i] + 1;
 	}
@@ -735,7 +733,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of encoded image in bytes.
 {
-	int i, j, k, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+	int i, j, k, sq;//, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
 	uint32 size = 0, size1=0;
 	int *q = ibuf;
 	//uint8 *img = im->img;
@@ -767,8 +765,8 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 ///	\param buf 			The buffer for encoded data.
 ///	\retval				The size of decoded image in bytes.
 {
-	int i, j, sq, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
-	uint32 size = 0;
+	int i, j, sq;//, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+	uint32 size = 0, size1=0;
 	int *q = ibuf;
 	//uint8 *img = im->img;
 	//Subband *sub = im->sub;
@@ -780,8 +778,11 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 			if(im->l[i].s[j].q_bits >1){
 				subband_decode_table(&im->l[i].s[j], q);
 				//size += range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
-				size += range_decoder1(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
-				printf("l[%d].s[%d] a_bits = %d q_bits = %d size = %d\n", i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size);
+				size1 = range_decoder1(im->l[i].s[j].pic, im->l[i].s[j].dist, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+				size += size1;
+				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
+						((float)size1/(float)sq), ((float)(subband_size(&im->l[i].s[j])>>3)/(float)size1));
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
 	return size;
