@@ -233,6 +233,7 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 		if (gop->color == BAYER){
 			qs = frame->qst>>1;
 			for(k=2;;k++){
+				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
 				//Bits allocation between 4 color image
 				for(i=0, j=0; i < qs; i++) {
@@ -240,10 +241,12 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 					else i--;
 					j = (j == 8) ? 0 : j + 1;
 				}
-				//for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
+				for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
 				s = 0;
 				for(j=0; j < 4; j++) s += image_size(&frame->img[j], gop->steps, bl[j]);
-				printf("times = %d qst = %d size = %d qs = %d s = %d\n", times, frame->qst, size, qs, s);
+					//printf("img = %d\n", j);
+
+				//printf("times = %d qst = %d size = %d qs = %d s = %d\n", times, frame->qst, size, qs, s);
 				//printf("Frame size = %d now = %d\n", size, s);
 
 				if(!(frame->qst>>k)) {

@@ -913,6 +913,50 @@ double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
+double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d)
+/// \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+/// \brief Calculate PSNR of two image.
+/// \param before	Pointer to first image.
+/// \param after	Pointer to second image.
+/// \param dim 		Size of image height*width.
+/// \param d 		d = 1 if gray image, d = 3 if color image.
+/// \retval 		The PSNR.
+{
+	uint32 i;
+	double psnr;
+	unsigned long long r = 0, g = 0, b = 0;
+	if(d==3){
+		for(i = 0; i< dim; i = i + 3){
+			r += (before[i]   - after[i]  )*(before[i]   - after[i]  );
+			g += (before[i+1] - after[i+1])*(before[i+1] - after[i+1]);
+			b += (before[i+2] - after[i+2])*(before[i+2] - after[i+2]);
+		}
+
+		if((r + g + b) == 0){
+			return 0.;
+		}
+
+		psnr = 10.*log10((255.*255.)/((double)(r + g + b)/((double)dim*3.)));
+		return psnr;
+	}
+	if(d==1){
+		for(i = 0; i< dim; i++){
+			r += (before[i]   - after[i] )*(before[i]   - after[i]);
+		}
+
+		if(r  == 0){
+			return 0.;
+		}
+
+		psnr = 10.*log10((255.*255.)/((double)r/(double)dim));
+		return psnr;
+	}
+	else{
+		printf("psnr: ERROR\n");
+		return 0.;
+	}
+}
+
 
 
 

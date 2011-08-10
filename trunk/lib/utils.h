@@ -16,6 +16,7 @@ uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width);
 uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h);
 uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay);
 double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d);
+double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
