@@ -364,10 +364,10 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 	\param buff		The encoded output  buffer
 */
 {
-	uint32 i, j=0, num = 1<<q_bits, max, maxi, pw, sum = 0, sum1, sum2 = 0, bits, b, half, np;
-	uint32 *d1 = buff, *d2 = &buff[num];
-	int cn = 0, co = 0, t1 = 0, t2 = 0;
-	//memset(d1, 0, sizeof(uint32)*num);
+	uint32 i, j=0, num = 1<<q_bits, max, maxi, pw, sum = 0, sum1, sum2 = 0, bits, b, half, full;
+	int *d1 = buff, *d2 = &buff[num];
+	int cn = 0, co = 0, t1 = 0, t2 = 0, nl, nr;
+	memset(d2, 0, sizeof(uint32)*num);
 	//Fill distribution array after quantization
 	if(a_bits == q_bits) for(i=0; i < num; i++) dq[i] = d[i];
 	else dist_quant(d, dq, a_bits, q_bits);
@@ -394,36 +394,36 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 	*msb = find_msb_bit(dq[maxi])+1;
 	//printf("sum = %d new = %d dq[max] = %d msb = %d\n", sum, sum2, dq[maxi], 1<<*msb);
 
-	for(i=0; i < num; i++) d1[i] = dq[i];
 	//Make distribution with each frequency power of 2
+	for(i=0; i < num; i++) d1[i] = dq[i];
 	for(i=0; i < num; i++){
 		if(d1[i]){
 			b = find_msb_bit(d1[i]);
+			full = 1<<(b+1);
 			half = 1<<b;
 			if(d1[i] != half){
 				//np numbers of pixels to get of give then d[i] should be power of 2
-				np = d1[i] - half;
-				if(d1[i] - half > (half>>1)){
+				nl = d1[i] - half;
+				nr = full - d1[i];
+				if(nl > nr){
 					//Should get pixels from neighbors
-					np = (half<<1) - d1[i];
-					if(d1[i+1]) { d1[i] += np; d1[i+1] -= np;}
-					else cn += np;
+					 d1[i] += nr; d1[i+1] -= nr; d2[i] = nr;
 				} else {
 					//Should give pixels to neighbors
-					if(d1[i+1]) { d1[i] -= np; d1[i+1] += np;}
-					else cn -= np;
+					d1[i] -= nl; d1[i+1] += nl; d2[i] = -nl;
 				}
-			} else {
-				//d1[i] = d[i];
-				//Count all d with 1
-				if(d1[i] == 1) { d2[j++] = i; co++; }
-			}
-		}
+				printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
+			} else  printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
+		}// else d2[i] = 0;
 	}
 	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
 	//printf("num = %d\n", num);
-	//for(i=0; i < num; i++) { printf("%d %d  ", d[i], d1[i]); t1+=d[i]; t2+=d1[i]; }
-	//printf("Ones = %d counts = %d d = %d d1 = %d\n", co, cn, t1, t2);
+	co = 0; cn = 0; t1 = 0; t2 = 0;
+	for(i=0; i < num; i++) {  t1+=dq[i]; t2+=d1[i]; if(dq[i] == 1) co++; if(d1[i] == 1) cn++; } //printf("%d %d  ", dq[i], d1[i]);
+	printf("\n dq = %d d1 = %d dq 1 = %d d1 1 = %d\n", t1, t2, co, cn);
+	for(i=0; i < num; i++) printf("%d ", d1[i]);
+	printf("\n");
+	for(i=0; i < num; i++) printf("%d ", d2[i]);
 	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
 	return bits;
 }
@@ -571,18 +571,6 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	int im;
 
 	//Encoder setup
-	/*
-	uint32 *ds = &d[num]; 			//Adaptive probability array
-	uint32 *ab = &ds[size_ab];	 	//Free alphabet array
-	uint32 *sw = &ab[size_ab];		//Sliding window array
-	uint32 get = 0, set = 0, swc = 0;		//The counters free letters and sliding window
-
-	memset(d, 0, sizeof(uint32)*(num+size_ab));
-	init_prob(d, q_bits, c);
-	for(i=0; i < size_ab; i++) ab[i] = i;
-	init_alphabet(img, d, ds, ab, sw, q, size_ab, q_bits, &get, &swc);
-	*/
-	//sz = make_distrib(img, buff1, cu, size, a_bits, q_bits, q);
 	sz = make_distrib(d, dq, cu, a_bits, q_bits, &msb, &buff1[num<<1]);
 	make_cum_freq(dq, cu, q_bits);
 	//printf("finesh make_distrib sz = %d num = %d\n", sz, num);
