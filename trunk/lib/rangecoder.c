@@ -365,9 +365,9 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 */
 {
 	uint32 i, j=0, num = 1<<q_bits, max, maxi, pw, sum = 0, sum1, sum2 = 0, bits, b, half, full;
-	int *d1 = buff, *d2 = &buff[num];
+	int *d1 = buff, *d2 = &buff[num<<1];
 	int cn = 0, co = 0, t1 = 0, t2 = 0, nl, nr;
-	memset(d2, 0, sizeof(uint32)*num);
+	memset(d2, 0, sizeof(uint32)*num<<1);
 	//Fill distribution array after quantization
 	if(a_bits == q_bits) for(i=0; i < num; i++) dq[i] = d[i];
 	else dist_quant(d, dq, a_bits, q_bits);
@@ -407,13 +407,13 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 				nr = full - d1[i];
 				if(nl > nr){
 					//Should get pixels from neighbors
-					 d1[i] += nr; d1[i+1] -= nr; d2[i] = nr;
+					d1[i] += nr; d1[i+1] -= nr; d2[(i<<1)+1] += nr; d2[(i+1<<1)] -= nr;
 				} else {
 					//Should give pixels to neighbors
-					d1[i] -= nl; d1[i+1] += nl; d2[i] = -nl;
+					d1[i] -= nl; d1[i+1] += nl; d2[(i<<1)+1] -= nl; d2[(i+1<<1)] += nl;
 				}
-				printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
-			} else  printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
+				//printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
+			} //else  printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
 		}// else d2[i] = 0;
 	}
 	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
@@ -423,7 +423,8 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 	printf("\n dq = %d d1 = %d dq 1 = %d d1 1 = %d\n", t1, t2, co, cn);
 	for(i=0; i < num; i++) printf("%d ", d1[i]);
 	printf("\n");
-	for(i=0; i < num; i++) printf("%d ", d2[i]);
+	for(i=0; i < num; i++) printf("%d %d %d %d   ", dq[i], d2[i*2], d2[i*2+1], d1[i]);
+	printf("\n");
 	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
 	return bits;
 }
