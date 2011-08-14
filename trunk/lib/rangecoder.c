@@ -3,41 +3,6 @@
 #include <walet.h>
 #include <rangecoder.h>
 
-uint32 div_look_up[256] = {
-                1016, 1008, 1000, 992,  984,  977,  969,
-                961,  954,  947,  939,  932,  925,  917,  910,
-                903,  896,  889,  882,  875,  868,  861,  855,
-                848,  841,  835,  828,  822,  815,  809,  802,
-                796,  790,  783,  777,  771,  765,  759,  753,
-                747,  741,  735,  729,  723,  717,  712,  706,
-                700,  694,  689,  683,  678,  672,  667,  661,
-                656,  651,  645,  640,  635,  629,  624,  619,
-                614,  609,  604,  599,  594,  589,  584,  579,
-                574,  569,  564,  559,  555,  550,  545,  541,
-                536,  531,  527,  522,  518,  513,  509,  504,
-                500,  495,  491,  486,  482,  478,  473,  469,
-                465,  461,  457,  452,  448,  444,  440,  436,
-                432,  428,  424,  420,  416,  412,  408,  404,
-                400,  396,  392,  389,  385,  381,  377,  374,
-                370,  366,  363,  359,  355,  352,  348,  344,
-                341,  337,  334,  330,  327,  323,  320,  316,
-                313,  310,  306,  303,  299,  296,  293,  290,
-                286,  283,  280,  276,  273,  270,  267,  264,
-                261,  257,  254,  251,  248,  245,  242,  239,
-                236,  233,  230,  227,  224,  221,  218,  215,
-                212,  209,  206,  203,  200,  198,  195,  192,
-                189,  186,  184,  181,  178,  175,  173,  170,
-                167,  164,  162,  159,  156,  154,  151,  148,
-                146,  143,  141,  138,  135,  133,  130,  128,
-                125,  123,  120,  118,  115,  113,  110,  108,
-                105,  103,  101,   98,   96,   93,   91,   89,
-                86,   84,   82,   79,   77,   75,   72,   70,
-                68,   65,   63,   61,   59,   57,   54,   52,
-                50,   48,   45,   43,   41,   39,   37,   35,
-                33,   30,   28,   26,   24,   22,   20,   18,
-                16,   14,   12,   10,    8,    6,    4,    2, 0,
-};
-
 static inline uint32 find_msb_bit(uint32 b)
 // Find most significant bit.
 {
@@ -48,78 +13,6 @@ static inline uint32 find_msb_bit(uint32 b)
 	if(!(b>>(bit+=2))) bit =  bit - 2;
 	if(!(b>>(bit+=1))) bit =  bit - 1;
 	return bit;
-}
-
-static inline uint32  division(uint32 a, uint32 b, uint32 bit)
-//Fast division approximation.
-{
-        uint32 rest = b - (1<<bit);
-        return (a>>bit)*(div_look_up[bit > 8 ? rest>>(bit-8) : rest<<(8-bit)] + 1024)>>11;
-}
-
-static inline uint32 divide(uint32 n, uint32 d)
-//Slow division algorithm.
-{
-	uint32 i, k, q=0;
-	for(k=0; !(0x80000000 & d); k++) d<<=1;
-	k++;
-	for(i=0; i<k; i++){
-		if(n >= d) { n-=d; q<<=1; q|=1;}
-		else	q<<=1;
-		d>>=1;
-	}
-	return q;
-}
-
-static inline uint32 divide1(uint32 n, uint32 d)
-//Slow division algorithm.
-{
-	uint32 i, k, q=0;
-	k = 32 - find_msb_bit(d);
-	d<<=k;
-	for(i=0; i<k; i++){
-		if(n >= d) { n-=d; q<<=1; q|=1;}
-		else	q<<=1;
-		d>>=1;
-	}
-	return q;
-}
-
-static inline uint32 nr_divide(uint32 n, uint32 d, uint32 bit1)
-//Newton-Raphson  integer division algorithm.
-{
-	uint32  i, bit = bit1+1, qt, q= 0xFFFFFFFF>>bit, q1 = q;
-	for(i = 0;i<10;i++) {
-		if(q1) q1 = (((-d*q)>>bit)*q)>>(32-bit);
-		else break;
-		//printf("n = %8X d = %8X bit = %d d*q = %8X -d*q = %8X (-d*q)>>bit = %8X ((-d*q)>>bit)*q = %8X q = %8X q1 = %8X\n",
-		//		n, d, bit, d*q, -d*q, (-d*q)>>bit, ((-d*q)>>bit)*q, q, q1);
-		q += q1;
-	}
-	qt = q*(n>>(bit))>>(32-bit);
-	if(n-qt*d > (d<<1) ) qt+=2;
-	if(n-qt*d > (d<<1) ) qt+=2;
-	return qt;
-}
-
-static inline uint32 nr_divide1(uint32 n, uint32 d, uint32 bit1)
-//Newton-Raphson  integer division algorithm.
-{
-	uint32  i, bit = bit1+1, q , qt;
-	q = division(0xFFFFFFFF, d, bit1);
-	uint64 q1 = q;
-	for(i=0;;i++) {
-		if(q1) q1 = ((0x100000000-(uint64)d*(uint64)q)*(uint64)q)>>32;
-		else break;
-		//printf("%d n = %8X d = %8X bit = %d d*q = %16LX -d*q = %16LX  (-(uint64)d*(uint64)q)*(uint64)q) = %16LX q = %8X q1 = %16LX\n",
-		//		i, n, d, bit, (uint64)d*(uint64)q, 0x100000000-(uint64)d*(uint64)q, (0x100000000-(uint64)d*(uint64)q)*(uint64)q, q, q1);
-		q += q1;
-	}
-	//printf("%d ", i);
-	qt = (uint64)q*(uint64)n>>32;
-	if(n-qt*d >= d) qt+=1;
-	//if(n-qt*d > d) qt+=1;
-	return qt;
 }
 
 static inline void init_prob( uint32 *d, uint32 bits, uint32 **c)
@@ -159,21 +52,6 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
 	if(cu >= c[0][j]) { *cf = cum - cu + c[0][j]; *f = c[0][j+1]; c[0][j+1]++; return j+1;  }
 	else { *cf = cum - cu; *f = c[0][j]; c[0][j]++; return j; }
 }
-
-/*
-static inline void fill_prob( uint8 *img, uint32 *d, uint32 bits, uint32 a_bits, uint32 size, int *q)
-//Init probability array.
-{
-	uint32 j, sz = 1<<bits, *c = &d[sz], half = 1<<(a_bits-1);
-	//printf("bits = %d sz = %d half = %d  size = %d\n", bits, sz, half, size);
-	//memset(d, 1, sizeof(uint32)*sz);
-	for(j=0; j < sz; j++) d[j] = 1;
-	for(j=0; j < size; j++) d[q[img[j] + half]]++;
-	c[0] = 0;
-	for(j=1; j < sz; j++) c[j] = c[j-1]+d[j-1];
-	//for(j=0; j < sz; j++) printf("d[%d] = %d c[%d] = %d\n", j, d[j], j, c[j]);
-}
-*/
 
 uint32 range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
 /*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
@@ -276,59 +154,6 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 	return j;
 }
 
-static uint32 make_distrib1(int16 *img, uint32 *d, uint32 *cu, uint32 size, uint32 a_bits ,uint32 q_bits, int *q)
-/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
-	\brief Range encoder.
-    \param img	 	The pointer to encoding message data.
-    \param d		The pointer to array of distribution probabilities of the message.
-	\param size		The size of the  message
-	\param a_bits	Bits per symbols befor quantization.
-	\param q_bits	Bits per symbols after quantization.
-	\param buff		The encoded output  buffer
-*/
-{
-	uint32 i, num = 1<<q_bits, half = 1<<(a_bits-1), max, maxi, msb , sum = 0, sum1, sum2 = 0, bits;
-	//uint32 *cu = &d[num];
-	//for(i=0; i < num; i++) printf("%d ", q[i]);
-	//printf("\n");
-	memset(d, 0, num);
-	//Fill distribution array after quantization
-	for(i=0; i < size; i++) d[q[img[i] + half]]++;
-	//for(i=0; i < num; i++) printf("%d ", d[i]);
-	//printf("img = %d half = %d q = %d d = %d", img[i], half, q[img[i] + half], d[q[img[i] + half]]);
-
-	//Find sum and max element of array
-	max = d[0]; sum += d[0];
-	for(i=1; i<num; i++)  {
-		if(max < d[i]) { max = d[i]; maxi = i; }
-		sum += d[i];
-	}
-	bits = find_msb_bit(sum)+1;
-	sum1 = 1<<bits;
-	msb = (sum1<<8)/sum;
-	//Make distribution with cumulative frequency power of 2
-	for(i=0; i<num; i++) {
-		//printf(" d[%d] = %d ", i, d[i]);
-		if(d[i]) {
-			d[i] = d[i]*msb>>8;
-			//msb = find_msb_bit(d[i]);
-			//d[i] = (d[i] == (1<<msb)) ? 1<<msb : 1<<msb+1;
-		}
-		//printf(" d[%d] = %d ", i, d[i]);
-		sum2 += d[i];
-	}
-	//printf("\n");
-	d[maxi] += sum1 - sum2;
-	//for(i=0; i<num; i++)  { sum3 += d[i]; }
-	cu[0] = 0;
-	for(i=1; i<=num; i++)  {
-		cu[i] = cu[i-1] + d[i-1];
-		//printf(" cu[%d] = %d ", i, cu[i]);
-	}
-	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
-	return bits;
-}
-
 static void  dist_quant(uint32 *din, uint32 *dout,  uint32 a_bits, uint32 q_bits)
 /// \fn static uint32*  dist_quant(uint32 *din, uint32 *dout,  uint32 a_bits, uint32 q_bits)
 ///	\brief Make distribution of probabilities after quantization
@@ -348,38 +173,30 @@ static void  dist_quant(uint32 *din, uint32 *dout,  uint32 a_bits, uint32 q_bits
 		}
 	}
 	dout[0] = din[0];
-	//return dout;
-	//for(i=-range; i < range; i++) printf("%d  ", q[range+i]);
 }
 
 
-static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uint32 q_bits, uint32 *msb, uint32 *buff)
-/*! \fn uint32  range_encoder(uint8 *img, uint32 *distrib, const uint32 size, const uint8 bits)
-	\brief Range encoder.
-    \param img	 	The pointer to encoding message data.
-    \param d		The pointer to array of distribution probabilities of the message.
-	\param size		The size of the  message
-	\param a_bits	Bits per symbols befor quantization.
-	\param q_bits	Bits per symbols after quantization.
-	\param buff		The encoded output  buffer
-*/
+
+static uint32 dist_tot_pow_2(uint32 *din, uint32 *dout, uint32 a_bits, uint32 q_bits, uint32 *msb)
+/// \fn uint32 dist_tot_pow_2(uint32 *din, uint32 *dout, uint32 a_bits, uint32 q_bits, uint32 *msb)
+///	\brief Make distribution with sum equal power of 2
+/// \param din	 	The input distribution.
+/// \param dout		The output distribution.
+///	\param a_bits	Bits per symbols before quantization.
+///	\param q_bits	Bits per symbols after quantization.
+///	\param msb		The maximum bits for output distribution representation.
+///	\retval			The log2 of distribution sum.
+
 {
-	uint32 i, j=0, num = 1<<q_bits, max, maxi, pw, sum = 0, sum1, sum2 = 0, bits, b, half, full;
-	int *d1 = buff, *d2 = &buff[num<<1];
-	int cn = 0, co = 0, t1 = 0, t2 = 0, nl, nr;
-	memset(d2, 0, sizeof(uint32)*num<<1);
+	uint32 i, num = 1<<q_bits, max, maxi, pw, sum = 0, sum1, sum2 = 0, bits;
 	//Fill distribution array after quantization
-	if(a_bits == q_bits) for(i=0; i < num; i++) dq[i] = d[i];
-	else dist_quant(d, dq, a_bits, q_bits);
+	if(a_bits == q_bits) for(i=0; i < num; i++) dout[i] = din[i];
+	else dist_quant(din, dout, a_bits, q_bits);
 
-
-	//for(i=0; i<size; i++) d[q[img[i] + half]]++;
-	//Find sum and max element of array
-	//printf("num = %d\n", num);
-	max = dq[0]; sum += dq[0];
+	max = dout[0]; sum += dout[0];
 	for(i=1; i<num; i++)  {
-		if(max < dq[i]) { max = dq[i]; maxi = i; }
-		sum += dq[i];
+		if(max < dout[i]) { max = dout[i]; maxi = i; }
+		sum += dout[i];
 	}
 	//The max bits for distribution representation
 	bits = find_msb_bit(sum)+1;
@@ -387,49 +204,86 @@ static uint32 make_distrib(uint32 *d, uint32 *dq, uint32 *cu, uint32 a_bits, uin
 	pw = (sum1<<8)/sum;
 	//Make distribution with total cumulative frequency power of 2
 	for(i=0; i<num; i++) {
-		dq[i] = dq[i]*pw>>8;
-		sum2 += dq[i];
+		dout[i] = dout[i]*pw>>8;
+		sum2 += dout[i];
 	}
-	dq[maxi] += sum1 - sum2;
-	*msb = find_msb_bit(dq[maxi])+1;
-	//printf("sum = %d new = %d dq[max] = %d msb = %d\n", sum, sum2, dq[maxi], 1<<*msb);
+	dout[maxi] += sum1 - sum2;
+	*msb = find_msb_bit(dout[maxi])+1;
+	//printf("sum = %d new = %d dout[max] = %d msb = %d\n", sum, sum2, dout[maxi], 1<<*msb);
 
-	//Make distribution with each frequency power of 2
-	for(i=0; i < num; i++) d1[i] = dq[i];
-	for(i=0; i < num; i++){
-		if(d1[i]){
-			b = find_msb_bit(d1[i]);
-			full = 1<<(b+1);
-			half = 1<<b;
-			if(d1[i] != half){
-				//np numbers of pixels to get of give then d[i] should be power of 2
-				nl = d1[i] - half;
-				nr = full - d1[i];
-				if(nl > nr){
-					//Should get pixels from neighbors
-					d1[i] += nr; d1[i+1] -= nr; d2[(i<<1)+1] += nr; d2[(i+1<<1)] -= nr;
-				} else {
-					//Should give pixels to neighbors
-					d1[i] -= nl; d1[i+1] += nl; d2[(i<<1)+1] -= nl; d2[(i+1<<1)] += nl;
-				}
-				//printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
-			} //else  printf("dq = %d d = %d d2 = %d d+ = %d half = %d nl = %d nr = %d\n", dq[i], d1[i], d2[i], d1[i+1], half, nl, nr);
-		}// else d2[i] = 0;
-	}
-	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
-	//printf("num = %d\n", num);
-	co = 0; cn = 0; t1 = 0; t2 = 0;
-	for(i=0; i < num; i++) {  t1+=dq[i]; t2+=d1[i]; if(dq[i] == 1) co++; if(d1[i] == 1) cn++; } //printf("%d %d  ", dq[i], d1[i]);
-	printf("\n dq = %d d1 = %d dq 1 = %d d1 1 = %d\n", t1, t2, co, cn);
-	for(i=0; i < num; i++) printf("%d ", d1[i]);
-	printf("\n");
-	for(i=0; i < num; i++) printf("%d %d %d %d   ", dq[i], d2[i*2], d2[i*2+1], d1[i]);
-	printf("\n");
-	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
 	return bits;
 }
 
-static void  make_cum_freq(uint32 *d, uint32 *cu, uint32 q_bits)
+static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb)
+/// \fn uint32 dist_tot_pow_2(uint32 *din, uint32 *dout, uint32 a_bits, uint32 q_bits, uint32 *msb)
+///	\brief Make distribution with sum equal power of 2
+/// \param din	 	The input distribution with sum is equal power of 2.
+/// \param dout		The output distribution with each elements is equal power of 2.
+/// \param don		The array of difference.
+///	\param a_bits	Bits per symbols before quantization.
+///	\param q_bits	Bits per symbols after quantization.
+///	\param msb		The maximum bits for output distribution representation.
+///	\retval			The log2 of distribution sum.
+{
+	uint32 i, num = 1<<q_bits, max, b, half, full, t;
+	int nl, nr;
+	//memset(dout, 0, sizeof(uint32)*num);
+	memset(don, 0, sizeof(uint32)*num<<1);
+
+	//Make distribution with each frequency power of 2
+	for(i=0; i < num; i++) dout[i] = din[i];
+	max = 0;
+	for(i=0; i < num; i++){
+		if(dout[i]){
+			b = find_msb_bit(dout[i]);
+			full = 1<<(b+1);
+			half = 1<<b;
+			//printf("dout = %d ", dout[i]);
+			if(dout[i] != half){
+				//np numbers of pixels to get of give then d[i] should be power of 2
+				nl = dout[i] - half;
+				nr = full - dout[i];
+				if(nl > nr && nr <= dout[i+1]){
+					//Should get pixels from neighbors
+					dout[i] += nr; dout[i+1] -= nr; don[i+1<<1] = nr; //d2[(i+1<<1)] -= nr;
+					dout[i] = b+1;
+					if(max < dout[i]) max = dout[i];
+				} else {
+					//Should give pixels to neighbors
+					dout[i] -= nl; dout[i+1] += nl; don[(i<<1)+1] = nl; //d2[(i+1<<1)] += nl;
+					dout[i] = b;
+					if(max < dout[i]) max = dout[i];
+				}
+			} dout[i] = b;
+			//printf(" din = %d dout = %d d = %d b = %d b1 = %d l = %d r = %d max = %d \n", din[i], dout[i], t, b, b+1, don[(i<<1)], don[(i<<1)+1], max);
+		}// else d2[i] = 0;
+	}
+	*msb = find_msb_bit(max)+1;
+
+	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
+	//printf("num = %d\n", num);
+	/*
+	int t1 = 0, t2 = 0;
+	for(i=0; i < num; i++) {  t1+=din[i]; t2+=dout[i];} //printf("%d %d  ", dq[i], dout[i]);
+	printf("\n din = %d dout = %d max = %d \n", t1, t2, max);
+	for(i=0; i < num; i++) printf("%d ", dout[i]);
+	printf("\n");
+	for(i=0; i < num; i++) printf("%d %d %d %d   ", din[i], don[i*2], don[i*2+1], dout[i]);
+	printf("\n");
+	*/
+
+	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
+}
+
+static int quant(uint16 img, int *q, uint32 *don)
+{
+	uint32 i = img<<1;
+	if(don[i]) {don[i]--; return q[img-1]; }
+	if(don[i+1]) {don[i+1]--; return q[img+1]; }
+	return q[img];
+}
+
+static void cum_freq(uint32 *d, uint32 *cu, uint32 q_bits)
 {
 	uint32 i, num = 1<<q_bits;
 	cu[0] = 0;
@@ -438,8 +292,16 @@ static void  make_cum_freq(uint32 *d, uint32 *cu, uint32 q_bits)
 	}
 }
 
+static void cum_freq1(uint32 *d, uint32 *cu, uint32 q_bits)
+{
+	uint32 i, num = 1<<q_bits;
+	cu[0] = 0;
+	for(i=1; i<=num; i++)  {
+		cu[i] = cu[i-1] + (1<<d[i-1]);
+	}
+}
 
-static inline write_bits_pos(uint8 *buff, uint32 *poz, uint32 st, uint32 bits)
+static inline void write_bits_pos(uint8 *buff, uint32 *poz, uint32 st, uint32 bits)
 {
 	uint32 p, i, r, mask;
 	while(1){
@@ -452,7 +314,7 @@ static inline write_bits_pos(uint8 *buff, uint32 *poz, uint32 st, uint32 bits)
 	}
 }
 
-static inline read_bits_pos(uint8 *buff, uint32 *poz, uint32 *st, uint32 bits)
+static inline void read_bits_pos(uint8 *buff, uint32 *poz, uint32 *st, uint32 bits)
 {
 	uint32 p, i, r, mask, sd = 0;
 	*st = 0;
@@ -465,7 +327,7 @@ static inline read_bits_pos(uint8 *buff, uint32 *poz, uint32 *st, uint32 bits)
 	}
 }
 
-uint32 write_distrib(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 *buff)
+static uint32 write_dist(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 *buff)
 {
 	uint32 i, il, ir, num = 1<<q_bits, poz = 0;
 
@@ -494,7 +356,7 @@ uint32 write_distrib(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 *buf
 	return (poz>>3) + 1;
 }
 
-static uint32 read_distrib(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
+static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 {
 	uint32 i, il, ir, num = 1<<q_bits, poz = 0, msb;
 
@@ -515,11 +377,11 @@ static uint32 read_distrib(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 	return (poz>>3) + 1;
 }
 
-static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
+static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 half)
 {
 	uint32 i, j;
 	//if(!out) return 0;
-	for(i = size>>1, j = i; ; ){
+	for(i = half, j = half; ; ){
 		//if(test>10) break;
 		//if (bool) printf("size = %d out = %d cu[%d] = %d j = %d \n", size, out, i, cu[i], j);
 		if(out >= cu[i]) {
@@ -528,25 +390,6 @@ static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 size)
 				return i;
 			}
 			else { j >>=1; i+=j;}
-		}
-		else { j = (j==0) ? 1 : j>>1; i-=j;}
-		//else { j >>=1; i-=j;}
-	}
-}
-
-static inline uint32 get_cum_f1(uint32 out, uint32 *cu, uint32 i, uint32 j)
-{
-	//uint32 i, j;
-	//if(!out) return 0;
-	for(; ;){
-		//if(test>10) break;
-		//if (bool) printf("size = %d out = %d cu[%d] = %d j = %d \n", size, out, i, cu[i], j);
-		if(out >= cu[i]) {
-			if(out < cu[i+1]) {
-				//if (bool) printf("cu[%d] = %d\n", i, cu[i]);
-				return i;
-			}
-			else { j>>=1; i+=j; }
 		}
 		else { j = (j==0) ? 1 : j>>1; i-=j;}
 		//else { j >>=1; i-=j;}
@@ -568,16 +411,20 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
 	uint32 i, j, k=0 , bits, tmp, msb;
-	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num];
+	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num], *don = &buff1[num<<1];
 	int im;
 
 	//Encoder setup
-	sz = make_distrib(d, dq, cu, a_bits, q_bits, &msb, &buff1[num<<1]);
-	make_cum_freq(dq, cu, q_bits);
+	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
+
+	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
+
+	//cum_freq(dq, cu, q_bits);
+	cum_freq1(dq, cu, q_bits);
 	//printf("finesh make_distrib sz = %d num = %d\n", sz, num);
 
-	tmp = write_distrib(dq, q_bits, msb, sz, buff);
-	//printf("write = %d \n", tmp);
+	tmp = write_dist(dq, q_bits, msb, sz, buff);
+	printf("write = %d \n", tmp);
 	//for(i=0; i < num; i++) printf("%d ", dq[i]);
 	//printf("\n");
 
@@ -588,7 +435,8 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	j=0;
 
 	//init_prob(d, q_bits, c);
-	range = top; low = 0;
+	//range = top;
+	range = 32; low = 0;
 
 	//for(i=0; i < num; i++) printf("%d ", q[i]);
 	//printf("\n");
@@ -596,22 +444,27 @@ uint32  range_encoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	//printf("\n");
 	//Start encoding
 	for(i=0; i<size; i++) {
-		im = q[img[i] + half];
+		//im = q[img[i] + half];
+		im = quant(img[i] + half, q, don);
 		//if(i<10) printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d dq[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im], dq[im]);
 
-		range = range>>sz;
+		//range = range>>sz;
+		range = range-sz;
+
+
 		//cu = get_cum(im, c, q_bits);
 		low1 = low;
-		low += range*cu[im];
+		//low += range*cu[im];
+		low += cu[im]<<range;
 		//if(i<10)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
-		//range = range*d[im];
-		range = range*dq[im];
+		range = range+dq[im];
+		//range = range*dq[im];
 		//update_dist(im, d, ds, ab, sw, size_ab, &get, &set, &swc);
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
-			while(range <= bot) {
+			while(range <= 24) {
 				buff[j++] = (low>>24);
-				range <<= sh;
+				range += sh;
 				low <<= sh;
 			}
 		}
@@ -642,11 +495,13 @@ uint32  range_decoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	int dif, fin;
 
 	//Decoder setup
-	tmp = read_distrib(dq, q_bits, &sz, buff);
+	tmp = read_dist(dq, q_bits, &sz, buff);
 	//printf("read = %d \n", tmp);
 	//for(i=0; i < num; i++) printf("%d ", dq[i]);
 	//printf("\n");
-	make_cum_freq(dq, cu, q_bits);
+
+	//cum_freq(dq, cu, q_bits);
+	cum_freq1(dq, cu, q_bits);
 
 	//for(i=0; i < num; i++) printf("%d ", cu[i]);
 	//printf("\n");
@@ -654,29 +509,31 @@ uint32  range_decoder1(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint3
 	//sz = read_distrib1(buff, d, q_bits);
 	buff = &buff[tmp];
 
-	range = top; j=4;
+	range = 32; j=4;
 
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 
 	// Start decoding
 	for(i=0; i<size; i++) {
-		while(range <= bot) {
-			range <<=sh;
+		while(range <= 24) {
+			range +=sh;
 			low = (low<<sh) | (uint32)buff[j++];
 		}
-		range = range>>sz;
+		range = range-sz;
+		//range = range>>sz;
 		//out = divide1(low, range);
-		out = low/range;
+		out = low>>range;
 		//im = get_cum_f(out, cu, cu_sz);
-		//im = get_cum_f(out, cu, num);
-		im = get_cum_f1(out, cu, half, half);
+		im = get_cum_f(out, cu, num);
+		//im = get_cum_f1(out, cu, half, half);
 		//im = half;
 		//if(img[i] != q[im])
 		//if(i >=0 && i< 5)
 		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
 		//			i, low, low-cu[im]*range, range<<sz, range, d[im]*range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
-		low -= cu[im]*range;
-		range = dq[im]*range;
+		low -= cu[im]<<range;
+		//range = dq[im]*range;
+		range = range + dq[im];
 		//set_freq(out1, d, q_bits);
 		//sz++;
 		img[i] = q[im];
