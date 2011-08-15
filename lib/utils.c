@@ -163,12 +163,11 @@ uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
 //#define lb(x) (x&0xFF)
 
-uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay)
+uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
 /// \fn void bayer_to_rgb(uint8 *rgb)
 ///	\brief DWT picture transform.
 ///	\param	rgb 	The pointer to rgb array.
 
-{
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -205,12 +204,12 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 }
 
 
-uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay)
+uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay){
 /*! \fn void bayer_to_rgb(uint8 *rgb)
 	\brief DWT picture transform.
   	\param	rgb 	The pointer to rgb array.
 */
-{
+
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -761,7 +760,7 @@ void utils_print_ind(uint8* img, uint32 w, uint32 h,  uint32 bx, uint32 by,  uin
 }
 
 
-double utils_dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double utils_dist(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /// \fn double dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate distortion of two image.
 /// \param before	Pointer to first image.
@@ -769,7 +768,7 @@ double utils_dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \param dim 		Size of image height*width.
 /// \param d 		d = 1 if gray image, d = 3 if color image.
 /// \retval 		The distortion.
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -799,7 +798,7 @@ double utils_dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /// \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate APE of two image.
 /// \param before	Pointer to first image.
@@ -807,7 +806,7 @@ double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \param dim 		Size of image height*width.
 /// \param d 		d = 1 if gray image, d = 3 if color image.
 /// \retval 		The APE.
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -834,7 +833,7 @@ double utils_ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d)
+double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d){
 /// \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate APE of two image.
 /// \param before	Pointer to first image.
@@ -842,7 +841,7 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d)
 /// \param dim 		Size of image height*width.
 /// \param d 		d = 1 if gray image, d = 3 if color image.
 /// \retval 		The APE.
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -869,7 +868,7 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /// \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate PSNR of two image.
 /// \param before	Pointer to first image.
@@ -877,7 +876,7 @@ double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \param dim 		Size of image height*width.
 /// \param d 		d = 1 if gray image, d = 3 if color image.
 /// \retval 		The PSNR.
-{
+
 	uint32 i;
 	double psnr;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -913,7 +912,7 @@ double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
-double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d)
+double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d){
 /// \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 /// \brief Calculate PSNR of two image.
 /// \param before	Pointer to first image.
@@ -921,7 +920,7 @@ double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d)
 /// \param dim 		Size of image height*width.
 /// \param d 		d = 1 if gray image, d = 3 if color image.
 /// \retval 		The PSNR.
-{
+
 	uint32 i;
 	double psnr;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -955,182 +954,6 @@ double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d)
 		printf("psnr: ERROR\n");
 		return 0.;
 	}
-}
-
-
-
-
-void unifom_8bit(uint32 *distrib, uint32 bits, uint32 step, uint8 sub, uint32 size, uint32 *q, double *dis, double *e)
-/*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
-	\brief Calculate distortion for the given uniform quantizer.
-    \param distrib	 The pointer to array of distribution probabilities.
-    \param bits 	The bits per pixel.
-	\param step		The step of quantization.
-	\param sub		The number of subband
-	\param size		The number of pixels in subband
-	\param q		The quntization array
-	\param dis		The subband distortion
-	\param en		The subband entropy
-*/
-{
-	uint32 sum = 0, en, tot=0, HALF = (1<<(bits-1));
-	int i, j, rest, last, lasth;
-	int hstep = step>>1;  // The half size of interval
-	*e=0.;
-
-	if(!sub){
-		rest = 256;
-		for(i=0; rest >= step; i+=step){
-			rest -= step; en = 0;
-			for(j=0; j< step; j++) {
-				sum += distrib[HALF+i+j]*(j-hstep)*(j-hstep);
-				en += distrib[HALF+i+j];
-				q[i+j] = i + hstep;
-				//if(distrib[HALF+i+j]) printf("%d\n", distrib[HALF+i+j]);
-			}
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			tot += en;
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, i, i/step, i+hstep, step, ((double)en/(double)size)*log2((double)en/(double)size));
-		}
-		if(rest){
-			last = rest; en = 0;
-			lasth = (last>>1);
-			for(j=0; j< last; j++) {
-				sum += distrib[HALF+i+j]*(j-lasth)*(j-lasth);
-				en += distrib[HALF+i+j];
-				q[i+j] = i + lasth;
-			}
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			tot += en;
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, i, i/step, i+lasth, last, ((double)en/(double)size)*log2((double)en/(double)size));
-		}
-		//printf("distr = %f entrop = %f tot = %d size = %d\n",(double)sum/(double)size, e, tot, size);
-
-	} else {
-		rest = 128-step;  en = 0;
-		for(j= (1-step); j< (int)step; j++) {
-			sum += distrib[HALF+j]*j*j;
-			en += distrib[HALF+j];
-			q[128 +i+j] = 0;
-			//printf("sum = %d en = %d\n", sum, en);
-		}
-		if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-		tot += en;
-		//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, 0, 0, 0, 0, step, ((double)en/(double)size)*log2((double)en/(double)size));
-		for(i=step; rest >= step; i+=step){
-			rest -= step;  en = 0;
-			for(j= 0; j< step; j++) {
-				sum += distrib[HALF+i+j]*(j-hstep)*(j-hstep);
-				en += distrib[HALF+i+j];
-				q[128 +i+j] = i+hstep;
-			}
-			tot += en;
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, i, i/step, i+hstep, step, ((double)en/(double)size)*log2((double)en/(double)size));
-			en=0;
-			for(j= 0; j< step; j++) {
-				sum += distrib[HALF-i-j]*(hstep-j)*(hstep-j);
-				en += distrib[HALF-i-j];
-				q[128 -i-j] = -i-hstep;
-			}
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			tot += en;
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, -i, i/step, -i-hstep, step, ((double)en/(double)size)*log2((double)en/(double)size));
-		}
-		if(rest){
-			last = rest; en = 0;
-			lasth = (last>>1);
-			for(j= 0; j< last ; j++) {
-				sum += distrib[HALF+i+j]*(j-lasth)*(j-lasth);
-				en += distrib[HALF+i+j];
-				q[128 +i+j] = i+lasth;
-			}
-			tot += en;
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, i, i/step, i+lasth, last, ((double)en/(double)size)*log2((double)en/(double)size));
-			en=0;
-			for(j= 0; j< last; j++) {
-				sum += distrib[HALF-i-j]*(lasth-j)*(lasth-j);
-				en += distrib[HALF-i-j];
-				q[128 -i-j] = -i-lasth;
-			}
-			if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-			tot += en;
-			//printf("rest = %d decision[%d] = %d, value[%d] = %d step = %d e = %f \n", rest, i/step, -i, i/step, -i-lasth, last, ((double)en/(double)size)*log2((double)en/(double)size));
-		}
-		printf("distr = %f entrop = %f tot = %d size = %d\n",(double)sum/(double)size, *e, tot, size);
-	}
-	*dis = (double)sum/(double)size;
-	//for(i=0; i<256;i++) printf("q[%d]=%d\n",i,q[i]);
-	//printf("distr = %f entrop = %f tot = %d size = %d\n",dis, e, tot, size);
-	//return (double)sum/(double)size;
-}
-
-//For test only----------------------------------
-void utils_unifom_dist_entr(uint32 *distrib, uint32 bits, uint32 step, uint32 size, uint32 *q, double *dis, double *e)
-/*! \fn static inline int dist_unifom_8(uint32 *distrib, const uint32 bit)
-	\brief Calculate distortion for the given uniform quantizer.
-    \param distrib	 	The pointer to array of distribution probabilities.
-    \param bits 		The size of distribution probabilities array.
-	\param step			The step of quantization.
-	\param sub			The number of subband
-	\param size			The number of pixels in subband
-	\param q			The quntization array
-	\param dis			The subband distortion
-	\param en			The subband entropy
- */
-{
-
-	uint32 sum = 0, en=0, tot=0;
-	int i, j, rest;
-	uint32  hstep = step>>1, num = (1<<(bits-1)), st;  // The half size of interval
-	//printf("distrib = %p\n", distrib);
-	//for(i=0; i< (1<<bits); i++)  printf("distrib[%d] = %d\n", i, distrib[i]); //if(distrib[i])
-	*e=0.;
-	for(j= (1-step); j< (int)step; j++) {
-		sum += distrib[num+j]*j*j;
-		en += distrib[num+j];
-		q[num+i+j] = 0;
-		//printf("sum = %d en = %d\n", sum, en);
-	}
-	if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-	tot += en;
-
-	rest = num-step;
-	for(i=step; rest > 0; i+=step){
-		en = 0;
-		st = (rest<step) ? rest : step;
-		for(j= 0; j< st; j++) {
-			//printf("distrib[%d] = %d\n", num+i+j, distrib[num+i+j]);
-			sum += distrib[num+i+j]*(j-hstep)*(j-hstep);
-			en += distrib[num+i+j];
-			q[num +i+j] = i+(st>>1);
-		}
-		if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-		tot += en;
-		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
-		rest -= step;
-	}
-	rest = num-step+1;
-	for(i=step; rest > 0; i+=step){
-		en=0;
-		st = (rest<step) ? rest : step;
-		for(j= 0; j< st; j++) {
-			//printf("distrib[%d] = %d\n", num-i-j, distrib[num-i-j]);
-			sum += distrib[num-i-j]*(hstep-j)*(hstep-j);
-			en += distrib[num-i-j];
-			q[num -i-j] = -i-(st>>1);
-		}
-		if(en) *e -= ((double)en/(double)size)*log2((double)en/(double)size);
-		tot += en;
-		//printf("tot = %d i = %d rest = %d en = %d st = %d e = %f num = %d\n", tot, i, rest, en, st, ((double)en/(double)size)*log2((double)en/(double)size), num-i-j);
-		rest -= step;
-	}
-	printf("total = %d size = %d\n", tot, size);
-	*dis = (double)sum/(double)size;
-	//for(i=0; i<256;i++) printf("q[%d]=%d\n",i,q[i]);
-	//printf("distr = %f entrop = %f tot = %d size = %d\n",dis, e, tot, size);
-	//return (double)sum/(double)size;
 }
 
 uint8* wavelet_to_rgb(uint8 *img, uint8 *rgb, int height, int width, int step)
@@ -1356,7 +1179,7 @@ uint8* malet_to_rgb(uint8 *img, uint8 *rgb, int h, int w, int step)
 }
 
 
-double dist3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double dist3(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /*! \fn double dist(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate distortion of two image.
     \param before	Pointer to first image.
@@ -1365,7 +1188,7 @@ double dist3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \param d 		d = 1 if gray image, d = 3 if color image.
     \retval 		The distortion.
 */
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -1395,7 +1218,7 @@ double dist3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
-double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /*! \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate APE of two image.
     \param before	Pointer to first image.
@@ -1404,7 +1227,7 @@ double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \param d 		d = 1 if gray image, d = 3 if color image.
     \retval 		The APE.
 */
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -1431,7 +1254,7 @@ double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 	}
 }
 
-double ape3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double ape3(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /*! \fn double ape(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate APE of two image.
     \param before	Pointer to first image.
@@ -1440,7 +1263,7 @@ double ape3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \param d 		d = 1 if gray image, d = 3 if color image.
     \retval 		The APE.
 */
-{
+
 	uint32 i;
 	double ape;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -1468,7 +1291,7 @@ double ape3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
 }
 
 
-double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
+double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 /*! \fn double psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \brief Calculate PSNR of two image.
     \param before	Pointer to first image.
@@ -1477,7 +1300,7 @@ double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d)
     \param d 		d = 1 if gray image, d = 3 if color image.
     \retval 		The PSNR.
 */
-{
+
 	uint32 i;
 	double psnr;
 	unsigned long long r = 0, g = 0, b = 0;
@@ -1610,5 +1433,3 @@ void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h)
 	}
 
 }
-
-

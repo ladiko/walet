@@ -18,12 +18,12 @@ void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	sub->h = h;
 }
 
-void subband_fill_prob(Subband *sub)
+void subband_fill_prob(Subband *sub){
 ///	\fn void subband_fill_prob(uint8 *img, Subband *sub)
 ///	\brief Fill distribution probability arrays.
 ///	\param img	 		The pointer to image.
 ///	\param sub 			Pointer to filling subband.
-{
+
 	int i, ds = 1<<sub->d_bits, half = ds>>1;
 	int min, max, tmp, size = sub->w*sub->h;
 
@@ -94,12 +94,12 @@ void q_i_nonuniform1(Subband *sub)
 }
 */
 
-uint32 subband_size(Subband *sub)
+uint32 subband_size(Subband *sub){
 /// \fn uint32 subband_size(Subband *sub)
 /// \brief Calculate subband size after quantization.
 ///	\param sub 			Pointer to subband.
 /// \retval 			The subband size after quantization.
-{
+
 	// |--------|--------0--------|--------|
 	// |           1<< dist_bits           |
 	//          |   1<<act_bits   |
@@ -136,12 +136,12 @@ uint32 subband_size(Subband *sub)
 	return (uint32)s;
 }
 
-void  subband_encode_table(Subband *sub, int *q)
+void  subband_encode_table(Subband *sub, int *q){
 /// \fn void  subband_encode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for encoder.
 ///	\param sub 			Pointer to subband.
 /// \param q			The quantization array.
-{
+
 	int i, j, st = (sub->a_bits - sub->q_bits);
 	int range = 1<<(sub->a_bits-1), half = 1<<(sub->q_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
@@ -159,12 +159,12 @@ void  subband_encode_table(Subband *sub, int *q)
 	//for(i=-range; i < range; i++) printf("%d  ", q[range+i]);
 }
 
-void  subband_decode_table(Subband *sub, int *q)
+void  subband_decode_table(Subband *sub, int *q){
 /// \fn void  subband_decode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for decoder.
 ///	\param sub 			Pointer to subband.
 /// \param q			The quantization array.
-{
+
 	int j, st = (sub->a_bits - sub->q_bits);
 	int  half = 1<<(sub->q_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
@@ -180,13 +180,12 @@ void  subband_decode_table(Subband *sub, int *q)
 	//for(j=-half; j < half; j++) printf("%d  ", sub->q[half+j]);
 }
 
-void  subband_quantization(Subband *sub, int *q)
+void  subband_quantization(Subband *sub, int *q){
 /// \fn void  subband_quantization(uint8 *img, Subband *sub)
 ///	\brief Subband quantization.
 ///	\param img			The pointer to subband
 ///	\param sub 			Pointer to subband.
 
-{
 	int i, j, size = sub->w*sub->h, st = (sub->a_bits - sub->q_bits);
 	int range = 1<<(sub->q_bits-1), half = 1<<(sub->a_bits-1); //half = 1<<(sub->a_bits-1);
 	//int *in = &sub->q[1<<sub->d_bits];
