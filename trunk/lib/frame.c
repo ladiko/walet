@@ -11,12 +11,12 @@ static uint32 check_state(uint32 state, uint32 check)
 	}
 }
 
-void frames_init(GOP *gop, uint32 fr)
+void frames_init(GOP *gop, uint32 fr){
 ///	\fn	void frames_init(GOP *gop, uint32 fr)
 ///	\brief	Frame initialization
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-{
+
 	Frame *f = &gop->frames[fr];
 	uint32 i, j, k, w = gop->w, h = gop->h;
 	//New init
@@ -82,7 +82,7 @@ void frames_init(GOP *gop, uint32 fr)
 	f->state = 0;
 }
 
-void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
+void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v){
 ///	\fn	void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\brief	Fill frame from the stream.
 ///	\param	gop			The GOP structure.
@@ -90,7 +90,7 @@ void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 ///	\param	y			The pointer to Bayer, gray, red or Y  image data
 ///	\param	u			The pointer to green or U  image data
 ///	\param	v			The pointer to blue or V  image data
-{
+
 	Frame *f = &gop->frames[fr];
 	uint32 i, size = gop->w*gop->h, shift = 1<<(gop->bpp-1);
 	if(gop == NULL ) return;
@@ -112,13 +112,13 @@ void frame_copy(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v)
 	printf("Finesh frame copy \n");
 }
 
-uint32 frame_dwt(GOP *gop, uint32 fr)
+uint32 frame_dwt(GOP *gop, uint32 fr){
 ///	\fn	void frame_dwt_53(GOP *gop, uint32 fr)
 ///	\brief	Discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
@@ -140,14 +140,14 @@ uint32 frame_dwt(GOP *gop, uint32 fr)
 	} else return 0;
 }
 
-uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps)
+uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps){
 ///	\fn	void frame_idwt_53(GOP *gop, uint32 fr, uint32 step)
 ///	\brief	Invert discrete wavelets frame transform.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 /// \param	isteps		The steps of IDWT should be lees or equal DWT steps
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *f = &gop->frames[fr];
@@ -168,13 +168,13 @@ uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps)
 	} else return 0;
 }
 
-uint32 frame_fill_subb(GOP *gop, uint32 fr)
+uint32 frame_fill_subb(GOP *gop, uint32 fr){
 ///	\fn	void frame_fill_subb(GOP *gop, uint32 fr)
 ///	\brief	Fill distribution probability array.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
@@ -202,7 +202,7 @@ uint32 frame_fill_subb(GOP *gop, uint32 fr)
 	} else return 0;
 }
 
-uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
+uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times){
 ///	\fn	void frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 ///	\brief	Bits allocation for frame.
 ///	\param	gop			The GOP structure.
@@ -219,7 +219,7 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 // |   2    |   1    |
 // |        |        |
 // |--------|--------|
-{
+
 	//The order of bit allocation for subband
 	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
 	uint32 i, j, k, size, qs, qs1, df, s, df1;
@@ -272,13 +272,13 @@ uint32 frame_bits_alloc(GOP *gop, uint32 fr, uint32 times)
 	} else return 0;
 }
 
-uint32 frame_quantization(GOP *gop, uint32 fr)
+uint32 frame_quantization(GOP *gop, uint32 fr){
 ///	\fn	void frame_quantization(GOP *gop, uint32 fr)
 ///	\brief	Frame quantization.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
@@ -295,14 +295,14 @@ uint32 frame_quantization(GOP *gop, uint32 fr)
 	} else return 0;
 }
 
-uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
+uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size){
 ///	\fn	uint32 frame_range_encode(GOP *gop, uint32 fr)
 ///	\brief	Frame range encoder.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 //	\param	size		The size of encoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
@@ -320,14 +320,14 @@ uint32 frame_range_encode(GOP *gop, uint32 fr, uint32 *size)
 	} else return 0;
 }
 
-uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
+uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size){
 ///	\fn	uint32 frame_range_decode(GOP *gop, uint32 fr)
 ///	\brief	Frame range decoder.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 //	\param	size		The size of decoded frame in bytes.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	if(gop == NULL ) return 0;
 	Frame *frame = &gop->frames[fr];
@@ -344,13 +344,13 @@ uint32 frame_range_decode(GOP *gop, uint32 fr, uint32 *size)
 	} else return 0;
 }
 
-uint32 frame_median_filter(GOP *gop, uint32 fr)
+uint32 frame_median_filter(GOP *gop, uint32 fr){
 ///	\fn	void frame_quantization(GOP *gop, uint32 fr)
 ///	\brief	Frame quantization.
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\retval				1 - if all OK, 0 - if not OK
-{
+
 	uint32 i;
 	clock_t start, end;
 	double time=0., tmp;
@@ -404,14 +404,14 @@ void frame_fill_hist(GOP *gop, uint32 fr)
 */
 
 
-void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
+void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma){
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
 ///	\param	out_bits	The bits per pixel for output frame.
 ///	\param	gamma		The type of gamma correction.
-{
+
 	Image *im = &gop->frames[fr].img[0];
 	if(gop->color == BAYER){
 		//image_fill_hist(gop->frames[fr].b.pic, gop->color, gop->bg, gop->bpp);
@@ -420,12 +420,12 @@ void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 	}
 }
 
-void frame_segmetation(GOP *gop, uint32 fr)
+void frame_segmetation(GOP *gop, uint32 fr){
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-{
+
 	uint32 j, i, ncors=0, beg, diff, k, nedge;// sq = gop->width*gop->height;
 	Image *im = &gop->frames[fr].img[0];
 	Frame *frm = &gop->frames[fr];
@@ -457,12 +457,12 @@ void frame_segmetation(GOP *gop, uint32 fr)
 	}
 }
 
-void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
+void frame_match(GOP *gop, uint32 fr1, uint32 fr2){
 ///	\fn	void frame_white_balance(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma)
 ///	\brief	Make white balance and gamma correction of the frame (now for bayer frames only).
 ///	\param	gop			The GOP structure.
 ///	\param	fr			The frame number.
-{
+
 	uint32 j, i, ncors=0, beg, diff, k, sq = gop->w*gop->h;
 	Frame *frm1 = &gop->frames[fr1];
 	Frame *frm2 = &gop->frames[fr2];
@@ -484,14 +484,14 @@ void frame_match(GOP *gop, uint32 fr1, uint32 fr2)
 	}
 }
 
-uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
+uint32 frame_write(GOP *gop, uint32 fr, FILE *wl){
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Write frame in file.
 ///	\param	gop			The pointer to the GOP structure.
 ///	\param	fr			The frame number.
 ///	\param	filename	The file name.
 ///	\retval				The size of file.
-{
+
     //FILE *wl;
     //WaletHeader wh;
     uint8 *bits;
@@ -546,14 +546,14 @@ uint32 frame_write(GOP *gop, uint32 fr, FILE *wl)
     return size;
 }
 
-uint32 frame_read(GOP *gop, uint32 fr, FILE *wl)
+uint32 frame_read(GOP *gop, uint32 fr, FILE *wl){
 ///	\fn	uint32 frame_write(GOP *gop, uint32 fr, const char *filename)
 ///	\brief	Read frame from file.
 ///	\param	gop			The pointer to the GOP structure.
 ///	\param	fr			The frame number.
 //	\param	filename	The file name.
 ///	\retval				The size of file.
-{
+
     uint8 *bits;
     uint32 i, sz, size = 0, fsize;
     Frame *frame = &gop->frames[fr];

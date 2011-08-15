@@ -4,10 +4,10 @@
 typedef struct{
 	Pic16s	b;			//Bayer image 16 bits
 	Pic16s	d;			//Bayer image abter DWT -> quantization -> IDWT
-	//Pic16s	C[4];		// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
+	//Pic16s	C[4];	// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
-	Image 	img[4];	//Pointer to image
-	uint32 		qst;		//The number of quantization steps.
+	Image 	img[4];		//Pointer to image
+	uint32 		qst;	//The number of quantization steps.
 
 
 	//Old interface
