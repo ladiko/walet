@@ -94,6 +94,8 @@ void q_i_nonuniform1(Subband *sub)
 }
 */
 
+// TODO: Make
+
 uint32 subband_size(Subband *sub){
 /// \fn uint32 subband_size(Subband *sub)
 /// \brief Calculate subband size after quantization.

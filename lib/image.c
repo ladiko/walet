@@ -386,7 +386,7 @@ void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps){
 			break;
 		}
 		default:{
-			printf("Dont support %d transform type\n", fb);
+			printf("Dont support %d wavelet transform bank\n", fb);
 			return;
 		}
 	}
@@ -728,19 +728,34 @@ void image_quantization(Image *im, uint32 steps, uint8 *buf){
 	\param buff1 		The pointer to temporal buffer.
 	\retval				The size of encoded image in bytes.
 */
-uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buff, int *buff1){
-	int i, j, k, sq;//, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
+	int i, j, k, sq;
 	uint32 size = 0, size1=0;
-	int *q = buff1;
-	//uint8 *img = im->img;
-	//Subband *sub = im->sub;
+	int *q = ibuf;
 	for(i=steps-1; i+1; i--)
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
 				subband_encode_table(&im->l[i].s[j], q);
+				switch(rt){
+					case(ADAP):{
+						size1 = range_encoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist);
+						break;
+					}
+					case(NADAP):{
+						size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
+						break;
+					}
+					case(FAST):{
+						size1 = range_encoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
+						break;
+					}
+					default:{
+						printf("Don't support %d range coder type\n", rt);
+						return;
+					}
+				}
 				//size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
-				size1 = range_encoder(im->l[i].s[j].pic, im->l[i].s[j].dist, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buff[size], q, &buff1[1<<(bpp+2)]);
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
@@ -759,21 +774,34 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buff, int 
 	\param buff1 		The pointer to temporal buffer.
 	\retval				The size of encoded image in bytes.
 */
-uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buff, int *buff1){
-	int i, j, sq;//, sz =(1<<(bpp+3))*4;//, sz = (im->w*im->h)<<1, sz1 = sz + (1<<(bpp+3))*4;
+uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
+	int i, j, sq;
 	uint32 size = 0, size1=0;
-	int *q = buff1;
-	//uint8 *img = im->img;
-	//Subband *sub = im->sub;
-
+	int *q = ibuf;
 
 	for(i=steps-1; i+1; i--)
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
 				subband_decode_table(&im->l[i].s[j], q);
-				//size += range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
-				size1 = range_decoder(im->l[i].s[j].pic, im->l[i].s[j].dist, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buff[size], q, &buff1[1<<(bpp+2)]);
+				switch(rt){
+					case(ADAP):{
+						size1 = range_decoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break;
+					}
+					case(NADAP):{
+						size1 = range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break;
+					}
+					case(FAST):{
+						size1 = range_decoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break;
+					}
+					default:{
+						printf("Don't support %d range coder type\n", rt);
+						return;
+					}
+				}
 				size += size1;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
