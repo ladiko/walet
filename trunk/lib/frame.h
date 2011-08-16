@@ -41,31 +41,28 @@ typedef struct{
 extern "C" {
 #endif /* __cplusplus */
 //New interface
-uint32 frame_dwt(GOP *gop, uint32 fr);
-uint32 frame_idwt(GOP *gop, uint32 fr, uint32 isteps);
-
 
 //Old interface
 
-void 	frames_init			(GOP *gop, uint32 fr);
-void 	frame_copy			(GOP *gop, uint32 fr, uint8 *y, uint8 *u, uint8 *v);
-//uint32 	frame_dwt			(GOP *gop, uint32 fr, FilterBank fb);
-//uint32 	frame_idwt			(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
-uint32 	frame_fill_subb		(GOP *gop, uint32 fr);
-uint32	frame_bits_alloc	(GOP *gop, uint32 fr, uint32 times);
-uint32 	frame_quantization	(GOP *gop, uint32 fr);
-uint32 	frame_range_encode	(GOP *gop, uint32 fr, uint32 *size);
-uint32 	frame_range_decode	(GOP *gop, uint32 fr, uint32 *size);
-uint32 	frame_write			(GOP *gop, uint32 fr, FILE *wl);
-void 	frame_compress		(GOP *gop, uint32 fr, uint32 times , FilterBank fb);
-void 	frame_decompress	(GOP *gop, uint32 fr, uint32 isteps, FilterBank fb);
+void 	frames_init			(WaletConfig *wc, Frame *f);
+void 	frame_copy			(WaletConfig *wc, Frame *f, uint8 *y, uint8 *u, uint8 *v);
+uint32 	frame_dwt			(WaletConfig *wc, Frame *f, uint8 *buf);
+uint32 	frame_idwt			(WaletConfig *wc, Frame *f, uint8 *buf, uint32 isteps);
+uint32 	frame_fill_subb		(WaletConfig *wc, Frame *f);
+uint32	frame_bits_alloc	(WaletConfig *wc, Frame *f, uint32 times);
+uint32 	frame_quantization	(WaletConfig *wc, Frame *f, uint8 *buf);
+uint32 	frame_range_encode	(WaletConfig *wc,  Frame *f, uint32 *size, uint8 *buf, int *ibuf);
+uint32 	frame_range_decode	(WaletConfig *wc,  Frame *f, uint32 *size, uint8 *buf, int *ibuf);
+uint32 	frame_write			(WaletConfig *wc, Frame *f, FILE *wl);
+void 	frame_compress		(WaletConfig *wc, Frame *f, uint32 times , FilterBank fb);
+void 	frame_decompress	(WaletConfig *wc, Frame *f, uint32 isteps, FilterBank fb);
 
-void 	frame_white_balance		(GOP *gop, uint32 fr,  uint32 out_bits, Gamma gamma);
-uint32 	frame_median_filter		(GOP *gop, uint32 fr);
-uint32 	frame_subband_median_filter	(GOP *gop, uint32 fr);
+void 	frame_white_balance		(WaletConfig *wc, Frame *f,  uint32 out_bits, Gamma gamma);
+uint32 	frame_median_filter	(WaletConfig *wc,  Frame *f, uint8 *buf);
+uint32 	frame_subband_median_filter	(WaletConfig *wc, Frame *f);
 
-void 	frame_segmetation	(GOP *gop, uint32 fr);
-void 	frame_match			(GOP *gop, uint32 fr1, uint32 fr2);
+void 	frame_segmetation	(WaletConfig *wc, Frame *f);
+void 	frame_match			(WaletConfig *wc, Frame *f1, Frame *f2);
 
 #ifdef __cplusplus
 }

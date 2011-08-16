@@ -10,10 +10,10 @@
     \brief Rande coder and decoder library
 
     There are tree type of of range coder:\n
-    1. Adaptive range coder, not need any distribution information;\n
-    2. Non adaptive range coder, need distribution array for coding;\n
+    1. Adaptive range coder, not need any probability distribution information;\n
+    2. Non adaptive range coder, need probability distribution array for coding;\n
     3. Special range coder, free of any division and multiplication operation, may\n
-    use only for wavelet subband compression and need distribution probabilities\n
+    use only for wavelet subband compression and need probability distribution\n
     array with each probability equal power of 2, and sum of distribution should\n
     be equal power of 2.
 */
@@ -38,6 +38,11 @@ static inline uint32 find_msb_bit(uint32 b)
 	return bit;
 }
 
+/** \brief Initiate cumulative probability array for adaptive coding.
+    \param d	The probability distribution .
+    \param bits	The bits per pixel.
+    \param c	The auxiliary array for cumulative frequency update and calculation.
+*/
 static inline void init_prob( uint32 *d, uint32 bits, uint32 **c){
 //Init probability array.
 
@@ -78,15 +83,15 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
 
 /** \brief Adaptive range encoder.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
+    \param d		The pointer to array of probability distribution .
 	\retval			The encoded message size in byts .
 */
-uint32 range_encoder_ad(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32 range_encoder_ad(int16 *img,uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
 {
 	uint32 num = (1<<q_bits), sz = num, sh = 8, size1 = size-1;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
@@ -129,20 +134,20 @@ uint32 range_encoder_ad(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint
 
 /** \brief Adaptive range decoder.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
+    \param buff1	The pointer to temporal buffer.
 	\retval			The encoded message size in byts .
 */
-uint32  range_decoder_ad(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q)
+uint32  range_decoder_ad(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1)
 {
 	uint32 num = (1<<q_bits), sz = num, sum = 0, out, out1, out2, f, cf, sh = 8;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low = 0, range;
 	uint32 i, j, tmp;
-	uint32 half = num>>1, bits, *c[16];
+	uint32 half = num>>1, bits, *c[16], *d = buff1;
 	int dif, fin;
 
 	//Decoder setup
@@ -340,16 +345,16 @@ static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 half)
 
 /**	\brief Non adaptive range encoder.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
+    \param d		The pointer to array of probability distribution.
     \param buff1	The pointer to temporal buffer.
 	\retval			The encoded message size in byts .
 */
-uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1)
+uint32  range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q,  uint32 *d, uint32 *buff1)
 {
         uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
         uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
@@ -417,7 +422,6 @@ uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 
 /**	\brief Non adaptive range decoder.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
@@ -426,21 +430,21 @@ uint32  range_encoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
     \param buff1	The pointer to temporal buffer.
 	\retval			The encoded message size in byts .
 */
-uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1)
+uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1)
 {
         uint32 num = (1<<q_bits), sz, sum = 0, out, out1, out2, f, cf, sh = 8;
         uint32 top = 0xFFFFFFFF, bot = (top>>sh), low = 0, range;
         uint32 i, j, tmp, im, cu_sz;
-        uint32 half = num>>1, bits, *dq = buff1, *cu = &buff1[num];
+        uint32 half = num>>1, bits, *d = buff1, *cu = &buff1[num];
         int dif, fin;
 
         //Decoder setup
-        tmp = read_dist(dq, q_bits, &sz, buff);
+        tmp = read_dist(d, q_bits, &sz, buff);
         //printf("read = %d \n", tmp);
         //for(i=0; i < num; i++) printf("%d ", dq[i]);
         //printf("\n");
         //make_cum_freq(dq, cu, q_bits);
-    	cum_freq(dq, cu, q_bits);
+    	cum_freq(d, cu, q_bits);
 
         //for(i=0; i < num; i++) printf("%d ", cu[i]);
         //printf("\n");
@@ -470,7 +474,7 @@ uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
                 //printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
                 //                      i, low, low-cu[im]*range, range<<sz, range, d[im]*range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
                 low -= cu[im]*range;
-                range = dq[im]*range;
+                range = d[im]*range;
                 //set_freq(out1, d, q_bits);
                 //sz++;
                 img[i] = q[im];
@@ -479,13 +483,13 @@ uint32  range_decoder(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32
 }
 
 /**	\brief Make distribution with each elements equal power of 2
-/// \param din	 	The input distribution with sum is equal power of 2.
-/// \param dout		The output distribution with each elements is equal power of 2.
-/// \param don		The array of difference.
-///	\param a_bits	Bits per symbols before quantization.
-///	\param q_bits	Bits per symbols after quantization.
-///	\param msb		The maximum bits for output distribution representation.
-///	\retval			The log2 of distribution sum.
+	\param din	 	The input distribution with sum is equal power of 2.
+	\param dout		The output distribution with each elements is equal power of 2.
+	\param don		The array of difference.
+	\param a_bits	Bits per symbols before quantization.
+	\param q_bits	Bits per symbols after quantization.
+	\param msb		The maximum bits for output distribution representation.
+	\retval			The log2 of distribution sum.
 */
 static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb)
 {
@@ -565,65 +569,40 @@ static int quant(uint16 img, int *q, uint32 *don)
 
 /**	\brief Range encoder free of division and multiplication.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
+    \param d		The pointer to array of probability distribution.
     \param buff1	The pointer to temporal buffer.
 	\retval			The encoded message size in byts .
 */
-uint32  range_encoder_fast(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1){
+uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q,  uint32 *d, uint32 *buff1){
 	uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
-	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
-	uint32 i, j, k=0 , bits, tmp, msb;
+	uint32  low = 0, low1 = 0, range = 32;
+	uint32 i, j = 0, k=0 , bits, tmp, msb;
 	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num], *don = &buff1[(num<<1)+1];
 	int im;
 
 	//Encoder setup
 	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
-
 	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
 
-
 	tmp = write_dist(dq, q_bits, msb, sz, buff);
+	buff = &buff[tmp];
 
 	cum_freq_pow(dq, cu, q_bits);
 
-	buff = &buff[tmp];
-
-	//j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
-	//printf("dist_size = %d bits %d byts\n", tmp, j);
-	j=0;
-
-	//init_prob(d, q_bits, c);
-	//range = top;
-	range = 32; low = 0;
-
-	//for(i=0; i < num; i++) printf("%d ", q[i]);
-	//printf("\n");
-	//for(i=0; i < num; i++) printf("%d ", d[i]);
-	//printf("\n");
-	//Start encoding
 	for(i=0; i<size; i++) {
-		//im = q[img[i] + half];
 		im = quant(img[i] + half, q, don);
 		//if(i<10)
 		//printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d dq[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im], dq[im]);
-
-		//range = range>>sz;
-		range = range-sz;
-
-
-		//cu = get_cum(im, c, q_bits);
+		range = range - sz;
 		low1 = low;
-		//low += range*cu[im];
 		low += cu[im]<<range;
 		//if(i<10)	printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
 		range = range + dq[im];
-		//range = range*dq[im];
-		//update_dist(im, d, ds, ab, sw, size_ab, &get, &set, &swc);
 		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
 		if(i != size1){
 			while(range <= 24) {
@@ -642,7 +621,6 @@ uint32  range_encoder_fast(int16 *img, uint32 *d, uint32 size, uint32 a_bits , u
 
 /**	\brief Range decoder free of division and multiplication.
     \param img	 	The pointer to encoding data.
-    \param d		The pointer to array of distribution probabilities.
  	\param size		The size of the  input data.
 	\param a_bits	Bits per symbols befor quantization.
 	\param q_bits	Bits per symbols after quantization.
@@ -651,23 +629,21 @@ uint32  range_encoder_fast(int16 *img, uint32 *d, uint32 size, uint32 a_bits , u
     \param buff1	The pointer to temporal buffer.
 	\retval			The encoded message size in byts .
 */
-uint32  range_decoder_fast(int16 *img, uint32 *d, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1){
-	uint32 num = (1<<q_bits), sz, sum = 0, out, out1, out2, f, cf, sh = 8;
-	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low = 0, range;
+uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *buff1){
+	uint32 num = (1<<q_bits), sz, out, sh = 8;
+	uint32 low = 0, range = 32;
 	uint32 i, j, tmp, im, cu_sz;
 	uint32 half = num>>1, bits, *dq = buff1, *cu = &buff1[num];
 	int dif, fin;
 
 	//Decoder setup
 	tmp = read_dist(dq, q_bits, &sz, buff);
-	cum_freq_pow(dq, cu, q_bits);
-
 	buff = &buff[tmp];
 
-	range = 32; j=4;
+	cum_freq_pow(dq, cu, q_bits);
 
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
-
+	j=4;
 	// Start decoding
 	for(i=0; i<size; i++) {
 		while(range <= 24) {
@@ -675,20 +651,14 @@ uint32  range_decoder_fast(int16 *img, uint32 *d, uint32 size, uint32 a_bits , u
 			low = (low<<sh) | (uint32)buff[j++];
 		}
 		range = range-sz;
-		//range = range>>sz;
-		//out = divide1(low, range);
 		out = low>>range;
-		//im = get_cum_f(out, cu, cu_sz);
 		im = get_cum_f(out, cu, half);
 		//if(i<100)
 		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
 		//			i, low, low-cu[im]*range, range+sz, range, dq[im]+range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
 
 		low -= cu[im]<<range;
-		//range = dq[im]*range;
 		range = range + dq[im];
-		//set_freq(out1, d, q_bits);
-		//sz++;
 		img[i] = q[im];
 	}
 	return j+tmp;

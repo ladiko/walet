@@ -1,22 +1,6 @@
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Library General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
-//           image.cc
-//  Mon Feb 27 16:32:52 2006
-//  Copyright  2006  vadim
-//  <vadim@vadim.sigrand.lcl>
-
+/** \file walet.h
+    \brief The main include file of the walet codec
+*/
 #ifndef _WALET_H_
 #define _WALET_H_
 
@@ -33,15 +17,18 @@ typedef unsigned short int	uint16;
 typedef unsigned int       	uint32;
 typedef unsigned long long 	uint64;
 
-//typedef uchar			imgtype;
-//typedef int16			dwttype;
 #endif
-
+/**
+	\brief Compression type.
+ */
 typedef enum {
-	LESS,
-	LOSSLESS,
+	LOSS,		///Loss compression.
+	LOSSLESS,	///Lossless compression.
 } Compression;
 
+/**
+	\brief The image format.
+ */
 typedef enum {
 	CS420,	
   	CS422,	
@@ -51,25 +38,27 @@ typedef enum {
   	BAYER,
 } ColorSpace;
 
+/**
+	\brief The gamma correction method.
+ */
 typedef enum {
 	LINEAR,
 	BT709,
   	sRGB,
 } Gamma;
 
+/**
+	\brief The frame type.
+ */
 typedef enum {
-  	MS1_1 = 0,	
-  	MS1_2 = 1,	
-  	MS1_4 = 2,
-  	MS1_8 = 3,	
-}	MotionSubsamp;
-
-typedef enum {
-  	I_FRAME = 0,	
+  	I_FRAME = 0,
   	P_FRAME = 1,	
   	B_FRAME = 2,	
 } FrameType;
 
+/**
+	\brief The codec state.
+ */
 typedef enum {
 	FRAME_COPY		=	1,
 	BUFFER_READ		=	1<<1,
@@ -82,11 +71,14 @@ typedef enum {
   	BITS_ALLOCATION	= 	1<<8,
   	MEDIAN_FILTER	=	1<<9,
   	COLOR_TRANSFORM = 	1<<10,
-}	CodecState;
+}CodecState;
 
+/**
+	\brief The bayer grid pattern.
+
+	All RGB cameras use one of these Bayer grids:\n
+*/
 /*
-   All RGB cameras use one of these Bayer grids:
-
 	BGGR  0         GRBG 1          GBRG  2         RGGB 3
 	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
 	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
@@ -99,30 +91,45 @@ typedef enum {
 	GRBG = 1,
 	GBRG = 2,
 	RGGB = 3,
-}	BayerGrid;
-
-typedef enum {		//Wavelet transform type
+} BayerGrid;
+/*
+typedef enum {		//Wavelet transform type.
 	CLASSIC	= 0,
 	MALLET 	= 1,
 	COLOR	= 2,
 }	TransformType;
-
-typedef enum {		//Wavelet transform filter banks
+*/
+/**
+	\brief Wavelet transform filter banks.
+ */
+typedef enum {
 	FR_HAAR	= 0,
 	FR_5_3	= 1,
 	FR_9_7	= 2,
-}	FilterBank;
+} FilterBank;
 
+/**
+	\brief The range coder type
+ */
+typedef enum {
+	ADAP	= 0,	///Adaptive range coder.
+	NADAP	= 1,	///Nonadaptive range coder.
+	FAST	= 2,	///Nonadaptive fast range coder.
+} RangeType;
+
+/*
 typedef enum {		//The type of image
 	U8	= 0,	// Unsigned 8 bits
 	S8	= 1,	// Signed 8 bits
 	U16	= 2,	// Unsigned 16 bits
 	S16	= 3,	// Signed 16 bits
 }	ImgType;
+*/
 
 typedef struct {
 	uint32 x,y;
 } Dim;
+
 //File header
 // -----------------------------------------------------------------------------------------
 // |offset | size | description
@@ -145,20 +152,23 @@ typedef struct {
 // --------------------------------------------------------------------------------------------
 // |  11   |  1   | Frame rates
 
+/**
+	\brief The header of walet file
+ */
 typedef struct {
-	uint16		marker;			// The walet codec marker
-	uint16 		w;				// Image width
-	uint16 		h;				// Image width
-	uint8		color;			// Color space
-	uint8		bg;				// Bayer grid pattern
-	uint8		bpp;			// Bits per pixel
-	uint8 		steps;  		// Steps of DWT
-	uint8		gop_size;		// GOP size
-	uint8		rates;			// Frame rates
-	uint8		comp;			// Compression in times to original image if 1 - lossless 0-without any compression raw bayer format
-	uint8		fb;				// Filters for wavelet transform
-	//uchar		mvs;			// Motion vector search from -mvs to mvs in x and y
-} WaletHeader;
+	//uint16		marker;			/// The walet codec marker.
+	uint16 		w;				/// Image width
+	uint16 		h;				/// Image width
+	uint8		color;			/// Color space
+	uint8		bg;				/// Bayer grid pattern
+	uint8		bpp;			/// Image bits per pixel.
+	uint8 		steps;  		/// DWT steps.
+	uint8		gop_size;		/// GOP size
+	uint8		rates;			/// Frame rates
+	uint8		comp;			/// Compression in times to original image if 1 - lossless 0 - without any compression.
+	uint8		fb;				/// Filters bank for wavelet transform.
+	uint8		rt;				/// Range coder type
+} WaletConfig;
 
 typedef struct Row Row;
 typedef struct Region Region;
