@@ -52,7 +52,7 @@ GOP* walet_encoder_init(WaletConfig *wc)
 	//Frames init
 	gop->frames = (Frame *)calloc(wc->gop_size, sizeof(Frame));
 	printf("Frames  create %d\n", wc->gop_size);
-	for(i=0; i<wc->gop_size; i++) frames_init(gop, i);
+	for(i=0; i<wc->gop_size; i++) frames_init(gop, i, wc);
 	printf("Frames  init\n");
 
 	//Segmentation parts init
@@ -132,7 +132,7 @@ uint32 walet_write_stream(WaletConfig *wc, GOP *gop, uint32 num, const char *fil
     //Write header
     fwrite (&wc, sizeof(wc), 1, wl); size += sizeof(wc);
     //Write frames
-    for(i=0; i < num; i++) size += frame_write(gop, i, wl);
+    for(i=0; i < num; i++) size += frame_write(wc, &gop->frames[i], wl, gop->buf);
     //Close file
     fclose(wl);
     printf("Write size = %Ld\n", size);

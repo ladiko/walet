@@ -60,7 +60,7 @@ typedef enum {
 	\brief The codec state.
  */
 typedef enum {
-	FRAME_COPY		=	1,
+	FRAME_COPY 		=	1,
 	BUFFER_READ		=	1<<1,
   	DWT 			= 	1<<2,
   	IDWT 			= 	1<<3,
@@ -71,6 +71,10 @@ typedef enum {
   	BITS_ALLOCATION	= 	1<<8,
   	MEDIAN_FILTER	=	1<<9,
   	COLOR_TRANSFORM = 	1<<10,
+  	FILL_HISTOGRAM 	= 	1<<11,
+  	WHITE_BALANCE	= 	1<<12,
+  	SEGMENTATION	= 	1<<13,
+  	MATCH			= 	1<<14,
 }CodecState;
 
 /**
@@ -168,6 +172,7 @@ typedef struct {
 	uint8		comp;			/// Compression in times to original image if 1 - lossless 0 - without any compression.
 	uint8		fb;				/// Filters bank for wavelet transform.
 	uint8		rt;				/// Range coder type
+	uint8		mv;				/// The motion vector search in pixeles.
 } WaletConfig;
 
 typedef struct Row Row;

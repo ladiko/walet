@@ -238,6 +238,41 @@ uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uin
 	return rgb;
 }
 
+void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits){
+//
+//   All RGB cameras use one of these Bayer grids:
+//
+//	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+//	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+//	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+//	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+//	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+//	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+//
+	uint32 x, y, i, size = h*w;
+	uint32 *c[4];
+	memset(r, 0, sizeof r);
+	memset(g, 0, sizeof g);
+	memset(b, 0, sizeof b);
+
+	switch(bay){
+		case(BGGR):{ c[0] = r; c[1] = g; c[2] = g; c[3] = b; break;}
+		case(GRBG):{ c[0] = g; c[1] = b; c[2] = r; c[3] = g; break;}
+		case(GBRG):{ c[0] = g; c[1] = r; c[2] = b; c[3] = g; break;}
+		case(RGGB):{ c[0] = b; c[1] = g; c[2] = g; c[3] = r; break;}
+	}
+
+	for(i=0, x=0, y=0; i < size; i++, x++){
+		if(x == w) { x=0; y++;}
+		if(y&1)
+			if(x&1) c[0][img[i]]++;
+			else 	c[1][img[i]]++;
+		else
+			if(x&1)	c[2][img[i]]++;
+			else 	c[3][img[i]]++;
+	}
+}
+
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)
 {
 	int i, j, dim = h*w*3;
