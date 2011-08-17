@@ -10,6 +10,7 @@ extern "C"
 //uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w);
 uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps);
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
+void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);
 
 
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width);

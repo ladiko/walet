@@ -117,13 +117,13 @@ void idwt_haar_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, in
 	}
 }
 
-static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w){
-///	\fn static inline void dwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
-///	\brief 1D 5.3 wavelet transform.
-///	\param in	 		The input line.
-///	\param out 			The output line.
-///	\param w 			The line width.
-
+/**	\brief One step 1D 5/3 discrete wavelet transform.
+	\param in	The input data array.
+	\param out 	The output data array.
+	\param w 	The length.
+*/
+static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w)
+{
 	int wt = w - 2, i, j;
 	int16 *l, *h;
 	l = out; h = &out[(w>>1) + (w&1)];
@@ -141,12 +141,12 @@ static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w){
 	}
 }
 
+/**	\brief One step 1D 5/3 invert discrete wavelet transform.
+///	\param in	The input data array.
+///	\param out 	The output data array.
+///	\param w 	The length.
+*/
 static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w){
-///	\fn static inline void idwt53_1d_1h(imgtype *in, imgtype *out, const uint32 w)
-///	\brief 1D 5.3 invert wavelet transform.
-///	\param in	 		The input line.
-///	\param out 			The output line.
-///	\param w 			The line width.
 
 	int wt = w - 2, i, j;
 	int16 *l, *h;
@@ -165,21 +165,21 @@ static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w){
 	}
 }
 
-
-void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h){
-///	\fn static inline void dwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
-///	\brief 2D 5.3 vertical wavelet transform.
-///	\param in	 		The input image data.
-///	\param out 			The output image data.
-///	\param w 			The image width.
-///	\param h 			The image height.
-
+/**	\brief One step 2D 5/3 discrete wavelet transform.
+	\param in	The input image.
+	\param ll 	The LL low-low frequency subband.
+	\param hl 	The HL height-low frequency subband.
+	\param lh 	The LH low-height frequency subband.
+	\param hh 	The HH low-low frequency subband.
+	\param buf	The temporal buffer.
+	\param w 	The image width.
+	\param h 	The image height.
+*/
+void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+{
 	uint32 i,ik, ik1, k = 0, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
-	//uint32 s[4];
 	int16 *l[3], *tm;
-	//int16 *ll, *hl, *lh, *hh, *l[3], *tm;
-	//ll = out; hl = ll + w1*h1; lh = hl + w2*h1; hh = lh + w1*h2;
 	l[0] = &buf[0]; l[1] = &buf[w]; l[2] = &buf[hw];
 
 	dwt_53_1d(&in[0],  l[0], w);
@@ -244,16 +244,18 @@ void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 
 	}
 }
 
-void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h){
-///	\fn static inline void idwt53_2d_v(imgtype *in, imgtype *out, const uint32 w, const uint32 h)
-///	\brief 2D 5.3 vertical invert wavelet transform.
-///	\param in	 		The input image data.
-///	\param out 			The output image data.
-///	\param w 			The image width.
-///	\param h 			The image height.
-///	\param loc 			The subband location.
-
-
+/**	\brief One step 2D 5/3 invert discrete wavelet transform.
+	\param out	The output image.
+	\param ll 	The LL low-low frequency subband.
+	\param hl 	The HL height-low frequency subband.
+	\param lh 	The LH low-height frequency subband.
+	\param hh 	The HH low-low frequency subband.
+	\param buf	The temporal buffer.
+	\param w 	The image width.
+	\param h 	The image height.
+*/
+void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+{
 	uint32 i, ik, ik1, k, k1, k2, sz = (h-1)*w, hw = w<<1;
 	uint32 h2 = (h>>1), h1 = (h>>1) + (h&1), w2 = (w>>1), w1 = (w>>1) + (w&1);
 	//uint32 s[4];
@@ -323,18 +325,15 @@ void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int1
 	}
 }
 
-void dwt(Image *img, int16 *buf, fundwt dwt_one, uint32 steps){
-//	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
-///	\brief Discrete wavelets transform.
-///	\param im	 		The image structure.
-///	\param buf 			The temporary buffer.
-///	\param steps 		The steps of DWT transform.
-/// \param funwt		The function for one step 2d DWT.
-
+/**	\brief Discrete wavelet transform.
+	\param img	 		The pointer to input image structure.
+	\param buf 			The temporary buffer.
+	\param dwt_one		The pointer to function for one step 2d DWT.
+	\param steps 		The steps of transform.
+ */
+void dwt(Image *img, int16 *buf, fundwt dwt_one, uint32 steps)
+{
 	uint32 k, i;
-	//Color transform
-	//printf("C[0].pic = %p\n", c[0].pic);
-	//dwt_53_2d_one_new(b->pic, c[0].pic, c[1].pic, c[2].pic, c[3].pic, buf, w, h);
 	if(steps){
 		(*dwt_one)(img->p, img->l[0].s[0].pic, img->l[0].s[1].pic, img->l[0].s[2].pic, img->l[0].s[3].pic, buf, img->w, img->h);
 		for(k=1; k < steps; k++){
@@ -345,27 +344,78 @@ void dwt(Image *img, int16 *buf, fundwt dwt_one, uint32 steps){
 	}
 }
 
-void idwt(Image *img, int16 *buf, funidwt idwt_one, uint32 steps, uint32 istep){
-//	\fn static void image_mallet_dwt(Image *im, uint8 *buf, uint32 steps, funwt dwt_one)
-///	\brief Discrete wavelets transform.
-///	\param im	 		The image structure.
-///	\param buf 			The temporary buffer.
-///	\param steps 		The steps of DWT transform.
-/// \param funwt		The function for one step 2d DWT.
-
-	//uint8 *img = im->img;
+/**	\brief Invert discrete wavelet transform.
+	\param img	 		The pointer to output  image structure.
+	\param buf 			The temporary buffer.
+	\param idwt_one		The pointer to function for one step 2d IDWT.
+	\param steps 		The steps of DWT transform.
+	\param isteps 		The steps of IDWT transform.
+ */
+void idwt(Image *img, int16 *buf, funidwt idwt_one, uint32 steps, uint32 isteps)
+{
 	int j, k;
-	if(istep > steps){
+	if(isteps > steps){
 		printf("istep should be less or equal steps\n");
 		return;
 	}
-	for(k=steps-1; k > steps-istep; k--){
+	for(k=steps-1; k > steps-isteps; k--){
 		(*idwt_one)(img->l[k-1].s[0].pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic,
 				 buf, img->l[k-1].s[0].w, img->l[k-1].s[0].h);
 	}
 	img->d.w = img->l[k].s[0].w + img->l[k].s[1].w;
 	img->d.h = img->l[k].s[0].h + img->l[k].s[2].h;
 	(*idwt_one)(img->d.pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf, img->d.w, img->d.h);
+}
+
+void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, uint32 steps){
+///	\fn void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
+///	\brief Init image structure.
+///	\param im	 		The image structure.
+///	\param w 			The image width.
+///	\param h 			The image height.
+///	\param color		The color space of the stream.
+///	\param bpp 			The bits per pixel.
+///	\param steps 		The steps of DWT transform.
+
+	int i, k, num;
+	int16 *tmp;
+	img->w = w; img->h = h;
+	img->p = (int16 *)calloc(w*h, sizeof(int16));
+
+	img->d.w = w; img->d.h = h;
+	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
+
+	if(steps){
+		img->l = (Level *)calloc(steps, sizeof(Level));
+		tmp = (uint16 *)calloc(w*h, sizeof(uint16));
+		for(i=0; i < 4; i++) {
+			subband_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
+			//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[0].s[i].w, img->l[0].s[i].h);
+			tmp = tmp + img->l[0].s[i].w*img->l[0].s[i].h;
+		}
+		for(k=1; k < steps; k++){
+			tmp = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
+			for(i=0; i < 4; i++) {
+				subband_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
+						(img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1), bpp);
+				//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[k].s[i].w, img->l[k].s[i].h);
+				tmp = tmp + img->l[k].s[i].w*img->l[k].s[i].h;
+			}
+		}
+	}
+
+	img->qfl  = (uint32 *)calloc(steps, sizeof(uint32));
+	//Old interface
+	//img->imgg = (uint8 *)calloc(w*h, sizeof(uint8));
+	//img->iwt = (int16 *)calloc(w*h, sizeof(int16));
+	//img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bpp, sizeof(uint32));
+	//img->look = (color == BAYER) ? (uint16 *)calloc((1<<bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bpp, sizeof(uint16));
+	//imgg->qfl[steps] = 1; for(i=steps-1; i; i--) imgg->qfl[i] += imgg->qfl[i+1]+3; imgg->qfl[0] = imgg->qfl[1]+2;
+	//num = (color == BAYER) ? steps : steps+1;
+	//img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
+	//for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
+
+	printf("Create image x = %d y = %d p = %p\n", img->w, img->h, img->p);
 }
 
 void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps){
@@ -415,111 +465,6 @@ void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 istep
 			return;
 		}
 	}
-}
-
-static void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits){
-//
-//   All RGB cameras use one of these Bayer grids:
-//
-//	BGGR  0         GRBG 1          GBRG  2         RGGB 3
-//	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
-//	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
-//	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
-//	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
-//	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
-//
-	uint32 x, y, i, size = h*w;
-	uint32 *c[4];
-	memset(r, 0, sizeof r);
-	memset(g, 0, sizeof g);
-	memset(b, 0, sizeof b);
-
-	switch(bay){
-		case(BGGR):{ c[0] = r; c[1] = g; c[2] = g; c[3] = b; break;}
-		case(GRBG):{ c[0] = g; c[1] = b; c[2] = r; c[3] = g; break;}
-		case(GBRG):{ c[0] = g; c[1] = r; c[2] = b; c[3] = g; break;}
-		case(RGGB):{ c[0] = b; c[1] = g; c[2] = g; c[3] = r; break;}
-	}
-
-	for(i=0, x=0, y=0; i < size; i++, x++){
-		if(x == w) { x=0; y++;}
-		if(y&1)
-			if(x&1) c[0][img[i]]++;
-			else 	c[1][img[i]]++;
-		else
-			if(x&1)	c[2][img[i]]++;
-			else 	c[3][img[i]]++;
-	}
-}
-
-void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, uint32 steps){
-///	\fn void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
-///	\brief Init image structure.
-///	\param im	 		The image structure.
-///	\param w 			The image width.
-///	\param h 			The image height.
-///	\param color		The color space of the stream.
-///	\param bpp 			The bits per pixel.
-///	\param steps 		The steps of DWT transform.
-
-	int i, k, num;
-	int16 *tmp;
-	img->w = w; img->h = h;
-	img->p = (int16 *)calloc(w*h, sizeof(int16));
-
-	img->d.w = w; img->d.h = h;
-	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
-
-	/*
-	if(steps){
-		img->l = (Level *)calloc(steps, sizeof(Level));
-		img->l[0].s[0].pic = (uint16 *)calloc(w*h, sizeof(uint16));
-		for(i=0; i < 4; i++) {
-			img->l[0].s[i].w = (w>>1) + bit_check(w, i);
-			img->l[0].s[i].h = (h>>1) + bit_check(h, i>>1);
-		}
-		for(i=1; i < 4; i++) img->l[0].s[i].pic = img->l[0].s[i-1].pic + img->l[0].s[i-1].w*img->l[0].s[i-1].h;
-		for(k=1; k < steps; k++){
-			img->l[k].s[0].pic = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
-			for(i=0; i < 4; i++) {
-				img->l[k].s[i].w = (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i);
-				img->l[k].s[i].h = (img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1);
-			}
-			for(i=1; i < 4; i++) img->l[k].s[i].pic = img->l[k].s[i-1].pic + img->l[k].s[i-1].w*img->l[k].s[i-1].h;
-		}
-	}
-	*/
-	if(steps){
-		img->l = (Level *)calloc(steps, sizeof(Level));
-		tmp = (uint16 *)calloc(w*h, sizeof(uint16));
-		for(i=0; i < 4; i++) {
-			subband_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
-			//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[0].s[i].w, img->l[0].s[i].h);
-			tmp = tmp + img->l[0].s[i].w*img->l[0].s[i].h;
-		}
-		for(k=1; k < steps; k++){
-			tmp = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
-			for(i=0; i < 4; i++) {
-				subband_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
-						(img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1), bpp);
-				//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[k].s[i].w, img->l[k].s[i].h);
-				tmp = tmp + img->l[k].s[i].w*img->l[k].s[i].h;
-			}
-		}
-	}
-
-	img->qfl  = (uint32 *)calloc(steps, sizeof(uint32));
-	//Old interface
-	//img->imgg = (uint8 *)calloc(w*h, sizeof(uint8));
-	//img->iwt = (int16 *)calloc(w*h, sizeof(int16));
-	img->hist = (color == BAYER) ? (uint32 *)calloc((1<<bpp)*3, sizeof(uint32)) : (uint32 *)calloc(1<<bpp, sizeof(uint32));
-	img->look = (color == BAYER) ? (uint16 *)calloc((1<<bpp)*3, sizeof(uint16)) : (uint16 *)calloc(1<<bpp, sizeof(uint16));
-	//imgg->qfl[steps] = 1; for(i=steps-1; i; i--) imgg->qfl[i] += imgg->qfl[i+1]+3; imgg->qfl[0] = imgg->qfl[1]+2;
-	//num = (color == BAYER) ? steps : steps+1;
-	//img->qfl[0] = 1; for(i=1; i< num-1; i++) img->qfl[i] += img->qfl[i-1]+3; img->qfl[num-1] = img->qfl[num-2]+2;
-	//for(i=0; i<steps; i++) printf("fl[%d] = %d \n", i, img->qfl[i]);
-
-	printf("Create image x = %d y = %d p = %p\n", img->w, img->h, img->p);
 }
 
 void image_copy(Image *im, uint32 bpp, uint8 *v){
@@ -724,8 +669,9 @@ void image_quantization(Image *im, uint32 steps, uint8 *buf){
 	\param im	 		The image structure.
 	\param steps 		The steps of DWT transform.
 	\param bpp 			The image bits per pixel.
-	\param buff 		The buffer for encoded data.
-	\param buff1 		The pointer to temporal buffer.
+	\param buf	 		The buffer for encoded data.
+	\param ibuf 		The pointer to temporal buffer.
+	\param rt 			The type of range encoder
 	\retval				The size of encoded image in bytes.
 */
 uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
@@ -770,8 +716,9 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 	\param im	 		The image structure.
 	\param steps 		The steps of DWT transform.
 	\param bpp 			The image bits per pixel.
-	\param buff 		The buffer for encoded data.
-	\param buff1 		The pointer to temporal buffer.
+	\param buf	 		The buffer for encoded data.
+	\param ibuf 		The pointer to temporal buffer.
+	\param rt 			The type of range decoder
 	\retval				The size of encoded image in bytes.
 */
 uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
