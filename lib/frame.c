@@ -1,6 +1,10 @@
 #include <walet.h>
 
 
+/*	\brief	Check codec state
+	\param	state	The current state.
+	\param	check	The checking state.
+*/
 static uint32 check_state(uint32 state, uint32 check)
 {
 	if(state & check) {
@@ -80,7 +84,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->state = 0;
 }
 
-/*	\brief	Copy the frame
+/*	\brief	Copy input the frame
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
@@ -88,7 +92,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	\param	u	The pointer to green or U  image data.
 	\param	v	The pointer to blue or V  image data.
 */
-void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
+void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
 {
 	uint32 i, size = wc->w*wc->h, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
@@ -102,13 +106,13 @@ void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v
 
 	} else {
 		image_copy(&f->img[0], wc->bpp, y);
-		if(wc->color != GREY  && wc->color != BAYER) {
+		if(wc->color != GREY ) {
 			image_copy(&f->img[1], wc->bpp, u);
 			image_copy(&f->img[2], wc->bpp, v);
 		}
 	}
 	f->state = FRAME_COPY;
-	printf("Finesh frame copy \n");
+	printf("Finish frame copy \n");
 }
 
 /**	\brief	The Frame discrete wavelet transform.
@@ -144,7 +148,7 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 	\param	g		The GOP structure.
 	\param	fn		The frame number.
 	\param	wc		The walet config structure.
-	\param	isteps	The steps of IDWT should be lees or equal DWT steps
+	\param	isteps	The steps of IDWT (should be lees or equal DWT steps).
 	\retval			1 - if all OK, 0 - if not
 */
 uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
@@ -321,15 +325,24 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 	uint32 i;
 	Frame *f = &g->frames[fn];
 	if(wc == NULL ) return 0;
+	*size = 0;
 
 	if(check_state(f->state, FILL_SUBBAND)){
 		*size = 0;
-		if(wc->color == GREY) *size += image_range_encode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
+		if(wc->color == GREY) {
+			f->img[0].isz = image_range_encode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
+			*size = f->img[0].isz;
+		}
 		else if(wc->color == BAYER)
-			for(i=0; i < 4; i++)  *size += image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+			for(i=0; i < 4; i++)  {
+				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+				*size += f->img[i].isz;
+			}
 		else
-			for(i=0; i < 3; i++)  *size += image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
-
+			for(i=0; i < 3; i++)  {
+				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+				*size += f->img[i].isz;
+			}
 		f->state |= RANGE_ENCODER;
 		return 1;
 	} else return 0;
@@ -347,7 +360,9 @@ uint32 frame_range_decode(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size)
 	uint32 i;
 	Frame *f = &g->frames[fn];
 	if(wc == NULL ) return 0;
+	*size = 0;
 
+	printf("frame_range_decode \n");
 	if(check_state(f->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
 		if(wc->color == GREY) *size += image_range_decode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
@@ -504,95 +519,133 @@ uint32 frame_match(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc)
 uint32 frame_write(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
 {
     uint8 *bits;
-    uint32 i, sz, size=0, fsize;
-    uint32  rgb = (wc->color != GREY  && wc->color != BAYER);
+    uint32 i, lv, im, sb, sz, size=0, ic, bc[4], is[4];
+	Frame *f = &g->frames[fn];
 
-    //Fill and write bits array
-    sz = (wc->color == BAYER) ? ((wc->steps-1)*3+1)<<2 : (wc->steps*3 + 1);
-    bits = (uint8 *)calloc(sz, sizeof(uint8));
-    for(i=0; i<sz; i++)  {
-    	bits[i] = (f->img[0].sub[i].a_bits<<4) | f->img[0].sub[i].q_bits;
-    	//printf("%d a_bits = %d q_bits = %d bits = %d\n", i, frame->img[0].sub[i].a_bits, frame->img[0].sub[i].q_bits, bits[i]);
+	bc[0] = 0; bc[1] = 0; bc[2] = 0; bc[3] = 0;
+	//The images position in the buffer
+	is[0] = 0;
+	is[1] = is[0] + f->img[0].isz;
+	is[2] = is[1] + f->img[1].isz;
+	is[3] = is[2] + f->img[2].isz;
+	//printf("is[1] = %d is[2] = %d is[3] = %d \n", is[1], is[2], is[3]);
+
+    if(fwrite (&is[1], sizeof(uint32), 3 , wl) != 3) { printf("The images position  write error\n"); return 0; }
+    size += sizeof(uint32)*3;
+
+    if(wc->color == BAYER) {
+    	ic = 4; sz = (wc->steps*3 + 1)*ic; }
+    else if(wc->color == CS420 || wc->color == CS422 ||wc->color == CS444){
+    	ic = 3; sz = (wc->steps*3 + 1)*ic; }
+    else {
+    	ic = 1; sz =  wc->steps*3 + 1; }
+
+	bits = (uint8 *)calloc(sz, sizeof(uint8));
+	i=0;
+   	for(lv = wc->steps-1; lv+1; lv--){
+   		for(im = 0; im < ic; im++){
+   			for(sb = (lv == wc->steps-1) ? 0 : 1; sb < 4; sb++){
+   				bits[i++] = (f->img[im].l[lv].s[sb].a_bits<<4) | f->img[im].l[lv].s[sb].q_bits;
+   				//printf("img[%d].l[%d].s[%d] a_bits = %d q_bits = %d\n",im, lv, sb, f->img[im].l[lv].s[sb].a_bits, f->img[im].l[lv].s[sb].q_bits);
+   			}
+   		}
+   	}
+   	// Write bits array
+    if(fwrite (bits, 1, sz , wl) != sz) { printf("Bits array write error\n"); return 0; }
+    size += sz;
+
+    /// Write subbands
+    for(lv = wc->steps-1; lv+1; lv--){
+    	for(im = 0; im < ic; im++){
+    		for(sb = (lv == wc->steps-1) ? 0 : 1; sb < 4; sb++){
+    			if(fwrite (&f->img[im].l[lv].s[sb].ssz, sizeof(uint32), 1, wl) != 1) { printf("Size write error\n"); return 0; }
+    			//printf("img[%d].l[%d].s[%d] = %d\n", im, lv, sb, f->img[im].l[lv].s[sb].ssz);
+    			size += sizeof(uint32);
+    			if(fwrite (&g->buf[is[im] + bc[im]], 1, f->img[im].l[lv].s[sb].ssz, wl) != f->img[im].l[lv].s[sb].ssz)
+					{ printf("Subband  img[%d].l[%d].s[%d] write error\n", im, lv, sb); return 0; }
+    			size += f->img[im].l[lv].s[sb].ssz;
+    			bc[im] += f->img[im].l[lv].s[sb].ssz;
+    		}
+    	}
     }
-    fwrite (bits, 1, sz , wl); size += sz;
-    fsize = f->img[0].c_size;
-
-    if(rgb) {
-     	for(i=0; i<sz; i++)  bits[i] = (f->img[1].sub[i].a_bits<<4) | f->img[1].sub[i].q_bits;
-    	fwrite (bits, 1, sz , wl); size += sz ;
-    	for(i=0; i<sz; i++)  bits[i] = (f->img[2].sub[i].a_bits<<4) | f->img[2].sub[i].q_bits;
-    	fwrite (bits, 1, sz , wl); size += sz ;
-    	fsize += f->img[1].c_size + f->img[2].c_size;
-    }
-
-    //Write compress image size
-    fwrite (&fsize, 4, 1, wl); size += 4;
-    //Write data
-    fwrite (buf, 1, fsize, wl); size += fsize;
-    //printf("File size = %d fist = %2X %2X\n", fsize, ((char*)wc->buf)[0], ((char*)wc->buf)[1]);
-
-    //fwrite (wc->buf, 1, frm->img[0].c_size, wl); size += frm->img[0].c_size;
-
-   // if(rgb) {
-    	//fwrite (&frm->img[1].c_size, 4, 1, wl); size += 4;
-    	//fwrite (&wc->buf[frm->img[0].c_size], 1, frm->img[1].c_size, wl); size += frm->img[1].c_size;
-    	//fwrite (&frm->img[2].c_size, 4, 1, wl); size += 4;
-    	//fwrite (&wc->buf[frm->img[0].c_size+frm->img[1].c_size], 1, frm->img[2].c_size, wl); size += frm->img[2].c_size;
-    //}
     free(bits);
     return size;
 }
 
-uint32 frame_read(WaletConfig *wc,  Frame *f, FILE *wl, uint8 *buf)
+/**	\brief	Read frame from file.
+	\param	g		The GOP structure.
+	\param	fn		The frame number.
+	\param	wc		The walet config structure.
+	\param	wl		The file descriptor.
+	\retval			1 - if all OK, 0 - if not OK
+*/
+uint32 frame_read(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
 {
-///	\fn	uint32 frame_write(wc *wc, uint32 fr, const char *filename)
-///	\brief	Read frame from file.
-///	\param	wc			The pointer to the wc structure.
-///	\param	fr			The frame number.
-//	\param	filename	The file name.
-///	\retval				The size of file.
-
     uint8 *bits;
-    uint32 i, sz, size = 0, fsize;
-    uint32  rgb = (wc->color != GREY  && wc->color != BAYER);
+    uint32 i, lv, im, sb, sz, size=0, ic, bc[4], is[4];
+	Frame *f = &g->frames[fn];
 
-    sz = (wc->color == BAYER) ? ((wc->steps-1)*3+1)<<2 : (wc->steps*3 + 1);
-    bits = (uint8 *)calloc(sz, sizeof(uint8));
+	bc[0] = 0; bc[1] = 0; bc[2] = 0; bc[3] = 0;
+	//The position images in the buffer
+	is[0] = 0;
+	//is[1] = is[0] + f->img[0].isz;
+	//is[2] = is[1] + f->img[1].isz;
+	//is[3] = is[2] + f->img[2].isz;
 
-     //Read bits array
-    if(fread (bits, 1, sz, wl)!= sz) { printf("Bits array read error\n"); return 0; }
+    if(fread (&is[1], sizeof(uint32), 3 , wl) != 3) { printf("The images position read error\n"); return 0; }
+    size += sizeof(uint32)*3;
+    //printf("is[1] = %d is[2] = %d is[3] = %d \n", is[1], is[2], is[3]);
+
+    if(wc->color == BAYER) {
+    	ic = 4; sz = (wc->steps*3 + 1)*ic; }
+    else if(wc->color == CS420 || wc->color == CS422 ||wc->color == CS444){
+    	ic = 3; sz = (wc->steps*3 + 1)*ic; }
+    else {
+    	ic = 1; sz =  wc->steps*3 + 1; }
+
+	bits = (uint8 *)calloc(sz, sizeof(uint8));
+  	// Read bits array
+    if(fread(bits, 1, sz, wl)!= sz) { printf("Bits array read error\n"); return 0; }
     size += sz;
-   //Fill bits array;
-    for(i=0; i<sz; i++)  {
-    	f->img[0].sub[i].a_bits = (bits[i]>>4);
-    	f->img[0].sub[i].q_bits = (bits[i]&15);
-    	//printf("%d a_bits = %d q_bits = %d bits = %d \n", i, frame->img[0].sub[i].a_bits, frame->img[0].sub[i].q_bits, bits[i]);
-    }
+    i = 0;
+   	for(lv = wc->steps-1; lv+1; lv--){
+   		for(im = 0; im < ic; im++){
+   			for(sb = (lv == wc->steps-1) ? 0 : 1; sb < 4; sb++){
+   				f->img[im].l[lv].s[sb].a_bits = (bits[i]>>4);
+   				f->img[im].l[lv].s[sb].q_bits = (bits[i++]&15);
+   				//printf("img[%d].l[%d].s[%d] a_bits = %d q_bits = %d\n",im, lv, sb, f->img[im].l[lv].s[sb].a_bits, f->img[im].l[lv].s[sb].q_bits);
+   			}
+   		}
+   	}
+    /// Read subbands
 
-    if(rgb) {
-        if(fread (bits, 1, sz, wl)!= sz) { printf("Bits array read error\n"); return 0; }
-        size += sz;
-        for(i=0; i<sz; i++)  { f->img[1].sub[i].a_bits = (bits[i]>>4);  f->img[1].sub[i].q_bits = (bits[i]&0xF); }
-        if(fread (bits, 1, sz, wl)!= sz) { printf("Bits array read error\n"); return 0; }
-        size += sz;
-        for(i=0; i<sz; i++)  { f->img[2].sub[i].a_bits = (bits[i]>>4);  f->img[2].sub[i].q_bits = (bits[i]&0xF); }
+    for(lv = wc->steps-1; lv+1; lv--){
+    	for(im = 0; im < ic; im++){
+    		for(sb = (lv == wc->steps-1) ? 0 : 1; sb < 4; sb++){
+    			if(fread(&f->img[im].l[lv].s[sb].ssz, sizeof(uint32), 1, wl) != 1) { printf("Size read error\n"); return 0; }
+       			//printf("img[%d].l[%d].s[%d] = %d\n", im, lv, sb, f->img[im].l[lv].s[sb].ssz);
+    			size += sizeof(uint32);
+    			if(fread(&g->buf[is[im] + bc[im]], 1, f->img[im].l[lv].s[sb].ssz, wl) != f->img[im].l[lv].s[sb].ssz)
+					{ printf("Subband  img[%d].l[%d].s[%d] read error\n", im, lv, sb); return 0; }
+    			size += f->img[im].l[lv].s[sb].ssz;
+    			bc[im] += f->img[im].l[lv].s[sb].ssz;
+    		}
+    	}
     }
-    //Read compress image size
-    if(fread (&fsize, 4, 1, wl)!= 1) { printf("compress image size read error\n"); return 0; }
-    size += 4;
-    //Read data
-    if(fread (buf, 1, fsize, wl)!= fsize) { printf("data read error\n"); return 0; }
-    size += fsize;
-
-    free(bits);
-    //printf("File size = %d fist = %2X %2X\n", fsize, ((char*)wc->buf)[0], ((char*)wc->buf)[1]);
 
     f->state = BUFFER_READ;
 
+    free(bits);
     return size;
  }
 
-void frame_compress(WaletConfig *wc,  Frame *f, uint32 times, FilterBank fb)
+/**	\brief	Frame compression
+	\param	g		The GOP structure.
+	\param	fn		The frame number.
+	\param	wc		The walet config structure.
+	\param	times	The compression ratio in times.
+*/
+void frame_compress(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 {
 	clock_t start, end;
 	double time=0., tmp;
@@ -600,25 +653,25 @@ void frame_compress(WaletConfig *wc,  Frame *f, uint32 times, FilterBank fb)
 	uint32 size;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt			(wc, f, gop->buf);
+	frame_dwt(g, fn, wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("DWT time             = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_fill_subb		(wc, f);
+	frame_fill_subb	(g, fn, wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("Fill subband time    = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_bits_alloc	(wc, fr, times);
+	frame_bits_alloc(g, fn, wc, times);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("Bits allocation time = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_encode	(wc, fr, &size);
+	frame_range_encode(g, fn, wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("Range coder time     = %f\n", tmp);
@@ -627,7 +680,13 @@ void frame_compress(WaletConfig *wc,  Frame *f, uint32 times, FilterBank fb)
 	//frame_write
 }
 
-void frame_decompress(WaletConfig *wc,  Frame *f, uint32 isteps, FilterBank fb)
+/**	\brief	Frame decompression
+	\param	g		The GOP structure.
+	\param	fn		The frame number.
+	\param	wc		The walet config structure.
+	\param	isteps	The steps of IDWT.
+*/
+void frame_decompress(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 {
 	uint32 size;
 	clock_t start, end;
@@ -635,13 +694,15 @@ void frame_decompress(WaletConfig *wc,  Frame *f, uint32 isteps, FilterBank fb)
 	double time=0., tmp;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_decode	(wc, fr, &size);
+	printf("start frame_range_decode \n");
+
+	frame_range_decode(g, fn, wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("Range decoder time    = %f\n", tmp);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_idwt			(wc, fr, isteps);
+	frame_idwt(g, fn, wc, isteps);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("IDWT time             = %f\n", tmp);

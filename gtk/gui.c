@@ -108,8 +108,8 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GtkWidget	*dialog;
 	FILE wl;
-	uint32 w, h, bpp;
-	uint8 *img;
+	uint32 w, h, bpp, size;
+	//uint8 *img;
 
 
 	dialog = gtk_file_chooser_dialog_new ("Open File...",
@@ -154,54 +154,59 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	} else if (!strcmp(&gw->filename_open[strlen(gw->filename_open)-3],".wl")){
 		printf("Open %s file\n", gw->filename_open);
 
-		walet_read_stream(&gw->gop, 1, gw->filename_open);
-		frame_decompress(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, FR_5_3);
-		/*
-		new_buffer (gw->orig[0], gw->gop->width, gw->gop->height);
-		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height, gw->gop->bpp);
+		walet_read_stream(gw->gop, &gw->wc, 1, gw->filename_open);
+		gw->gop->cur_gop_frame = 0;
+		//frame_decompress(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gw->wc.steps);
+		frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &gw->wc, &size);
+		printf("size = %d\n", size);
+		frame_idwt(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gw->wc.steps);
+
+		new_buffer (gw->orig[0], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
+		utils_grey_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		new_buffer (gw->orig[1], gw->gop->width-1, gw->gop->height-1);
-		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg, gw->gop->bpp);
+		new_buffer (gw->orig[1], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
+		utils_bayer_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
-		*/
 
 	}else if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".ppm")){
 		printf("Open %s file\n", gw->filename_open);
 		nf++;
 
-		utils_read_ppm(gw->filename_open, &wl,  &w, &h, &bpp, &img);
-		//img = (uint8 *)calloc(w*h*bpp*3, sizeof(uint8));
-		//printf("img = %p size = %d\n", img, w*h*bpp*3);
+		utils_read_ppm(gw->filename_open, &w, &h, &bpp, gw->gop->buf);
 
 		if(!gw->walet_init){
-			gw->gop = walet_encoder_init(w<<1, h<<1, BAYER, RGGB, 8, 5, 2, 0, 0, FR_5_3, 12);
-			//walet_encoder_init(width, height, BAYER, RGGB, 8, 5, 2, 0, 20, FR_5_3, 12);
+			gw->wc.w 			= w;	/// Image width
+			gw->wc.h			= h;	/// Image width
+			gw->wc.color		= RGB;	/// Color space
+			gw->wc.bg			= RGGB;		/// Bayer grid pattern
+			gw->wc.bpp			= bpp;		/// Image bits per pixel.
+			gw->wc.steps		= 4;  		/// DWT steps.
+			gw->wc.gop_size		= 1;		/// GOP size
+			gw->wc.rates		= 0;		/// Frame rates
+			gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
+			gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
+			gw->wc.rt			= FAST;		/// Range coder type
+			gw->wc.mv			= 12;		/// The motion vector search in pixeles.
+			gw->gop = walet_encoder_init(&gw->wc);
 			gw->walet_init = 1;
+
 		}
 		printf("w = %d h = %d bpp = %d\n", w, h, bpp);
-		//utils_read_ppm_image(&wl, w, h, bpp, img); //gw->gop->frames[0].img[0].img
-		//printf("utils_read_ppm_image ok!\n");
+		utils_rgb2bayer(gw->gop->buf, gw->gop->frames[nf].b.pic, w, h);
 
-		//new_buffer (gw->orig[0], w, h);
-		//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
-		//utils_draw(img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
-		//gtk_widget_queue_draw(gw->drawingarea[0]);
-
-		//printf("nf = %d\n", nf);
-		utils_rgb2bayer(img, gw->gop->frames[nf].b.pic, w, h);
 		gw->gop->frames[nf].state = FRAME_COPY;
 		//frame_copy(gw->gop, nf, uchar *y, uchar *u, uchar *v)
 
-		new_buffer (gw->orig[nf], gw->gop->w-1, gw->gop->h-1);
-		utils_bayer_draw(gw->gop->frames[nf].b.pic, gdk_pixbuf_get_pixels(gw->orig[nf]->pxb), gw->gop->w, gw->gop->h, gw->gop->bg);
+		new_buffer (gw->orig[nf], gw->wc.w-1, gw->wc.h-1);
+		utils_bayer_draw(gw->gop->frames[nf].b.pic, gdk_pixbuf_get_pixels(gw->orig[nf]->pxb), gw->wc.w, gw->wc.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[nf]);
 
-		new_buffer (gw->orig[nf+1], gw->gop->w, gw->gop->h);
-		utils_grey_draw(gw->gop->frames[nf].b.pic, gdk_pixbuf_get_pixels(gw->orig[nf+1]->pxb), gw->gop->w, gw->gop->h);
+		new_buffer (gw->orig[nf+1], gw->wc.w, gw->wc.h);
+		utils_grey_draw(gw->gop->frames[nf].b.pic, gdk_pixbuf_get_pixels(gw->orig[nf+1]->pxb), gw->wc.w, gw->wc.h);
 		//utils_draw(img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h);
 		gtk_widget_queue_draw(gw->drawingarea[nf+1]);
-		free(img);
+		//free(img);
 
 	} else {
 		//printf("Can't open file %s\n", gw->filename_open);
@@ -258,7 +263,7 @@ void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT){
 	    gw->filename_save = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	    walet_write_stream(gw->gop, 1, gw->filename_save);
+	    walet_write_stream(gw->gop, &gw->wc, 1, gw->filename_save);
 	    //save_to_file (filename);
 	    //g_free (filename);
 	  } else gw->new = 1;
@@ -269,7 +274,7 @@ void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_save_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->new) on_save_as_button_clicked(object, gw);
-	else	   walet_write_stream(gw->gop, 1, gw->filename_save);
+	else	   walet_write_stream(gw->gop, &gw->wc, 1, gw->filename_save);
 }
 
 void on_feet_button_clicked (GtkObject *object, GtkWalet *gw)
@@ -311,7 +316,6 @@ void on_zoom_in_button_clicked (GtkObject *object, GtkWalet *gw)
 			}
 		}
 	}
-	//g_printf("zoom = %f feet = %d \n", gw->zoom, gw->feet);
 }
 
 void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
@@ -344,28 +348,13 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	//dwt_bayer_53(&gw->gop->frames[0].b, gw->gop->frames[0].C, gw->gop->frames[0].L, (int16*)gw->gop->buf, gw->gop->steps);
-	if(frame_dwt(gw->gop, gw->gop->cur_gop_frame)) {
-	//if(frame_dwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->fb)) {
+	if(frame_dwt(gw->gop, gw->gop->cur_gop_frame, &gw->wc)) {
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[2], gw->gop->w, gw->gop->h);
-		utils_dwt_draw(gw->gop, 0,  gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps);
+		new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
+		utils_dwt_draw(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
-		//utils_one_dwt_draw_8(&gw->gop->frames[0].B8.C[0], &gw->gop->frames[0].B8.C[1],  &gw->gop->frames[0].B8.C[2], &gw->gop->frames[0].B8.C[3],
-		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
-		//utils_dwt_draw(&gw->gop->frames[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps, gw->gop->bpp);
-		//utils_dwt_draw(&gw->gop->frames[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->steps, gw->gop->bpp);
-
-
-		//printf("L8[0][0] = %p\n", &gw->gop->frames[0].L8[0][0]);
-		//utils_one_dwt_draw_8(&gw->gop->frames[0].L8[0][0].s[0], &gw->gop->frames[0].L8[0][0].s[1],  &gw->gop->frames[0].L8[0][0].s[2], &gw->gop->frames[0].L8[0][0].s[3],
-		//		gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 0, 0, gw->gop->frames[0].B8.C[0].w + gw->gop->frames[0].B8.C[1].w);
-		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->color, gw->gop->steps);
-
-		//utils_dwt_draw_8(gw->gop->frames[0].L8, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), 1);
-
 	}
 }
 
@@ -373,9 +362,7 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	//idwt_bayer_53(&gw->gop->frames[0].D, gw->gop->frames[0].C, gw->gop->frames[0].L, (int16*)gw->gop->buf, gw->gop->steps, gw->gop->steps);
-    if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps)){
-		//if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps, gw->gop->fb)){
+    if(frame_idwt(gw->gop, gw->gop->cur_gop_frame, &gw->wc,  gw->wc.steps)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
@@ -385,8 +372,7 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 
 
 		new_buffer (gw->orig[3], gw->gop->frames[0].d.w, gw->gop->frames[0].d.h);
-		utils_bayer_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->frames[0].d.w, gw->gop->frames[0].d.h, gw->gop->bg);
-		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->width, gw->gop->height, gw->gop->bg);
+		utils_bayer_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->frames[0].d.w, gw->gop->frames[0].d.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 		printf("APE = %f  ",utils_ape_16(gw->gop->frames[0].b.pic, gw->gop->frames[0].d.pic, gw->gop->frames[0].b.w*gw->gop->frames[0].b.h, 1));
@@ -398,7 +384,7 @@ void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_fill_subb(gw->gop, gw->gop->cur_gop_frame);
+	frame_fill_subb(gw->gop, gw->gop->cur_gop_frame, &gw->wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Fill subband time = %f\n",(double)(end-start)/1000000.);
 }
@@ -406,9 +392,9 @@ void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_bits_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	gw->gop->comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
+	gw->wc.comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, gw->gop->comp);
+	frame_bits_alloc(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gw->wc.comp);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("Bits allocation time = %f\n",(double)(end-start)/1000000.);
 }
@@ -417,16 +403,13 @@ void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame)){
+	if(frame_quantization(gw->gop, gw->gop->cur_gop_frame, &gw->wc)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Quantization time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[3], gw->gop->w, gw->gop->h);
-		utils_dwt_draw(gw->gop, 0,  gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->steps);
+		new_buffer (gw->orig[3], gw->wc.w, gw->wc.h);
+		utils_dwt_draw(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
-		//new_buffer (gw->orig[3], gw->gop->w, gw->gop->h);
-		//utils_subband_draw(&gw->gop->frames[gw->gop->cur_gop_frame].img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop->color, gw->gop->steps);
-		//gtk_widget_queue_draw(gw->drawingarea[3]);
 	}
 }
 
@@ -435,11 +418,11 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint32 size;
 	if(gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_encode(gw->gop, gw->gop->cur_gop_frame, &size);
+	frame_range_encode(gw->gop, gw->gop->cur_gop_frame, &gw->wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 
 	printf("Frame size  = %d Encoded frame size = %d compess = %f time = %f\n",
-			gw->gop->w*gw->gop->h, size, (double)(gw->gop->w*gw->gop->h)/(double)size, (double)(end-start)/1000000.);
+			gw->wc.w*gw->wc.h, size, (double)(gw->wc.w*gw->wc.h)/(double)size, (double)(end-start)/1000000.);
 }
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -448,7 +431,7 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(gw->gop == NULL ) return;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &size);
+	frame_range_decode(gw->gop, gw->gop->cur_gop_frame, &gw->wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 
 	printf("Decoded frame size = %d time = %f\n", size, (double)(end-start)/1000000.);
@@ -457,16 +440,8 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	gw->gop->comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
-	frame_compress(gw->gop, gw->gop->cur_gop_frame, gw->gop->comp, FR_5_3);
-	//printf("times = %d\n", gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton));
-	frame_quantization(gw->gop, gw->gop->cur_gop_frame);
-	frame_idwt(gw->gop, gw->gop->cur_gop_frame, gw->gop->steps);
-	new_buffer (gw->orig[0], gw->gop->frames[0].img[0].idwts.x-1, gw->gop->frames[0].img[0].idwts.y-1);
-	utils_bayer_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb),
-			gw->gop->frames[0].img[0].idwts.x, gw->gop->frames[0].img[0].idwts.y, gw->gop->bg);
-	gtk_widget_queue_draw(gw->drawingarea[0]);
-
+	gw->wc.comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
+	frame_compress(gw->gop, gw->gop->cur_gop_frame, &gw->wc, gw->wc.comp);
 	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->w*gw->gop->h, 1));
 	//printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->w*gw->gop->h, 1));
 	//printf("PSNR  = %f\n",utils_psnr(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->w*gw->gop->h, 1));
@@ -475,16 +450,16 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(gw->gop == NULL ) return;
-	utils_resize_bayer_2x_new(gw->gop->frames[0].b.pic, (int16*)gw->gop->buf, gw->gop->w, gw->gop->h);
-	utils_resize_bayer_2x_new((int16*)gw->gop->buf, gw->gop->frames[0].d.pic, gw->gop->w>>1, gw->gop->h>>1);
+	utils_resize_bayer_2x_new(gw->gop->frames[0].b.pic, (int16*)gw->gop->buf, gw->wc.w, gw->wc.h);
+	utils_resize_bayer_2x_new((int16*)gw->gop->buf, gw->gop->frames[0].d.pic, gw->wc.w>>1, gw->wc.h>>1);
 
-	new_buffer (gw->orig[0], gw->gop->w>>2, gw->gop->h>>2);
-	utils_grey_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->w>>2, gw->gop->h>>2);
+	new_buffer (gw->orig[0], gw->wc.w>>2, gw->wc.h>>2);
+	utils_grey_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.w>>2, gw->wc.h>>2);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
 
-	new_buffer (gw->orig[2], gw->gop->w>>2, gw->gop->h>>2);
-	utils_bayer_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->w>>2, gw->gop->h>>2, gw->gop->bg);
+	new_buffer (gw->orig[2], gw->wc.w>>2, gw->wc.h>>2);
+	utils_bayer_draw(gw->gop->frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.w>>2, gw->wc.h>>2, gw->wc.bg);
 	//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->w, gw->gop->h, gw->gop->bg);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
 	/*
@@ -515,7 +490,7 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	h = gw->gop->frames[0].Y.h;
 
 
-	frame_match(gw->gop, 0, 1);
+	frame_match(gw->gop, 0, 1, &gw->wc);
 	//seg_draw_vec(frm1->pixs, npix, frm1->vec.pic, frm1->grad[0].width, frm1->grad[0].height);
 
 
@@ -524,24 +499,6 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw8(frm2->Y.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h);
 	//utils_grey_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
-
-
-	/*
-	new_buffer (gw->orig[1], w, h);
-
-	utils_color_draw(frm1->edge.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 2);
-	utils_color_draw(frm2->edge.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1);
-	utils_color_draw(frm1->vec.pic , gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
-	//utils_grey_draw(frm1->pix[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h);
-
-	gtk_widget_queue_draw(gw->drawingarea[1]);
-
-
-	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(frm2->line.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	//utils_grey_draw(frm1->grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-	gtk_widget_queue_draw(gw->drawingarea[3]);
-	*/
 
 	//printf("DISTR = %f\n",utils_dist(gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->w*gw->gop->h, 1));
 	//printf("APE   = %f\n",utils_ape (gw->gop->frames[0].img[0].img, gw->gop->frames[1].img[0].img, gw->gop->w*gw->gop->h, 1));
@@ -571,7 +528,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(nf){
 		for(i=0; i<= nf; i++) {
 			frm[i] = &gw->gop->frames[i];
-			frame_segmetation(gw->gop, i);
+			frame_segmetation(gw->gop, i, &gw->wc);
 			seg_draw_lines(frm[i]->pixs, npix, frm[i]->line.pic, frm[i]->grad.w, frm[i]->grad.h);
 			if(!i){
 				seg_draw_edges(frm[i]->pixs, frm[i]->edges, frm[i]->nedge , frm[i]->edge.pic, frm[i]->grad.w, frm[i]->grad.h, 0, 0);
@@ -593,7 +550,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		}
 	} else {
 		frm[0] = &gw->gop->frames[0];
-		frame_segmetation(gw->gop, 0);
+		frame_segmetation(gw->gop, 0, &gw->wc);
 		//seg_draw_lines(frm[0]->pixs, npix, frm[0]->line.pic, frm[0]->grad[0].width, frm[0]->grad[0].height);
 		//seg_draw_edges(frm[0]->pixs, frm[0]->edges, frm[0]->nedge , frm[0]->edge.pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0, 0);
 		//seg_draw_pix(frm[0]->pixs, frm[0]->Y[0].pic, frm[0]->grad[0].pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0);

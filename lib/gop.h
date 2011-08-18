@@ -8,21 +8,6 @@
 	\brief The coder  parameters structure.
  */
 typedef struct {
-	//WaletConfig *wc;
-	/*
-	uint16 			w;			/// Image width.
-	uint16 			h;			/// Image height.
-	ColorSpace		color;		/// Color space.
-	BayerGrid		bg;			/// Bayer grid pattern.
-	uint32			bpp;		/// Image bits per pixel.
-	uint32 			steps;  	/// DWT steps.
-	uint32			gop_size;	/// GOP size.
-	uint32			rates;		/// Frame rates.
-	uint32			comp;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
-	FilterBank		fb;			/// Filters bank for wavelet transform.
-	RangeType		rt;			/// Range coder type.
-	*/
-	//Paremeters for encoder
 
 	Frame			*frames;	//Pointer to frames array
 	uint8			*buf;		//Temporal buffer for DWT, IDW, and range coder
@@ -30,6 +15,8 @@ typedef struct {
 
 	uint32			cur_gop_frame;	// The current gop frame
 	uint64			cur_stream_frame;	// The current stream frame
+	uint32 			state;	//The state of GOP
+
 
 	//Subband			*sub[3];	//Subband location and size structure
 	//int 			*q;			//Quantization value array
@@ -56,11 +43,11 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-GOP* 	walet_decoder_init	(uint32 width, uint32 height, ColorSpace color, BayerGrid bg, uint32 bpp, uint32 steps, uint32 gop_size, uint32 rates, uint32 comp, FilterBank fb);
+GOP* 	walet_decoder_init	(WaletConfig *wc);
 GOP* 	walet_encoder_init	(WaletConfig *wc);
 
-uint32 	walet_write_stream	(WaletConfig *wc, GOP *gop, uint32 num, const char *filename);
-uint32 	walet_read_stream	(GOP **gop, uint32 num, const char *filename);
+uint32	walet_write_stream	(GOP *gop, WaletConfig *wc, uint32 num, const char *filename);
+uint32 	walet_read_stream	(GOP *gop, WaletConfig *wc, uint32 num, const char *filename);
 
 #ifdef __cplusplus
 }

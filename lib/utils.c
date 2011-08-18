@@ -29,10 +29,10 @@ int g[9][2] = {
 #define lh(step, x, y) img[x*step + (step>>1)*width  + y*step*width];
 #define hh(step, x, y) img[x*step + (step>>1) + (step>>1)*width  + y*step*width];
 
-//#define clip(x)		x < 0 ? (x < -255 ? 255 : -x) : ( x > 255 ? 255 : x);
 #define clip(x)		abs(x);
 #define lb(x) (((x+128) < 0) ? 0 : (((x+128) > 255) ? 255 : (x+128)))
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
+#define oe(a,x)	(a ? x&1 : (x+1)&1)
 
 
 static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
@@ -62,13 +62,13 @@ static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uin
 	}
 }
 
-uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
+uint8* utils_dwt_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps)
 {
 	uint32 i, j, x, y, w;
-	Frame *f = &gop->frames[fr];
+	Frame *f = &g->frames[fn];
 
 	w = f->img[0].w + f->img[1].w;
-	if(steps == gop->steps && gop->steps){
+	if(steps == wc->steps && wc->steps){
 		for(j=0; j < steps; j++){
 			for(i=0; i < 4; i++){
 				if		(i == 0){ x = 0; 			y = 0;}
@@ -86,7 +86,7 @@ uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps)
 			}
 		}
 	} else {
-		if(gop->steps == 0){
+		if(wc->steps == 0){
 			drawrect(rgb, f->img[0].p, 0,         		0,         		f->img[0].w, f->img[0].h, w, 128);
 			drawrect(rgb, f->img[1].p, f->img[0].w, 	0,         		f->img[1].w, f->img[1].h, w, 128);
 			drawrect(rgb, f->img[2].p, 0,         		f->img[0].h, 	f->img[2].w, f->img[2].h, w, 128);
@@ -160,7 +160,6 @@ uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
 }
 
 
-#define oe(a,x)	(a ? x&1 : (x+1)&1)
 //#define lb(x) (x&0xFF)
 
 uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
@@ -1401,9 +1400,9 @@ uint8* YUV420p_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32
 	return rgb;
 }
 
-uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 **img)
+uint32 utils_read_ppm(const char *filename, uint32 *w, uint32 *h, uint32 *bpp, uint8 *img)
 {
-    //FILE *wl;
+    FILE *wl;
     uint8 line[100];
     uint32 byts;
 
@@ -1420,7 +1419,7 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 	}
 	byts = fscanf(wl, "%s", line);
 	if(line[0] == '#'){
-		fgets(line, 100, wl);
+		if(fgets(line, 100, wl) == NULL) { printf("Can't get header\n"); return; }
 	} else {
 		*w = atoi(line);
 		byts = fscanf(wl, "%s", line); *h = atoi(line);
@@ -1433,8 +1432,8 @@ uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint
 	printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
 	fgetc(wl);
 
-	*img = (uint8 *)calloc((*w)*(*h)*(*bpp)*3, sizeof(uint8));
-	byts = fread(*img, sizeof(uint8), (*w)*(*h)*(*bpp)*3,  wl);
+	//*img = (uint8 *)calloc((*w)*(*h)*(*bpp)*3, sizeof(uint8));
+	byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp)*3,  wl);
 	if(byts != (*w)*(*h)*(*bpp)*3){ printf("Image read error\n");}
 	//printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp)*3);
     fclose(wl);
