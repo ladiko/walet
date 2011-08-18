@@ -389,14 +389,14 @@ void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, ui
 		img->l = (Level *)calloc(steps, sizeof(Level));
 		tmp = (uint16 *)calloc(w*h, sizeof(uint16));
 		for(i=0; i < 4; i++) {
-			subband_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
+			subb_init(&img->l[0].s[i], tmp, (w>>1) + bit_check(w, i), (h>>1) + bit_check(h, i>>1), bpp);
 			//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[0].s[i].w, img->l[0].s[i].h);
 			tmp = tmp + img->l[0].s[i].w*img->l[0].s[i].h;
 		}
 		for(k=1; k < steps; k++){
 			tmp = (uint16 *)calloc(img->l[k-1].s[0].w*img->l[k-1].s[0].h, sizeof(uint16));
 			for(i=0; i < 4; i++) {
-				subband_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
+				subb_init(&img->l[k].s[i], tmp, (img->l[k-1].s[0].w>>1) + bit_check(img->l[k-1].s[0].w, i),
 						(img->l[k-1].s[0].h>>1) + bit_check(img->l[k-1].s[0].h, i>>1), bpp);
 				//printf("l[%d].s[%d] = %p w = %d h = %d\n", 0, i, tmp,  img->l[k].s[i].w, img->l[k].s[i].h);
 				tmp = tmp + img->l[k].s[i].w*img->l[k].s[i].h;
@@ -491,7 +491,7 @@ void image_fill_subb(Image *im, uint32 steps){
 	uint32 i, j;
 	for(i=0; i < steps; i++) {
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
-			subband_fill_prob(&im->l[i].s[j]);
+			subb_fill_prob(&im->l[i].s[j]);
 			im->qst += im->l[i].s[j].a_bits-1;
 			//printf("l[%2d][%2d] a_bits = %d\n", i, j, im->l[i].s[j].a_bits);
 		}
@@ -580,7 +580,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep){
 	}
 	//Calculate image size for given quantization step (qstep)
 	for(i=0; i < steps; i++) for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
-		size1 = subband_size(&im->l[i].s[j]);
+		size1 = subb_size(&im->l[i].s[j]);
 		size += size1;
 		//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 	}
@@ -661,7 +661,7 @@ void image_quantization(Image *im, uint32 steps, uint8 *buf){
 	uint32 i, j;
 	//Subband *sub = im->sub;
 	//uint8 *img = im->img;
-	for(i=0; i < steps; i++) for(j=1; j < 4; j++) subband_quantization(&im->l[i].s[j], (int *)buf);
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) subb_quantization(&im->l[i].s[j], (int *)buf);
 
 }
 
@@ -682,30 +682,29 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
-				subband_encode_table(&im->l[i].s[j], q);
+				subb_encode_table(&im->l[i].s[j], q);
 				switch(rt){
 					case(ADAP):{
-						size1 = range_encoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist);
-						break;
-					}
+						im->l[i].s[j].ssz = range_encoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist);
+						break; }
 					case(NADAP):{
-						size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
-						break;
-					}
+						im->l[i].s[j].ssz = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
+						break; }
 					case(FAST):{
-						size1 = range_encoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
-						break;
-					}
+						im->l[i].s[j].ssz = range_encoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
+						break; }
 					default:{
 						printf("Don't support %d range coder type\n", rt);
-						return;
-					}
+						return; }
 				}
 				//size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
-				size += size1;
-				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
-						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
-						((float)size1/(float)sq), ((float)(subband_size(&im->l[i].s[j])>>3)/(float)size1));
+				size += im->l[i].s[j].ssz;
+				//printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+				//		i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
+				//		((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
 			}
 	}
 	//printf("Finish range_encoder\n");
@@ -730,29 +729,28 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			sq = im->l[i].s[j].w*im->l[i].s[j].h;
 			if(im->l[i].s[j].q_bits >1){
-				subband_decode_table(&im->l[i].s[j], q);
+				subb_decode_table(&im->l[i].s[j], q);
 				switch(rt){
 					case(ADAP):{
-						size1 = range_decoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
-						break;
-					}
+						size1 = range_decoder_ad(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break; }
 					case(NADAP):{
-						size1 = range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
-						break;
-					}
+						size1 = range_decoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break; }
 					case(FAST):{
-						size1 = range_decoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
-						break;
-					}
+						size1 = range_decoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+								im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
+						break; }
 					default:{
 						printf("Don't support %d range coder type\n", rt);
-						return;
-					}
+						return; }
 				}
 				size += size1;
-				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
-						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subband_size(&im->l[i].s[j])>>3,
-						((float)size1/(float)sq), ((float)(subband_size(&im->l[i].s[j])>>3)/(float)size1));
+				//printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+				//		i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
+				//		((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
 	return size;
@@ -766,5 +764,10 @@ void image_median_filter(Image *im, uint8 *buf){
 ///	\param steps 		The steps of DWT transform.
 
 	filter_median(im->p, (int16*)buf, im->w, im->h);
+}
+
+uint32 image_write_level(Image *im, FILE *wl, uint32 steps, uint32 lev)
+{
+
 }
 

@@ -7,8 +7,8 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-//uint8* utils_one_dwt_draw_8(Pic8s *ll, Pic8s *hl, Pic8s *lh, Pic8s *hh, uint8 *rgb, uint32 x, uint32 y, uint32 w);
-uint8* utils_dwt_draw(GOP *gop, uint32 fr, uint8 *rgb, uint8 steps);
+uint8* utils_dwt_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);
+
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
 void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);
 
@@ -81,7 +81,7 @@ uint8* YUV420p_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32
 //extern void fill_rect_ver(imgmv *pic,  Vector size,  Vector rec_left_top,  Vector rec_right_bot,  Vector line);
 
 
-uint32 utils_read_ppm(const char *filename, FILE *wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 **img);
+uint32 utils_read_ppm(const char *filename, uint32 *w, uint32 *h, uint32 *bpp, uint8 *img);
 void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h);
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col);
 

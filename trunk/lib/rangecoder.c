@@ -15,7 +15,9 @@
     3. Special range coder, free of any division and multiplication operation, may\n
     use only for wavelet subband compression and need probability distribution\n
     array with each probability equal power of 2, and sum of distribution should\n
-    be equal power of 2.
+    be equal power of 2.\n
+    This 32 bit version on range coder support maximum  subband size less than 2^24 (16 Mpixeles),\n
+    the total image size should  be less than 2^26 (64 Mpixeles).
 */
 
 #include <stdio.h>
@@ -102,8 +104,6 @@ uint32 range_encoder_ad(int16 *img,uint32 size, uint32 a_bits , uint32 q_bits, u
 	//Encoder setup
 	init_prob(d, q_bits, c);
 	range = top; low = 0; j=0;
-	//bits = find_msb_bit(num);
-	//tmp = 1<<(bits+1);
 
 	//Start encoding
 	for(i=0; i<size; i++) {
@@ -128,7 +128,6 @@ uint32 range_encoder_ad(int16 *img,uint32 size, uint32 a_bits , uint32 q_bits, u
 	buff[j++] = (low>>16) & 0xFF;
 	buff[j++] = (low>>8)  & 0xFF;
 	buff[j++] = low & 0xFF;
-	//make_distrib(img, d, size, a_bits, q_bits, q);
 	return j;
 }
 
@@ -153,12 +152,9 @@ uint32  range_decoder_ad(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits,
 	//Decoder setup
 	init_prob(d, q_bits, c);
 	range = top; j=4;
-	//bits = find_msb_bit(num);
-	//tmp = 1<<(bits+1);
-
-	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 
 	// Start decoding
+	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 	for(i=0; i<size; i++) {
 		while(range <= bot) {
 			range <<=sh;
@@ -167,15 +163,10 @@ uint32  range_decoder_ad(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits,
 		range = range/sz;
 		out = low/range;
 		out1 = get_pix(out, c, q_bits, &f, &cf);
-		//if(img[i]-q[out1]) {
-		//if(out2-out!=0) {
 		//if(i<100) printf("%5d low = %8X range = %8X out = %8X out2 = %8X out1 = %3d img = %4d q[out1] = %4d diff = %d out2 = %8X dif = %d\n",
 		//			i, low, range, out, out1, out2, img[i], q[out1], img[i]-q[out1], out2, out2-out);
-			//return 0;
-		//}
 		low -= cf*range;
 		range = f*range;
-		//set_freq(out1, d, q_bits);
 		sz++;
 		img[i] = q[out1];
 	}
@@ -356,68 +347,44 @@ static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 half)
 */
 uint32  range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q,  uint32 *d, uint32 *buff1)
 {
-        uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
-        uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
-        uint32 i, j, k=0 , bits, tmp, msb;
-        uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num];
-        int im;
-        uint32 *don = &buff1[num<<1];
+	uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
+	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
+	uint32 i, j, k=0 , bits, tmp, msb;
+	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num];
+	int im;
+	uint32 *don = &buff1[num<<1];
 
-        //Encoder setup
-    	sz = dist_tot_pow_2(d, dq, a_bits, q_bits, &msb);
+	//Encoder setup
+	sz = dist_tot_pow_2(d, dq, a_bits, q_bits, &msb);
+	cum_freq(dq, cu, q_bits);
+	tmp = write_dist(dq, q_bits, msb, sz, buff);
+	buff = &buff[tmp];
 
-    	//dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
-
-    	cum_freq(dq, cu, q_bits);
-        //make_cum_freq(dq, cu, q_bits);
-        //printf("finesh make_distrib sz = %d num = %d\n", sz, num);
-
-        tmp = write_dist(dq, q_bits, msb, sz, buff);
-        //printf("write = %d \n", tmp);
-        //for(i=0; i < num; i++) printf("%d ", dq[i]);
-        //printf("\n");
-
-        buff = &buff[tmp];
-
-        //j = (tmp&7) ? (tmp>>3) + 1 : (tmp>>3);
-        //printf("dist_size = %d bits %d byts\n", tmp, j);
-        j=0;
-
-        //init_prob(d, q_bits, c);
-        range = top; low = 0;
-
-        //for(i=0; i < num; i++) printf("%d ", q[i]);
-        //printf("\n");
-        //for(i=0; i < num; i++) printf("%d ", d[i]);
-        //printf("\n");
-        //Start encoding
-        for(i=0; i<size; i++) {
-                im = q[img[i] + half];
-                //if(i<10)
-                //printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d dq[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im], dq[im]);
-
-                range = range>>sz;
-                //cu = get_cum(im, c, q_bits);
-                low1 = low;
-                low += range*cu[im];
-                //if(i<10)      printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
-                //range = range*d[im];
-                range = range*dq[im];
-                //update_dist(im, d, ds, ab, sw, size_ab, &get, &set, &swc);
-                if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
-                if(i != size1){
-                        while(range <= bot) {
-                                buff[j++] = (low>>24);
-                                range <<= sh;
-                                low <<= sh;
-                        }
-                }
-        }
-        buff[j++] = (low>>24);
-        buff[j++] = (low>>16) & 0xFF;
-        buff[j++] = (low>>8)  & 0xFF;
-        buff[j++] = low & 0xFF;
-        return j+tmp;
+	//Start encoding
+	range = top; low = 0; j=0;
+	for(i=0; i<size; i++) {
+		im = q[img[i] + half];
+		//if(i<10) printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d dq[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im], dq[im]);
+		range = range>>sz;
+		low1 = low;
+		low += range*cu[im];
+		//if(i<10)      printf("%5d low = %8X low1 = %8X range = %8X  out = %4d img = %4d\n", i, low, low1, range, im, img[i]);
+		//range = range*d[im];
+		range = range*dq[im];
+		if(low < low1) { for(k=1; !(++buff[j-k]); k++);}
+		if(i != size1){
+			while(range <= bot) {
+				buff[j++] = (low>>24);
+				range <<= sh;
+				low <<= sh;
+			}
+		}
+	}
+	buff[j++] = (low>>24);
+	buff[j++] = (low>>16) & 0xFF;
+	buff[j++] = (low>>8)  & 0xFF;
+	buff[j++] = low & 0xFF;
+	return j+tmp;
 }
 
 /**	\brief Non adaptive range decoder.
@@ -440,43 +407,24 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 
         //Decoder setup
         tmp = read_dist(d, q_bits, &sz, buff);
-        //printf("read = %d \n", tmp);
-        //for(i=0; i < num; i++) printf("%d ", dq[i]);
-        //printf("\n");
-        //make_cum_freq(dq, cu, q_bits);
     	cum_freq(d, cu, q_bits);
-
-        //for(i=0; i < num; i++) printf("%d ", cu[i]);
-        //printf("\n");
-        //sz = read_distrib(buff, d, q_bits);
-        //sz = read_distrib1(buff, d, q_bits);
         buff = &buff[tmp];
 
         range = top; j=4;
-
-        low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
-
         // Start decoding
+        low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
         for(i=0; i<size; i++) {
                 while(range <= bot) {
                         range <<=sh;
                         low = (low<<sh) | (uint32)buff[j++];
                 }
                 range = range>>sz;
-                //out = divide1(low, range);
                 out = low/range;
-                //im = get_cum_f(out, cu, cu_sz);
-                //im = get_cum_f(out, cu, num);
                 im = get_cum_f(out, cu, half);
-                //im = half;
-                //if(img[i] != q[im])
-                //if(i >=0 && i< 5)
                 //printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
                 //                      i, low, low-cu[im]*range, range<<sz, range, d[im]*range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
                 low -= cu[im]*range;
                 range = d[im]*range;
-                //set_freq(out1, d, q_bits);
-                //sz++;
                 img[i] = q[im];
         }
         return j+tmp;
@@ -495,7 +443,6 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 {
 	uint32 i, num = 1<<q_bits, max, b, half, full, t;
 	int nl, nr;
-	//memset(dout, 0, sizeof(uint32)*num);
 	memset(don, 0, sizeof(uint32)*num<<1);
 
 	//Make distribution with each frequency power of 2
@@ -588,7 +535,6 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	//Encoder setup
 	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
 	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
-
 	tmp = write_dist(dq, q_bits, msb, sz, buff);
 	buff = &buff[tmp];
 
@@ -639,7 +585,6 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	//Decoder setup
 	tmp = read_dist(dq, q_bits, &sz, buff);
 	buff = &buff[tmp];
-
 	cum_freq_pow(dq, cu, q_bits);
 
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];

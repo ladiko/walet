@@ -7,7 +7,7 @@
 #include <utils.h>
 
 
-void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
+void subb_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 {
 	sub->d_bits = bpp+2;
 	//sub->dist = (uint32 *)calloc((1<<sub->d_bits)*3, sizeof(uint32));
@@ -18,7 +18,7 @@ void subband_init(Subband *sub, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	sub->h = h;
 }
 
-void subband_fill_prob(Subband *sub){
+void subb_fill_prob(Subband *sub){
 ///	\fn void subband_fill_prob(uint8 *img, Subband *sub)
 ///	\brief Fill distribution probability arrays.
 ///	\param img	 		The pointer to image.
@@ -96,7 +96,7 @@ void q_i_nonuniform1(Subband *sub)
 
 // TODO: Make
 
-uint32 subband_size(Subband *sub){
+uint32 subb_size(Subband *sub){
 /// \fn uint32 subband_size(Subband *sub)
 /// \brief Calculate subband size after quantization.
 ///	\param sub 			Pointer to subband.
@@ -138,7 +138,7 @@ uint32 subband_size(Subband *sub){
 	return (uint32)s;
 }
 
-void  subband_encode_table(Subband *sub, int *q){
+void  subb_encode_table(Subband *sub, int *q){
 /// \fn void  subband_encode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for encoder.
 ///	\param sub 			Pointer to subband.
@@ -161,7 +161,7 @@ void  subband_encode_table(Subband *sub, int *q){
 	//for(i=-range; i < range; i++) printf("%d  ", q[range+i]);
 }
 
-void  subband_decode_table(Subband *sub, int *q){
+void  subb_decode_table(Subband *sub, int *q){
 /// \fn void  subband_decode_table(Subband *sub, int *q)
 ///	\brief Make quantization array for decoder.
 ///	\param sub 			Pointer to subband.
@@ -182,7 +182,7 @@ void  subband_decode_table(Subband *sub, int *q){
 	//for(j=-half; j < half; j++) printf("%d  ", sub->q[half+j]);
 }
 
-void  subband_quantization(Subband *sub, int *q){
+void  subb_quantization(Subband *sub, int *q){
 /// \fn void  subband_quantization(uint8 *img, Subband *sub)
 ///	\brief Subband quantization.
 ///	\param img			The pointer to subband
@@ -209,4 +209,3 @@ void  subband_quantization(Subband *sub, int *q){
 		} else for(i=0; i < size; i++ ) sub->pic[i] = 0;
 	}
 }
-

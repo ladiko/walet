@@ -92,14 +92,22 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
 
-	uint8 *buf = (uint8 *)calloc(width*height, sizeof(uint8));
-
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
 		//gw->gop->bpp = 16;
-		gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 4, 1, 0, 20, FR_5_3, 12);
-		//gw->gop = walet_encoder_init(width, height, BAYER, RGGB, 16, 3, 2, 0, 20, FR_HAAR, 12);
-		//gw->gop = walet_encoder_init(width, height, BAYER, RGGB, bpp, 2, 2, 0, 20, FR_5_3, 12);
+		gw->wc.w 			= width;	/// Image width
+		gw->wc.h			= height;	/// Image width
+		gw->wc.color		= BAYER;	/// Color space
+		gw->wc.bg			= RGGB;		/// Bayer grid pattern
+		gw->wc.bpp			= bpp;		/// Image bits per pixel.
+		gw->wc.steps		= 4;  		/// DWT steps.
+		gw->wc.gop_size		= 1;		/// GOP size
+		gw->wc.rates		= 0;		/// Frame rates
+		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
+		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
+		gw->wc.rt			= FAST;		/// Range coder type
+		gw->wc.mv			= 12;		/// The motion vector search in pixeles.
+		gw->gop = walet_encoder_init(&gw->wc);
 		gw->walet_init = 1;
 	}
 	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
@@ -109,20 +117,20 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-		new_buffer (gw->orig[0], gw->gop->w, gw->gop->h);
-		utils_draw(GST_BUFFER_DATA(buffer), gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->w, gw->gop->h);
+		new_buffer (gw->orig[0], gw->wc.w, gw->wc.h);
+		utils_draw(GST_BUFFER_DATA(buffer), gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.w, gw->wc.h);
 		//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), buf, gw->gop->w, gw->gop->h);
-		frame_copy(gw->gop, 0, buf, NULL, NULL);
+		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), gw->gop->buf, gw->wc.w, gw->wc.h);
+		frame_input(gw->gop, 0, &gw->wc, gw->gop->buf, NULL, NULL);
 
-		new_buffer (gw->orig[1], gw->gop->w, gw->gop->h);
-		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->w, gw->gop->h);
+		new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
+		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.w, gw->wc.h);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		new_buffer (gw->orig[2], gw->gop->w-1, gw->gop->h-1);
-		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop->w, gw->gop->h, gw->gop->bg);
+		new_buffer (gw->orig[2], gw->wc.w-1, gw->wc.h-1);
+		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.w, gw->wc.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 
@@ -130,15 +138,14 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 		//Copy frame 0 to decoder pipeline
 		printf("video/x-raw-bayer\n");
-		frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
-		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_input(gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+
 		new_buffer (gw->orig[0], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
 		utils_grey_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
 		new_buffer (gw->orig[1], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
-		utils_bayer_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h, gw->gop->bg);
-		//utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->w, gw->gop->height, gw->gop->bg);
+		utils_bayer_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 

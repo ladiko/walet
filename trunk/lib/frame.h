@@ -48,7 +48,7 @@ extern "C" {
 //Old interface
 
 void 	frames_init			(GOP *g, uint32 fn, WaletConfig *wc);
-void 	frame_copy			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v);
+void 	frame_input			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v);
 uint32 	frame_dwt			(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_idwt			(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
 uint32 	frame_fill_subb		(GOP *g, uint32 fn, WaletConfig *wc);
@@ -56,9 +56,9 @@ uint32	frame_bits_alloc	(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
 uint32 	frame_quantization	(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_range_encode	(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size);
 uint32 	frame_range_decode	(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size);
-uint32 frame_write			(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl);
-void 	frame_compress		(WaletConfig *wc, Frame *f, uint32 times , FilterBank fb);
-void 	frame_decompress	(WaletConfig *wc, Frame *f, uint32 isteps, FilterBank fb);
+
+uint32 	frame_write			(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl);
+uint32 	frame_read			(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl);
 
 uint32 	frame_median_filter	(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_fill_hist		(GOP *g, uint32 fn, WaletConfig *wc);
@@ -66,6 +66,9 @@ uint32 	frame_white_balance	(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Ga
 
 uint32 	frame_segmetation	(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_match			(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc);
+
+void 	frame_compress		(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
+void 	frame_decompress	(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
 
 #ifdef __cplusplus
 }

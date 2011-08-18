@@ -12,7 +12,7 @@ typedef struct {
 	Level		*l;		//The levels of DWT transform
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
-	uint32 		c_size;		//The size of compressed image in the  buffer.
+	uint32 		isz;		//The image size after range coder compression.
 	//Old interface
 	Dim 		idwts;		//Image size after IDWT, if DWT steps is not equal IDWT steps
 	//uint8 		*img;		//Pointer to image

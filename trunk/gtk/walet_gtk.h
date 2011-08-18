@@ -69,11 +69,9 @@ typedef struct  {
 	GtkWidget	*full_button1;
 	gboolean 	feet1;
 
-	//guint8		*buff; //Buffer for image loading.
-
 	//Walet structure
-	GOP			*gop;
-
+	GOP				*gop;
+	WaletConfig 	wc;
 	//Gstreamer structures
 	GMainLoop *loop;
 	GstBus *bus;

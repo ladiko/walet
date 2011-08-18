@@ -13,15 +13,16 @@ typedef struct {
 } Subband;
 */
 typedef struct {	// Signed picture 16bit
-	uint16 w;
-	uint16 h;
-	short int *pic;
-	//int *q;				//Quantization value array
-	uint32 *dist;		//Distribution probabilities array
-	uint32 d_bits;		//The max bit per pixel after DWT
-	uint32 a_bits;		//Real bits per pixels
-	uint32 q_bits;		//Quantization bits per pixel
-	uint32 max;
+	uint16 	w;
+	uint16 	h;
+	short int 	*pic;
+	//int *q;				//Quantization value array.
+	uint32 	*dist;		//Distribution probabilities array.
+	uint32 	d_bits;		//The max bit per pixel after DWT.
+	uint32 	a_bits;		//Real bits per pixels.
+	uint32 	q_bits;		//Quantization bits per pixel.
+	uint32 	max;		//The absolute value of the maximum.
+	uint32	ssz;		//The subband size after range coder compression.
 } Subband;
 
 typedef struct {	//One DWT decomposition level
