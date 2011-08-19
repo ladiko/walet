@@ -70,7 +70,7 @@ typedef struct  {
 	gboolean 	feet1;
 
 	//Walet structure
-	GOP				*gop;
+	GOP				gop;
 	WaletConfig 	wc;
 	//Gstreamer structures
 	GMainLoop *loop;

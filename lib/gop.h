@@ -43,8 +43,8 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-GOP* 	walet_decoder_init	(WaletConfig *wc);
-GOP* 	walet_encoder_init	(WaletConfig *wc);
+void 	walet_decoder_init	(GOP *gop, WaletConfig *wc);
+void 	walet_encoder_init	(GOP *gop, WaletConfig *wc);
 
 uint32	walet_write_stream	(GOP *gop, WaletConfig *wc, uint32 num, const char *filename);
 uint32 	walet_read_stream	(GOP *gop, WaletConfig *wc, uint32 num, const char *filename);
