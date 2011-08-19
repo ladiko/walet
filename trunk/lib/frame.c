@@ -31,15 +31,18 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 		//Init color components
+	    f->img = (Image *)calloc(4, sizeof(Image));
 		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == CS420){
+	    f->img = (Image *)calloc(4, sizeof(Image));
 		image_init(&f->img[0], w,    h,    wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == CS422){
+	    f->img = (Image *)calloc(4, sizeof(Image));
 		image_init(&f->img[0], w,    h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], w>>1, h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w>>1, h, wc->color, wc->bpp, wc->steps);
@@ -48,6 +51,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 		image_init(&f->img[1], w, h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w, h, wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == GREY){
+	    f->img = (Image *)calloc(1, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->color, wc->bpp, wc->steps);
 	}
 
@@ -96,12 +100,11 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 {
 	uint32 i, size = wc->w*wc->h, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return;
-
 
 	if(wc->color == BAYER) {
-		if(wc->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = ((v[i<<1]<<8) | v[(i<<1)+1]) - shift;
+		if(wc->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = ((y[i<<1]<<8) | y[(i<<1)+1]) - shift;
 		else for(i=0; i<size; i++) f->b.pic[i] = y[i] - shift;
+
 		//image_copy(f->b.pic, wc->bpp, y);
 
 	} else {
@@ -125,7 +128,6 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
 	//DWT taransform
 	if(check_state(f->state, FRAME_COPY | IDWT)){
 		if (wc->color == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
@@ -153,11 +155,10 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 */
 uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 {
-	//TODO: Change idwt_53_2d_one to (*idwt_one)
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
-	if(check_state(f->state, DWT)){
+
+	if(check_state(f->state, DWT | RANGE_DECODER)){
 		if (wc->color == GREY) image_idwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps, isteps);
 		else if(wc->color == BAYER ) {
 			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
@@ -192,7 +193,6 @@ uint32 frame_fill_subb(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
 	f->qst = 0;
 
 	if(check_state(f->state, DWT)){
@@ -239,7 +239,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
 	uint32 i, j, k, size, qs, qs1, df, s, df1;
 	uint32 bl[4];
-	if(wc == NULL || times == 1) return 0;
+	if(times == 1) return 0;
 	size = (wc->w*wc->h*wc->bpp)/times;
 	df1 = size;
 	Frame *f = &g->frames[fn];
@@ -299,7 +299,6 @@ uint32 frame_quantization(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
 
 	if(check_state(f->state, BITS_ALLOCATION)){
 		if(wc->color == GREY) image_quantization(&f->img[0], wc->steps, g->buf);
@@ -324,7 +323,6 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
 	*size = 0;
 
 	if(check_state(f->state, FILL_SUBBAND)){
@@ -359,10 +357,8 @@ uint32 frame_range_decode(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
-	if(wc == NULL ) return 0;
 	*size = 0;
 
-	printf("frame_range_decode \n");
 	if(check_state(f->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
 		if(wc->color == GREY) *size += image_range_decode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
@@ -415,8 +411,6 @@ uint32 frame_fill_hist(GOP *g, uint32 fn, WaletConfig *wc)
 	uint32	tmp = size;
 	Frame *f = &g->frames[fn];
 
-	if(wc == NULL ) return 0;
-
 	if(check_state(f->state, FRAME_COPY)){
 		if(wc->color == BAYER) {
 			fill_bayer_hist(f->b.pic, f->hist, &f->hist[sz], &f->hist[sz<<1], f->b.w, f->b.h, wc->bg, wc->bpp);
@@ -461,8 +455,6 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 */
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
-	uint32 j, i, ncors=0, beg, diff, k, nedge;// sq = wc->width*wc->height;
-	clock_t start, end;
 	Frame *f = &g->frames[fn];
 
 	if(check_state(f->state, FRAME_COPY)){
@@ -584,6 +576,7 @@ uint32 frame_read(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
     uint8 *bits;
     uint32 i, lv, im, sb, sz, size=0, ic, bc[4], is[4];
 	Frame *f = &g->frames[fn];
+	//printf("fn = %d %p\n", fn, f);
 
 	bc[0] = 0; bc[1] = 0; bc[2] = 0; bc[3] = 0;
 	//The position images in the buffer

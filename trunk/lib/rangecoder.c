@@ -598,9 +598,9 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 		range = range-sz;
 		out = low>>range;
 		im = get_cum_f(out, cu, half);
-		//if(i<100)
-		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
-		//			i, low, low-cu[im]*range, range+sz, range, dq[im]+range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
+		//if(i<10)
+		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d cu = %8d diff = %d\n",
+		//			i, low, low-cu[im]*range, range+sz, range, dq[im]+range, out, im, img[i], q[im], cu[im], img[i]-q[im]);
 
 		low -= cu[im]<<range;
 		range = range + dq[im];

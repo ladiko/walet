@@ -91,6 +91,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	ret &= gst_structure_get_int (str, "height"	, &height);
 	ret &= gst_structure_get_int (str, "bpp"	, &bpp);
 	if (!ret) g_critical("Can't get image parameter");
+	printf("width = %d height = %d bpp = %d\n", width, height, bpp);
 
 	//Init Walet decoder only at first call on cb_handoff
 	if(!gw->walet_init){
@@ -107,7 +108,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
 		gw->wc.rt			= FAST;		/// Range coder type
 		gw->wc.mv			= 12;		/// The motion vector search in pixeles.
-		gw->gop = walet_encoder_init(&gw->wc);
+		walet_encoder_init(&gw->gop, &gw->wc);
 		gw->walet_init = 1;
 	}
 	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
@@ -122,15 +123,15 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), gw->gop->buf, gw->wc.w, gw->wc.h);
-		frame_input(gw->gop, 0, &gw->wc, gw->gop->buf, NULL, NULL);
+		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), gw->gop.buf, gw->wc.w, gw->wc.h);
+		frame_input(&gw->gop, 0, &gw->wc, gw->gop.buf, NULL, NULL);
 
 		new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
-		utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.w, gw->wc.h);
+		utils_grey_draw(gw->gop.frames[gw->gop.cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.w, gw->wc.h);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 		new_buffer (gw->orig[2], gw->wc.w-1, gw->wc.h-1);
-		utils_bayer_draw(gw->gop->frames[gw->gop->cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.w, gw->wc.h, gw->wc.bg);
+		utils_bayer_draw(gw->gop.frames[gw->gop.cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.w, gw->wc.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 
@@ -138,14 +139,14 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 		//Copy frame 0 to decoder pipeline
 		printf("video/x-raw-bayer\n");
-		frame_input(gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_input(&gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-		new_buffer (gw->orig[0], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
-		utils_grey_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
+		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_grey_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		new_buffer (gw->orig[1], gw->gop->frames[0].b.w, gw->gop->frames[0].b.h);
-		utils_bayer_draw(gw->gop->frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop->frames[0].b.w, gw->gop->frames[0].b.h, gw->wc.bg);
+		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_bayer_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
@@ -204,6 +205,7 @@ int main (int argc, char *argv[])
 {
 	//GTK structure allocate memory
 	GtkWalet *gw = g_slice_new(GtkWalet);
+	gw->gop.state = 0;
 	//Walet structure allocate memory
 	//gw->gop = g_slice_new(GOP);
 
@@ -253,7 +255,8 @@ int main (int argc, char *argv[])
 	// Enter GTK+ main loop
 	gtk_main ();
 	// Free memory we allocated for TutorialTextEditor struct
-	g_slice_free (GOP, gw->gop);
+	g_slice_free (GOP, &gw->gop);
+	g_slice_free (WaletConfig, &gw->wc);
 
 	// Clean up gstreamer
 	//gst_element_set_state (gw->pipeline, GST_STATE_NULL);
