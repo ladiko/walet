@@ -584,7 +584,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep){
 		size += size1;
 		//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 	}
-	//printf("\n");
+	printf("size = %d\n", size);
 	return size;
 }
 

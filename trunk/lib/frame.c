@@ -246,6 +246,10 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 
 	if(check_state(f->state, FILL_SUBBAND)){
 		if (wc->color == BAYER){
+			f->state |= BITS_ALLOCATION;
+
+			return image_size(&f->img[3], wc->steps, 0);
+
 			qs = f->qst>>1;
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
@@ -256,7 +260,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 					else i--;
 					j = (j == 8) ? 0 : j + 1;
 				}
-				for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
+				//for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
 				s = 0;
 				for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
 					//printf("img = %d\n", j);
