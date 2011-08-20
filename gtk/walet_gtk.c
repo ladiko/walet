@@ -99,14 +99,14 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.w 			= width;	/// Image width
 		gw->wc.h			= height;	/// Image width
 		gw->wc.color		= BAYER;	/// Color space
-		gw->wc.bg			= RGGB;		/// Bayer grid pattern
+		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
 		gw->wc.steps		= 4;  		/// DWT steps.
 		gw->wc.gop_size		= 1;		/// GOP size
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
 		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
-		gw->wc.rt			= FAST;		/// Range coder type
+		gw->wc.rt			= ADAP;		/// Range coder type
 		gw->wc.mv			= 12;		/// The motion vector search in pixeles.
 		walet_encoder_init(&gw->gop, &gw->wc);
 		gw->walet_init = 1;

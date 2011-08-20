@@ -16,7 +16,7 @@
     use only for wavelet subband compression and need probability distribution\n
     array with each probability equal power of 2, and sum of distribution should\n
     be equal power of 2.\n
-    This 32 bit version on range coder support maximum  subband size less than 2^24 (16 Mpixeles),\n
+    This 32 bits version on range coder support maximum  subband size less than 2^24 (16 Mpixeles),\n
     the total image size should  be less than 2^26 (64 Mpixeles).
 */
 
@@ -315,15 +315,21 @@ static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 	return (poz>>3) + 1;
 }
 
-static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 half)
+/**	\brief Get array index from cumulative frequency.
+    \param in	 	Input cumulative frequency.
+ 	\param cu		Cumulative frequency array.
+	\param half		Tha half of cumulative frequency array size.
+	\retval			The array index.
+*/
+static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 half)
 {
 	uint32 i, j;
 	//if(!out) return 0;
 	for(i = half, j = half; ; ){
 		//if(test>10) break;
 		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
-		if(out >= cu[i]) {
-			if(out < cu[i+1]) {
+		if(in >= cu[i]) {
+			if(in < cu[i+1]) {
 				//printf("cu[%d] = %d\n", i, cu[i]);
 				return i;
 			}
@@ -337,8 +343,8 @@ static inline uint32 get_cum_f(uint32 out, uint32 *cu, uint32 half)
 /**	\brief Non adaptive range encoder.
     \param img	 	The pointer to encoding data.
  	\param size		The size of the  input data.
-	\param a_bits	Bits per symbols befor quantization.
-	\param q_bits	Bits per symbols after quantization.
+	\param a_bits	Bits per symbol befor quantization.
+	\param q_bits	Bits per symbol after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
     \param d		The pointer to array of probability distribution.
@@ -390,8 +396,8 @@ uint32  range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 /**	\brief Non adaptive range decoder.
     \param img	 	The pointer to encoding data.
  	\param size		The size of the  input data.
-	\param a_bits	Bits per symbols befor quantization.
-	\param q_bits	Bits per symbols after quantization.
+	\param a_bits	Bits per symbol befor quantization.
+	\param q_bits	Bits per symbol after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
     \param buff1	The pointer to temporal buffer.
@@ -439,13 +445,14 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 	\param msb		The maximum bits for output distribution representation.
 	\retval			The log2 of distribution sum.
 */
-static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb)
+static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb, uint32 sz)
 {
-	uint32 i, num = 1<<q_bits, max, b, half, full, t;
+	uint32 i, num = 1<<q_bits, max, b, half, full, t, sum, st, ind;
 	int nl, nr;
 	memset(don, 0, sizeof(uint32)*num<<1);
 
 	//Make distribution with each frequency power of 2
+	//TODO: remove din from final release
 	for(i=0; i < num; i++) dout[i] = din[i];
 	max = 0;
 	for(i=0; i < num; i++){
@@ -462,19 +469,23 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 					//Should get pixels from neighbors
 					dout[i] += nr; dout[i+1] -= nr; don[i+1<<1] = nr; //d2[(i+1<<1)] -= nr;
 					dout[i] = b+1;
-					if(max < dout[i]) max = dout[i];
+					if(max < dout[i]) { max = dout[i]; ind = i; }
 				} else {
 					//Should give pixels to neighbors
 					dout[i] -= nl; dout[i+1] += nl; don[(i<<1)+1] = nl; //d2[(i+1<<1)] += nl;
 					dout[i] = b;
-					if(max < dout[i]) max = dout[i];
+					if(max < dout[i]) { max = dout[i]; ind = i; }
 				}
 			} else dout[i] = b;
 			dout[i]++; //Add one to all non zero value due to distinguish 1 from 0 in power of 2
+
 			//printf(" din = %d dout = %d d = %d b = %d b1 = %d l = %d r = %d max = %d \n", din[i], dout[i], t, b, b+1, don[(i<<1)], don[(i<<1)+1], max);
 		}// else d2[i] = 0;
 	}
 	*msb = find_msb_bit(max)+2;
+	//Make lool-up table for the fast finding index of cumulative frequency array.
+
+
 
 	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
 	//printf("num = %d\n", num);
@@ -487,8 +498,6 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 	for(i=0; i < num; i++) printf("%d %d %d %d   ", din[i], don[i*2], don[i*2+1], dout[i]);
 	printf("\n");
 	*/
-
-	//printf("\n size = %d sum = %d sum1 = %d sum2 = %d cu[i-1] = %d bits = %d\n", size, sum, sum1, sum2, cu[i-1], bits);
 }
 
 static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
@@ -506,7 +515,7 @@ static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
 	//printf("\n");
 }
 
-static int quant(uint16 img, int *q, uint32 *don)
+static int quant_pow(uint16 img, int *q, uint32 *don)
 {
 	uint32 i = img<<1;
 	if(don[i]) { don[i]--; return q[img-1]; }
@@ -514,11 +523,44 @@ static int quant(uint16 img, int *q, uint32 *don)
 	return q[img];
 }
 
+/**	\brief Get array index from cumulative frequency.
+    \param in	 	Input cumulative frequency.
+ 	\param cu		Cumulative frequency array.
+	\param half		Tha half of cumulative frequency array size.
+	\retval			The array index.
+*/
+static inline uint32 get_cum_pow(uint32 in, uint32 *cu, uint32 *lt, uint32 min, uint32 max, uint32 st, uint32 num)
+{
+	uint32 i, j, half, val;
+	if(in < cu[min]){
+		val = min>>1; half = val;
+	} else if(in >= cu[max]){
+		val = (num + max)>>1; half = (num - max)>>1;
+	} else {
+		return lt[in>>st];
+	}
+
+	for(i = val, j = half; ; ){
+		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
+		if(in >= cu[i]) {
+			if(in < cu[i+1]) {
+				//printf("cu[%d] = %d\n", i, cu[i]);
+				return i;
+			}
+			else { j >>=1; i+=j;}
+		}
+		else { j = (j==0) ? 1 : j>>1; i-=j;}
+		//else { j >>=1; i-=j;}
+	}
+}
+
+
+
 /**	\brief Range encoder free of division and multiplication.
     \param img	 	The pointer to encoding data.
  	\param size		The size of the  input data.
-	\param a_bits	Bits per symbols befor quantization.
-	\param q_bits	Bits per symbols after quantization.
+	\param a_bits	Bits per symbol befor quantization.
+	\param q_bits	Bits per symbol after quantization.
 	\param buff		The encoded output  buffer
     \param q		The pointer to quantization array.
     \param d		The pointer to array of probability distribution.
@@ -534,14 +576,14 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 
 	//Encoder setup
 	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
-	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
+	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb, sz);
 	tmp = write_dist(dq, q_bits, msb, sz, buff);
 	buff = &buff[tmp];
 
 	cum_freq_pow(dq, cu, q_bits);
 
 	for(i=0; i<size; i++) {
-		im = quant(img[i] + half, q, don);
+		im = quant_pow(img[i] + half, q, don);
 		//if(i<10)
 		//printf("img[%d] = %d  half = %d sz = %d im = %d cu[im] = %d d[im] = %d dq[im] = %d\n", i, img[i], half, sz, im, cu[im], d[im], dq[im]);
 		range = range - sz;
