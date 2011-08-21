@@ -445,9 +445,9 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 	\param msb		The maximum bits for output distribution representation.
 	\retval			The log2 of distribution sum.
 */
-static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb, uint32 sz)
+static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb)
 {
-	uint32 i, num = 1<<q_bits, max, b, half, full, t, sum, st, ind;
+	uint32 i, num = 1<<q_bits, max, b, half, full, t;
 	int nl, nr;
 	memset(don, 0, sizeof(uint32)*num<<1);
 
@@ -469,12 +469,12 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 					//Should get pixels from neighbors
 					dout[i] += nr; dout[i+1] -= nr; don[i+1<<1] = nr; //d2[(i+1<<1)] -= nr;
 					dout[i] = b+1;
-					if(max < dout[i]) { max = dout[i]; ind = i; }
+					if(max < dout[i]) max = dout[i];
 				} else {
 					//Should give pixels to neighbors
 					dout[i] -= nl; dout[i+1] += nl; don[(i<<1)+1] = nl; //d2[(i+1<<1)] += nl;
 					dout[i] = b;
-					if(max < dout[i]) { max = dout[i]; ind = i; }
+					if(max < dout[i]) max = dout[i];
 				}
 			} else dout[i] = b;
 			dout[i]++; //Add one to all non zero value due to distinguish 1 from 0 in power of 2
@@ -483,10 +483,6 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 		}// else d2[i] = 0;
 	}
 	*msb = find_msb_bit(max)+2;
-	//Make lool-up table for the fast finding index of cumulative frequency array.
-
-
-
 	//for(i=0; i < num; i++) printf("%d  ", dq[i]);
 	//printf("num = %d\n", num);
 	/*
@@ -503,6 +499,7 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
 {
 	uint32 i, num = 1<<q_bits, val;
+	uint32 min, max = 0, sum = 0, ind, st, tmp;
 	cu[0] = 0;
 	for(i=0; i < num; i++)  {
 		//printf("d = %d ", d[i]);
@@ -510,9 +507,22 @@ static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
 		//printf("d = %d val = %d ", d[i], val);}
 		else val = 0;
 		cu[i+1] = cu[i] + val;
+		if(max < d[i]) { max = d[i]; ind = i; }
 		//printf("%d %d ", i+1, cu[i+1]);
 	}
 	//printf("\n");
+	//Make lool-up table for the fast finding index of cumulative frequency array.
+
+	st = max - 7; tmp = max;
+		for(i=ind; ;i++) if(!(d[i]-st)) break;
+		max = i;
+		for(i=ind; ;i--) if(!(d[i]-st)) break;
+		min = i+1;
+		sum = 0;
+		for(i=min; i < max; i++) sum += 1<<(d[i]-st);
+
+	printf("sum = %d st = %d max = %d  min = %d max = %d\n", sum, st, tmp, min, max);
+
 }
 
 static int quant_pow(uint16 img, int *q, uint32 *don)
@@ -576,7 +586,7 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 
 	//Encoder setup
 	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
-	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb, sz);
+	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
 	tmp = write_dist(dq, q_bits, msb, sz, buff);
 	buff = &buff[tmp];
 

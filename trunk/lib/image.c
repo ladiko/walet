@@ -558,6 +558,7 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep){
 	//printf("stmax = %d\n", stmax);
 
 	//Bits allocation for each subband
+
 	for(k=0, i = 0; k < qstep; k++){
 		j = qo[st[i]];
 		l = steps-1-i;
@@ -578,6 +579,42 @@ uint32 image_size(Image *im, uint32 steps, uint32 qstep){
 
 		//st[i] = (st[i] == 4) ? 0 : st[i] + 1;
 	}
+
+	//Calculate image size for given quantization step (qstep)
+	for(i=0; i < steps; i++) for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
+		size1 = subb_size(&im->l[i].s[j]);
+		size += size1;
+		//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
+	}
+	printf("size = %d\n", size);
+	return size;
+}
+
+uint32 image_size_test(Image *im, uint32 steps, uint32 start, uint32 end){
+///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+///	\brief Bits allocation for quantization algorithm.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param qstep 		The quantization step  (0 <= qstep < qst).
+
+	//The order of subband bits allocation
+	uint32 qo[5] = { 1, 2, 1, 2, 3};
+	uint32 i, j, k, l, size = 0, size1;
+	int *st;
+	st = im->qfl;
+	// Levels bits counter should be less than 5
+	for(i=0; i < steps; i++) st[i] = 0;
+	for(i=start; i < end; i++) for(j=1; j < 4; j++) im->l[i].s[j].q_bits = 0;
+	//printf("stmax = %d\n", stmax);
+
+	/*
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++)			//subb_fill_prob(&im->l[i].s[j]);
+			im->l[i].s[j].q_bits = (j == 3) ? 0 : im->l[i].s[j].a_bits;
+			//printf("l[%2d][%2d] a_bits = %d\n", i, j, im->l[i].s[j].a_bits);
+
+	*/
+
 	//Calculate image size for given quantization step (qstep)
 	for(i=0; i < steps; i++) for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 		size1 = subb_size(&im->l[i].s[j]);
@@ -702,9 +739,9 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 				}
 				//size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
 				size += im->l[i].s[j].ssz;
-				//printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
-				//		i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
-				//		((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
+				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
+						((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
 			}
 	}
 	//printf("Finish range_encoder\n");
