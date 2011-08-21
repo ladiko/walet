@@ -44,6 +44,9 @@ void 	image_median_filter	(Image *im, uint8 *buf);
 
 void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
+
+//For testing only
+uint32 image_size_test(Image *im, uint32 steps, uint32 start, uint32 end);
 //Old interface
 
 

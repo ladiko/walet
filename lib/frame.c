@@ -248,7 +248,11 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
 
-			return image_size(&f->img[3], wc->steps, 0);
+			//s += image_size_test(&f->img[j], wc->steps, 0);
+			//s += image_size_test(&f->img[1], wc->steps, 0, wc->steps-3);
+			//s += image_size_test(&f->img[2], wc->steps, 0, wc->steps-3);
+			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
+			//return 1;
 
 			qs = f->qst>>1;
 			for(k=2;;k++){
