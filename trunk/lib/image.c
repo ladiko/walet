@@ -716,6 +716,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 	uint32 size = 0, size1=0;
 	int *q = ibuf;
 	for(i=steps-1; i+1; i--)
+		//for(j = 1; j < 4; j++) {
 		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
 			if(im->l[i].s[j].q_bits >1){
 				sq = im->l[i].s[j].w*im->l[i].s[j].h;
@@ -785,9 +786,9 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 						return; }
 				}
 				size += size1;
-				//printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
-				//		i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
-				//		((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
+				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
+						((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
 			} else for(j=0; j < sq; j++) im->p[j] = 0;
 	}
 	return size;

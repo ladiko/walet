@@ -324,20 +324,41 @@ static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 half)
 {
 	uint32 i, j;
+	int chk;
 	//if(!out) return 0;
+	for(i = half, j = 1; ; ){
+		chk = (in >= cu[i]) ? 1 : 0;
+		if(in < cu[i+1]) {
+			printf("0\n");
+			return i;
+		}
+
+		if(chk == 1)	{ i+=j; j<<=1;}
+		else 			{ i-=j; j>>=1;}
+		printf("+");
+		//else { j = (j==0) ? 1 : j>>1; i+=j;}// printf("+");}
+
+		chk--;
+		if(chk == 0) 	{ i-=j; j<<=1;}
+		else 			{ i+=j; j>>=1;}
+		printf("-");
+
+	}
+	/*
 	for(i = half, j = half; ; ){
 		//if(test>10) break;
 		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
 		if(in >= cu[i]) {
 			if(in < cu[i+1]) {
-				//printf("cu[%d] = %d\n", i, cu[i]);
+				printf("0\n");
 				return i;
 			}
-			else { j >>=1; i+=j;}
+			else { j >>=1; i+=j; printf("+");}
+			//else { j = (j==0) ? 1 : j>>1; i+=j;}// printf("+");}
 		}
-		else { j = (j==0) ? 1 : j>>1; i-=j;}
+		else { j = (j==0) ? 1 : j>>1; i-=j; printf("-");}
 		//else { j >>=1; i-=j;}
-	}
+	}*/
 }
 
 /**	\brief Non adaptive range encoder.
@@ -496,10 +517,10 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 	*/
 }
 
-static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
+static void cum_freq_pow(int *d, uint32 *cu, uint32 q_bits)
 {
 	uint32 i, num = 1<<q_bits, val;
-	uint32 min, max = 0, sum = 0, ind, st, tmp;
+	uint32 min, max = 0, sum = 0, ind;
 	cu[0] = 0;
 	for(i=0; i < num; i++)  {
 		//printf("d = %d ", d[i]);
@@ -507,22 +528,45 @@ static void cum_freq_pow(uint32 *d, uint32 *cu, uint32 q_bits)
 		//printf("d = %d val = %d ", d[i], val);}
 		else val = 0;
 		cu[i+1] = cu[i] + val;
-		if(max < d[i]) { max = d[i]; ind = i; }
 		//printf("%d %d ", i+1, cu[i+1]);
 	}
 	//printf("\n");
 	//Make lool-up table for the fast finding index of cumulative frequency array.
+}
 
-	st = max - 7; tmp = max;
-		for(i=ind; ;i++) if(!(d[i]-st)) break;
-		max = i;
-		for(i=ind; ;i--) if(!(d[i]-st)) break;
-		min = i+1;
-		sum = 0;
-		for(i=min; i < max; i++) sum += 1<<(d[i]-st);
+static void lookup_array(int *d, uint32 *lt, uint32 *min, uint32 *max, int *st, uint32 num)
+{
+	uint32 i, j, sum = 0, ind, sz;
+	int  tmp;
+	//Make lool-up table for the fast finding index of cumulative frequency array.
+	*max = 0;
+	for(i=0; i < num; i++)  if(*max < d[i]) { *max = d[i]; ind = i; }
 
-	printf("sum = %d st = %d max = %d  min = %d max = %d\n", sum, st, tmp, min, max);
+	*st = (*max >= 7) ? *max - 7 : 0; tmp = *max;
+	for(i=ind; ;i++) if((d[i] - *st) <= 0) break;
+	*max = i;
+	for(i=ind; ;i--) if((d[i] - *st) <= 0) break;
+	*min = i+1;
+	sum = 0;
+	for(i=*min; i < *max; i++) {
+		sum += 1<<(d[i]-*st);
+		printf("%d ", d[i]-*st);
+	}
+	int sum1 = 0, sum2 = 0;
+	for(i=0; i < *min; i++) sum1 += 1<<d[i];
 
+	for(i=*max; i < num; i++) sum2 += 1<<d[i];
+
+	printf("\n");
+	printf("sum = %d sum1 = %d sum2 = %d msb = %d st = %d max = %d  min = %d max = %d\n", sum, sum1, sum2, 1<<(find_msb_bit(sum)+1), *st, tmp, *min, *max);
+	for(i=*min, j=0; i < *max; i++){
+		sz = 1<<(d[i]-*st);
+		for(; --sz; j++) lt[j] = i;
+		//printf("%d %d  ", d[i]-*st, lt[j]);
+		printf("[%d] %d ", j, lt[j]);
+
+	}
+	printf("\nj = %d\n", j);
 }
 
 static int quant_pow(uint16 img, int *q, uint32 *don)
@@ -565,7 +609,6 @@ static inline uint32 get_cum_pow(uint32 in, uint32 *cu, uint32 *lt, uint32 min, 
 }
 
 
-
 /**	\brief Range encoder free of division and multiplication.
     \param img	 	The pointer to encoding data.
  	\param size		The size of the  input data.
@@ -581,7 +624,7 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	uint32 num = (1<<q_bits), sh = 8, size1 = size-1, sz;
 	uint32  low = 0, low1 = 0, range = 32;
 	uint32 i, j = 0, k=0 , bits, tmp, msb;
-	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &buff1[num], *don = &buff1[(num<<1)+1];
+	uint32 half = 1<<(a_bits-1), *dq = buff1, *cu = &dq[num], *don = &cu[num+1];
 	int im;
 
 	//Encoder setup
@@ -591,6 +634,9 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	buff = &buff[tmp];
 
 	cum_freq_pow(dq, cu, q_bits);
+
+	//int min, max, st, *lt = &don[num<<1];
+	//lookup_array(dq, lt, &min, &max, &st, num);
 
 	for(i=0; i<size; i++) {
 		im = quant_pow(img[i] + half, q, don);
