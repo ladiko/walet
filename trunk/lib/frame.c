@@ -37,16 +37,17 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == CS420){
-	    f->img = (Image *)calloc(4, sizeof(Image));
+	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w,    h,    wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == CS422){
-	    f->img = (Image *)calloc(4, sizeof(Image));
+	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w,    h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], w>>1, h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w>>1, h, wc->color, wc->bpp, wc->steps);
 	} else if (wc->color == CS444 || wc->color == RGB){
+	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[1], w, h, wc->color, wc->bpp, wc->steps);
 		image_init(&f->img[2], w, h, wc->color, wc->bpp, wc->steps);

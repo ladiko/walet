@@ -321,42 +321,89 @@ static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 	\param half		Tha half of cumulative frequency array size.
 	\retval			The array index.
 */
-static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 half)
+static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 {
-	uint32 i, j;
-	int chk;
+	//int chk;
 	//if(!out) return 0;
-	for(i = half, j = 1; ; ){
-		chk = (in >= cu[i]) ? 1 : 0;
+	//chk = (in >= cu[i]) ? 1 : 0;
+
+	if(in >= cu[i]){
 		if(in < cu[i+1]) {
-			printf("0\n");
+			//printf("0\n");
 			return i;
 		}
-
-		if(chk == 1)	{ i+=j; j<<=1;}
-		else 			{ i-=j; j>>=1;}
-		printf("+");
-		//else { j = (j==0) ? 1 : j>>1; i+=j;}// printf("+");}
-
-		chk--;
-		if(chk == 0) 	{ i-=j; j<<=1;}
-		else 			{ i+=j; j>>=1;}
-		printf("-");
-
+		i+=j;
+		for(; ; ){
+			if (in >= cu[i]){
+				if(in < cu[i+1]){
+					//printf("0\n");
+					return i;
+				}
+				j<<=1; i+=j;
+				//printf("+");
+			} else {
+				j>>=1; i-=j;
+				//printf("-");
+				break;
+			}
+		}
+		for(; ; ){
+			if (in >= cu[i]){
+				if(in < cu[i+1]) {
+					//printf("0\n");
+					return i;
+				}
+				j>>=1; i+=j;
+				//printf("+");
+			} else {
+				j>>=1; i-=j;
+				//printf("-");
+			}
+		}
+	}
+	else {
+		i-=j;
+		for(; ; ){
+			if (in >= cu[i]){
+				if(in < cu[i+1]) {
+					//printf("0\n");
+					return i;
+				}
+				j>>=1; i+=j;
+				break;
+				//printf("+");
+			} else {
+				j<<=1; i-=j;
+				//printf("+");
+			}
+		}
+		for(; ; ){
+			if (in >= cu[i]){
+				if(in < cu[i+1]) {
+					//printf("0\n");
+					return i;
+				}
+				j>>=1; i+=j;
+				//printf("+");
+			} else {
+				j>>=1; i-=j;
+				//printf("-");
+			}
+		}
 	}
 	/*
-	for(i = half, j = half; ; ){
+	for(; ; ){
 		//if(test>10) break;
 		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
 		if(in >= cu[i]) {
 			if(in < cu[i+1]) {
-				printf("0\n");
+				//printf("0\n");
 				return i;
 			}
-			else { j >>=1; i+=j; printf("+");}
+			else { j >>=1; i+=j;} // printf("+");}
 			//else { j = (j==0) ? 1 : j>>1; i+=j;}// printf("+");}
 		}
-		else { j = (j==0) ? 1 : j>>1; i-=j; printf("-");}
+		else { j = (j==0) ? 1 : j>>1; i-=j;}// printf("-");}
 		//else { j >>=1; i-=j;}
 	}*/
 }
@@ -447,7 +494,7 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
                 }
                 range = range>>sz;
                 out = low/range;
-                im = get_cum_f(out, cu, half);
+                im = get_cum_f(out, cu, half, 1);
                 //printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d d = %8d  cu = %8d diff = %d\n",
                 //                      i, low, low-cu[im]*range, range<<sz, range, d[im]*range, out, im, img[i], q[im], d[im], cu[im], img[i]-q[im]);
                 low -= cu[im]*range;
@@ -688,6 +735,7 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	low =  ((uint32)buff[0]<<24) | ((uint32)buff[1]<<16) | ((uint32)buff[2]<<8) | (uint32)buff[3];
 	j=4;
 	// Start decoding
+	//for(i=0; i<100; i++) {
 	for(i=0; i<size; i++) {
 		while(range <= 24) {
 			range +=sh;
@@ -695,7 +743,7 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 		}
 		range = range-sz;
 		out = low>>range;
-		im = get_cum_f(out, cu, half);
+		im = get_cum_f(out, cu, half, 1);
 		//if(i<10)
 		//printf("%5d low = %8X low = %8X range = %8X range = %8X range = %8X out = %8d im = %8d  img = %4d q[im] = %4d cu = %8d diff = %d\n",
 		//			i, low, low-cu[im]*range, range+sz, range, dq[im]+range, out, im, img[i], q[im], cu[im], img[i]-q[im]);
