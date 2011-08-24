@@ -106,7 +106,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
 		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
-		gw->wc.rt			= NADAP;		/// Range coder type
+		gw->wc.rt			= FAST;		/// Range coder type
 		gw->wc.mv			= 12;		/// The motion vector search in pixeles.
 		walet_encoder_init(&gw->gop, &gw->wc);
 		gw->walet_init = 1;

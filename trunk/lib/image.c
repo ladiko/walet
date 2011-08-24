@@ -713,7 +713,7 @@ void image_quantization(Image *im, uint32 steps, uint8 *buf){
 */
 uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
 	int i, j, k, sq;
-	uint32 size = 0, size1=0;
+	uint32 size = 0;
 	int *q = ibuf;
 	for(i=steps-1; i+1; i--)
 		//for(j = 1; j < 4; j++) {
@@ -731,7 +731,8 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 								im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
 						break; }
 					case(FAST):{
-						im->l[i].s[j].ssz = range_encoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+						if(j == 0) im->l[i].s[j].ssz = write_array(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, &buf[size], q);
+						else	im->l[i].s[j].ssz = range_encoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
 								im->l[i].s[j].q_bits, &buf[size], q, im->l[i].s[j].dist, &ibuf[1<<(bpp+2)]);
 						break; }
 					default:{
@@ -741,8 +742,8 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 				//size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
 				size += im->l[i].s[j].ssz;
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
-						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
-						((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
+						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, im->l[i].s[j].ssz, sq, subb_size(&im->l[i].s[j])>>3,
+						((float)im->l[i].s[j].ssz/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)im->l[i].s[j].ssz));
 			}
 	}
 	//printf("Finish range_encoder\n");
@@ -759,7 +760,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 	\retval				The size of encoded image in bytes.
 */
 uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
-	int i, j, sq;
+	int i, j, k,sq;
 	uint32 size = 0, size1=0;
 	int *q = ibuf;
 
@@ -778,7 +779,8 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 								im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
 						break; }
 					case(FAST):{
-						size1 = range_decoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
+						if(j == 0) size1 = read_array(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, &buf[size], q);
+						else	size1 = range_decoder_fast(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits,
 								im->l[i].s[j].q_bits, &buf[size], q, &ibuf[1<<(bpp+2)]);
 						break; }
 					default:{
@@ -789,7 +791,7 @@ uint32 image_range_decode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 				printf("l[%d].s[%d] a_bits = %d q_bits = %d comp = %d decom = %d entropy = %d copm = %f ef = %f\n",
 						i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits, size1, sq, subb_size(&im->l[i].s[j])>>3,
 						((float)size1/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)size1));
-			} else for(j=0; j < sq; j++) im->p[j] = 0;
+			} else for(k=0; k < sq; k++) im->l[i].s[j].pic[k] = 0;
 	}
 	return size;
 }
