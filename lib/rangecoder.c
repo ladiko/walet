@@ -323,41 +323,24 @@ static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
 */
 static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 {
-	//int chk;
-	//if(!out) return 0;
-	//chk = (in >= cu[i]) ? 1 : 0;
 
 	if(in >= cu[i]){
-		if(in < cu[i+1]) {
-			//printf("0\n");
-			return i;
-		}
+		if(in < cu[i+1]) return i;
 		i+=j;
 		for(; ; ){
 			if (in >= cu[i]){
-				if(in < cu[i+1]){
-					//printf("0\n");
-					return i;
-				}
+				if(in < cu[i+1]) return i;
 				j<<=1; i+=j;
-				//printf("+");
 			} else {
 				j>>=1; i-=j;
-				//printf("-");
-				break;
-			}
-		}
-		for(; ; ){
-			if (in >= cu[i]){
-				if(in < cu[i+1]) {
-					//printf("0\n");
-					return i;
+				for(; ; ){
+					if (in >= cu[i]){
+						if(in < cu[i+1]) return i;
+						j>>=1; i+=j;
+					} else {
+						j>>=1; i-=j;
+					}
 				}
-				j>>=1; i+=j;
-				//printf("+");
-			} else {
-				j>>=1; i-=j;
-				//printf("-");
 			}
 		}
 	}
@@ -365,29 +348,18 @@ static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 		i-=j;
 		for(; ; ){
 			if (in >= cu[i]){
-				if(in < cu[i+1]) {
-					//printf("0\n");
-					return i;
-				}
+				if(in < cu[i+1]) return i;
 				j>>=1; i+=j;
-				break;
-				//printf("+");
+				for(; ; ){
+					if (in >= cu[i]){
+						if(in < cu[i+1]) return i;
+						j>>=1; i+=j;
+					} else {
+						j>>=1; i-=j;
+					}
+				}
 			} else {
 				j<<=1; i-=j;
-				//printf("+");
-			}
-		}
-		for(; ; ){
-			if (in >= cu[i]){
-				if(in < cu[i+1]) {
-					//printf("0\n");
-					return i;
-				}
-				j>>=1; i+=j;
-				//printf("+");
-			} else {
-				j>>=1; i-=j;
-				//printf("-");
 			}
 		}
 	}
@@ -755,3 +727,40 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	return j+tmp;
 }
 
+/**	\brief Write array without compression.
+    \param img	 	The pointer to encoding data.
+ 	\param size		The size of the  input data.
+	\param bits		The data dits per symbol.
+	\param buff		The output  buffer
+	\retval			The write buffer size in byts .
+*/
+uint32  write_array(int16 *img, uint32 size, uint32 bits, uint8 *buff, int *q)
+{
+	uint32 i,  poz = 0, half = 1<<(bits-1);
+
+	//Write all another
+	for(i=0; i < size; i++) {
+		write_bits_pos(buff, &poz, q[img[i] + half], bits);
+	}
+	return (poz>>3) + 1;
+}
+
+/**	\brief Read non compressed array.
+    \param img	 	The pointer to output data.
+ 	\param size		The size of the  input data.
+	\param bits		The data dits per symbol.
+	\param buff		The input  buffer
+	\retval			The read buffer size in byts .
+*/
+uint32  read_array(int16 *img, uint32 size, uint32 bits, uint8 *buff, int *q)
+{
+	uint32 i, poz = 0, tm;
+
+	//Write all another
+	for(i=0; i < size; i++) {
+		read_bits_pos(buff, &poz, &tm, bits);
+		img[i] = q[tm];
+		//printf("%d ", img[i]);
+	}
+	return (poz>>3) + 1;
+}
