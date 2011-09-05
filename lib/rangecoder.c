@@ -40,14 +40,12 @@ static inline uint32 find_msb_bit(uint32 b)
 	return bit;
 }
 
-/** \brief Initiate cumulative probability array for adaptive coding.
+/** \brief Create cumulative probability array for adaptive coding.
     \param d	The probability distribution .
     \param bits	The bits per pixel.
     \param c	The auxiliary array for cumulative frequency update and calculation.
 */
 static inline void init_prob( uint32 *d, uint32 bits, uint32 **c){
-//Init probability array.
-
 	uint32 i, j, val, sz = 1<<bits, sz1 = 0, ind=0;
 	memset(d, 0, sizeof(uint32)*sz<<1);
 	for(j=0; j < bits; j++){
@@ -59,9 +57,13 @@ static inline void init_prob( uint32 *d, uint32 bits, uint32 **c){
 	}
 }
 
+/** \brief Get the cumulative frequency and update array.
+    \param img	The pointer to encoding data.
+    \param c 	The auxiliary array for cumulative frequency update and calculation.
+    \param bits	The bits per pixel.
+    \retval		The cumulative frequency.
+*/
 static inline uint32 get_cum(uint16 img, uint32 **c, uint32 bits){
-//Get the cumulative frequency and update array
-
 	uint32 i, cf=0, ind;
 	for(i=0; i < bits; i++) {
 		ind = img>>i;
@@ -71,8 +73,16 @@ static inline uint32 get_cum(uint16 img, uint32 **c, uint32 bits){
 	return cf;
 }
 
+/** \brief Get the symbol from cumulative frequency.
+    \param cum	The cumulative frequency.
+    \param c 	The auxiliary array for cumulative frequency update and calculation.
+    \param bits	The bits per pixel.
+    \param f	The frequency of symbol.
+    \param cf	The cumulative frequency of symbol.
+    \retval		The symbol value.
+*/
 static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uint32 *cf){
-//Get the pixel and update array
+//
 
 	uint32 i, j=0 , cu = cum;
 	for(i=bits-1; i ; i--) {
@@ -93,7 +103,7 @@ static inline uint32 get_pix(uint32 cum, uint32 **c, uint32 bits, uint32 *f, uin
     \param d		The pointer to array of probability distribution .
 	\retval			The encoded message size in byts .
 */
-uint32 range_encoder_ad(int16 *img,uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
+uint32 range_encoder_ad(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, uint8 *buff, int *q, uint32 *d)
 {
 	uint32 num = (1<<q_bits), sz = num, sh = 8, size1 = size-1;
 	uint32 top = 0xFFFFFFFF, bot = (top>>sh), low=0, low1=0, range;
@@ -174,8 +184,8 @@ uint32  range_decoder_ad(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits,
 }
 
 /** \brief Make distribution of probabilities after quantization
-	\param din 			Pointer to input distribution
-	\param dout			Pointer to output distribution
+	\param din 			The input distribution
+	\param dout			The output distribution
 	\param a_bits 		Bits for representation of input distribution
 	\param q_bits		Bits for representation of output distribution
 */
@@ -230,49 +240,73 @@ static uint32 dist_tot_pow_2(uint32 *din, uint32 *dout, uint32 a_bits, uint32 q_
 	return bits;
 }
 
-static void cum_freq(uint32 *d, uint32 *cu, uint32 q_bits)
+/** \brief Make cumulative frequency array.
+	\param d 		The input distribution of probability array.
+	\param cu		The output cumulative frequency.
+	\param sz		The size of distribution.
+*/
+static void cum_freq(uint32 *d, uint32 *cu, uint32 sz)
 {
-	uint32 i, num = 1<<q_bits;
+	uint32 i;
 	cu[0] = 0;
-	for(i=1; i<=num; i++)  {
+	for(i=1; i<=sz; i++)  {
 		cu[i] = cu[i-1] + d[i-1];
 	}
 }
 
-static inline void write_bits_pos(uint8 *buff, uint32 *poz, uint32 st, uint32 bits)
+/** \brief Write /a bits from /a st to the /a buff to the /a pos position.
+	\param buff 	The output buffer.
+	\param pos		The bits from begin of the /a buff .
+	\param st		The input buffer.
+	\param bits		The number of bits to write.
+*/
+static inline void write_bits_pos(uint8 *buff, uint32 *pos, uint32 st, uint32 bits)
 {
 	uint32 p, i, r, mask;
 	while(1){
-		i = *poz>>3; p = *poz&7; r = 8-p; r = bits > r ? r : bits;
+		i = *pos>>3; p = *pos&7; r = 8-p; r = bits > r ? r : bits;
 		mask = (1<<r) - 1;
 		if(!p) buff[i] = 0;
 		buff[i] |= (mask & st)<<p;
-		if(r - bits) { *poz += r; bits = bits - r; st>>=r;}
-		else { *poz += bits; break; }
+		if(r - bits) { *pos += r; bits = bits - r; st>>=r;}
+		else { *pos += bits; break; }
 	}
 }
 
-static inline void read_bits_pos(uint8 *buff, uint32 *poz, uint32 *st, uint32 bits)
+/** \brief Read /a bits to /a st from the /a buff from the /a pos position.
+	\param buff 	The input buffer.
+	\param pos		The bits from begin of the /a buff .
+	\param st		The output buffer.
+	\param bits		The number of bits to read.
+*/
+static inline void read_bits_pos(uint8 *buff, uint32 *pos, uint32 *st, uint32 bits)
 {
 	uint32 p, i, r, mask, sd = 0;
 	*st = 0;
 	while(1){
-		i = *poz>>3; p = *poz&7; r = 8-p; r = bits > r ? r : bits;
+		i = *pos>>3; p = *pos&7; r = 8-p; r = bits > r ? r : bits;
 		mask = (1<<r) - 1 ;
 		*st |= (((buff[i] & (mask<<p))>>p)<<sd);
-		if(r - bits) { *poz += r; bits = bits - r; sd += r;}
-		else { *poz += bits; break; }
+		if(r - bits) { *pos += r; bits = bits - r; sd += r;}
+		else { *pos += bits; break; }
 	}
 }
 
-static uint32 write_dist(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 *buff)
+/** \brief Write /a d distribution of probability to the /a buff buffer.
+	\param d 		The input distribution of probability.
+	\param sz		The size of distribution.
+	\param msb		The maximum bits for distribution representation.
+	\param szb		The log2 of total quantity of the distribution.
+	\param buff		The output buffer.
+*/
+static uint32 write_dist(uint32 *d, uint32 sz, uint32 msb, uint32 szb, uint8 *buff)
 {
-	uint32 i, il, ir, num = 1<<q_bits, poz = 0;
+	uint32 i, il, ir, poz = 0;
 
 	//Write msb
 	write_bits_pos(buff, &poz, msb, 8);
 	//Write size of distribution
-	write_bits_pos(buff, &poz, sz, 8);
+	write_bits_pos(buff, &poz, szb, 8);
 
 	//Write left zero counts
 	for(i=0; ; i++) if(d[i]) break;
@@ -280,13 +314,13 @@ static uint32 write_dist(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 
 	else  		{ il = 255; write_bits_pos(buff, &poz, il, 8);}
 
 	//Write right  zero counts
-	for(i=0; ; i++) if(d[num-1-i]) break;
+	for(i=0; ; i++) if(d[sz-1-i]) break;
 	if(i < 256) { ir = i; 	write_bits_pos(buff, &poz, ir, 8);}
 	else  		{ ir = 255;	write_bits_pos(buff, &poz, ir, 8);}
 
 	//printf("msb = %d sz = %d il = %d ir = %d \n", msb, sz, il, ir);
 	//Write all another
-	for(i=il; i < num - ir; i++) {
+	for(i=il; i < sz - ir; i++) {
 		write_bits_pos(buff, &poz, d[i], msb);
 		//printf("poz = %d ", poz);
 	}
@@ -294,32 +328,60 @@ static uint32 write_dist(uint32 *d, uint32 q_bits, uint32 msb, uint32 sz, uint8 
 	return (poz>>3) + 1;
 }
 
-static uint32 read_dist(uint32 *d, uint32 q_bits, uint32 *sz, uint8 *buff)
+/** \brief Read /a d distribution of probability from the /a buff buffer.
+	\param d 		The output distribution of probability.
+	\param sz		The size of distribution.
+	\param szb		The log2 of total quantity of the distribution.
+	\param buff		The input buffer.
+*/
+static uint32 read_dist(uint32 *d, uint32 sz, uint32 *szb, uint8 *buff)
 {
-	uint32 i, il, ir, num = 1<<q_bits, poz = 0, msb;
+	uint32 i, il, ir, poz = 0, msb;
 
 	read_bits_pos(buff, &poz, &msb, 8);
-	read_bits_pos(buff, &poz, sz, 8);
+	read_bits_pos(buff, &poz, szb, 8);
 	read_bits_pos(buff, &poz, &il, 8);
 	read_bits_pos(buff, &poz, &ir, 8);
 
 	//printf("msb = %d sz = %d il = %d ir = %d \n", msb, *sz, il, ir);
 	for(i=0; i < il; i++) d[i] = 0;
 
-	for(i=il; i < num - ir; i++) {
+	for(i=il; i < sz - ir; i++) {
 		read_bits_pos(buff, &poz, &d[i], msb);
 		//printf("poz = %d ", poz);
 	}
-	for(i=num - ir; i < num; i++) d[i] = 0;
+	for(i=sz - ir; i < sz; i++) d[i] = 0;
 	//printf("\n");
 	return (poz>>3) + 1;
 }
 
-/**	\brief Get array index from cumulative frequency.
+/**	\brief Get array index from cumulative frequency, it's universal algorithm logarithm search.
     \param in	 	Input cumulative frequency.
  	\param cu		Cumulative frequency array.
-	\param half		Tha half of cumulative frequency array size.
-	\retval			The array index.
+	\param i		Tha half of cumulative frequency array size.
+	\param j		The start interval from half should be the same as half.
+*/
+static inline uint32 get_cum_log(uint32 in, uint32 *cu, uint32 i, uint32 j)
+{
+	for(; ; ){
+		//if(test>10) break;
+		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
+		if(in >= cu[i]) {
+			if(in < cu[i+1]) {
+				//printf("0\n");
+				return i;
+			}
+			else { j >>=1; i+=j;} // printf("+");}
+		}
+		else { j = (j==0) ? 1 : j>>1; i-=j;}// printf("-");}
+	}
+}
+
+/**	\brief Get array index from cumulative frequency, it's a fast algorithm for laplace distribution.
+    \param in	 	Input cumulative frequency.
+ 	\param cu		Cumulative frequency array.
+	\param i		Tha half of cumulative frequency array size.
+	\param j		The start interval from half should be 1.
 */
 static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 {
@@ -363,21 +425,6 @@ static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 			}
 		}
 	}
-	/*
-	for(; ; ){
-		//if(test>10) break;
-		//printf("out = %d cu[%d] = %d cu[%d] = %d j = %d \n", out, i, cu[i], i+1, cu[i+1], j);
-		if(in >= cu[i]) {
-			if(in < cu[i+1]) {
-				//printf("0\n");
-				return i;
-			}
-			else { j >>=1; i+=j;} // printf("+");}
-			//else { j = (j==0) ? 1 : j>>1; i+=j;}// printf("+");}
-		}
-		else { j = (j==0) ? 1 : j>>1; i-=j;}// printf("-");}
-		//else { j >>=1; i-=j;}
-	}*/
 }
 
 /**	\brief Non adaptive range encoder.
@@ -402,8 +449,8 @@ uint32  range_encoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 
 	//Encoder setup
 	sz = dist_tot_pow_2(d, dq, a_bits, q_bits, &msb);
-	cum_freq(dq, cu, q_bits);
-	tmp = write_dist(dq, q_bits, msb, sz, buff);
+	cum_freq(dq, cu, num);
+	tmp = write_dist(dq, num, msb, sz, buff);
 	buff = &buff[tmp];
 
 	//Start encoding
@@ -452,8 +499,8 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
         int dif, fin;
 
         //Decoder setup
-        tmp = read_dist(d, q_bits, &sz, buff);
-    	cum_freq(d, cu, q_bits);
+        tmp = read_dist(d, num, &sz, buff);
+    	cum_freq(d, cu, num);
         buff = &buff[tmp];
 
         range = top; j=4;
@@ -480,22 +527,21 @@ uint32  range_decoder(int16 *img, uint32 size, uint32 a_bits , uint32 q_bits, ui
 	\param din	 	The input distribution with sum is equal power of 2.
 	\param dout		The output distribution with each elements is equal power of 2.
 	\param don		The array of difference.
-	\param a_bits	Bits per symbols before quantization.
-	\param q_bits	Bits per symbols after quantization.
+	\param sz		The size of distribution.
 	\param msb		The maximum bits for output distribution representation.
 	\retval			The log2 of distribution sum.
 */
-static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits, uint32 q_bits, uint32 *msb)
+static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 sz, uint32 *msb)
 {
-	uint32 i, num = 1<<q_bits, max, b, half, full, t;
+	uint32 i, max, b, half, full, t;
 	int nl, nr;
-	memset(don, 0, sizeof(uint32)*num<<1);
+	memset(don, 0, sizeof(uint32)*sz<<1);
 
 	//Make distribution with each frequency power of 2
 	//TODO: remove din from final release
-	for(i=0; i < num; i++) dout[i] = din[i];
+	for(i=0; i < sz; i++) dout[i] = din[i];
 	max = 0;
-	for(i=0; i < num; i++){
+	for(i=0; i < sz; i++){
 		if(dout[i]){
 			b = find_msb_bit(dout[i]);
 			full = 1<<(b+1);
@@ -536,12 +582,17 @@ static void dist_each_pow_2(uint32 *din, int  *dout, uint32 *don, uint32 a_bits,
 	*/
 }
 
-static void cum_freq_pow(int *d, uint32 *cu, uint32 q_bits)
+/** \brief Make cumulative frequency array.
+	\param d 		The input distribution of probability array.
+	\param cu		The output cumulative frequency.
+	\param sz		The size of distribution.
+*/
+static void cum_freq_pow(int *d, uint32 *cu, uint32 sz)
 {
-	uint32 i, num = 1<<q_bits, val;
+	uint32 i, val;
 	uint32 min, max = 0, sum = 0, ind;
 	cu[0] = 0;
-	for(i=0; i < num; i++)  {
+	for(i=0; i < sz; i++)  {
 		//printf("d = %d ", d[i]);
 		if(d[i]) { d[i]--; val = 1<<d[i]; }
 		//printf("d = %d val = %d ", d[i], val);}
@@ -648,11 +699,11 @@ uint32  range_encoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 
 	//Encoder setup
 	sz = dist_tot_pow_2(d, d, a_bits, q_bits, &msb);
-	dist_each_pow_2(d, dq, don, a_bits, q_bits, &msb);
-	tmp = write_dist(dq, q_bits, msb, sz, buff);
+	dist_each_pow_2(d, dq, don, num, &msb);
+	tmp = write_dist(dq, num, msb, sz, buff);
 	buff = &buff[tmp];
 
-	cum_freq_pow(dq, cu, q_bits);
+	cum_freq_pow(dq, cu, num);
 
 	//int min, max, st, *lt = &don[num<<1];
 	//lookup_array(dq, lt, &min, &max, &st, num);
@@ -700,7 +751,7 @@ uint32  range_decoder_fast(int16 *img, uint32 size, uint32 a_bits , uint32 q_bit
 	int dif, fin;
 
 	//Decoder setup
-	tmp = read_dist(dq, q_bits, &sz, buff);
+	tmp = read_dist(dq, num, &sz, buff);
 	buff = &buff[tmp];
 	cum_freq_pow(dq, cu, q_bits);
 
