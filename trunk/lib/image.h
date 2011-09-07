@@ -35,7 +35,7 @@ void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 void 	image_dwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps);
 void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
 void 	image_fill_subb		(Image *im, uint32 steps);
-uint32 	image_size			(Image *im, uint32 steps, uint32 qstep);
+uint32 	image_size			(Image *im, uint32 steps, int qstep);
 void 	image_quantization	(Image *im, uint32 steps, uint8 *buf);
 uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);
 uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);

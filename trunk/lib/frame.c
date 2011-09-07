@@ -226,51 +226,88 @@ uint32 frame_fill_subb(GOP *g, uint32 fn, WaletConfig *wc)
 */
 uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 {
-// Energy of one level DWT transform
-// |--------|--------|
-// |   LL   |   HL   |
-// |   4    |   2    |
-// |        |        |
-// |--------|--------|
-// |   LH   |   HH   |
-// |   2    |   1    |
-// |        |        |
-// |--------|--------|
+	Frame *f = &g->frames[fn];
+
+	// Energy of one level DWT transform
+	// |--------|--------|
+	// |   LL   |   HL   |
+	// |   4    |   2    |
+	// |  bl[0] |  bl[1] |
+	// |--------|--------|
+	// |   LH   |   HH   |
+	// |   2    |   1    |
+	// |  bl[2] |  bl[3] |
+	// |--------|--------|
 	//The order of bit allocation for subband
-	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3};
-	uint32 i, j, k, size, qs, qs1, df, s, df1;
+	//uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2, 3}, step = 8,  qs = f->qst, qs2 = qs>>1;
+	// Energy of one level DWT transform
+	// |--------|--------|
+	// |   LL   |   HL   |
+	// |   4    |   1    |
+	// |  bl[0] |  bl[1] |
+	// |--------|--------|
+	// |   LH   |   HH   |
+	// |   1    |   0    |
+	// |  bl[2] |  bl[3] |
+	// |--------|--------|
+	//The order of bit allocation for subband
+	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2}, step = 8, qs = f->qst - f->img[3].qst, qs2 = qs>>1;
+
+	uint32 i, j, k, size, qs1, df, s, df1;
 	uint32 bl[4];
 	if(times == 1) return 0;
 	size = (wc->w*wc->h*wc->bpp)/times;
-	df1 = size;
-	Frame *f = &g->frames[fn];
+	//df1 = size;
+
+	for(j=0; j < 4; j++) printf("bl[%d] = %d ", j, f->img[j].qst); printf("\n");
+
 
 	if(check_state(f->state, FILL_SUBBAND)){
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
 
-			//s += image_size_test(&f->img[j], wc->steps, 0);
-			//s += image_size_test(&f->img[1], wc->steps, 0, wc->steps-3);
+			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
+			//f->img[0].l[0].s[3].q_bits = 0;
+			//f->img[0].l[0].s[3].q_bits = f->img[0].l[0].s[3].q_bits>>1;
+			//f->img[1].l[0].s[1].q_bits = f->img[1].l[0].s[1].q_bits>>1;
+			//f->img[1].l[0].s[2].q_bits = f->img[1].l[0].s[2].q_bits>>1;
+
+			//f->img[1].l[1].s[1].q_bits = 0;
+			//f->img[1].l[1].s[2].q_bits = 0;
+			//f->img[1].l[1].s[3].q_bits = 0;
+			//f->img[1].l[0].s[1].q_bits = 0;
+			//f->img[1].l[0].s[2].q_bits = 0;
+			//f->img[1].l[0].s[3].q_bits = 0;
+			//f->img[2].l[0].s[1].q_bits = f->img[2].l[0].s[1].q_bits>>1;
+			//f->img[2].l[0].s[2].q_bits = f->img[2].l[0].s[2].q_bits>>1;
+
+			//f->img[2].l[1].s[1].q_bits = 0;
+			//f->img[2].l[1].s[2].q_bits = 0;
+			//f->img[2].l[1].s[3].q_bits = 0;
+			//f->img[2].l[0].s[1].q_bits = 0;
+			//f->img[2].l[0].s[2].q_bits = 0;
+			//f->img[2].l[0].s[3].q_bits = 0;
 			//s += image_size_test(&f->img[2], wc->steps, 0, wc->steps-3);
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
 			//return 1;
 
-			qs = f->qst>>1;
+
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
 				//Bits allocation between 4 color image
-				for(i=0, j=0; i < qs; i++) {
+				for(i=0, j=0; i < qs2; i++) {
 					if(bl[qo[j]] < f->img[qo[j]].qst) bl[qo[j]]++;
 					else i--;
-					j = (j == 8) ? 0 : j + 1;
+					j = (j == step) ? 0 : j + 1;
 				}
-				//for(j=0; j < 4; j++) printf("bl[%d] = %d\n", j, bl[j]);
+				for(j=0; j < 4; j++) printf("bl[%d] = %d ", j, bl[j]); printf("\n");
+
 				s = 0;
 				for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
 					//printf("img = %d\n", j);
 
-				//printf("times = %d qst = %d size = %d qs = %d s = %d\n", times, frame->qst, size, qs, s);
+				//printf("times = %d qst = %d size = %d qs = %d s = %d\n", times, f->qst, size, qs, s);
 				//printf("Frame size = %d now = %d\n", size, s);
 
 				if(!(f->qst>>k)) {
@@ -288,7 +325,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 					}
 					df1 = df;*/
 				}
-				else qs = (s < size) ? qs + (f->qst>>k) : qs - (f->qst>>k);
+				else qs2 = (s < size) ? qs2 + (qs>>k) : qs2 - (qs>>k);
 			}
 		}
 		//TODO: Bits allocation for gray and YUV color space.
@@ -342,6 +379,7 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 		}
 		else if(wc->color == BAYER)
 			for(i=0; i < 4; i++)  {
+				printf("image %d\n", i);
 				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
 				*size += f->img[i].isz;
 			}
