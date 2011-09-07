@@ -36,6 +36,7 @@ void subb_fill_prob(Subband *sub){
 	//for(i=0; i< (1<<bits); i++) if(dist[i]) printf("dist[%d] = %d\n", i, dist[i]);
 	sub->max = (max + min) > 0 ? max : -min;
 	tmp = sub->max;
+	//TODO: Change on function
 	for(i=0; tmp; i++, tmp>>=1);
 	//printf("min = %4d max = %4d  tot = %4d bits = %4i\n", min, max, max-min, i+1);
 	sub->a_bits = i+1;
