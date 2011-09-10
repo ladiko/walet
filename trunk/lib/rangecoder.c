@@ -298,6 +298,7 @@ static inline void read_bits_pos(uint8 *buff, uint32 *pos, uint32 *st, uint32 bi
 	\param msb		The maximum bits for distribution representation.
 	\param szb		The log2 of total quantity of the distribution.
 	\param buff		The output buffer.
+	\retval			The write bytes.
 */
 static uint32 write_dist(uint32 *d, uint32 sz, uint32 msb, uint32 szb, uint8 *buff)
 {
@@ -333,6 +334,7 @@ static uint32 write_dist(uint32 *d, uint32 sz, uint32 msb, uint32 szb, uint8 *bu
 	\param sz		The size of distribution.
 	\param szb		The log2 of total quantity of the distribution.
 	\param buff		The input buffer.
+	\retval			The read bytes.
 */
 static uint32 read_dist(uint32 *d, uint32 sz, uint32 *szb, uint8 *buff)
 {
@@ -360,6 +362,7 @@ static uint32 read_dist(uint32 *d, uint32 sz, uint32 *szb, uint8 *buff)
  	\param cu		Cumulative frequency array.
 	\param i		Tha half of cumulative frequency array size.
 	\param j		The start interval from half should be the same as half.
+	\retval			The array index.
 */
 static inline uint32 get_cum_log(uint32 in, uint32 *cu, uint32 i, uint32 j)
 {
@@ -382,6 +385,7 @@ static inline uint32 get_cum_log(uint32 in, uint32 *cu, uint32 i, uint32 j)
  	\param cu		Cumulative frequency array.
 	\param i		Tha half of cumulative frequency array size.
 	\param j		The start interval from half should be 1.
+	\retval			The array index.
 */
 static inline uint32 get_cum_f(uint32 in, uint32 *cu, uint32 i, uint32 j)
 {

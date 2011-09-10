@@ -581,34 +581,36 @@ uint32 image_size(Image *im, uint32 steps, int qstep){
 	}*/
 
 	//Bits allocation for each subband new algorithm
-	for(l = steps-1; ; l--){
-		qstep = qstep - im->l[l].s[1].a_bits - im->l[l].s[2].a_bits + 2;
-		if (qstep >= 0){
-			im->l[l].s[1].q_bits = im->l[l].s[1].a_bits;
-			im->l[l].s[2].q_bits = im->l[l].s[2].a_bits;
-			printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
-			printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
-			if(!qstep) break;
-		} else {
-			tmp = qstep + im->l[l].s[1].a_bits + im->l[l].s[2].a_bits;
-			im->l[l].s[1].q_bits = (tmp>>1) + (tmp&1);
-			im->l[l].s[2].q_bits = (tmp>>1);
-			im->l[l].s[1].q_bits = im->l[l].s[1].q_bits ? im->l[l].s[1].q_bits + 1 : im->l[l].s[1].q_bits;
-			im->l[l].s[2].q_bits = im->l[l].s[2].q_bits ? im->l[l].s[2].q_bits + 1 : im->l[l].s[2].q_bits;
-			printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
-			printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
-			break;
-		}
-		qstep = qstep - im->l[l].s[3].a_bits + 1;
-		if (qstep >= 0){
-			im->l[l].s[3].q_bits = im->l[l].s[3].a_bits;
-			printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
-			if(!qstep) break;
-		} else {
-			tmp = qstep + im->l[l].s[3].a_bits;
-			im->l[l].s[3].q_bits = tmp + 1;
-			printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
-			break;
+	if(qstep){
+		for(l = steps-1; ; l--){
+			qstep = qstep - (im->l[l].s[1].a_bits + im->l[l].s[2].a_bits - 2);
+			if (qstep >= 0){
+				im->l[l].s[1].q_bits = im->l[l].s[1].a_bits;
+				im->l[l].s[2].q_bits = im->l[l].s[2].a_bits;
+				printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
+				printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
+				if(!qstep) break;
+			} else {
+				tmp = qstep + (im->l[l].s[1].a_bits + im->l[l].s[2].a_bits - 2);
+				im->l[l].s[1].q_bits = (tmp>>1) + (tmp&1);
+				im->l[l].s[2].q_bits = (tmp>>1);
+				im->l[l].s[1].q_bits = im->l[l].s[1].q_bits ? im->l[l].s[1].q_bits + 1 : im->l[l].s[1].q_bits;
+				im->l[l].s[2].q_bits = im->l[l].s[2].q_bits ? im->l[l].s[2].q_bits + 1 : im->l[l].s[2].q_bits;
+				printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
+				printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
+				break;
+			}
+			qstep = qstep - im->l[l].s[3].a_bits + 1;
+			if (qstep >= 0){
+				im->l[l].s[3].q_bits = im->l[l].s[3].a_bits;
+				printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
+				if(!qstep) break;
+			} else {
+				tmp = qstep + im->l[l].s[3].a_bits - 1;
+				im->l[l].s[3].q_bits = tmp + 1;
+				printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
+				break;
+			}
 		}
 	}
 
