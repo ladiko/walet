@@ -151,11 +151,11 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		*/
 
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
+		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
 		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_bayer_to_rgb_grad(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
+		utils_bayer_to_rgb_grad(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 

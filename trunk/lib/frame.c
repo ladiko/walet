@@ -265,32 +265,40 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	if(check_state(f->state, FILL_SUBBAND)){
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
+			/*
+			s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
+			f->img[0].l[1].s[1].q_bits = 8;
+			f->img[0].l[1].s[2].q_bits = 8;
+			f->img[0].l[1].s[3].q_bits = 8;
 
-			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
-			//f->img[0].l[0].s[3].q_bits = 0;
+			f->img[0].l[0].s[1].q_bits = 6;
+			f->img[0].l[0].s[2].q_bits = 5;
+			f->img[0].l[0].s[3].q_bits = 4;
 			//f->img[0].l[0].s[3].q_bits = f->img[0].l[0].s[3].q_bits>>1;
 			//f->img[1].l[0].s[1].q_bits = f->img[1].l[0].s[1].q_bits>>1;
 			//f->img[1].l[0].s[2].q_bits = f->img[1].l[0].s[2].q_bits>>1;
 
-			//f->img[1].l[1].s[1].q_bits = 0;
-			//f->img[1].l[1].s[2].q_bits = 0;
-			//f->img[1].l[1].s[3].q_bits = 0;
-			//f->img[1].l[0].s[1].q_bits = 0;
-			//f->img[1].l[0].s[2].q_bits = 0;
-			//f->img[1].l[0].s[3].q_bits = 0;
+			f->img[1].l[1].s[1].q_bits = 6;
+			f->img[1].l[1].s[2].q_bits = 6;
+			f->img[1].l[1].s[3].q_bits = 5;
+
+			f->img[1].l[0].s[1].q_bits = 3;
+			f->img[1].l[0].s[2].q_bits = 3;
+			f->img[1].l[0].s[3].q_bits = 2;
 			//f->img[2].l[0].s[1].q_bits = f->img[2].l[0].s[1].q_bits>>1;
 			//f->img[2].l[0].s[2].q_bits = f->img[2].l[0].s[2].q_bits>>1;
 
-			//f->img[2].l[1].s[1].q_bits = 0;
-			//f->img[2].l[1].s[2].q_bits = 0;
-			//f->img[2].l[1].s[3].q_bits = 0;
-			//f->img[2].l[0].s[1].q_bits = 0;
-			//f->img[2].l[0].s[2].q_bits = 0;
-			//f->img[2].l[0].s[3].q_bits = 0;
+			f->img[2].l[1].s[1].q_bits = 6;
+			f->img[2].l[1].s[2].q_bits = 6;
+			f->img[2].l[1].s[3].q_bits = 5;
+
+			f->img[2].l[0].s[1].q_bits = 3;
+			f->img[2].l[0].s[2].q_bits = 3;
+			f->img[2].l[0].s[3].q_bits = 2;
 			//s += image_size_test(&f->img[2], wc->steps, 0, wc->steps-3);
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
-			//return 1;
-
+			return 1;
+			*/
 
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
