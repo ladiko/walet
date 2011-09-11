@@ -373,20 +373,21 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		*/
 		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_rgb_bi(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg);
+		utils_bayer_to_rgb_bi(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Bilinear time = %f\n",(double)(end-start)/1000000.);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 		new_buffer (gw->orig[3], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_rgb_grad(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg);
+		utils_bayer_to_rgb_grad(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Gradient time = %f\n",(double)(end-start)/1000000.);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 		printf("APE = %f  ",utils_ape_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
 		printf("PNSR = %f\n",utils_psnr_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
+		printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 8));
     }
 }
 

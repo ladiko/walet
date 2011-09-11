@@ -33,6 +33,7 @@ int g[9][2] = {
 #define lb(x) (((x+128) < 0) ? 0 : (((x+128) > 255) ? 255 : (x+128)))
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
+#define border(x,w)	(x) < 0 ? (-x) : (((x) < w) ? x : (w<<1) - (x) - 2)
 
 
 static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
@@ -209,7 +210,7 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	\param h		The image height.
 	\retval			Output RGB image..
 */
-uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
+uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -221,28 +222,28 @@ uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGr
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
 	//TODO: Work only for RGGB, need to make for all Bayer grids
-	uint32 x, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
+	int x, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
 
 	for(y=1, yw=w; y < h1; y++, yw+=w){
 		for(x=1; x < w1; x++){
 			wy 	= x + yw;
 			xwy3 = wy + wy + wy;
 			if(!(y&1) && !(x&1)){
-				rgb[xwy3] 	= 	lb1(img[wy] + 128);
-				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + 128);
-				rgb[xwy3+2] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + 128);
+				rgb[xwy3] 	= 	lb1(img[wy] + shift);
+				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + shift);
 			}else if (!(y&1) && (x&1)){
-				rgb[xwy3] = 	lb1(((img[wy-1] + img[wy+1])>>1) + 128);
-				rgb[xwy3+1] = 	lb1(img[wy] + 128);
-				rgb[xwy3+2] =	lb1(((img[wy-w] + img[wy+w])>>1) + 128);
+				rgb[xwy3] = 	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
 			}else if ((y&1) && !(x&1)){
-				rgb[xwy3] = 	lb1(((img[wy-w] + img[wy+w])>>1) + 128);
-				rgb[xwy3+1] = 	lb1(img[wy] + 128);
-				rgb[xwy3+2] =	lb1(((img[wy-1] + img[wy+1])>>1) + 128);
+				rgb[xwy3] = 	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
 			}else {
-				rgb[xwy3] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + 128);
-				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + 128);
-				rgb[xwy3+2] = 	lb1(img[wy] + 128);
+				rgb[xwy3] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + shift);
+				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(img[wy] + shift);
 			}
 		}
 	}
@@ -256,7 +257,7 @@ uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGr
 	\param h		The image height.
 	\retval			Output RGB image..
 */
-uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
+uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -277,29 +278,29 @@ uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bayer
 			wy 	= x + yw;
 			xwy3 = wy + wy + wy;
 			if(!(y&1) && !(x&1)){
-				rgb[xwy3] 	= 	lb1(img[wy] + 128);
+				rgb[xwy3] 	= 	lb1(img[wy] + shift);
 				rgb[xwy3+1] = 	lb1((abs(img[wy-1] - img[wy+1]) > abs(img[wy-w] - img[wy+w]) ?
-								(img[wy-w] + img[wy+w])>>1 : (img[wy-1] + img[wy+1])>>1) + 128);
+								(img[wy-w] + img[wy+w])>>1 : (img[wy-1] + img[wy+1])>>1) + shift);
 				rgb[xwy3+2] = 	lb1((abs(img[wy-1-w] - img[wy+1+w]) > abs(img[wy+1-w] - img[wy-1+w]) ?
-								(img[wy+1-w] + img[wy-1+w])>>1 : (img[wy-1-w] + img[wy+1+w])>>1) + 128);
+								(img[wy+1-w] + img[wy-1+w])>>1 : (img[wy-1-w] + img[wy+1+w])>>1) + shift);
 			}else if (!(y&1) && (x&1)){
 				rgb[xwy3] = 	lb1((abs(img[wy-1] - img[wy+1]) > abs(img[wy-w2-1] + img[wy-w2+1] - img[wy+w2-1] - img[wy+w2+1])>>1 ?
-								(img[wy-w2-1] + img[wy-w2+1] + img[wy+w2-1] + img[wy+w2+1])>>2 : (img[wy-1] + img[wy+1])>>1) + 128);
-				rgb[xwy3+1] = 	lb1(img[wy] + 128);
+								(img[wy-w2-1] + img[wy-w2+1] + img[wy+w2-1] + img[wy+w2+1])>>2 : (img[wy-1] + img[wy+1])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
 				rgb[xwy3+2] =	lb1((abs(img[wy-w] - img[wy+w]) > abs(img[wy-w-2] + img[wy+w-2] - img[wy-w+2] - img[wy+w+2])>>1 ?
-								(img[wy-w-2] + img[wy+w-2] + img[wy-w+2] + img[wy+w+2])>>2 : (img[wy-w] + img[wy+w])>>1) + 128);
+								(img[wy-w-2] + img[wy+w-2] + img[wy-w+2] + img[wy+w+2])>>2 : (img[wy-w] + img[wy+w])>>1) + shift);
 			}else if ((y&1) && !(x&1)){
 				rgb[xwy3] = 	lb1((abs(img[wy-w] - img[wy+w]) > abs(img[wy-w-2] + img[wy+w-2] - img[wy-w+2] - img[wy+w+2])>>1 ?
-								(img[wy-w-2] + img[wy+w-2] + img[wy-w+2] + img[wy+w+2])>>2 : (img[wy-w] + img[wy+w])>>1) + 128);
-				rgb[xwy3+1] = 	lb1(img[wy] + 128);
+								(img[wy-w-2] + img[wy+w-2] + img[wy-w+2] + img[wy+w+2])>>2 : (img[wy-w] + img[wy+w])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
 				rgb[xwy3+2] =	lb1((abs(img[wy-1] - img[wy+1]) > abs(img[wy-w2-1] + img[wy-w2+1] - img[wy+w2-1] - img[wy+w2+1])>>1 ?
-								(img[wy-w2-1] + img[wy-w2+1] + img[wy+w2-1] + img[wy+w2+1])>>2 : (img[wy-1] + img[wy+1])>>1) + 128);
+								(img[wy-w2-1] + img[wy-w2+1] + img[wy+w2-1] + img[wy+w2+1])>>2 : (img[wy-1] + img[wy+1])>>1) + shift);
 			}else {
 				rgb[xwy3] = 	lb1((abs(img[wy-1-w] - img[wy+1+w]) > abs(img[wy+1-w] - img[wy-1+w]) ?
-								(img[wy+1-w] + img[wy-1+w])>>1 : (img[wy-1-w] + img[wy+1+w])>>1) + 128);
+								(img[wy+1-w] + img[wy-1+w])>>1 : (img[wy-1-w] + img[wy+1+w])>>1) + shift);
 				rgb[xwy3+1] = 	lb1((abs(img[wy-1] - img[wy+1]) > abs(img[wy-w] - img[wy+w]) ?
-								(img[wy-w] + img[wy+w])>>1 : (img[wy-1] + img[wy+1])>>1) + 128);
-				rgb[xwy3+2] = 	lb1(img[wy] + 128);
+								(img[wy-w] + img[wy+w])>>1 : (img[wy-1] + img[wy+1])>>1) + shift);
+				rgb[xwy3+2] = 	lb1(img[wy] + shift);
 			}
 		}
 	}
@@ -1003,6 +1004,35 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d){
 	else{printf("ape: ERROR\n");
 		 return 0.;
 	}
+}
+
+/** \brief Calculate SSIM of two gray image.
+	\param im1	Pointer to first image.
+	\param im2	Pointer to second image.
+	\param size		Size of image height*width.
+	\param bbp 		Bits per pixel.
+	\retval 		The SSIM.
+*/
+double utils_ssim_16(int16 *im1, int16 *im2, uint32 size, uint32 bbp){
+
+	uint32 i;
+	double ssim, c1, c2;
+	double av1, av2, d1, d2, d12;
+	for(i = 0; i < size; i++) av1 += im1[i];
+	for(i = 0; i < size; i++) av2 += im2[i];
+	av1 = av1/(double)size;
+	av2 = av2/(double)size;
+	for(i = 0; i < size; i++) d1 = (av1 - im1[i])*(av1 - im1[i]);
+	for(i = 0; i < size; i++) d2 = (av2 - im2[i])*(av2 - im2[i]);
+	for(i = 0; i < size; i++) d12 = (av1 - im1[i])*(av2 - im2[i]);
+	d1 = d1/(double)size;
+	d2 = d2/(double)size;
+	d12 = d12/(double)size;
+	c1 = (0.01*((1<<bbp)-1))*(0.01*((1<<bbp)-1));
+	c2 = (0.03*((1<<bbp)-1))*(0.03*((1<<bbp)-1));
+	ssim = ((2.*av1*av2 + c1)*(2.*d12 + c2))/((av1*av1 + av2*av2 + c1)*(d1*d1 + d2*d2 + c2));
+
+	return ssim;
 }
 
 double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d){
