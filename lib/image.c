@@ -501,7 +501,7 @@ void image_fill_subb(Image *im, uint32 steps){
 	//printf("im->qst = %d\n", im->qst);
 }
 
-uint32 image_size(Image *im, uint32 steps, int qstep){
+uint32 image_size1(Image *im, uint32 steps, int qstep){
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
@@ -620,6 +620,46 @@ uint32 image_size(Image *im, uint32 steps, int qstep){
 		size += size1;
 		printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 	}
+	printf("size = %d\n", size);
+	return size;
+}
+
+uint32 image_size(Image *im, uint32 steps, int sz){
+///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
+///	\brief Bits allocation for quantization algorithm.
+///	\param im	 		The image structure.
+///	\param color 		The color space of the stream.
+///	\param steps 		The steps of DWT transform.
+///	\param qstep 		The quantization step  (0 <= qstep < qst).
+
+	//The order of subband bits allocation
+	uint32 i, j, k, l, size = 0, size1, min, in, jn;
+	int *st, tmp;
+	st = im->qfl;
+	// Levels bits counter should be less than 5
+	for(i=0; i < steps; i++) st[i] = 0;
+	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
+		im->l[i].s[j].q_bits = 2;
+		im->l[i].s[j].sts = subb_size(&im->l[i].s[j]);
+	}
+	//printf("stmax = %d\n", stmax);
+
+
+	//Calculate image size for given quantization step (qstep)
+	size = subb_size(&im->l[steps-1].s[0]);
+	while(size < sz){
+		min = sz;
+		for(i=0; i < steps; i++) for(j = 1 ? 0 : 1; j < 4; j++) {
+
+			if(im->l[i].s[j].sts < min) { min = im->l[i].s[j].sts; in = i; jn = j; }
+
+			printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
+		}
+		size += min;
+		im->l[i].s[j].q_bits = im->l[i].s[j].q_bits < im->l[i].s[j].a_bits ? im->l[i].s[j].q_bits + 1 : im->l[i].s[j].a_bits;
+	}
+
+
 	printf("size = %d\n", size);
 	return size;
 }

@@ -1011,28 +1011,124 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d){
 	\param im2	Pointer to second image.
 	\param size		Size of image height*width.
 	\param bbp 		Bits per pixel.
+	\param d 		d = 1 if gray image, d = 3 if color image.
 	\retval 		The SSIM.
 */
-double utils_ssim_16(int16 *im1, int16 *im2, uint32 size, uint32 bbp){
+double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int bd, uint32 d){
 
-	uint32 i;
-	double ssim, c1, c2;
-	double av1, av2, d1, d2, d12;
-	for(i = 0; i < size; i++) av1 += im1[i];
-	for(i = 0; i < size; i++) av2 += im2[i];
-	av1 = av1/(double)size;
-	av2 = av2/(double)size;
-	for(i = 0; i < size; i++) d1 = (av1 - im1[i])*(av1 - im1[i]);
-	for(i = 0; i < size; i++) d2 = (av2 - im2[i])*(av2 - im2[i]);
-	for(i = 0; i < size; i++) d12 = (av1 - im1[i])*(av2 - im2[i]);
-	d1 = d1/(double)size;
-	d2 = d2/(double)size;
-	d12 = d12/(double)size;
+	int x, y, i, ix, iy, size, yx, xy, wc = bd*2 + 1, wc2 = wc*wc;
+	double ssim = 0, ss, c1, c2, *c;
+	double av1=0., av2=0., d1=0., d2=0., d12=0., t1, t2;
+	double ssimr, ssimg, ssimb, tmp = 0;
+	double avr1=0., avg1=0., avb1=0., avr2=0., avg2=0., avb2=0.;
+	double dr1=0., dg1=0.,db1=0., dr2=0., dg2=0., db2=0., dr12=0., dg12=0., db12=0.;
+	uint8 *img1, *img2;
+	img1 = (uint8*)im1; img2 = (uint8*)im2;
+
+	c = (double *)calloc(wc*wc, sizeof(double));
+
 	c1 = (0.01*((1<<bbp)-1))*(0.01*((1<<bbp)-1));
 	c2 = (0.03*((1<<bbp)-1))*(0.03*((1<<bbp)-1));
-	ssim = ((2.*av1*av2 + c1)*(2.*d12 + c2))/((av1*av1 + av2*av2 + c1)*(d1*d1 + d2*d2 + c2));
 
-	return ssim;
+	//Gaussian Blur kernel
+	for(y = 0; y < wc; y++) for(x = 0; x < wc; x++) c[y*wc + x] = 1./(double)wc2;
+
+	//SSIM calculation
+	for(y = bd; y < h-bd; y++){
+		for(x = bd; x < w-bd; x++){
+			av1 = 0.; av2 = 0.;
+			for(iy=-bd; iy <= bd; iy++) {
+				yx = (y + iy)*w;
+				for(ix=-bd; ix <= bd; ix++) {
+					xy = yx + x + ix;
+					av1 += im1[xy]*c[(iy+bd)*wc + ix+bd];
+					av2 += im2[xy]*c[(iy+bd)*wc + ix+bd];
+					//printf("av1 = %f av2 = %f c[%d][%d] = %f\n", av1, av2, ix+bd, iy+bd, c[(iy+bd)*wc + ix+bd]);
+				}
+			}
+			//av1 = av1/(double)size;
+			//av2 = av2/(double)size;
+			d1=0.; d2=0.; d12=0.;
+			for(iy=-bd; iy <= bd; iy++) {
+				yx = (y + iy)*w;
+				for(ix=-bd; ix <= bd; ix++) {
+					xy = yx + x + ix;
+					t1 = (av1 - im1[xy]);
+					t2 = (av2 - im2[xy]);
+					d1 += t1*t1*c[(iy+bd)*wc + ix+bd];
+					d2 += t2*t2*c[(iy+bd)*wc + ix+bd];
+					d12 += t1*t2*c[(iy+bd)*wc + ix+bd];
+				}
+			}
+			//d1 = d1/(double)size;
+			//d2 = d2/(double)size;
+			//d12 = d12/(double)size;
+			ss = ((2.*av1*av2 + c1)*(2.*d12 + c2))/((av1*av1 + av2*av2 + c1)*(d1 + d2 + c2));
+			//printf("SSIM = %f av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f \n", ss, av1, av2, d1, d2, d12);
+			ssim += ss;
+		}
+	}
+	return ssim/(double)((h-2*bd)*(w-2*bd));
+
+
+	if(d==1){
+		size = w*h;
+		for(i = 0; i < size; i++) av1 += im1[i];
+		for(i = 0; i < size; i++) av2 += im2[i];
+		av1 = av1/(double)size;
+		av2 = av2/(double)size;
+		for(i = 0; i < size; i++) d1 += (av1 - im1[i])*(av1 - im1[i]);
+		for(i = 0; i < size; i++) d2 += (av2 - im2[i])*(av2 - im2[i]);
+		for(i = 0; i < size; i++) d12 += (av1 - im1[i])*(av2 - im2[i]);
+		d1 = d1/(double)size;
+		d2 = d2/(double)size;
+		d12 = d12/(double)size;
+		printf("av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f \n", av1, av2, d1, d2, d12);
+		ssim = ((2.*av1*av2 + c1)*(2.*d12 + c2))/((av1*av1 + av2*av2 + c1)*(d1 + d2 + c2));
+		return ssim;
+	}
+	if(d==3){
+		size = w*h*3;
+		//for(i = 0; i < size; i+=3) {tmp += img1[i] - img2[i]; tmp += img1[i+1] - img2[i+1]; tmp += img1[i+2] - img2[i+2]; }
+		//printf("diff = %f\n", tmp);
+
+		for(i = 0; i < size; i+=3) { avr1 += img1[i]; avg1 += img1[i+1]; avb1 += img1[i+2]; }//printf("%d %d %d  ", img1[i], img1[i+1], img1[i+2]); }
+		for(i = 0; i < size; i+=3) { avr2 += img2[i]; avg2 += img2[i+1]; avb2 += img2[i+2]; }
+		avr1 = avr1*3./(double)size; avg1 = avg1*3./(double)size; avb1 = avb1*3./(double)size;
+		avr2 = avr2*3./(double)size; avg2 = avg2*3./(double)size; avb2 = avb2*3./(double)size;
+
+		for(i = 0; i < size; i+=3) {
+			dr1 += (avr1 - img1[i]  )*(avr1 - img1[i]  );
+			dg1 += (avg1 - img1[i+1])*(avg1 - img1[i+1]);
+			db1 += (avb1 - img1[i+2])*(avb1 - img1[i+2]);
+		}
+		for(i = 0; i < size; i+=3) {
+			dr2 += (avr2 - img2[i]  )*(avr2 - img2[i]  );
+			dg2 += (avg2 - img2[i+1])*(avg2 - img2[i+1]);
+			db2 += (avb2 - img2[i+2])*(avb2 - img2[i+2]);
+		}
+		for(i = 0; i < size; i+=3) {
+			dr12 += (avr1 - img1[i]  )*(avr2 - img2[i]  );
+			dg12 += (avg1 - img1[i+1])*(avg2 - img2[i+1]);
+			db12 += (avb1 - img1[i+2])*(avb2 - img2[i+2]);
+		}
+		dr1 = dr1*3./(double)size; dg1 = dg1*3./(double)size; db1 = db1*3./(double)size;
+		dr2 = dr2*3./(double)size; dg2 = dg2*3./(double)size; db2 = db2*3./(double)size;
+		dr12 = dr12*3./(double)size; dg12 = dg12*3./(double)size; db12 = db12*3./(double)size;
+
+		ssimr = ((2.*avr1*avr2 + c1)*(2.*dr12 + c2))/((avr1*avr1 + avr2*avr2 + c1)*(dr1 + dr2 + c2));
+		printf("Red   ssim = %f av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f\n", ssimr, avr1, avr2, dr1, dr2, dr12);
+
+		ssimg = ((2.*avg1*avg2 + c1)*(2.*dg12 + c2))/((avg1*avg1 + avg2*avg2 + c1)*(dg1 + dg2 + c2));
+		printf("Green ssim = %f av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f\n", ssimg, avg1, avg2, dg1, dg2, dg12);
+
+		ssimb = ((2.*avb1*avb2 + c1)*(2.*db12 + c2))/((avb1*avb1 + avb2*avb2 + c1)*(db1 + db2 + c2));
+		printf("Blue  ssim = %f av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f\n", ssimb, avb1, avb2, db1, db2, db12);
+
+		ssim = (ssimr + ssimg + ssimb)/3.;
+
+		return ssim;
+	}
 }
 
 double utils_psnr(uint8 *before, uint8 *after, uint32 dim, uint32 d){

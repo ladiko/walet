@@ -299,7 +299,8 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
 			return 1;
 			*/
-
+			//Old algorithm bits allocation
+			/*
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
@@ -322,19 +323,27 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 				//TODO: Fine tuning of the bit allocation
 					break;
 					//Fine tuning of the bit allocation
-					/*
-					df = abs(size - s);
-					qs1 = qs;
-					qs = (s < size) ? qs + 1 : qs - 1;
-					printf("qs = %d qs1 = %d\n", qs, qs1);
-					if(df  > df1 ){
-						qs = qs1;
-						break;
-					}
-					df1 = df;*/
 				}
 				else qs2 = (s < size) ? qs2 + (qs>>k) : qs2 - (qs>>k);
-			}
+			}*/
+			//New algorithm of bits allocatiom.
+			//At first we should decide how many bits for each LL, HL, LH, HH image
+			// |--------|--------|
+			// |   LL   |   HL   |
+			// |   4    |   1    |
+			// |  bl[0] |  bl[1] |
+			// |--------|--------|
+			// |   LH   |   HH   |
+			// |   1    |   0    |
+			// |  bl[2] |  bl[3] |
+			// |--------|--------|
+			bl[0] = size*4/6;
+			bl[1] = size/6;
+			bl[2] = size/6;
+			bl[3] = 0;
+			s = 0;
+			for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
+				//printf("img = %d\n", j);
 		}
 		//TODO: Bits allocation for gray and YUV color space.
 		printf("Frame size = %d bits  %d bites qs = %d\n", s, s/8, qs);
