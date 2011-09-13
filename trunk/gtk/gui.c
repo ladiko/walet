@@ -348,9 +348,9 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
-		utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
+		//new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
+		//utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
+		//gtk_widget_queue_draw(gw->drawingarea[2]);
 	}
 }
 
@@ -387,7 +387,12 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 
 		printf("APE = %f  ",utils_ape_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
 		printf("PNSR = %f\n",utils_psnr_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
-		printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 8));
+		//printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 8, 1));
+		printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 8, 3, 1));
+
+		//printf("SSIM = %f\n",utils_ssim_16((int16*)gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*) gdk_pixbuf_get_pixels(gw->orig[2]->pxb),
+		//		gw->gop.frames[0].b.w*gw->gop.frames[0].b.h*3, 8, 3));
+
     }
 }
 

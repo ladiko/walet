@@ -23,6 +23,7 @@ typedef struct {	// Signed picture 16bit
 	uint32 	q_bits;		//Quantization bits per pixel.
 	uint32 	max;		//The absolute value of the maximum.
 	uint32	ssz;		//The subband size after range coder compression.
+	uint32 	sts;		//The subband size for next step of bit allocation.
 } Subband;
 
 typedef struct {	//One DWT decomposition level
