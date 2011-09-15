@@ -194,14 +194,22 @@ static void  dist_quant(uint32 *din, uint32 *dout,  uint32 a_bits, uint32 q_bits
 	int i, j, st = (a_bits - q_bits);
 	int range = 1<<(a_bits-1), half = 1<<(q_bits-1);
 
+	//for(i=0; i < 1<<a_bits; i++) printf("%d ", din[i]);
+	//printf("\n");
+
+	dout[half] = 0;
 	for(j=(1-(1<<st)); j< (1<<st); j++) dout[half] += din[range + j];
 	for(i=1; i < half; i++){
+		dout[half + i] = 0;
+		dout[half - i] = 0;
 		for(j= (i<<st); j< ((i+1)<<st); j++) {
 			dout[half + i] += din[range + j];
 			dout[half - i] += din[range - j];
 		}
 	}
 	dout[0] = din[0];
+	//for(i=0; i < (1<<q_bits); i++) printf("%d ", dout[i]);
+	//printf("\n");
 }
 
 /** \brief Make distribution with sum equal power of 2

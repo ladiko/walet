@@ -501,7 +501,7 @@ void image_fill_subb(Image *im, uint32 steps){
 	//printf("im->qst = %d\n", im->qst);
 }
 
-uint32 image_size1(Image *im, uint32 steps, int qstep){
+uint32 image_size(Image *im, uint32 steps, int qstep){
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
@@ -587,8 +587,8 @@ uint32 image_size1(Image *im, uint32 steps, int qstep){
 			if (qstep >= 0){
 				im->l[l].s[1].q_bits = im->l[l].s[1].a_bits;
 				im->l[l].s[2].q_bits = im->l[l].s[2].a_bits;
-				printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
-				printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
 				if(!qstep) break;
 			} else {
 				tmp = qstep + (im->l[l].s[1].a_bits + im->l[l].s[2].a_bits - 2);
@@ -596,19 +596,19 @@ uint32 image_size1(Image *im, uint32 steps, int qstep){
 				im->l[l].s[2].q_bits = (tmp>>1);
 				im->l[l].s[1].q_bits = im->l[l].s[1].q_bits ? im->l[l].s[1].q_bits + 1 : im->l[l].s[1].q_bits;
 				im->l[l].s[2].q_bits = im->l[l].s[2].q_bits ? im->l[l].s[2].q_bits + 1 : im->l[l].s[2].q_bits;
-				printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
-				printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 1, im->l[l].s[1].q_bits, im->l[l].s[1].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 2, im->l[l].s[2].q_bits, im->l[l].s[2].a_bits);
 				break;
 			}
 			qstep = qstep - im->l[l].s[3].a_bits + 1;
 			if (qstep >= 0){
 				im->l[l].s[3].q_bits = im->l[l].s[3].a_bits;
-				printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
 				if(!qstep) break;
 			} else {
 				tmp = qstep + im->l[l].s[3].a_bits - 1;
 				im->l[l].s[3].q_bits = tmp + 1;
-				printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
+				//printf("l[%d].s[%d] = %d %d\n", l, 3, im->l[l].s[3].q_bits, im->l[l].s[3].a_bits);
 				break;
 			}
 		}
@@ -620,11 +620,11 @@ uint32 image_size1(Image *im, uint32 steps, int qstep){
 		size += size1;
 		printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 	}
-	printf("size = %d\n", size);
+	printf("Image size = %d\n", size);
 	return size;
 }
 
-uint32 image_size(Image *im, uint32 steps, int sz){
+uint32 image_size1(Image *im, uint32 steps, int sz){
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
@@ -640,25 +640,40 @@ uint32 image_size(Image *im, uint32 steps, int sz){
 	for(i=0; i < steps; i++) st[i] = 0;
 	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
 		im->l[i].s[j].q_bits = 2;
-		im->l[i].s[j].sts = subb_size(&im->l[i].s[j]);
+		im->l[i].s[j].ssq = subb_size(&im->l[i].s[j]);
+		im->l[i].s[j].ssd = im->l[i].s[j].ssq;
+		im->l[i].s[j].q_bits = 0;
+		//printf("%3d %3d q = %3d a = %3d size = %d dif = %d\n", i, j, im->l[i].s[j].q_bits, im->l[i].s[j].a_bits, im->l[i].s[j].ssq, im->l[i].s[j].ssd);
 	}
-	//printf("stmax = %d\n", stmax);
-
 
 	//Calculate image size for given quantization step (qstep)
 	size = subb_size(&im->l[steps-1].s[0]);
 	while(size < sz){
-		min = sz;
-		for(i=0; i < steps; i++) for(j = 1 ? 0 : 1; j < 4; j++) {
+		min = 0xFFFFFFFF;
+		//printf("\n");
+		for(i=0; i < steps; i++) for(j = 1; j < 4; j++) {
 
-			if(im->l[i].s[j].sts < min) { min = im->l[i].s[j].sts; in = i; jn = j; }
+			if(im->l[i].s[j].ssd < min) { min = im->l[i].s[j].ssd; in = i; jn = j; }
 
-			printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
+
+			//printf("a_bits = %2d q_bits  = %2d l[%d].s[%d] = %d\n", im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, i, j, size1);
 		}
 		size += min;
-		im->l[i].s[j].q_bits = im->l[i].s[j].q_bits < im->l[i].s[j].a_bits ? im->l[i].s[j].q_bits + 1 : im->l[i].s[j].a_bits;
+		im->l[in].s[jn].q_bits = im->l[in].s[jn].q_bits ? im->l[in].s[jn].q_bits + 1 : 2;
+
+		if(im->l[in].s[jn].q_bits < im->l[in].s[jn].a_bits) {
+
+			im->l[in].s[jn].q_bits++;
+			im->l[in].s[jn].ssd = subb_size(&im->l[in].s[jn]) - im->l[in].s[jn].ssq;
+			im->l[in].s[jn].ssq = im->l[in].s[jn].ssq + im->l[in].s[jn].ssd;
+			im->l[in].s[jn].q_bits--;
+		} else {
+			im->l[in].s[jn].ssd = 0xFFFFFFFF;
+		}
 	}
 
+	for(i=0; i < steps; i++) for(j = 1; j < 4; j++)
+		printf("%3d %3d q = %3d a = %3d size = %d dif = %d\n", i, j,  im->l[i].s[j].q_bits, im->l[i].s[j].a_bits, im->l[i].s[j].ssq, im->l[i].s[j].ssd);
 
 	printf("size = %d\n", size);
 	return size;
@@ -821,7 +836,7 @@ uint32 image_range_encode(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *
 						((float)im->l[i].s[j].ssz/(float)sq), ((float)(subb_size(&im->l[i].s[j])>>3)/(float)im->l[i].s[j].ssz));
 			}
 	}
-	//printf("Finish range_encoder\n");
+	printf("Image size = %d\n", size);
 	return size;
 }
 

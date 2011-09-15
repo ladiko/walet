@@ -348,9 +348,9 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
-		//new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
-		//utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
-		//gtk_widget_queue_draw(gw->drawingarea[2]);
+		new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
+		utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 	}
 }
 
