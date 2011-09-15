@@ -167,7 +167,7 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 			if(isteps == wc->steps) {
 			f->d.w = f->img[0].d.w + f->img[1].d.w;
 			f->d.h = f->img[0].d.h + f->img[2].d.h;
-			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic,
+			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[2].d.pic, f->img[2].d.pic, f->img[3].d.pic,
 					(int16*)g->buf, f->d.w, f->d.h);
 			} else {
 				i = wc->steps - isteps;
@@ -251,7 +251,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	// |  bl[2] |  bl[3] |
 	// |--------|--------|
 	//The order of bit allocation for subband
-	uint32 qo[9] = {0, 0, 0, 0, 1, 2, 1, 2}, step = 8, qs = f->qst - f->img[3].qst, qs2 = qs>>1;
+	uint32 qo[9] = {0, 0, 0, 2}, step = 4, qs = f->qst - f->img[3].qst - f->img[1].qst, qs2 = qs>>1;
 
 	uint32 i, j, k, size, qs1, df, s, df1;
 	uint32 bl[4];
@@ -265,19 +265,22 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	if(check_state(f->state, FILL_SUBBAND)){
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
-			/*
-			s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
-			f->img[0].l[1].s[1].q_bits = 8;
-			f->img[0].l[1].s[2].q_bits = 8;
-			f->img[0].l[1].s[3].q_bits = 8;
 
-			f->img[0].l[0].s[1].q_bits = 6;
-			f->img[0].l[0].s[2].q_bits = 5;
-			f->img[0].l[0].s[3].q_bits = 4;
+			s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
+			s += image_size_test(&f->img[1], wc->steps, 0, wc->steps);
+			s += image_size_test(&f->img[2], wc->steps, 0, wc->steps);
+
+			//f->img[0].l[1].s[1].q_bits = 9;
+			//f->img[0].l[1].s[2].q_bits = 9;
+			//f->img[0].l[1].s[3].q_bits = 9;
+
+			f->img[0].l[0].s[1].q_bits = 7;
+			f->img[0].l[0].s[2].q_bits = 6;
+			f->img[0].l[0].s[3].q_bits = 5;
 			//f->img[0].l[0].s[3].q_bits = f->img[0].l[0].s[3].q_bits>>1;
 			//f->img[1].l[0].s[1].q_bits = f->img[1].l[0].s[1].q_bits>>1;
 			//f->img[1].l[0].s[2].q_bits = f->img[1].l[0].s[2].q_bits>>1;
-
+			/*
 			f->img[1].l[1].s[1].q_bits = 6;
 			f->img[1].l[1].s[2].q_bits = 6;
 			f->img[1].l[1].s[3].q_bits = 5;
@@ -297,10 +300,13 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			f->img[2].l[0].s[3].q_bits = 2;
 			//s += image_size_test(&f->img[2], wc->steps, 0, wc->steps-3);
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
-			return 1;
 			*/
+
+
+			return 1;
+
 			//Old algorithm bits allocation
-			/*
+
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
@@ -325,7 +331,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 					//Fine tuning of the bit allocation
 				}
 				else qs2 = (s < size) ? qs2 + (qs>>k) : qs2 - (qs>>k);
-			}*/
+			}
 			//New algorithm of bits allocatiom.
 			//At first we should decide how many bits for each LL, HL, LH, HH image
 			// |--------|--------|
@@ -337,10 +343,24 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			// |   1    |   0    |
 			// |  bl[2] |  bl[3] |
 			// |--------|--------|
-			bl[0] = size*4/6;
-			bl[1] = size/6;
-			bl[2] = size/6;
+			/*
+			bl[0] = size*4/9;
+			bl[1] = size*5/18;
+			bl[2] = size*5/18;
 			bl[3] = 0;
+			*/
+			/*
+			bl[0] = size*4/9;
+			bl[1] = size*2/9;
+			bl[2] = size*2/9;
+			bl[3] = size/9;
+			*/
+
+			bl[0] = size>>1;
+			bl[1] = size>>2;
+			bl[2] = size>>2;
+			bl[3] = 0;
+
 			s = 0;
 			for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
 				//printf("img = %d\n", j);
