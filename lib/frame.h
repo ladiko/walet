@@ -30,6 +30,8 @@ typedef struct{
 	uint32 	size;	//The number of pixels.
 	uint8 *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame
+	// For test only
+
 }	Frame;
 
 #include <gop.h>
@@ -69,6 +71,9 @@ uint32 	frame_match			(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc);
 
 void 	frame_compress		(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
 void 	frame_decompress	(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
+
+
+void 	frame_test			(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
 
 #ifdef __cplusplus
 }

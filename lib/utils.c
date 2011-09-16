@@ -1034,20 +1034,22 @@ double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int
 	for(y = 0; y < wc; y++) for(x = 0; x < wc; x++) c[y*wc + x] = 1./(double)wc2;
 
 	//SSIM calculation
-	for(y = bd; y < h-bd; y++){
-		for(x = bd; x < w-bd; x++){
+	for(y = bd; y < h-bd; y+=wc){
+		for(x = bd; x < w-bd; x+=wc){
 			av1 = 0.; av2 = 0.;
 			for(iy=-bd; iy <= bd; iy++) {
 				yx = (y + iy)*w;
 				for(ix=-bd; ix <= bd; ix++) {
 					xy = yx + x + ix;
-					av1 += im1[xy]*c[(iy+bd)*wc + ix+bd];
-					av2 += im2[xy]*c[(iy+bd)*wc + ix+bd];
+					//av1 += im1[xy]*c[(iy+bd)*wc + ix+bd];
+					//av2 += im2[xy]*c[(iy+bd)*wc + ix+bd];
+					av1 += im1[xy];
+					av2 += im2[xy];
 					//printf("av1 = %f av2 = %f c[%d][%d] = %f\n", av1, av2, ix+bd, iy+bd, c[(iy+bd)*wc + ix+bd]);
 				}
 			}
-			//av1 = av1/(double)size;
-			//av2 = av2/(double)size;
+			av1 = av1/(double)wc2;
+			av2 = av2/(double)wc2;
 			d1=0.; d2=0.; d12=0.;
 			for(iy=-bd; iy <= bd; iy++) {
 				yx = (y + iy)*w;
@@ -1055,20 +1057,24 @@ double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int
 					xy = yx + x + ix;
 					t1 = (av1 - im1[xy]);
 					t2 = (av2 - im2[xy]);
-					d1 += t1*t1*c[(iy+bd)*wc + ix+bd];
-					d2 += t2*t2*c[(iy+bd)*wc + ix+bd];
-					d12 += t1*t2*c[(iy+bd)*wc + ix+bd];
+					//d1 += t1*t1*c[(iy+bd)*wc + ix+bd];
+					//d2 += t2*t2*c[(iy+bd)*wc + ix+bd];
+					//d12 += t1*t2*c[(iy+bd)*wc + ix+bd];
+					d1 += t1*t1;
+					d2 += t2*t2;
+					d12 += t1*t2;
 				}
 			}
-			//d1 = d1/(double)size;
-			//d2 = d2/(double)size;
-			//d12 = d12/(double)size;
+			d1 = d1/(double)wc2;
+			d2 = d2/(double)wc2;
+			d12 = d12/(double)wc2;
 			ss = ((2.*av1*av2 + c1)*(2.*d12 + c2))/((av1*av1 + av2*av2 + c1)*(d1 + d2 + c2));
 			//printf("SSIM = %f av1 = %f av2 = %f d1 = %f d2 = %f d12 = %f \n", ss, av1, av2, d1, d2, d12);
 			ssim += ss;
 		}
 	}
-	return ssim/(double)((h-2*bd)*(w-2*bd));
+	//return ssim/(double)((h-2*bd)*(w-2*bd));
+	return ssim/(double)((h/wc)*(w/wc));
 
 
 	if(d==1){
@@ -1696,3 +1702,4 @@ void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h)
 	}
 
 }
+

@@ -25,6 +25,7 @@ typedef struct {	// Signed picture 16bit
 	uint32	ssz;		//The subband size after range coder compression.
 	uint32 	ssq;		//The subband size for given q_step
 	uint32 	ssd;		//The subband size difference for given q_step and q_step-1
+	double	ssim;
 } Subband;
 
 typedef struct {	//One DWT decomposition level
@@ -43,6 +44,7 @@ uint32 	subband_size		(Subband *sub);
 void  	subband_encode_table(Subband *sub, int *q);
 void  	subband_decode_table(Subband *sub, int *q);
 void  	subband_quantization(Subband *sub, int *q);
+void  	subb_copy			(Subband *in, Subband *out);
 
 //Old interface
 //void 	subband_init			(Subband **sub, uint32 num, ColorSpace color, uint32 x, uint32 y, uint32 steps, uint32 bits, int *q);

@@ -210,3 +210,13 @@ void  subb_quantization(Subband *sub, int *q){
 		} else for(i=0; i < size; i++ ) sub->pic[i] = 0;
 	}
 }
+
+void  subb_copy(Subband *in, Subband *out){
+/// \fn void  subband_quantization(uint8 *img, Subband *sub)
+///	\brief Subband quantization.
+///	\param img			The pointer to subband
+///	\param sub 			Pointer to subband.
+
+	int i, size = in->w*in->h;
+	for(i=0; i < size; i++) out->pic[i] = in->pic[i];
+}
