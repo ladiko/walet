@@ -102,7 +102,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
 		gw->wc.steps		= 4;  		/// DWT steps.
-		gw->wc.gop_size		= 1;		/// GOP size
+		gw->wc.gop_size		= 2;		/// GOP size
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
 		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
@@ -140,16 +140,17 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//Copy frame 0 to decoder pipeline
 		printf("video/x-raw-bayer\n");
 		frame_input(&gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
-		/*
+		frame_input(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		utils_grey_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
 		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_bayer_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
+		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
-		*/
 
+		/*
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
@@ -157,6 +158,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		utils_bayer_to_rgb_grad(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
+		*/
 
 
 	}

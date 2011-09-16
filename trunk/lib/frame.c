@@ -159,7 +159,7 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 	uint32 i;
 	Frame *f = &g->frames[fn];
 
-	if(check_state(f->state, DWT | RANGE_DECODER)){
+	//if(check_state(f->state, DWT | RANGE_DECODER)){
 		if (wc->color == GREY) image_idwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps, isteps);
 		else if(wc->color == BAYER ) {
 			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
@@ -167,7 +167,7 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 			if(isteps == wc->steps) {
 			f->d.w = f->img[0].d.w + f->img[1].d.w;
 			f->d.h = f->img[0].d.h + f->img[2].d.h;
-			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[2].d.pic, f->img[2].d.pic, f->img[3].d.pic,
+			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic,
 					(int16*)g->buf, f->d.w, f->d.h);
 			} else {
 				i = wc->steps - isteps;
@@ -181,7 +181,7 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 
 		f->state = IDWT;
 		return 1;
-	} else return 0;
+	//} else return 0;
 }
 
 /**	\brief	Fill distribution probability array for each subbands.
@@ -196,7 +196,7 @@ uint32 frame_fill_subb(GOP *g, uint32 fn, WaletConfig *wc)
 	Frame *f = &g->frames[fn];
 	f->qst = 0;
 
-	if(check_state(f->state, DWT)){
+	//if(check_state(f->state, DWT)){
 		if(wc->color == GREY) {
 			image_fill_subb(&f->img[0], wc->steps);
 			f->qst += f->img[0].qst;
@@ -214,7 +214,7 @@ uint32 frame_fill_subb(GOP *g, uint32 fn, WaletConfig *wc)
 		}
 		f->state |= FILL_SUBBAND;
 		return 1;
-	} else return 0;
+	//} else return 0;
 }
 
 /**	\brief	Fill distribution probability array for each subbands.
@@ -266,17 +266,23 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
 
-			s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
-			s += image_size_test(&f->img[1], wc->steps, 0, wc->steps);
-			s += image_size_test(&f->img[2], wc->steps, 0, wc->steps);
+			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
+			for(i=0; i < wc->steps; i++) for(j=1; j < 4; j++) f->img[3].l[i].s[j].q_bits = 0;
+			for(i=0; i < wc->steps-2; i++) for(j=1; j < 4; j++) f->img[1].l[i].s[j].q_bits = 0;
+			for(i=0; i < wc->steps-2; i++) for(j=1; j < 4; j++) f->img[2].l[i].s[j].q_bits = 0;
 
-			//f->img[0].l[1].s[1].q_bits = 9;
-			//f->img[0].l[1].s[2].q_bits = 9;
-			//f->img[0].l[1].s[3].q_bits = 9;
+			f->img[1].l[1].s[1].q_bits = 5;
+			f->img[1].l[1].s[2].q_bits = 5;
+			f->img[1].l[1].s[3].q_bits = 0;
 
-			f->img[0].l[0].s[1].q_bits = 7;
+			f->img[2].l[1].s[1].q_bits = 5;
+			f->img[2].l[1].s[2].q_bits = 5;
+			f->img[2].l[1].s[3].q_bits = 0;
+
+			f->img[0].l[0].s[1].q_bits = 6;
 			f->img[0].l[0].s[2].q_bits = 6;
-			f->img[0].l[0].s[3].q_bits = 5;
+			f->img[0].l[0].s[3].q_bits = 0;
+
 			//f->img[0].l[0].s[3].q_bits = f->img[0].l[0].s[3].q_bits>>1;
 			//f->img[1].l[0].s[1].q_bits = f->img[1].l[0].s[1].q_bits>>1;
 			//f->img[1].l[0].s[2].q_bits = f->img[1].l[0].s[2].q_bits>>1;
@@ -786,3 +792,75 @@ void frame_decompress(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 
 	printf("Frame time = %f size  = %d\n", time, size);
 }
+
+void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
+{
+	clock_t start, end;
+	double time=0., tmp, max;
+	struct timeval tv;
+	uint32 size, i, j, im, in, jn, imn, k =0;
+	uint32 sz = (wc->w*wc->h*wc->bpp)/times;
+
+	fn = 0;
+	frame_dwt(g, fn, wc);
+	frame_dwt(g, 1, wc);
+
+	max = 0.; k = 0;
+	for(im = 0; im < 4; im++)
+		for(i=0; i < wc->steps; i++)
+			for(j = 1; j < 4; j++) {
+				frame_fill_subb	(g, fn, wc);
+				g->frames[fn].img[im].l[i].s[j].q_bits--;
+				subb_quantization(&g->frames[fn].img[im].l[i].s[j], g->buf);
+				g->frames[fn].img[im].l[i].s[j].q_bits++;
+				//frame_test(g, fn, wc);
+				frame_idwt(g, fn, wc, wc->steps);
+				subb_copy(&g->frames[1].img[im].l[i].s[j], &g->frames[fn].img[im].l[i].s[j]);
+
+				g->frames[fn].img[im].l[i].s[j].ssim = utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+				printf("%d ssim = %f\n", k, g->frames[fn].img[im].l[i].s[j].ssim);
+				k++;
+			}
+	k = 0;
+	while(size > sz){
+		for(im = 0; im < 4; im++)
+			for(i=0; i <  wc->steps; i++)
+				for(j = 1; j < 4; j++) {
+					if(g->frames[fn].img[im].l[i].s[j].ssim > max) {
+						max = g->frames[fn].img[im].l[i].s[j].ssim > max;
+						imn = im; in = i; jn = j;
+					}
+				}
+
+		if(g->frames[fn].img[imn].l[in].s[jn].q_bits > 2){
+			g->frames[fn].img[imn].l[in].s[jn].q_bits-=2;
+			g->frames[fn].img[imn].l[in].s[jn].q_bits = g->frames[fn].img[imn].l[in].s[jn].q_bits == 1 ? 0 : g->frames[fn].img[imn].l[in].s[jn].q_bits;
+			subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
+			frame_fill_subb	(g, fn, wc);
+			subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+			frame_idwt(g, fn, wc, wc->steps);
+			g->frames[fn].img[imn].l[in].s[jn].ssim = utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+
+			g->frames[fn].img[im].l[i].s[j].q_bits++;
+			subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
+			subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+
+		} else {
+			g->frames[fn].img[imn].l[in].s[jn].q_bits = 0;
+			g->frames[fn].img[imn].l[in].s[jn].ssim = 0;
+			subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
+			subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+		}
+
+		size = 0;
+		for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
+			size += subb_size(&g->frames[fn].img[im].l[i].s[j]);
+
+		printf("%d ssim = %f size  = %d\n", k, max, size);
+		k++;
+	}
+
+	printf("Frame time = %f size  = %d\n", time, size);
+	//frame_write
+}
+
