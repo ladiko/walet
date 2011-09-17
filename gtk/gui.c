@@ -503,7 +503,7 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	if(&gw->gop == NULL ) return;
 
-	frame_test(&gw->gop, 0, &gw->wc, 13);
+	frame_test(&gw->gop, 0, &gw->wc, 12);
 
 	new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
 	utils_grey_draw(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
