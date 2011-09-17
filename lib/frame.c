@@ -803,13 +803,13 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 
 	fn = 0;
 	frame_dwt(g, fn, wc);
+	frame_fill_subb	(g, fn, wc);
 	frame_dwt(g, 1, wc);
 
 	max = 0.; k = 0;
 	for(im = 0; im < 4; im++)
 		for(i=0; i < wc->steps; i++)
 			for(j = 1; j < 4; j++) {
-				frame_fill_subb	(g, fn, wc);
 				g->frames[fn].img[im].l[i].s[j].q_bits--;
 				subb_quantization(&g->frames[fn].img[im].l[i].s[j], g->buf);
 				g->frames[fn].img[im].l[i].s[j].q_bits++;
@@ -821,29 +821,40 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 				printf("%d ssim = %f\n", k, g->frames[fn].img[im].l[i].s[j].ssim);
 				k++;
 			}
+
+	for(im = 0; im < 4; im++) for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
+		size += subb_size(&g->frames[fn].img[im].l[i].s[j]);
+	printf("size = %d\n", size);
 	k = 0;
 	while(size > sz){
 		for(im = 0; im < 4; im++)
 			for(i=0; i <  wc->steps; i++)
 				for(j = 1; j < 4; j++) {
 					if(g->frames[fn].img[im].l[i].s[j].ssim > max) {
-						max = g->frames[fn].img[im].l[i].s[j].ssim > max;
+						max = g->frames[fn].img[im].l[i].s[j].ssim;
 						imn = im; in = i; jn = j;
 					}
 				}
-
+		printf("img = %d l = %d s = %d ssim = %f\n", imn, in, jn, max);
 		if(g->frames[fn].img[imn].l[in].s[jn].q_bits > 2){
 			g->frames[fn].img[imn].l[in].s[jn].q_bits-=2;
 			g->frames[fn].img[imn].l[in].s[jn].q_bits = g->frames[fn].img[imn].l[in].s[jn].q_bits == 1 ? 0 : g->frames[fn].img[imn].l[in].s[jn].q_bits;
 			subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
-			frame_fill_subb	(g, fn, wc);
+			printf("subb_copy\n");
 			subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+			printf("subb_quantization\n");
 			frame_idwt(g, fn, wc, wc->steps);
-			g->frames[fn].img[imn].l[in].s[jn].ssim = utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+			printf("frame_idwt\n");
+			g->frames[fn].img[imn].l[in].s[jn].ssim =
+					utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+			printf("utils_ssim_16\n");
 
-			g->frames[fn].img[im].l[i].s[j].q_bits++;
+			g->frames[fn].img[im].l[i].s[j].q_bits = g->frames[fn].img[im].l[i].s[j].q_bits ?
+					g->frames[fn].img[im].l[i].s[j].q_bits + 1 : g->frames[fn].img[im].l[i].s[j].q_bits + 2;
 			subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
-			subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+			printf("subb_copy\n");
+			//subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+			printf("subb_quantization\n");
 
 		} else {
 			g->frames[fn].img[imn].l[in].s[jn].q_bits = 0;
@@ -853,14 +864,14 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 		}
 
 		size = 0;
-		for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
+		for(im = 0; im < 4; im++) for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
 			size += subb_size(&g->frames[fn].img[im].l[i].s[j]);
 
-		printf("%d ssim = %f size  = %d\n", k, max, size);
+		printf("%4d img = %3d l = %3d s = %3d ssim = %f size  = %d\n", k, imn, in, jn, max, size);
 		k++;
 	}
 
-	printf("Frame time = %f size  = %d\n", time, size);
+	//printf("Frame time = %f size  = %d\n", time, size);
 	//frame_write
 }
 
