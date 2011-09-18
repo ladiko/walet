@@ -389,7 +389,7 @@ uint32 frame_quantization(GOP *g, uint32 fn, WaletConfig *wc)
 	uint32 i;
 	Frame *f = &g->frames[fn];
 
-	if(check_state(f->state, BITS_ALLOCATION)){
+	//if(check_state(f->state, BITS_ALLOCATION)){
 		if(wc->color == GREY) image_quantization(&f->img[0], wc->steps, g->buf);
 		else if(wc->color == BAYER)
 			for(i=0; i < 4; i++)  image_quantization(&f->img[i], wc->steps,  g->buf);
@@ -398,7 +398,7 @@ uint32 frame_quantization(GOP *g, uint32 fn, WaletConfig *wc)
 
 		f->state |= QUANTIZATION;
 		return 1;
-	} else return 0;
+	//} else return 0;
 }
 
 /**	\brief	Frame range encoder.
@@ -817,13 +817,16 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 					if(g->frames[fn].img[im].l[i].s[j].q_bits){
 						//g->frames[fn].img[im].l[i].s[j].q_bits--;
 						g->frames[fn].img[im].l[i].s[j].q_bits = g->frames[fn].img[im].l[i].s[j].q_bits == 2 ? 0 : g->frames[fn].img[im].l[i].s[j].q_bits - 1;
-						subb_quantization(&g->frames[fn].img[im].l[i].s[j], g->buf);
+						//subb_quantization(&g->frames[fn].img[im].l[i].s[j], g->buf);
+						frame_quantization(g, fn, wc);
 						g->frames[fn].img[im].l[i].s[j].q_bits = g->frames[fn].img[im].l[i].s[j].q_bits == 0 ? 2 : g->frames[fn].img[im].l[i].s[j].q_bits + 1;
 						//g->frames[fn].img[im].l[i].s[j].q_bits++;
 						//frame_test(g, fn, wc);
 						frame_idwt(g, fn, wc, wc->steps);
 						subb_copy(&g->frames[1].img[im].l[i].s[j], &g->frames[fn].img[im].l[i].s[j]);
-						g->frames[fn].img[im].l[i].s[j].ssim = utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+						g->frames[fn].img[im].l[i].s[j].ssim =
+								utils_psnr_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w*g->frames[fn].b.h, 1);
+						//utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
 					} else {
 						g->frames[fn].img[im].l[i].s[j].ssim = 0.;
 					}
@@ -846,10 +849,12 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 		}
 		g->frames[fn].img[imn].l[in].s[jn].q_bits = g->frames[fn].img[imn].l[in].s[jn].q_bits == 2 ? 0 : g->frames[fn].img[imn].l[in].s[jn].q_bits - 1;
 		//subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
-		subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
+		frame_quantization(g, fn, wc);
+		//subb_quantization(&g->frames[fn].img[imn].l[in].s[jn], g->buf);
 		frame_idwt(g, fn, wc, wc->steps);
 		g->frames[fn].img[imn].l[in].s[jn].ssim =
-							utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
+				utils_psnr_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w*g->frames[fn].b.h, 1);
+		//utils_ssim_16(g->frames[fn].b.pic, g->frames[fn].d.pic, g->frames[fn].b.w, g->frames[fn].b.h, 8, 3, 1);
 		subb_copy(&g->frames[1].img[imn].l[in].s[jn], &g->frames[fn].img[imn].l[in].s[jn]);
 
 		/*
@@ -887,6 +892,8 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 		k++;
 	}
 
+	for(im = 0; im < 4; im++) for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
+		printf("%2d %2d %2d q_bits = %2d a_bits = %2d\n",im, i, j, g->frames[fn].img[im].l[i].s[j].q_bits, g->frames[fn].img[im].l[i].s[j].a_bits);
 	//printf("Frame time = %f size  = %d\n", time, size);
 	//frame_write
 }
