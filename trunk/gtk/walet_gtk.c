@@ -138,18 +138,38 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 
 		//Copy frame 0 to decoder pipeline
+		int size = gw->gop.frames[0].b.w*gw->gop.frames[0].b.h;
 		printf("video/x-raw-bayer\n");
 		frame_input(&gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 		frame_input(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
+		//new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		//utils_grey_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		//gtk_widget_queue_draw(gw->drawingarea[0]);
+
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_grey_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
+		RGB_to_YUV444(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+
 		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
+		utils_grey_draw8(gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
+		new_buffer (gw->orig[2], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_grey_draw8(&gw->gop.buf[size], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
+
+		new_buffer (gw->orig[3], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_grey_draw8(&gw->gop.buf[size<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		gtk_widget_queue_draw(gw->drawingarea[3]);
+
+		//YUV444_to_RGB(&gw->gop.buf[size*3], gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+
+		//new_buffer (gw->orig[3], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		//YUV444_to_RGB(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		//gtk_widget_queue_draw(gw->drawingarea[3]);
 		/*
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);

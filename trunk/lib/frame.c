@@ -251,7 +251,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	// |  bl[2] |  bl[3] |
 	// |--------|--------|
 	//The order of bit allocation for subband
-	uint32 qo[9] = {0, 0, 0, 2}, step = 4, qs = f->qst - f->img[3].qst - f->img[1].qst, qs2 = qs>>1;
+	uint32 qo[9] = {0, 0, 0, 0, 1, 2}, step = 6, qs = f->qst - f->img[3].qst, qs2 = qs>>1;
 
 	uint32 i, j, k, size, qs1, df, s, df1;
 	uint32 bl[4];
@@ -265,7 +265,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	if(check_state(f->state, FILL_SUBBAND)){
 		if (wc->color == BAYER){
 			f->state |= BITS_ALLOCATION;
-
+			/*
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
 			for(i=0; i < wc->steps; i++) for(j=1; j < 4; j++) f->img[3].l[i].s[j].q_bits = 0;
 			for(i=0; i < wc->steps-2; i++) for(j=1; j < 4; j++) f->img[1].l[i].s[j].q_bits = 0;
@@ -282,7 +282,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			f->img[0].l[0].s[1].q_bits = 6;
 			f->img[0].l[0].s[2].q_bits = 6;
 			f->img[0].l[0].s[3].q_bits = 0;
-
+			*/
 			//f->img[0].l[0].s[3].q_bits = f->img[0].l[0].s[3].q_bits>>1;
 			//f->img[1].l[0].s[1].q_bits = f->img[1].l[0].s[1].q_bits>>1;
 			//f->img[1].l[0].s[2].q_bits = f->img[1].l[0].s[2].q_bits>>1;
@@ -309,10 +309,10 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			*/
 
 
-			return 1;
+			//return 1;
 
 			//Old algorithm bits allocation
-
+			/*
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
@@ -334,10 +334,10 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 				if(!(f->qst>>k)) {
 				//TODO: Fine tuning of the bit allocation
 					break;
-					//Fine tuning of the bit allocation
 				}
 				else qs2 = (s < size) ? qs2 + (qs>>k) : qs2 - (qs>>k);
 			}
+			*/
 			//New algorithm of bits allocatiom.
 			//At first we should decide how many bits for each LL, HL, LH, HH image
 			// |--------|--------|
@@ -369,6 +369,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 
 			s = 0;
 			for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
+
 				//printf("img = %d\n", j);
 		}
 		//TODO: Bits allocation for gray and YUV color space.

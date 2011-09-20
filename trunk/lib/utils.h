@@ -22,6 +22,8 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int bd, uint32 d);
 
+void 	RGB_to_YUV444(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h);
+uint8* 	YUV444_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h);
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);

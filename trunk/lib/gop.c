@@ -14,7 +14,7 @@ void walet_encoder_init(GOP *gop, WaletConfig *wc)
 	//gop = (GOP*) malloc(sizeof(GOP));
 
 	//Temp buffer init
-	gop->buf = (uint8 *)calloc(wc->w*wc->h<<2, sizeof(uint8));
+	gop->buf = (uint8 *)calloc(wc->w*wc->h<<3, sizeof(uint8));
 	wc->bpp = (wc->bpp < 15) ? wc->bpp : 14;
 	gop->ibuf = (int *)calloc((1<<(wc->bpp+2))*8, sizeof(int));
 
