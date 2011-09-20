@@ -358,7 +358,7 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-    if(frame_idwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc,  gw->wc.steps)){
+    if(frame_idwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc,  gw->wc.steps-1)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
@@ -370,6 +370,14 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		new_buffer (gw->orig[3], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
 		utils_bayer_to_rgb_bi(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
+
+		utils_resize_bayer_2x(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w,  gw->gop.frames[0].b.h);
+		gw->gop.frames[0].d.w = gw->gop.frames[0].b.w>>1;
+		gw->gop.frames[0].d.h = gw->gop.frames[0].b.h>>1;
+
+		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
+		utils_bayer_to_rgb_bi(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
+		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 		/*
 		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);

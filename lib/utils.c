@@ -585,18 +585,52 @@ void utils_resize_2x(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	}
 }
 
+/** \brief Resize bayer image down to two times on each axis.
+    \param img 	The input image.
+    \param img1	The output image.
+    \param w	The image width.
+    \param h	The image height.
+*/
 void utils_resize_bayer_2x(int16 *img, int16 *img1, uint32 w, uint32 h)
 {
-	uint32 x, y, yx, yx1, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
+	uint32 x, y, yx, yx1, yx2, h1 = ((h>>2)<<2)*w, w2 = w<<2, w1 = ((w>>2)<<2), wn = w>>1, i=0;
 	for(y=0; y < h1; y+=w2){
 		for(x=0; x < w1; x+=4){
 			yx = y + x;
 			yx1 = (y>>2) + (x>>1);
+			yx2 = yx+w2;
 			img1[yx1] 		= (img[yx] 		+ img[yx+2] 	+ img[yx+w2] 		+ img[yx+w2+2])>>2;
 			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+3] 	+ img[yx+w2+1] 		+ img[yx+w2+3])>>2;
 			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+2+w] 	+ img[yx+w2+w] 		+ img[yx+w2+2+w])>>2;
 			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+3+w]	+ img[yx+w2+w+1]	+ img[yx+w2+3+w])>>2;
 			//if(yx1 >= wn*(h>>1)) printf(" ind = %d\n", yx1);
+		}
+		if((w>>1)&1){
+			yx = y + x;
+			yx1 = (y>>2) + (x>>1);
+			img1[yx1] 		= (img[yx] 		+ img[yx+w2] 	)>>1;
+			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+w2+1] 	)>>1;
+			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+w2+w] 	)>>1;
+			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+w2+w+1])>>1;
+		}
+	}
+	if((h>>1)&1){
+		for(x=0; x < w1; x+=4){
+			yx = y + x;
+			yx1 = (y>>2) + (x>>1);
+			img1[yx1] 		= (img[yx] 		+ img[yx+2]  )>>1;
+			img1[yx1+1] 	= (img[yx+1] 	+ img[yx+3]  )>>1;
+			img1[yx1+wn] 	= (img[yx+w] 	+ img[yx+2+w])>>1;
+			img1[yx1+wn+1]	= (img[yx+w+1] 	+ img[yx+3+w])>>1;
+			//if(yx1 >= wn*(h>>1)) printf(" ind = %d\n", yx1);
+		}
+		if((w>>1)&1){
+			yx = y + x;
+			yx1 = (y>>2) + (x>>1);
+			img1[yx1] 		= img[yx]    ;
+			img1[yx1+1] 	= img[yx+1]  ;
+			img1[yx1+wn] 	= img[yx+w]  ;
+			img1[yx1+wn+1]	= img[yx+w+1];
 		}
 	}
 }
@@ -1603,6 +1637,61 @@ double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 		printf("psnr: ERROR\n");
 		return 0.;
 	}
+}
+
+/** \brief Convert RGB image to YUV.
+	\param rgb 	The input RGB image.
+    \param y	The output Y image.
+	\param u	The output U image.
+	\param v	The output V image.
+    \param w	The image width.
+    \param h	The image height.
+*/
+void RGB_to_YUV444(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h)
+{
+	/*
+	Y = 0.299*R + 0.587*G + 0.114*B
+	U = -0.169*R – 0.331*G + 0.5*B + 128
+	V = 0.5*R - 0.419*G - 0.081*B + 128
+	*/
+	int i, i3, sz = w*h;
+	for(i=0; i < sz; i++){
+		i3 = i*3;
+		y[i] = (306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10;
+		u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
+		v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
+		//printf("%d %d %d  ", y[i], u[i], v[i]);
+	}
+}
+
+/** \brief Convert YUV image to RGB.
+	\param rgb 	The output RGB image.
+    \param y	The output Y image.
+	\param u	The output U image.
+	\param v	The output V image.
+    \param w	The image width.
+    \param h	The image height.
+    \retval	rgb	The output RGB image.
+*/
+uint8* YUV444_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h)
+{
+	/*
+	R = Y + 1.4026 * (V-128)
+	G = Y – 0.3444 * (U-128) – 0.7144 * (V-128)
+	B = Y + 1.7730 * (U-128)
+	*/
+	int i, i3, V, U, sz = w*h;
+	for(i=0; i < sz; i++){
+		//V = v[i] - 128;
+		//U = u[i] - 128;
+		//if(U < 0) printf("%d %d  ",u[i], U);
+		//if(V < 0) printf("%d %d  ",v[i], V);
+		i3 = i*3;
+		rgb[i3    ] = y[i] + ((1436*v[i])>>10);
+		rgb[i3 + 1] = y[i] + ((732*v[i] - 353*u[i])>>10);
+		rgb[i3 + 2] = y[i] + ((1816*u[i])>>10);
+	}
+	return rgb;
 }
 
 uint8* YUV_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 sq)

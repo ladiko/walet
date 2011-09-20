@@ -501,7 +501,7 @@ void image_fill_subb(Image *im, uint32 steps){
 	//printf("im->qst = %d\n", im->qst);
 }
 
-uint32 image_size(Image *im, uint32 steps, int qstep){
+uint32 image_size1(Image *im, uint32 steps, int qstep){
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
@@ -624,7 +624,7 @@ uint32 image_size(Image *im, uint32 steps, int qstep){
 	return size;
 }
 
-uint32 image_size1(Image *im, uint32 steps, int sz){
+uint32 image_size(Image *im, uint32 steps, int sz){
 ///	\fn void image_bits_per_subband(Image *im, ColorSpace color, uint32 steps, uint32 qstep)
 ///	\brief Bits allocation for quantization algorithm.
 ///	\param im	 		The image structure.
