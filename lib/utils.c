@@ -149,13 +149,13 @@ uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h)
 	return rgb;
 }
 
-uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
+uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i];
-		rgb[j + 1] = img[i];
-		rgb[j + 2] = img[i];
+		rgb[j]     = img[i] + sh;
+		rgb[j + 1] = img[i] + sh;
+		rgb[j + 2] = img[i] + sh;
 	}
 	return rgb;
 }
@@ -250,6 +250,56 @@ uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGr
 	return rgb;
 }
 
+/**	\brief Bilinear  method of bayer interpolation algorithm.
+    \param img	 	The input Bayer image.
+ 	\param rgb		The output RGB image.
+	\param w		The image width.
+	\param h		The image height.
+	\retval			Output RGB image..
+*/
+void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h, BayerGrid bay){
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	//TODO: Work only for RGGB, need to make for all Bayer grids
+	int x, y = 0, wy, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
+	int r, g, b;
+
+	for(y=1, yw=w; y < h1; y++, yw+=w){
+		for(x=1; x < w1; x++){
+			wy 	= x + yw;
+			//xwy3 = wy + wy + wy;
+			if(!(y&1) && !(x&1)){
+				r = img[wy];
+				g = (img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2;
+				b = (img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2;
+			}else if (!(y&1) && (x&1)){
+				r = (img[wy-1] + img[wy+1])>>1;
+				g = img[wy];
+				b =	(img[wy-w] + img[wy+w])>>1;
+			}else if ((y&1) && !(x&1)){
+				r = (img[wy-w] + img[wy+w])>>1;
+				g = img[wy];
+				b =	(img[wy-1] + img[wy+1])>>1;
+			}else {
+				r = (img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2;
+				g = (img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2;
+				b = img[wy];
+			}
+			Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g - 128;
+			U[wy] = 578*(b - Y[wy] - 128)>>10;
+			V[wy] = 730*(r - Y[wy] - 128)>>10;
+		}
+	}
+}
+
 /**	\brief Simple gradient method of bayer interpolation algorithm.
     \param img	 	The input Bayer image.
  	\param rgb		The output RGB image.
@@ -306,6 +356,83 @@ uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bayer
 	}
 	return rgb;
 }
+
+/** \brief Convert RGB image to YUV.
+	\param rgb 	The input RGB image.
+    \param y	The output Y image.
+	\param u	The output U image.
+	\param v	The output V image.
+    \param w	The image width.
+    \param h	The image height.
+*/
+void RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+{
+	/*
+	Y = 0.299*R + 0.587*G + 0.114*B
+	U = -0.169*R – 0.331*G + 0.5*B
+	V = 0.5*R - 0.419*G - 0.081*B
+	*/
+	int i, i3, sz = w*h;
+	//int R, G, B;
+	for(i=0; i < sz; i++){
+		i3 = i*3;
+		y[i] = ((306*(rgb[i3]-rgb[i3 + 1]) + 117*(rgb[i3 + 2]-rgb[i3 + 1]))>>10) + rgb[i3 + 1] - 128;
+		u[i] = 578*(rgb[i3 + 2]-y[i]-128)>>10;
+		v[i] = 730*(rgb[i3]-y[i]-128)>>10;
+
+		//y[i] = ((19595*(rgb[i3]-rgb[i3 + 1]) + 7471*(rgb[i3 + 2]-rgb[i3 + 1]))>>16) + rgb[i3 + 1] - 128;
+		//u[i] = 36962*(rgb[i3 + 2]-y[i]-128)>>16;
+		//v[i] = 46727*(rgb[i3]-y[i]-128)>>16;
+
+		//y[i] = ((306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10) - 128;
+		//u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
+		//v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
+		//printf("%d %d %d  ", y[i], u[i], v[i]);
+	}
+}
+
+/** \brief Convert YUV image to RGB.
+	\param rgb 	The output RGB image.
+    \param y	The output Y image.
+	\param u	The output U image.
+	\param v	The output V image.
+    \param w	The image width.
+    \param h	The image height.
+    \retval	rgb	The output RGB image.
+*/
+uint8* YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+{
+	/*
+	R = Y + 1.4026 * V
+	G = Y – 0.3444 * U – 0.7144 * V
+	B = Y + 1.7730 * U
+	*/
+	int i, i3, sz = w*h;
+	//int R, G, B;
+	for(i=0; i < sz; i++){
+		i3 = i*3;
+		//R = lb1(128 + y[i] + ((1436*v[i])>>10));
+		//G = lb1(128 + y[i] - ((732*v[i] + 353*u[i])>>10));
+		//B = lb1(128 + y[i] + ((1816*u[i])>>10));
+		//rgb[i3    ] = R; rgb[i3 + 1] = G; rgb[i3 + 2] = B;
+
+		rgb[i3    ] = lb1(128 + y[i] + ((1436*v[i])>>10));
+		rgb[i3 + 1] = lb1(128 + y[i] - ((732*v[i] + 353*u[i])>>10));
+		rgb[i3 + 2] = lb1(128 + y[i] + ((1816*u[i])>>10));
+
+		/*
+		R = 128 + y[i] + ((91881*v[i])>>16);
+		G = 128 + y[i] + ((46802*v[i] - 22553*u[i])>>16);
+		B = 128 + y[i] + ((116130*u[i])>>16);
+		*/
+		//if(R < 0 || R > 255) printf("R=%d ",R);
+		//if(G < 0 || G > 255) printf("G=%d y = %d u = %d v = %d ",G, y[i], u[i], v[i]);
+		//if(B < 0 || B > 255) printf("v=%d ",B);
+	}
+	return rgb;
+}
+
+
 
 uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay){
 /*! \fn void bayer_to_rgb(uint8 *rgb)
@@ -1637,61 +1764,6 @@ double psnr3(uint8 *before, uint8 *after, uint32 dim, uint32 d){
 		printf("psnr: ERROR\n");
 		return 0.;
 	}
-}
-
-/** \brief Convert RGB image to YUV.
-	\param rgb 	The input RGB image.
-    \param y	The output Y image.
-	\param u	The output U image.
-	\param v	The output V image.
-    \param w	The image width.
-    \param h	The image height.
-*/
-void RGB_to_YUV444(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h)
-{
-	/*
-	Y = 0.299*R + 0.587*G + 0.114*B
-	U = -0.169*R – 0.331*G + 0.5*B + 128
-	V = 0.5*R - 0.419*G - 0.081*B + 128
-	*/
-	int i, i3, sz = w*h;
-	for(i=0; i < sz; i++){
-		i3 = i*3;
-		y[i] = (306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10;
-		u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
-		v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
-		//printf("%d %d %d  ", y[i], u[i], v[i]);
-	}
-}
-
-/** \brief Convert YUV image to RGB.
-	\param rgb 	The output RGB image.
-    \param y	The output Y image.
-	\param u	The output U image.
-	\param v	The output V image.
-    \param w	The image width.
-    \param h	The image height.
-    \retval	rgb	The output RGB image.
-*/
-uint8* YUV444_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h)
-{
-	/*
-	R = Y + 1.4026 * (V-128)
-	G = Y – 0.3444 * (U-128) – 0.7144 * (V-128)
-	B = Y + 1.7730 * (U-128)
-	*/
-	int i, i3, V, U, sz = w*h;
-	for(i=0; i < sz; i++){
-		//V = v[i] - 128;
-		//U = u[i] - 128;
-		//if(U < 0) printf("%d %d  ",u[i], U);
-		//if(V < 0) printf("%d %d  ",v[i], V);
-		i3 = i*3;
-		rgb[i3    ] = y[i] + ((1436*v[i])>>10);
-		rgb[i3 + 1] = y[i] + ((732*v[i] - 353*u[i])>>10);
-		rgb[i3 + 2] = y[i] + ((1816*u[i])>>10);
-	}
-	return rgb;
 }
 
 uint8* YUV_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 sq)

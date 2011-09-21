@@ -16,14 +16,15 @@ void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint
 
 
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width);
-uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h);
+uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh);
 uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay);
 double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int bd, uint32 d);
 
-void 	RGB_to_YUV444(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h);
-uint8* 	YUV444_to_RGB(uint8 *rgb, uint8 *y, uint8 *u, uint8 *v, uint32 w, uint32 h);
+void 	utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h, BayerGrid bay);
+void 	RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
+uint8* 	YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
