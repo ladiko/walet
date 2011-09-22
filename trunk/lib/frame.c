@@ -96,6 +96,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	\param	y	The pointer to Bayer, gray, red or Y  image data.
 	\param	u	The pointer to green or U  image data.
 	\param	v	The pointer to blue or V  image data.
+	\param	shift	The shift to make symmetric around zero.
 */
 void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
 {

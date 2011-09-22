@@ -142,9 +142,9 @@ static inline void dwt_53_1d(int16 *in, int16 *out, const uint32 w)
 }
 
 /**	\brief One step 1D 5/3 invert discrete wavelet transform.
-///	\param in	The input data array.
-///	\param out 	The output data array.
-///	\param w 	The length.
+	\param in	The input data array.
+	\param out 	The output data array.
+	\param w 	The length.
 */
 static inline void idwt_53_1d(int16 *in, int16 *out, const uint32 w){
 

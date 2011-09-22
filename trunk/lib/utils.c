@@ -203,7 +203,7 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	return rgb;
 }
 
-/**	\brief Bilinear  method of bayer interpolation algorithm.
+/**	\brief Bilinear method of bayer to RGB interpolation algorithm.
     \param img	 	The input Bayer image.
  	\param rgb		The output RGB image.
 	\param w		The image width.
@@ -222,12 +222,27 @@ uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGr
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
 	//TODO: Work only for RGGB, need to make for all Bayer grids
-	int x, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
+	int x, x1, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
+	/*
+	switch(bay){
+		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ x = 0; y = 0; w1 = w; h1 = h;   break;}
+	}
+	*/
+	switch(bay){
+		case(BGGR):{ xs = 2; ys = 2; w1 = w; h1 = h; break;}
+		case(GRBG):{ xs = 2; ys = 1; w1 = w; h1 = h-1; break;}
+		case(GBRG):{ xs = 1; ys = 2; w1 = w-1; h1 = h; break;}
+		case(RGGB):{ xs = 1; ys = 1; w1 = w-1; h1 = h-1;   break;}
+	}
 
-	for(y=1, yw=w; y < h1; y++, yw+=w){
-		for(x=1; x < w1; x++){
-			wy 	= x + yw;
+	for(y=ys, yw=w; y < h1; y++, yw+=w){
+		for(x=xs, x1=1; x < w1; x++, x1++){
+			wy 	= x1 + yw;
 			xwy3 = wy + wy + wy;
+
 			if(!(y&1) && !(x&1)){
 				rgb[xwy3] 	= 	lb1(img[wy] + shift);
 				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
@@ -250,14 +265,14 @@ uint8* utils_bayer_to_rgb_bi(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGr
 	return rgb;
 }
 
-/**	\brief Bilinear  method of bayer interpolation algorithm.
+/**	\brief Bilinear method of bayer to RGB interpolation algorithm.
     \param img	 	The input Bayer image.
  	\param rgb		The output RGB image.
 	\param w		The image width.
 	\param h		The image height.
 	\retval			Output RGB image..
 */
-void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h, BayerGrid bay){
+uint8* utils_bayer_to_rgb_bi1(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -268,6 +283,100 @@ void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
+	//TODO: Work only for RGGB, need to make for all Bayer grids
+	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
+	int16 *l0, *l1, *l2;
+	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+	/*
+	switch(bay){
+		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ x = 0; y = 0; w1 = w; h1 = h;   break;}
+	}
+	*/
+	switch(bay){
+		case(BGGR):{ xs = 2; ys = 2; w1 = w; h1 = h; break;}
+		case(GRBG):{ xs = 2; ys = 1; w1 = w; h1 = h-1; break;}
+		case(GBRG):{ xs = 1; ys = 2; w1 = w-1; h1 = h; break;}
+		case(RGGB):{ xs = 1; ys = 1; w1 = w-1; h1 = h-1;   break;}
+	}
+	//Create buffer for transform
+
+	for(x=0; x < w; x++) l0[x+1] = img[w2 + x];
+	l0[0] = l0[2]; l0[w+1] = l0[w-1];
+	for(x=0; x < w; x++) l1[x+1] = img[x];
+	l1[0] = l1[2]; l1[w+1] = l1[w-1];
+	for(x=0; x < w; x++) l2[x+1] = img[w + x];
+	l2[0] = l2[2]; l2[w+1] = l2[w-1];
+
+	for(y=ys, yw=0; y < h1; y++, yw+=w){
+		for(x=xs, x1=0; x < w1; x++, x1++){
+			wy 	= x1 + yw;
+			x2 = x1 + 1;
+			xwy3 = wy + wy + wy;
+
+			if(!(y&1) && !(x&1)){
+				rgb[xwy3] 	= 	lb1(l1[x2] + shift);
+				rgb[xwy3+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
+			}else if (!(y&1) && (x&1)){
+				rgb[xwy3] = 	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
+			}else if ((y&1) && !(x&1)){
+				rgb[xwy3] = 	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
+			}else {
+				rgb[xwy3] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + shift);
+				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(img[wy] + shift);
+			}
+		}
+		l0 = l1; l1 = l2;
+		wy = yw + w2;
+		for(x=0; x < w; x++) l2[x+1] = img[wy + x];
+		l2[0] = l2[2]; l2[w+1] = l2[w-1];
+
+	}
+
+	for(y=ys, yw=w; y < h1; y++, yw+=w){
+		for(x=xs, x1=1; x < w1; x++, x1++){
+			wy 	= x1 + yw;
+			xwy3 = wy + wy + wy;
+
+			if(!(y&1) && !(x&1)){
+				rgb[xwy3] 	= 	lb1(img[wy] + shift);
+				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + shift);
+			}else if (!(y&1) && (x&1)){
+				rgb[xwy3] = 	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
+			}else if ((y&1) && !(x&1)){
+				rgb[xwy3] = 	lb1(((img[wy-w] + img[wy+w])>>1) + shift);
+				rgb[xwy3+1] = 	lb1(img[wy] + shift);
+				rgb[xwy3+2] =	lb1(((img[wy-1] + img[wy+1])>>1) + shift);
+			}else {
+				rgb[xwy3] = 	lb1(((img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2) + shift);
+				rgb[xwy3+1] = 	lb1(((img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2) + shift);
+				rgb[xwy3+2] = 	lb1(img[wy] + shift);
+			}
+		}
+	}
+	return rgb;
+}
+
+/**	\brief Transform bayer image to YUV444 format.
+    \param img	 	The input Bayer image.
+    \param Y		The output Y image.
+	\param U		The output U image.
+	\param V		The output V image.
+	\param w		The image width.
+	\param h		The image height.
+*/
+void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h, BayerGrid bay){
 	//TODO: Work only for RGGB, need to make for all Bayer grids
 	int x, y = 0, wy, w2 = w<<1, yw = 0, h1 = h-1, w1 = w-1;
 	int r, g, b;
@@ -293,9 +402,54 @@ void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint
 				g = (img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2;
 				b = img[wy];
 			}
-			Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g - 128;
-			U[wy] = 578*(b - Y[wy] - 128)>>10;
-			V[wy] = 730*(r - Y[wy] - 128)>>10;
+			Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+			U[wy] = 578*(b - Y[wy])>>10;
+			V[wy] = 730*(r - Y[wy])>>10;
+		}
+	}
+}
+
+/**	\brief Transform bayer image to YUV420 format.
+    \param img	 	The input Bayer image.
+    \param Y		The output Y image.
+	\param U		The output U image.
+	\param V		The output V image.
+	\param w		The image width.
+	\param h		The image height.
+*/
+void utils_bayer_to_YUV420(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h, BayerGrid bay){
+	//TODO: Work only for RGGB, need to make for all Bayer grids
+	int x, y = 0, wy, wy1, w2 = w<<1, w3 = w>>1, yw = 0, h1 = h-1, w1 = w-1;
+	int r, g, b;
+
+	for(y=1, yw=w; y < h1; y++, yw+=w){
+		for(x=1; x < w1; x++){
+			wy 	= x + yw;
+			wy1 = (x>>1) + (y>>1)*w3;
+			//xwy3 = wy + wy + wy;
+			if(!(y&1) && !(x&1)){
+				r = img[wy];
+				g = (img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2;
+				b = (img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2;
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				V[wy1] = 730*(r - Y[wy])>>10;
+			}else if (!(y&1) && (x&1)){
+				r = (img[wy-1] + img[wy+1])>>1;
+				g = img[wy];
+				b =	(img[wy-w] + img[wy+w])>>1;
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+			}else if ((y&1) && !(x&1)){
+				r = (img[wy-w] + img[wy+w])>>1;
+				g = img[wy];
+				b =	(img[wy-1] + img[wy+1])>>1;
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+			}else {
+				r = (img[wy+1-w] + img[wy-1+w] + img[wy-1-w] + img[wy+1+w])>>2;
+				g = (img[wy-w] + img[wy+w] + img[wy-1] + img[wy+1])>>2;
+				b = img[wy];
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				U[wy1] = 578*(b - Y[wy])>>10;
+			}
 		}
 	}
 }
@@ -308,16 +462,6 @@ void utils_bayer_to_YUV444(int16 *img, int8 *Y, int8 *U, int8 *V, uint32 w, uint
 	\retval			Output RGB image..
 */
 uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift){
-/*
-   All RGB cameras use one of these Bayer grids:
-
-	BGGR  0         GRBG 1          GBRG  2         RGGB 3
-	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
-	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
-	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
-	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
-	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
- */
 	//TODO: Work only for RGGB, need to make for all Bayer grids
 	uint32 x, y, wy, xwy, xwy3, y2, x2, a, b, yw, w2 = w<<1;
 
@@ -365,7 +509,7 @@ uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bayer
     \param w	The image width.
     \param h	The image height.
 */
-void RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+void utils_RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
 {
 	/*
 	Y = 0.299*R + 0.587*G + 0.114*B
@@ -400,7 +544,7 @@ void RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
     \param h	The image height.
     \retval	rgb	The output RGB image.
 */
-uint8* YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+uint8* utils_YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
 {
 	/*
 	R = Y + 1.4026 * V
@@ -432,7 +576,37 @@ uint8* YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
 	return rgb;
 }
 
+/** \brief Make new image with specular borders.
+	\param img 	The input image.
+    \param img1	The output image.
+    \param w	The image width.
+    \param h	The image height.
+    \param bor	The border size.
+    \retval	img1	The output image.
+*/
+int16* utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 bor)
+{
+	int y, x, yw, ywb, w1 = w + (bor<<1), h1 = h + (bor<<1);
+	for(y=0; y < h; y++){
+		yw = y*w;
+		ywb = (y+bor)*w1 + bor;
+		for(x=0; x < w; x++) img1[ywb + x] = img[yw + x];
+		for(x=0; x < bor; x++) img1[ywb - bor + x] = img1[ywb + bor - x];
+		for(x=w+bor; x < w1; x++) img1[ywb - bor + x] = img1[ywb + bor + (w<<1) - x - 2 ];
+	}
+	for(y=0; y < bor; y++){
+		ywb = y*w1;
+		yw = ((bor<<1)-y)*w1;
+		for(x=0; x < w1; x++) img1[ywb + x] = img1[yw + x];
+	}
+	for(y=h+bor; y < h1; y++){
+		ywb = y*w1;
+		yw = (((h+bor)<<1) - y - 2 )*w1;
+		for(x=0; x < w1; x++) img1[ywb + x] = img1[yw + x];
+	}
 
+	return img1;
+}
 
 uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay){
 /*! \fn void bayer_to_rgb(uint8 *rgb)
