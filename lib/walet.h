@@ -163,7 +163,11 @@ typedef struct {
 	//uint16		marker;			/// The walet codec marker.
 	uint16 		w;				/// Image width
 	uint16 		h;				/// Image width
-	uint8		color;			/// Color space
+	uint8		icol;			/// Input color space
+	uint8		ccol;			/// Compresion color space
+	//uint8		ocol;			/// Output color space
+
+	//uint8		color;			/// Color space
 	uint8		bg;				/// Bayer grid pattern
 	uint8		bpp;			/// Image bits per pixel.
 	uint8 		steps;  		/// DWT steps.

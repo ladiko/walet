@@ -71,8 +71,8 @@ uint32 walet_write_stream(GOP *gop, WaletConfig *wc, uint32 num, const char *fil
     //Close file
     fclose(wl);
     printf("Write size = %Ld\n", size);
-	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d rt = %d mv = %d\n",
-			wc->w, wc->h, wc->color, wc->bg, wc->bpp, wc->steps, wc->gop_size, wc->rates, wc->comp, wc->fb, wc->rt, wc->mv);
+	//printf("w = %d h = %d icol = %d ccol = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d rt = %d mv = %d\n",
+	//		wc->w, wc->h, wc->icol, wc->ccol, wc->bg, wc->bpp, wc->steps, wc->gop_size, wc->rates, wc->comp, wc->fb, wc->rt, wc->mv);
 
     return size;
 }
@@ -100,8 +100,8 @@ uint32 walet_read_stream(GOP *gop, WaletConfig *wc, uint32 num, const char *file
     //printf("size = %Ld\n", size);
 
     if(gop->state != 1) walet_encoder_init(gop, wc);
-	printf("w = %d h = %d color = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d rt = %d mv = %d\n",
-			wc->w, wc->h, wc->color, wc->bg, wc->bpp, wc->steps, wc->gop_size, wc->rates, wc->comp, wc->fb, wc->rt, wc->mv);
+	//printf("w = %d h = %d icol = %d ccol = %d bg = %d bpp = %d step = %d gop = %d rates = %d comp = %d fb = %d rt = %d mv = %d\n",
+	//		wc->w, wc->h, wc->icol, wc->ccol, wc->bg, wc->bpp, wc->steps, wc->gop_size, wc->rates, wc->comp, wc->fb, wc->rt, wc->mv);
 
     //Write frames
     for(i=0; i < num; i++) size += frame_read(gop, i, wc, wl);

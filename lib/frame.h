@@ -3,7 +3,8 @@
 
 typedef struct{
 	Pic16s	b;			//Bayer image 16 bits
-	Pic16s	d;			//Bayer image abter DWT -> quantization -> IDWT
+	Pic16s	d;			//Bayer image abter DWT -> quantization -> IDWT for test only
+	Pic8u 	rgb;		//RGB image for test only
 	//Pic16s	C[4];	// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
 	Image 		*img;		//Pointer to images
@@ -14,7 +15,7 @@ typedef struct{
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
 
 	//Old interface
-	Pic8u rgb; // Scaled image for each color
+	//Pic8u rgb; // Scaled image for each color
 	Pic8u Y;	// The Y color componets
 	Pic8u grad;	// The gradient
 
@@ -50,7 +51,7 @@ extern "C" {
 //Old interface
 
 void 	frames_init			(GOP *g, uint32 fn, WaletConfig *wc);
-void 	frame_input			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v);
+void 	frame_copy			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v);
 uint32 	frame_dwt			(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_idwt			(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
 uint32 	frame_fill_subb		(GOP *g, uint32 fn, WaletConfig *wc);
