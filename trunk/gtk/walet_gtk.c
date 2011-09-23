@@ -98,7 +98,9 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//gw->gop->bpp = 16;
 		gw->wc.w 			= width;	/// Image width
 		gw->wc.h			= height;	/// Image width
-		gw->wc.color		= BAYER;	/// Color space
+		//gw->wc.icol			= BAYER;	/// Input color space
+		gw->wc.ccol			= CS420;	/// Compesion color space
+		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
 		gw->wc.steps		= 4;  		/// DWT steps.
@@ -115,19 +117,21 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 	//printf("%d\n", strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17));
 	if(!strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15)){
 		//Copy frame 0 to decoder pipeline
+
 		//frame_copy(gw->gop, 0, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(gw->gop, 1, GST_BUFFER_DATA(buffer), NULL, NULL);
 
+
 		new_buffer (gw->orig[0], gw->wc.w, gw->wc.h);
-		utils_draw(GST_BUFFER_DATA(buffer), gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.w, gw->wc.h);
+		//utils_draw(GST_BUFFER_DATA(buffer), gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.w, gw->wc.h);
 		//utils_grey_draw(gw->gop->frames[gw->gop->cur_gop_frame].img[0].img, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop->width, gw->gop->height);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
 		utils_ppm_to_bayer(GST_BUFFER_DATA(buffer), gw->gop.buf, gw->wc.w, gw->wc.h);
-		frame_input(&gw->gop, 0, &gw->wc, gw->gop.buf, NULL, NULL);
+		frame_copy(&gw->gop, 0, &gw->wc, gw->gop.buf, NULL, NULL);
 
 		new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
-		utils_grey_draw(gw->gop.frames[gw->gop.cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.w, gw->wc.h);
+		utils_grey_draw(gw->gop.frames[gw->gop.cur_gop_frame].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.w, gw->wc.h, 0);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 		new_buffer (gw->orig[2], gw->wc.w-1, gw->wc.h-1);
@@ -142,8 +146,8 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//Copy frame 0 to decoder pipeline
 		int size = gw->gop.frames[0].b.w*gw->gop.frames[0].b.h;
 		printf("video/x-raw-bayer\n");
-		frame_input(&gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
-		frame_input(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_copy(&gw->gop, 0, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+		frame_copy(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 		//new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		//utils_grey_draw(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
@@ -151,38 +155,44 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
+		utils_bayer_to_RGB(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf,
+				gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("utils_bayer_to_rgb_bi time = %f\n",(double)(end-start)/1000000.);
+		printf("utils_bayer_to_RGB time = %f\n",(double)(end-start)/1000000.);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
+
 		//utils_specular_border(gw->gop.frames[0].b.pic, (int16*)gw->gop.buf, gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 2);
-		//utils_RGB_to_YUV444(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+		utils_bayer_to_YUV420(gw->gop.frames[0].b.pic, (int16*)gw->gop.buf, (int16*)&gw->gop.buf[size], (int16*)&gw->gop.buf[size<<1], (int16*)&gw->gop.buf[size*3],
+				gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
+		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+		printf("utils_bayer_to_YUV444 time = %f\n",(double)(end-start)/1000000.);
 		//utils_bayer_to_YUV420(gw->gop.frames[0].b.pic, gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg);
 
-		new_buffer (gw->orig[1], gw->gop.frames[0].b.w+4, gw->gop.frames[0].b.h+4);
-		utils_bayer_to_rgb_bi((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w+4, gw->gop.frames[0].b.h+4, gw->wc.bg, 128);
-		gtk_widget_queue_draw(gw->drawingarea[1]);
+		//new_buffer (gw->orig[1], gw->gop.frames[0].b.w+4, gw->gop.frames[0].b.h+4);
+		//utils_bayer_to_rgb_bi((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w+4, gw->gop.frames[0].b.h+4, gw->wc.bg, 128);
+		//gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		/*
+
 		new_buffer (gw->orig[1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		utils_grey_draw8(gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 128);
+		utils_grey_draw(gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 128);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
 		new_buffer (gw->orig[2], gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1);
-		utils_grey_draw8(&gw->gop.buf[size], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1, 128);
+		utils_grey_draw(&gw->gop.buf[size], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1, 128);
 		gtk_widget_queue_draw(gw->drawingarea[2]);
 
 		new_buffer (gw->orig[3], gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1);
-		utils_grey_draw8(&gw->gop.buf[size<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1, 128);
+		utils_grey_draw(&gw->gop.buf[size<<1], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].b.w>>1, gw->gop.frames[0].b.h>>1, 128);
 		gtk_widget_queue_draw(gw->drawingarea[3]);
-		*/
 
-		//utils_YUV444_to_RGB(&gw->gop.buf[size*3], gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 
-		//new_buffer (gw->orig[3], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		//YUV444_to_RGB(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
-		//gtk_widget_queue_draw(gw->drawingarea[3]);
+		//utils_YUV420_to_RGB(&gw->gop.buf[size*3], gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+
+		new_buffer (gw->orig[3], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		utils_YUV420_to_RGB(gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, &gw->gop.buf[size], &gw->gop.buf[size<<1], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
+		gtk_widget_queue_draw(gw->drawingarea[3]);
 		/*
 		new_buffer (gw->orig[0], gw->gop.frames[0].b.w, gw->gop.frames[0].b.h);
 		utils_bayer_to_rgb_bi(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);

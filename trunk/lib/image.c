@@ -367,7 +367,7 @@ void idwt(Image *img, int16 *buf, funidwt idwt_one, uint32 steps, uint32 isteps)
 	(*idwt_one)(img->d.pic, img->l[k].s[0].pic, img->l[k].s[1].pic, img->l[k].s[2].pic, img->l[k].s[3].pic, buf, img->d.w, img->d.h);
 }
 
-void image_init(Image *img, uint32 w, uint32 h, ColorSpace color, uint32 bpp, uint32 steps){
+void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps){
 ///	\fn void image_init(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps)
 ///	\brief Init image structure.
 ///	\param im	 		The image structure.
@@ -466,7 +466,7 @@ void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 istep
 		}
 	}
 }
-
+/*
 void image_copy(Image *im, uint32 bpp, uint8 *v){
 ///	\fn void image_copy(Image *im, uint32 bpp,  *v)
 ///	\brief Copy image from stream to image structure.
@@ -479,7 +479,7 @@ void image_copy(Image *im, uint32 bpp, uint8 *v){
 	if(bpp > 8) for(i=0; i<size; i++) im->p[i] = (v[i<<1]<<8) | v[(i<<1)+1];
 	else 		for(i=0; i<size; i++) im->p[i] = v[i];
 }
-
+*/
 void image_fill_subb(Image *im, uint32 steps){
 ///	\fn void image_fill_subb(Image *im, ColorSpace color, uint32 steps)
 ///	\brief Fill distribution probability array for each subband after DWT

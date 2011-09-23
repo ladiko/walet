@@ -25,35 +25,45 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	uint32 w = wc->w, h = wc->h;
 	Frame *f = &g->frames[fn];
 
-	if (wc->color == BAYER ){
+	if (wc->icol == BAYER ){
 	    f->b.w = w; f->b.h = h;
 	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(int16));
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
-		//Init color components
+	}
+
+	if (wc->ccol == BAYER ){
+	//Init ccol components
 	    f->img = (Image *)calloc(4, sizeof(Image));
-		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->color, wc->bpp, wc->steps);
-	} else if (wc->color == CS420){
+		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), wc->bpp, wc->steps);
+		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), wc->bpp, wc->steps);
+		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->bpp, wc->steps);
+		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->bpp, wc->steps);
+	} else if (wc->ccol == CS420){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w,    h,    wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[1], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[2], w>>1, h>>1, wc->color, wc->bpp, wc->steps);
-	} else if (wc->color == CS422){
+		image_init(&f->img[0], w,    h,    wc->bpp, wc->steps);
+		image_init(&f->img[1], w>>1, h>>1, wc->bpp, wc->steps);
+		image_init(&f->img[2], w>>1, h>>1, wc->bpp, wc->steps);
+	} else if (wc->ccol == CS422){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w,    h, wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[1], w>>1, h, wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[2], w>>1, h, wc->color, wc->bpp, wc->steps);
-	} else if (wc->color == CS444 || wc->color == RGB){
+		image_init(&f->img[0], w,    h, wc->bpp, wc->steps);
+		image_init(&f->img[1], w>>1, h, wc->bpp, wc->steps);
+		image_init(&f->img[2], w>>1, h, wc->bpp, wc->steps);
+	} else if (wc->ccol == CS444 || wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w, h, wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[1], w, h, wc->color, wc->bpp, wc->steps);
-		image_init(&f->img[2], w, h, wc->color, wc->bpp, wc->steps);
-	} else if (wc->color == GREY){
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[1], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[2], w, h, wc->bpp, wc->steps);
+	} else if (wc->ccol == GREY){
 	    f->img = (Image *)calloc(1, sizeof(Image));
-		image_init(&f->img[0], w, h, wc->color, wc->bpp, wc->steps);
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
+	} else if (wc->ccol == RGB){
+	    f->img = (Image *)calloc(3, sizeof(Image));
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[1], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[2], w, h, wc->bpp, wc->steps);
+	} else {
+		printf("Wrong color space.\n");
 	}
 
 	//For white balancing
@@ -89,31 +99,48 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->state = 0;
 }
 
-/*	\brief	Copy input the frame
+/*	\brief	Copy input frame
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
 	\param	y	The pointer to Bayer, gray, red or Y  image data.
 	\param	u	The pointer to green or U  image data.
 	\param	v	The pointer to blue or V  image data.
-	\param	shift	The shift to make symmetric around zero.
 */
-void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
+void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
 {
-	uint32 i, size = wc->w*wc->h, shift = 1<<(wc->bpp-1);
+	uint32 i, size = wc->w*wc->h, size3 = size*3, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
 
-	if(wc->color == BAYER) {
-		if(wc->bpp > 8) 	for(i=0; i<size; i++) f->b.pic[i] = ((y[i<<1]<<8) | y[(i<<1)+1]) - shift;
-		else for(i=0; i<size; i++) f->b.pic[i] = y[i] - shift;
+	if(wc->icol == BAYER) {
+		utils_image_copy(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
+		if(wc->ccol == BAYER){
+			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
+		} else if(wc->ccol == CS444) {
+			utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+		} else if(wc->ccol == CS420) {
+			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+		} else if(wc->ccol == RGB){
+			//utils_bayer_to_RGB(f->b.pic, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+		} else {
+			printf("Don't support this transform\n");
+		}
+	} else if(wc->icol == CS444 || wc->icol == CS422 || wc->icol == CS420){
+		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
+		utils_image_copy(u, f->img[1].p,  f->img[1].w, f->img[1].h, wc->bpp);
+		utils_image_copy(v, f->img[2].p,  f->img[2].w, f->img[2].h, wc->bpp);
+	} else if(wc->icol == GREY) {
+		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
+	} else if(wc->icol == RGB) {
+		utils_rgb_copy(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+		if(wc->ccol == RGB){
 
-		//image_copy(f->b.pic, wc->bpp, y);
+		} else if(wc->ccol == CS444) {
 
-	} else {
-		image_copy(&f->img[0], wc->bpp, y);
-		if(wc->color != GREY ) {
-			image_copy(&f->img[1], wc->bpp, u);
-			image_copy(&f->img[2], wc->bpp, v);
+		} else if(wc->ccol == CS420) {
+
+		} else {
+			printf("Don't support this transform\n");
 		}
 	}
 	f->state = FRAME_COPY;
@@ -132,9 +159,9 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 	Frame *f = &g->frames[fn];
 	//DWT taransform
 	if(check_state(f->state, FRAME_COPY | IDWT)){
-		if (wc->color == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
-		else if(wc->color == BAYER) {
-			//Color transform
+		if (wc->ccol == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
+		else if(wc->ccol == BAYER) {
+			//ccol transform
 			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
 			for(i=0; i < 4; i++) {
 				image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
@@ -161,10 +188,10 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 	Frame *f = &g->frames[fn];
 
 	//if(check_state(f->state, DWT | RANGE_DECODER)){
-		if (wc->color == GREY) image_idwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps, isteps);
-		else if(wc->color == BAYER ) {
+		if (wc->ccol == GREY) image_idwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps, isteps);
+		else if(wc->ccol == BAYER ) {
 			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
-			//Color transform
+			//ccol transform
 			if(isteps == wc->steps) {
 			f->d.w = f->img[0].d.w + f->img[1].d.w;
 			f->d.h = f->img[0].d.h + f->img[2].d.h;
@@ -198,11 +225,11 @@ uint32 frame_fill_subb(GOP *g, uint32 fn, WaletConfig *wc)
 	f->qst = 0;
 
 	//if(check_state(f->state, DWT)){
-		if(wc->color == GREY) {
+		if(wc->ccol == GREY) {
 			image_fill_subb(&f->img[0], wc->steps);
 			f->qst += f->img[0].qst;
 		}
-		else if(wc->color == BAYER){
+		else if(wc->ccol == BAYER){
 			for(i=0; i < 4; i++)  {
 			image_fill_subb(&f->img[i], wc->steps);
 			f->qst += f->img[i].qst;
@@ -264,7 +291,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 
 
 	if(check_state(f->state, FILL_SUBBAND)){
-		if (wc->color == BAYER){
+		if (wc->ccol == BAYER){
 			f->state |= BITS_ALLOCATION;
 			/*
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
@@ -317,7 +344,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			for(k=2;;k++){
 				//printf("qs = %d\n", qs);
 				for(i=0; i < 4; i++) bl[i] = 0;
-				//Bits allocation between 4 color image
+				//Bits allocation between 4 ccol image
 				for(i=0, j=0; i < qs2; i++) {
 					if(bl[qo[j]] < f->img[qo[j]].qst) bl[qo[j]]++;
 					else i--;
@@ -373,7 +400,7 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 
 				//printf("img = %d\n", j);
 		}
-		//TODO: Bits allocation for gray and YUV color space.
+		//TODO: Bits allocation for gray and YUV ccol space.
 		printf("Frame size = %d bits  %d bites qs = %d\n", s, s/8, qs);
 		f->state |= BITS_ALLOCATION;
 		return 1;
@@ -392,8 +419,8 @@ uint32 frame_quantization(GOP *g, uint32 fn, WaletConfig *wc)
 	Frame *f = &g->frames[fn];
 
 	//if(check_state(f->state, BITS_ALLOCATION)){
-		if(wc->color == GREY) image_quantization(&f->img[0], wc->steps, g->buf);
-		else if(wc->color == BAYER)
+		if(wc->ccol == GREY) image_quantization(&f->img[0], wc->steps, g->buf);
+		else if(wc->ccol == BAYER)
 			for(i=0; i < 4; i++)  image_quantization(&f->img[i], wc->steps,  g->buf);
 		else
 			for(i=0; i < 3; i++)  image_quantization(&f->img[i], wc->steps,  g->buf);
@@ -418,11 +445,11 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 
 	if(check_state(f->state, FILL_SUBBAND)){
 		*size = 0;
-		if(wc->color == GREY) {
+		if(wc->ccol == GREY) {
 			f->img[0].isz = image_range_encode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
 			*size = f->img[0].isz;
 		}
-		else if(wc->color == BAYER)
+		else if(wc->ccol == BAYER)
 			for(i=0; i < 4; i++)  {
 				printf("image %d\n", i);
 				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
@@ -453,8 +480,8 @@ uint32 frame_range_decode(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size)
 
 	if(check_state(f->state, BUFFER_READ | RANGE_ENCODER)){
 		*size = 0;
-		if(wc->color == GREY) *size += image_range_decode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
-		else if(wc->color == BAYER)
+		if(wc->ccol == GREY) *size += image_range_decode(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
+		else if(wc->ccol == BAYER)
 			for(i=0; i < 4; i++)  *size += image_range_decode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
 		else
 			for(i=0; i < 3; i++)  *size += image_range_decode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
@@ -479,8 +506,8 @@ uint32 frame_median_filter(GOP *g, uint32 fn, WaletConfig *wc)
 
 	if(check_state(f->state, IDWT | FRAME_COPY)){
 
-		if(wc->color == GREY) image_median_filter(&f->img[0], g->buf);
-		else if(wc->color == BAYER)
+		if(wc->ccol == GREY) image_median_filter(&f->img[0], g->buf);
+		else if(wc->ccol == BAYER)
 			filter_median_bayer(f->b.pic, (int16*)g->buf, wc->w, wc->h);
 		else
 			for(i=0; i < 3; i++)  image_median_filter(&f->img[i], g->buf);
@@ -491,7 +518,7 @@ uint32 frame_median_filter(GOP *g, uint32 fn, WaletConfig *wc)
 	} else return 0;
 }
 
-/**	\brief	Fill color histogram for white balancing (for bayer color space only).
+/**	\brief	Fill ccol histogram for white balancing (for bayer ccol space only).
 	\param	g		The GOP structure.
 	\param	fn		The frame number.
 	\param	wc		The walet config structure.
@@ -504,7 +531,7 @@ uint32 frame_fill_hist(GOP *g, uint32 fn, WaletConfig *wc)
 	Frame *f = &g->frames[fn];
 
 	if(check_state(f->state, FRAME_COPY)){
-		if(wc->color == BAYER) {
+		if(wc->ccol == BAYER) {
 			fill_bayer_hist(f->b.pic, f->hist, &f->hist[sz], &f->hist[sz<<1], f->b.w, f->b.h, wc->bg, wc->bpp);
 			/*
 			sum = 0; for(i=0; i<sz; i++) sum +=f->hist[i]; tmp -= sum;
@@ -519,7 +546,7 @@ uint32 frame_fill_hist(GOP *g, uint32 fn, WaletConfig *wc)
 	} else return 0;
 }
 
-/**	\brief	Make white balance and gamma correction of the frame (for bayer color space only).
+/**	\brief	Make white balance and gamma correction of the frame (for bayer ccol space only).
 	\param	g		The GOP structure.
 	\param	fn		The frame number.
 	\param	wc		The walet config structure.
@@ -531,7 +558,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 {
 	Frame *f = &g->frames[fn];
 	if(check_state(f->state, FILL_HISTOGRAM)){
-		if(wc->color == BAYER){
+		if(wc->ccol == BAYER){
 			filters_white_balance(f->b.pic, f->b.pic, f->b.w, f->b.h, wc->bg, f->hist, f->look, wc->bpp, bits, gamma);
 		}
 		f->state |= WHITE_BALANCE;
@@ -550,7 +577,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	Frame *f = &g->frames[fn];
 
 	if(check_state(f->state, FRAME_COPY)){
-		if(wc->color == BAYER){
+		if(wc->ccol == BAYER){
 		//utils_bayer_to_Y(im->p, wc->buf, wc->w, wc->h);
 		//filter_median(wc->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
 		//seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
@@ -583,7 +610,7 @@ uint32 frame_match(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc)
 	Frame *f2 = &g->frames[fn2];
 
 	if(check_state(f1->state, SEGMENTATION) && check_state(f2->state, SEGMENTATION)){
-		if(wc->color == BAYER){
+		if(wc->ccol == BAYER){
 			seg_compare(f1->pixs,  f1->edges, f1->nedge, f1->grad.pic, f2->grad.pic, f1->Y.pic, f2->Y.pic, g->buf, f1->grad.w, f1->grad.h, wc->mv);
 			//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
 			//seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
@@ -617,9 +644,9 @@ uint32 frame_write(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
     if(fwrite (&is[1], sizeof(uint32), 3 , wl) != 3) { printf("The images position  write error\n"); return 0; }
     size += sizeof(uint32)*3;
 
-    if(wc->color == BAYER) {
+    if(wc->ccol == BAYER) {
     	ic = 4; sz = (wc->steps*3 + 1)*ic; }
-    else if(wc->color == CS420 || wc->color == CS422 ||wc->color == CS444){
+    else if(wc->ccol == CS420 || wc->ccol == CS422 ||wc->ccol == CS444){
     	ic = 3; sz = (wc->steps*3 + 1)*ic; }
     else {
     	ic = 1; sz =  wc->steps*3 + 1; }
@@ -681,9 +708,9 @@ uint32 frame_read(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
     size += sizeof(uint32)*3;
     //printf("is[1] = %d is[2] = %d is[3] = %d \n", is[1], is[2], is[3]);
 
-    if(wc->color == BAYER) {
+    if(wc->ccol == BAYER) {
     	ic = 4; sz = (wc->steps*3 + 1)*ic; }
-    else if(wc->color == CS420 || wc->color == CS422 ||wc->color == CS444){
+    else if(wc->ccol == CS420 || wc->ccol == CS422 ||wc->ccol == CS444){
     	ic = 3; sz = (wc->steps*3 + 1)*ic; }
     else {
     	ic = 1; sz =  wc->steps*3 + 1; }

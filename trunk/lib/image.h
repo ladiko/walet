@@ -6,9 +6,9 @@ typedef	void (*funidwt)(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, 
 
 typedef struct {
 	int16		*p;		//Image befor DWT
-	Pic16s		d;		//Image after DWT and IDWT
 	uint16 		w;		//Image width
 	uint16 		h;		//Image width
+	Pic16s		d;		//Image after DWT and IDWT for test only
 	Level		*l;		//The levels of DWT transform
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
@@ -30,8 +30,8 @@ extern "C" {
 
 
 //New interface
-void 	image_init			(Image *im, uint32 width, uint32 height, ColorSpace color, uint32 bpp, uint32 steps);
-void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
+void 	image_init			(Image *im, uint32 width, uint32 height, uint32 bpp, uint32 steps);
+//void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 void 	image_dwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps);
 void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
 void 	image_fill_subb		(Image *im, uint32 steps);
