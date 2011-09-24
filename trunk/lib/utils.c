@@ -202,15 +202,18 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	}
 	return rgb;
 }
+
 /**	\brief Bilinear algorithm for bayer to RGB interpolation use 3 rows buffer.
     \param img	 	The input Bayer image.
  	\param rgb		The output RGB image.
  	\param buff		The temporary 3 rows buffer
 	\param w		The image width.
 	\param h		The image height.
+	\param bay		The Bayer grids pattern.
+	\param shift	The image shift for display.
 	\retval			Output RGB image..
 */
-uint8* utils_bayer_to_RGB(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -266,6 +269,65 @@ uint8* utils_bayer_to_RGB(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
 	}
 	return rgb;
+}
+
+/**	\brief Bilinear algorithm for bayer to 3 image R, G, B interpolation use 3 rows buffer.
+    \param img	 	The input Bayer image.
+ 	\param R		The output red image.
+ 	\param G		The output green image.
+ 	\param b		The output blue image.
+ 	\param buff		The temporary 3 rows buffer
+	\param w		The image width.
+	\param h		The image height.
+	\param bay		The Bayer grids pattern.
+	\param shift	The image shift for display.
+	\retval			Output RGB image..
+*/
+void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+	int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
+	int16 *l0, *l1, *l2, *tm;
+	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+
+	switch(bay){
+		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ x = 0; y = 0; w1 = w; h1 = h;   break;}
+	}
+	h2 = h1-1;
+	//Create 3 rows buffer for transform
+	l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
+	l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
+
+	for(y=ys, yw=0; y < h1; y++, yw+=w){
+		wy = (y == h2) ? yw - w : yw + w;
+		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
+
+		for(x=xs, x1=0; x < w1; x++, x1++){
+			wy 	= x1 + yw;
+			x2 = x1 + 1;
+			//xwy3 = wy + wy + wy;
+
+			if(!(y&1) && !(x&1)){
+				R[wy] 	= 	lb1(l1[x2] + shift);
+				G[wy+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
+				B[wy+2] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
+			}else if (!(y&1) && (x&1)){
+				R[wy] = 	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
+				G[wy+1] = 	lb1(l1[x2] + shift);
+				B[wy+2] =	lb1(((l0[x2] + l2[x2])>>1) + shift);
+			}else if ((y&1) && !(x&1)){
+				R[wy] = 	lb1(((l0[x2] + l2[x2])>>1) + shift);
+				G[wy+1] = 	lb1(l1[x2] + shift);
+				B[wy+2] =	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
+			}else {
+				R[wy] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
+				G[wy+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
+				B[wy+2] = 	lb1(l1[x2] + shift);
+			}
+		}
+		tm = l0; l0 = l1; l1 = l2; l2 = tm;
+	}
 }
 
 /**	\brief Transform bayer image to YUV444 format.
@@ -472,7 +534,7 @@ uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bayer
     \param w	The image width.
     \param h	The image height.
 */
-void utils_RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+void utils_RGB24_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
 {
 	/*
 	Y = 0.299*R + 0.587*G + 0.114*B
@@ -507,7 +569,7 @@ void utils_RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32
     \param h	The image height.
     \retval	rgb	The output RGB image.
 */
-uint8* utils_YUV444_to_RGB(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
+uint8* utils_YUV444_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
 {
 	/*
 	R = Y + 1.4026 * V
@@ -544,7 +606,7 @@ uint8* utils_YUV444_to_RGB(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint
     \param h	The image height.
     \retval	rgb	The output RGB image.
 */
-uint8* utils_YUV420_to_RGB(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
+uint8* utils_YUV420_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
 {
 	/*
 	R = Y + 1.4026 * V
@@ -622,23 +684,49 @@ void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
 }
 
-/** \brief Copy 24 bits rgb format image to three images
-	\param buff 	The input buffer.
-    \param r		The output image.
-    \param g		The output image.
-    \param b		The output image.
+/** \brief Copy 24 bits rgb format image to three images R, G, B
+	\param img	 	The input RGB24 image.
+    \param r		The output red image.
+    \param g		The output green image.
+    \param b		The output blue image.
     \param w		The image width.
     \param h		The image height.
     \param bpp		The bits per pixel.
 */
-void utils_rgb_copy(uint8 *buff, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp)
+void utils_RGB24_to_RGB(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp)
 {
-	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);;
+	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
 	for(i=0; i<size; i++) {
 		i3 = i*3;
-		r[i] = buff[i3]   - shift;
-		g[i] = buff[i3+1] - shift;
-		b[i] = buff[i3+2] - shift;
+		r[i] = img[i3]   - shift;
+		g[i] = img[i3+1] - shift;
+		b[i] = img[i3+2] - shift;
+		//if(i < w) printf("r=%4d g=%4d b=%4d ", r[i], g[i], b[i]);
+		if(i < w) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
+		if(i == w-1) printf("\n\n");
+		if(i < 2*w && i > w-1) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
+		if(i == 2*w-1) printf("\n\n");
+		if(i < 3*w && i > 2*w-1) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
+	}
+}
+
+/** \brief Copy three images R, G, B to 24 bits rgb format.
+	\param buff 	The output RGB24 image.
+    \param r		The input red image.
+    \param g		The input green image.
+    \param b		The input blue image.
+    \param w		The image width.
+    \param h		The image height.
+    \param bpp		The bits per pixel.
+*/
+void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 shift)
+{
+	uint32 i, i3, size = w*h;
+	for(i=0; i<size; i++) {
+		i3 = i*3;
+		img[i3]   = r[i] - shift;
+		img[i3+1] = g[i] - shift;
+		img[i3+2] = b[i] - shift;
 	}
 }
 

@@ -121,7 +121,7 @@ void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v
 		} else if(wc->ccol == CS420) {
 			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		} else if(wc->ccol == RGB){
-			//utils_bayer_to_RGB(f->b.pic, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+			utils_bayer_to_RGB(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg, 0);
 		} else {
 			printf("Don't support this transform\n");
 		}
@@ -132,15 +132,11 @@ void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v
 	} else if(wc->icol == GREY) {
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
 	} else if(wc->icol == RGB) {
-		utils_rgb_copy(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
-		if(wc->ccol == RGB){
-
-		} else if(wc->ccol == CS444) {
+		utils_RGB24_to_RGB(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+		if(wc->ccol == CS444) {
 
 		} else if(wc->ccol == CS420) {
 
-		} else {
-			printf("Don't support this transform\n");
 		}
 	}
 	f->state = FRAME_COPY;
