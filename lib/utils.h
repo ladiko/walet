@@ -9,7 +9,6 @@ extern "C"
 
 uint8* utils_dwt_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);
 uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift);
-uint8* utils_bayer_to_RGB(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift);
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
 void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);
@@ -21,15 +20,18 @@ double utils_ape_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_psnr_16(int16 *before, int16 *after, uint32 dim, uint32 d);
 double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int bd, uint32 d);
 
+uint8* 	utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift);
+void 	utils_bayer_to_RGB	(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift);
+void 	utils_RGB24_to_RGB	(uint8 *buff, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp);
+void 	utils_RGB_to_RGB24	(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 shift);
 void 	utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
 void 	utils_bayer_to_YUV420(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
-void 	utils_RGB_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
-uint8* 	utils_YUV444_to_RGB(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
-uint8* 	utils_YUV420_to_RGB(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h);
+void 	utils_RGB24_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
+uint8* 	utils_YUV444_to_RGB24(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
+uint8* 	utils_YUV420_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h);
 
 int16* 	utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 bor);
 void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);
-void 	utils_rgb_copy(uint8 *buff, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp);
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
