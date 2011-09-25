@@ -22,13 +22,14 @@ double utils_ssim_16(int16 *im1, int16 *im2, uint32 w, uint32 h, uint32 bbp, int
 
 uint8* 	utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift);
 void 	utils_bayer_to_RGB	(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift);
-void 	utils_RGB24_to_RGB	(uint8 *buff, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp);
-void 	utils_RGB_to_RGB24	(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 shift);
+void 	utils_RGB24_to_RGB	(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, uint32 pad);
+void 	utils_RGB_to_RGB24	(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp);
 void 	utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
 void 	utils_bayer_to_YUV420(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
-void 	utils_RGB24_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
-uint8* 	utils_YUV444_to_RGB24(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h);
-uint8* 	utils_YUV420_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h);
+void 	utils_RGB24_to_YUV444(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp, uint32 pad);
+void 	utils_RGB24_to_YUV420(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp, uint32 pad);
+uint8* 	utils_YUV444_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp);
+uint8* 	utils_YUV420_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp);
 
 int16* 	utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 bor);
 void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);

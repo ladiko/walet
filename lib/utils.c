@@ -526,70 +526,199 @@ uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bayer
 	return rgb;
 }
 
-/** \brief Convert RGB image to YUV.
+/** \brief Convert RGB24 image to YUV444.
 	\param rgb 	The input RGB image.
     \param y	The output Y image.
 	\param u	The output U image.
 	\param v	The output V image.
     \param w	The image width.
     \param h	The image height.
+    \param pad		If pad = 1 need to pad each line to uint32 boundary, if pad = 0 no need
 */
-void utils_RGB24_to_YUV444(uint8 *rgb, int8 *y, int8 *u, int8 *v, uint32 w, uint32 h)
+void utils_RGB24_to_YUV444(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp, uint32 pad)
 {
 	/*
 	Y = 0.299*R + 0.587*G + 0.114*B
 	U = -0.169*R – 0.331*G + 0.5*B
 	V = 0.5*R - 0.419*G - 0.081*B
 	*/
-	int i, i3, sz = w*h;
-	//int R, G, B;
-	for(i=0; i < sz; i++){
-		i3 = i*3;
-		y[i] = ((306*(rgb[i3]-rgb[i3 + 1]) + 117*(rgb[i3 + 2]-rgb[i3 + 1]))>>10) + rgb[i3 + 1] - 128;
-		u[i] = 578*(rgb[i3 + 2]-y[i]-128)>>10;
-		v[i] = 730*(rgb[i3]-y[i]-128)>>10;
+	int i, i3, sz = w*h, shift = 1<<(bpp-1);
+	uint32 x, x1, y, yw, yw1 , yx3, yx1, w1 = (((w*3)>>2) + ((w*3)&3 ? 1 : 0))<<2;
 
-		//y[i] = ((19595*(rgb[i3]-rgb[i3 + 1]) + 7471*(rgb[i3 + 2]-rgb[i3 + 1]))>>16) + rgb[i3 + 1] - 128;
-		//u[i] = 36962*(rgb[i3 + 2]-y[i]-128)>>16;
-		//v[i] = 46727*(rgb[i3]-y[i]-128)>>16;
-
-		//y[i] = ((306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10) - 128;
-		//u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
-		//v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
-		//printf("%d %d %d  ", y[i], u[i], v[i]);
+	if(!pad){
+		for(i=0; i < sz; i++){
+			i3 = i*3;
+			Y[i] = ((306*(rgb[i3]-rgb[i3 + 1]) + 117*(rgb[i3 + 2]-rgb[i3 + 1]))>>10) + rgb[i3 + 1] - shift;
+			U[i] = 578*(rgb[i3 + 2]-Y[i]-shift)>>10;
+			V[i] = 730*(rgb[i3]-Y[i]-shift)>>10;
+		}
+	} else {
+		//For each line padded to a uint32 boundary.
+		//printf("w = %d w1 = %d\n", w*3, w1);
+		for(y=0; y < h; y++) {
+			yw = y*w1;
+			yw1 = y*w;
+			for(x=0, x1 = 0; x < w1; x+=3, x1++) {
+				yx3 = x+yw;
+				yx1 = yw1 + x1;
+				Y[yx1] = ((306*(rgb[yx3]-rgb[yx3 + 1]) + 117*(rgb[yx3 + 2]-rgb[yx3 + 1]))>>10) + rgb[yx3 + 1] - shift;
+				U[yx1] = 578*(rgb[yx3 + 2]-Y[yx1]-shift)>>10;
+				V[yx1] = 730*(rgb[yx3]-Y[yx1]-shift)>>10;
+			}
+		}
 	}
+	//y[i] = ((306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10) - 128;
+	//u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
+	//v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
+	//printf("%d %d %d  ", y[i], u[i], v[i]);
 }
 
-/** \brief Convert YUV444 image to RGB.
-	\param rgb 	The output RGB image.
+/** \brief Convert RGB24 image to YUV420.
+	\param rgb 	The input RGB image.
     \param y	The output Y image.
 	\param u	The output U image.
 	\param v	The output V image.
     \param w	The image width.
     \param h	The image height.
+    \param pad		If pad = 1 need to pad each line to uint32 boundary, if pad = 0 no need
+*/
+void utils_RGB24_to_YUV420(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp, uint32 pad)
+{
+	/*
+	Y = 0.299*R + 0.587*G + 0.114*B
+	U = -0.169*R – 0.331*G + 0.5*B
+	V = 0.5*R - 0.419*G - 0.081*B
+	*/
+	int y, x, yw, yx, yx2, yx3, w2 = w>>1, shift = 1<<(bpp-1);
+	uint32  x1, yw1 , yx1, w1 = (((w*3)>>2) + ((w*3)&3 ? 1 : 0))<<2;
+
+	if(!pad){
+		for(y=0; y < h; y++){
+			yw = y*w;
+			for(x=0; x < w; x++){
+				yx = yw + x;
+				yx3 = yx*3;
+				yx2 = (x>>1) + (y>>1)*w2;
+
+				Y[yx] = ((306*(rgb[yx3]-rgb[yx3 + 1]) + 117*(rgb[yx3 + 2]-rgb[yx3 + 1]))>>10) + rgb[yx3 + 1] - shift;
+				U[yx2] += 578*(rgb[yx3 + 2]-Y[yx]-shift)>>10;
+				V[yx2] += 730*(rgb[yx3]-Y[yx]-shift)>>10;
+				if(x&1 && y&1) {
+					U[yx2]>>=2;
+					V[yx2]>>=2;
+				}
+			}
+		}
+	} else {
+		//For each line padded to a uint32 boundary.
+		//printf("w = %d w1 = %d\n", w*3, w1);
+		for(y=0; y < h; y++) {
+			yw = y*w1;
+			yw1 = y*w;
+			for(x=0, x1 = 0; x < w1; x+=3, x1++) {
+				yx3 = x+yw;
+				yx1 = yw1 + x1;
+				yx2 = (x1>>1) + (y>>1)*w2;
+				Y[yx1] = ((306*(rgb[yx3]-rgb[yx3 + 1]) + 117*(rgb[yx3 + 2]-rgb[yx3 + 1]))>>10) + rgb[yx3 + 1] - shift;
+				U[yx2] += 578*(rgb[yx3 + 2]-Y[yx1]-shift)>>10;
+				V[yx2] += 730*(rgb[yx3]-Y[yx1]-shift)>>10;
+				if(x1&1 && y&1) {
+					U[yx2]>>=2;
+					V[yx2]>>=2;
+				}
+			}
+		}
+	}
+	//y[i] = ((306*rgb[i3] + 601*rgb[i3 + 1] + 117*rgb[i3 + 2])>>10) - 128;
+	//u[i] = (rgb[i3 + 2]>>1) - ((173*rgb[i3] + 339*rgb[i3 + 1])>>10);
+	//v[i] = (rgb[i3    ]>>1) - ((429*rgb[i3 + 1] + 83*rgb[i3 + 2])>>10);
+	//printf("%d %d %d  ", y[i], u[i], v[i]);
+}
+
+/** \brief Copy 24 bits rgb format image to three images R, G, B
+	\param img	 	The input RGB24 image.
+    \param r		The output red image.
+    \param g		The output green image.
+    \param b		The output blue image.
+    \param w		The image width.
+    \param h		The image height.
+    \param bpp		The bits per pixel.
+    \param pad		If pad = 1 need to pad each line to uint32 boundary, if pad = 0 no need
+*/
+void utils_RGB24_to_RGB(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, uint32 pad)
+{
+	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
+	uint32 x, x1, y, yw, yw1 , yx3, yx1, w1 = (((w*3)>>2) + ((w*3)&3 ? 1 : 0))<<2;
+	if(!pad){
+		for(i=0; i<size; i++) {
+			i3 = i*3;
+			r[i] = img[i3]   - shift;
+			g[i] = img[i3+1] - shift;
+			b[i] = img[i3+2] - shift;
+		}
+	} else {
+		//For each line padded to a uint32 boundary.
+		//printf("w = %d w1 = %d\n", w*3, w1);
+		for(y=0; y < h; y++) {
+			yw = y*w1;
+			yw1 = y*w;
+			for(x=0, x1 = 0; x < w1; x+=3, x1++) {
+				yx3 = x+yw;
+				yx1 = yw1 + x1;
+				r[yx1] = img[yx3]   - shift;
+				g[yx1] = img[yx3+1] - shift;
+				b[yx1] = img[yx3+2] - shift;
+			}
+		}
+	}
+}
+
+/** \brief Copy three images R, G, B to 24 bits rgb format.
+	\param buff 	The output RGB24 image.
+    \param r		The input red image.
+    \param g		The input green image.
+    \param b		The input blue image.
+    \param w		The image width.
+    \param h		The image height.
+    \param bpp		The bits per pixel.
+*/
+void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp)
+{
+	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
+	for(i=0; i<size; i++) {
+		i3 = i*3;
+		img[i3]   = r[i] + shift;
+		img[i3+1] = g[i] + shift;
+		img[i3+2] = b[i] + shift;
+	}
+}
+
+
+/** \brief Convert YUV444 image to RGB.
+	\param rgb 	The output RGB image.
+    \param Y	The output Y image.
+	\param U	The output U image.
+	\param V	The output V image.
+    \param w	The image width.
+    \param h	The image height.
+    \param bpp	The bits per pixel.
     \retval	rgb	The output RGB image.
 */
-uint8* utils_YUV444_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
+uint8* utils_YUV444_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp)
 {
 	/*
 	R = Y + 1.4026 * V
 	G = Y – 0.3444 * U – 0.7144 * V
 	B = Y + 1.7730 * U
 	*/
-	int i, i3, sz = w*h;
+	int i, i3, sz = w*h, shift = 1<<(bpp-1);
 	//int R, G, B;
 	for(i=0; i < sz; i++){
 		i3 = i*3;
+		rgb[i3    ] = lb1(shift + Y[i] + ((1436*V[i])>>10));
+		rgb[i3 + 1] = lb1(shift + Y[i] - ((732*V[i] + 353*U[i])>>10));
+		rgb[i3 + 2] = lb1(shift + Y[i] + ((1816*U[i])>>10));
 
-		rgb[i3    ] = lb1(128 + V[i] + ((1436*V[i])>>10));
-		rgb[i3 + 1] = lb1(128 + V[i] - ((732*V[i] + 353*U[i])>>10));
-		rgb[i3 + 2] = lb1(128 + V[i] + ((1816*U[i])>>10));
-
-		/*
-		R = 128 + y[i] + ((91881*v[i])>>16);
-		G = 128 + y[i] + ((46802*v[i] - 22553*u[i])>>16);
-		B = 128 + y[i] + ((116130*u[i])>>16);
-		*/
 		//if(R < 0 || R > 255) printf("R=%d ",R);
 		//if(G < 0 || G > 255) printf("G=%d y = %d u = %d v = %d ",G, y[i], u[i], v[i]);
 		//if(B < 0 || B > 255) printf("v=%d ",B);
@@ -606,14 +735,14 @@ uint8* utils_YUV444_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, ui
     \param h	The image height.
     \retval	rgb	The output RGB image.
 */
-uint8* utils_YUV420_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, uint32 h)
+uint8* utils_YUV420_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp)
 {
 	/*
 	R = Y + 1.4026 * V
 	G = Y – 0.3444 * U – 0.7144 * V
 	B = Y + 1.7730 * U
 	*/
-	int y, x, yw, yx, yx2, yx3, w2 = w>>1;
+	int y, x, yw, yx, yx2, yx3, w2 = w>>1, shift = 1<<(bpp-1);;
 	for(y=0; y < h; y++){
 		yw = y*w;
 		for(x=0; x < w; x++){
@@ -621,19 +750,11 @@ uint8* utils_YUV420_to_RGB24(uint8 *rgb, int8 *Y, int8 *U, int8 *V, uint32 w, ui
 			yx3 = yx*3;
 			yx2 = (x>>1) + (y>>1)*w2;
 
-			rgb[yx3    ] = lb1(128 + Y[yx] + ((1436*V[yx2])>>10));
-			rgb[yx3 + 1] = lb1(128 + Y[yx] - ((732*V[yx2] + 353*U[yx2])>>10));
-			rgb[yx3 + 2] = lb1(128 + Y[yx] + ((1816*U[yx2])>>10));
+			rgb[yx3    ] = lb1(shift + Y[yx] + ((1436*V[yx2])>>10));
+			rgb[yx3 + 1] = lb1(shift + Y[yx] - ((732*V[yx2] + 353*U[yx2])>>10));
+			rgb[yx3 + 2] = lb1(shift + Y[yx] + ((1816*U[yx2])>>10));
 		}
 	}
-		/*
-		R = 128 + y[i] + ((91881*v[i])>>16);
-		G = 128 + y[i] + ((46802*v[i] - 22553*u[i])>>16);
-		B = 128 + y[i] + ((116130*u[i])>>16);
-		*/
-		//if(R < 0 || R > 255) printf("R=%d ",R);
-		//if(G < 0 || G > 255) printf("G=%d y = %d u = %d v = %d ",G, y[i], u[i], v[i]);
-		//if(B < 0 || B > 255) printf("v=%d ",B);
 	return rgb;
 }
 
@@ -682,52 +803,6 @@ void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	//printf("Start copy  x = %d y = %d p = %p \n", im->w, im->h, im->p);
 	if(bpp > 8) for(i=0; i<size; i++) img[i] = ((buff[i<<1]<<8) | buff[(i<<1)+1]) - shift;
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
-}
-
-/** \brief Copy 24 bits rgb format image to three images R, G, B
-	\param img	 	The input RGB24 image.
-    \param r		The output red image.
-    \param g		The output green image.
-    \param b		The output blue image.
-    \param w		The image width.
-    \param h		The image height.
-    \param bpp		The bits per pixel.
-*/
-void utils_RGB24_to_RGB(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp)
-{
-	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
-	for(i=0; i<size; i++) {
-		i3 = i*3;
-		r[i] = img[i3]   - shift;
-		g[i] = img[i3+1] - shift;
-		b[i] = img[i3+2] - shift;
-		//if(i < w) printf("r=%4d g=%4d b=%4d ", r[i], g[i], b[i]);
-		if(i < w) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
-		if(i == w-1) printf("\n\n");
-		if(i < 2*w && i > w-1) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
-		if(i == 2*w-1) printf("\n\n");
-		if(i < 3*w && i > 2*w-1) printf("r=%3d g=%3d b=%3d ", img[i3], img[i3+1], img[i3+2]);
-	}
-}
-
-/** \brief Copy three images R, G, B to 24 bits rgb format.
-	\param buff 	The output RGB24 image.
-    \param r		The input red image.
-    \param g		The input green image.
-    \param b		The input blue image.
-    \param w		The image width.
-    \param h		The image height.
-    \param bpp		The bits per pixel.
-*/
-void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 shift)
-{
-	uint32 i, i3, size = w*h;
-	for(i=0; i<size; i++) {
-		i3 = i*3;
-		img[i3]   = r[i] - shift;
-		img[i3+1] = g[i] - shift;
-		img[i3+2] = b[i] - shift;
-	}
 }
 
 uint8* utils_draw_scale_color(uint8 *rgb, uint8 *img,  uint32 w0, uint32 h0, uint32 w, uint32 h,   uint32 wp, BayerGrid bay){
