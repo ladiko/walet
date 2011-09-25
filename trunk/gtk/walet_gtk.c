@@ -118,7 +118,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol	= RGB;	/// Input color space
-		gw->wc.ccol	= RGB;	/// Compression color space
+		gw->wc.ccol	= CS420;	/// Compression color space
 		gw->wc.bpp = 8;
 		//gw->wc.ocol			= RGB;		/// Output color space
 		//gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
@@ -131,9 +131,19 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		for(i=0; i< gw->wc.gop_size; i++) frame_copy(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-		//new_buffer (gw->orig[0], f0->img[0].w, f0->img[0].h);
-		//utils_RGB_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, 128);
-		//gtk_widget_queue_draw(gw->drawingarea[0]);
+		if(gw->wc.ccol == RGB){
+			new_buffer (gw->orig[0], f0->img[0].w, f0->img[0].h);
+			utils_RGB_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
+			gtk_widget_queue_draw(gw->drawingarea[0]);
+		} else if (gw->wc.ccol == CS444){
+			new_buffer (gw->orig[0], f0->img[0].w, f0->img[0].h);
+			utils_YUV444_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
+			gtk_widget_queue_draw(gw->drawingarea[0]);
+		} else if (gw->wc.ccol == CS420){
+			new_buffer (gw->orig[0], f0->img[0].w, f0->img[0].h);
+			utils_YUV420_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
+			gtk_widget_queue_draw(gw->drawingarea[0]);
+		}
 
 		for(i=0; i < 3; i++){
 			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
@@ -147,7 +157,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol			= BAYER;	/// Input color space
-		gw->wc.ccol			= RGB;	/// Compression color space
+		gw->wc.ccol			= CS420;	/// Compression color space
 		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		walet_encoder_init(&gw->gop, &gw->wc);
@@ -214,8 +224,6 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		utils_bayer_to_rgb_grad(gw->gop.frames[0].b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, gw->wc.bg, 128);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 		*/
-
-
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);
 	//g_printf("The current state = %d ret = %d\n", state, ret);

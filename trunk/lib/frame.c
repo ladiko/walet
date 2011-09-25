@@ -132,11 +132,12 @@ void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v
 	} else if(wc->icol == GREY) {
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
 	} else if(wc->icol == RGB) {
-		utils_RGB24_to_RGB(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
-		if(wc->ccol == CS444) {
-
+		if(wc->ccol == RGB){
+			utils_RGB24_to_RGB(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
+		} else if(wc->ccol == CS444) {
+			utils_RGB24_to_YUV444(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
 		} else if(wc->ccol == CS420) {
-
+			utils_RGB24_to_YUV420(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
 		}
 	}
 	f->state = FRAME_COPY;
@@ -158,7 +159,7 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 		if (wc->ccol == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
 		else if(wc->ccol == BAYER) {
 			//ccol transform
-			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
+			//dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
 			for(i=0; i < 4; i++) {
 				image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
 				//printf("img[%d]\n",i);
