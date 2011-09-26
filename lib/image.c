@@ -418,14 +418,13 @@ void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps){
 	printf("Create image x = %d y = %d p = %p\n", img->w, img->h, img->p);
 }
 
+/**	\brief Image DWT transform.
+	\param im	 	The image structure.
+	\param buf		The temporary buffer
+	\param fb 		The wavelet filters bank.
+	\param steps	The steps of transform.
+*/
 void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps){
-///	\fn void image_dwt_53(Image *im, ColorSpace color, uint32 steps, uint8 *buf)
-///	\brief Discrete 5/3 filter wavelets transform of the image.
-///	\param im	 		The image structure.
-///	\param color		The color space of the stream.
-///	\param steps 		The steps of DWT transform.
-///	\param buf 			The temporary buffer.
-
 	switch(fb){
 		case(FR_HAAR):{
 			dwt(im, buf, &dwt_haar_2d_one, steps);
@@ -442,15 +441,14 @@ void image_dwt(Image *im, int16 *buf, FilterBank fb, uint32 steps){
 	}
 }
 
+/**	\brief Image invert DWT transform.
+	\param im	 	The image structure.
+	\param buf		The temporary buffer
+	\param fb 		The wavelet filters bank.
+	\param steps	The steps of DWT transform.
+	\param isteps	The steps of invert DWT transform.
+*/
 void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps){
-///	\fn void image_idwt_53(Image *im, ColorSpace color, uint32 steps, uint8 *buf, uint32 isteps)
-///	\brief Discrete 5/3 filter invert wavelets transform of the image.
-///	\param im	 		The image structure.
-///	\param color		The color space of the stream.
-///	\param steps 		The steps of DWT transform.
-///	\param buf 			The temporary buffer.
-///	\param isteps		The steps of IDWT transform.
-
 	switch(fb){
 		case(FR_HAAR):{
 			idwt(im, buf, &idwt_haar_2d_one, steps, isteps);

@@ -7,8 +7,9 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-uint8* utils_dwt_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);
-uint8* utils_bayer_to_rgb_grad(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift);
+uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);
+uint8* utils_bayer_to_rgb_grad	(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift);
+uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps);
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
 void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);

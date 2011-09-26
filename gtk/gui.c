@@ -343,66 +343,93 @@ void on_zoom_out_button_clicked (GtkObject *object, GtkWalet *gw)
 
 void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
+	Frame *f0 = &gw->gop.frames[gw->gop.cur_gop_frame];
+	int i;
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	if(frame_dwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc)) {
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[2], gw->wc.w, gw->wc.h);
-		utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
+		for(i=0; i < 3; i++){
+			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
+			utils_dwt_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+			gtk_widget_queue_draw(gw->drawingarea[i+1]);
+		}
 	}
 }
 
 void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
+	Frame *f0 = &gw->gop.frames[0];
+	uint32 i, w, h, isteps = gw->wc.steps-1;
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-    if(frame_idwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc,  gw->wc.steps-1)){
+    if(frame_idwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, isteps )){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
-		utils_grey_draw(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, 0);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
+		if(gw->wc.ccol == RGB){
+			new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
+			frame_ouput	(&gw->gop, 0, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), isteps);
+			gtk_widget_queue_draw(gw->drawingarea[1]);
 
+			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
+		} else if (gw->wc.ccol == CS444){
+			if(isteps == gw->wc.steps) {
+				new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
+				utils_YUV444_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
+			} else {
+				i = gw->wc.steps - isteps;
+				w = f0->img[0].l[i-1].s[0].w;
+				h = f0->img[0].l[i-1].s[0].h;
+				printf("w = %d h = %d\n", w, h);
+				new_buffer (gw->orig[1], w, h);
+				utils_YUV444_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic,
+						w, h, gw->wc.bpp);
+			}
+			gtk_widget_queue_draw(gw->drawingarea[1]);
+			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
+		} else if (gw->wc.ccol == CS420){
+			if(isteps == gw->wc.steps) {
+				new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
+				utils_YUV420_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
+			} else {
+				i = gw->wc.steps - isteps;
+				w = f0->img[0].l[i-1].s[0].w;
+				h = f0->img[0].l[i-1].s[0].h;
+				new_buffer (gw->orig[1], w, h);
+				utils_YUV420_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic,
+						w, h, gw->wc.bpp);
+			}
+			gtk_widget_queue_draw(gw->drawingarea[1]);
+			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
+			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
+		} else if (gw->wc.ccol == BAYER){
+			if(isteps == gw->wc.steps) {
+			f0->d.w = f0->img[0].d.w + f0->img[1].d.w;
+			f0->d.h = f0->img[0].d.h + f0->img[2].d.h;
+			idwt_53_2d_one(f0->d.pic, f0->img[0].d.pic, f0->img[1].d.pic, f0->img[2].d.pic, f0->img[3].d.pic, (int16*)gw->gop.buf, f0->d.w, f0->d.h);
+			} else {
+				i = gw->wc.steps - isteps;
+				f0->d.w = f0->img[0].l[i-1].s[0].w + f0->img[1].l[i-1].s[0].w;
+				f0->d.h = f0->img[0].l[i-1].s[0].h + f0->img[2].l[i-1].s[0].h;
+				idwt_53_2d_one(f0->d.pic, f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic, f0->img[3].l[i-1].s[0].pic,
+						(int16*)gw->gop.buf, f0->d.w, f0->d.h);
+			}
+			new_buffer (gw->orig[1], f0->d.w, f0->d.h);
+			utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->d.w, f0->d.h, gw->wc.bg, 128);
+			gtk_widget_queue_draw(gw->drawingarea[1]);
 
-		new_buffer (gw->orig[3], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
-		utils_bayer_to_RGB24(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
-		gtk_widget_queue_draw(gw->drawingarea[3]);
-
-		utils_resize_bayer_2x(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w,  gw->gop.frames[0].b.h);
-		gw->gop.frames[0].d.w = gw->gop.frames[0].b.w>>1;
-		gw->gop.frames[0].d.h = gw->gop.frames[0].b.h>>1;
-
-		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
-		utils_bayer_to_RGB24(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (int16*)gw->gop.buf, gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
-
-		/*
-		new_buffer (gw->orig[2], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
-		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_rgb_bi(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
-		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Bilinear time = %f\n",(double)(end-start)/1000000.);
-		gtk_widget_queue_draw(gw->drawingarea[2]);
-
-		new_buffer (gw->orig[3], gw->gop.frames[0].d.w, gw->gop.frames[0].d.h);
-		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_rgb_grad(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg, 128);
-		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-		printf("Gradient time = %f\n",(double)(end-start)/1000000.);
-		gtk_widget_queue_draw(gw->drawingarea[3]);
-		*/
-
-		printf("APE = %f  ",utils_ape_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
-		printf("PNSR = %f\n",utils_psnr_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
-		//printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 8, 1));
-		printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 8, 3, 1));
-
-		//printf("SSIM = %f\n",utils_ssim_16((int16*)gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*) gdk_pixbuf_get_pixels(gw->orig[2]->pxb),
-		//		gw->gop.frames[0].b.w*gw->gop.frames[0].b.h*3, 8, 3));
+			printf("APE = %f\n",utils_ape_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
+			printf("PNSR = %f\n",utils_psnr_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
+			printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 8, 3, 1));
+		}
 
     }
 }
@@ -429,14 +456,22 @@ void on_bits_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_quant_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(&gw->gop == NULL ) return;
+	Frame *f0 = &gw->gop.frames[0];
+	uint32 i;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	if(frame_quantization(&gw->gop, gw->gop.cur_gop_frame, &gw->wc)){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("Quantization time = %f\n",(double)(end-start)/1000000.);
 
-		new_buffer (gw->orig[3], gw->wc.w, gw->wc.h);
-		utils_dwt_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps);
-		gtk_widget_queue_draw(gw->drawingarea[3]);
+		for(i=0; i < 3; i++){
+			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
+			utils_dwt_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+			gtk_widget_queue_draw(gw->drawingarea[i+1]);
+		}
+
+		//new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
+		//utils_dwt_bayer_draw(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps);
+		//gtk_widget_queue_draw(gw->drawingarea[3]);
 	}
 }
 

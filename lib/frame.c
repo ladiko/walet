@@ -99,7 +99,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->state = 0;
 }
 
-/*	\brief	Copy input frame
+/*	\brief	Copy and transform input frame
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
@@ -107,7 +107,7 @@ void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
 	\param	u	The pointer to green or U  image data.
 	\param	v	The pointer to blue or V  image data.
 */
-void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
+void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
 {
 	uint32 i, size = wc->w*wc->h, size3 = size*3, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
@@ -141,7 +141,73 @@ void frame_copy(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v
 		}
 	}
 	f->state = FRAME_COPY;
-	printf("Finish frame copy \n");
+	printf("Finish frame input \n");
+}
+
+/*	\brief	Transform the frame to RGB24 color space.
+	\param	g	The GOP structure.
+	\param	fn	The frame number.
+	\param	wc	The walet config structure.
+	\param	rgb	The pointer to RGB24 image.
+	\param	isteps	The invert DWT transform steps.
+*/
+void frame_ouput(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint32 isteps)
+{
+	uint32 i;
+	Frame *f = &g->frames[fn];
+
+	if(wc->ccol == BAYER) {
+		if(isteps == wc->steps) {
+		f->d.w = f->img[0].d.w + f->img[1].d.w;
+		f->d.h = f->img[0].d.h + f->img[2].d.h;
+		idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic, (int16*)g->buf, f->d.w, f->d.h);
+		} else {
+			i = wc->steps - isteps;
+			f->d.w = f->img[0].l[i-1].s[0].w + f->img[1].l[i-1].s[0].w;
+			f->d.h = f->img[0].l[i-1].s[0].h + f->img[2].l[i-1].s[0].h;
+			idwt_53_2d_one(f->d.pic, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->img[3].l[i-1].s[0].pic,
+					(int16*)g->buf, f->d.w, f->d.h);
+		}
+		utils_bayer_to_RGB24(f->d.pic, rgb, (int16*)g->buf, f->d.w, f->d.h, wc->bg, 128);
+	} else if(wc->ccol == CS444){
+		if(isteps == wc->steps) {
+			utils_YUV444_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+		} else {
+			i = wc->steps - isteps;
+			f->d.w = f->img[0].l[i-1].s[0].w;
+			f->d.h = f->img[0].l[i-1].s[0].h;
+			utils_YUV444_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+		}
+	} else if(wc->ccol == CS420){
+		if(isteps == wc->steps) {
+			utils_YUV420_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+		} else {
+			i = wc->steps - isteps;
+			f->d.w = f->img[0].l[i-1].s[0].w;
+			f->d.h = f->img[0].l[i-1].s[0].h;
+			utils_YUV420_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+		}
+	} else if(wc->ccol == GREY) {
+		if(isteps == wc->steps) {
+			utils_grey_draw(f->img[0].p, rgb, f->img[0].w, f->img[0].h, 128);
+		} else {
+			i = wc->steps - isteps;
+			f->d.w = f->img[0].l[i-1].s[0].w;
+			f->d.h = f->img[0].l[i-1].s[0].h;
+			utils_grey_draw(f->img[0].p, rgb, f->d.w, f->d.h, 128);
+		}
+	} else if(wc->ccol == RGB) {
+		if(isteps == wc->steps) {
+			utils_RGB_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+		} else {
+			i = wc->steps - isteps;
+			f->d.w = f->img[0].l[i-1].s[0].w;
+			f->d.h = f->img[0].l[i-1].s[0].h;
+			utils_RGB_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+		}
+	}
+	f->state = FRAME_COPY;
+	printf("Finish frame output \n");
 }
 
 /**	\brief	The Frame discrete wavelet transform.
@@ -158,13 +224,10 @@ uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
 	if(check_state(f->state, FRAME_COPY | IDWT)){
 		if (wc->ccol == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
 		else if(wc->ccol == BAYER) {
-			//ccol transform
 			//dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
-			for(i=0; i < 4; i++) {
-				image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
-				//printf("img[%d]\n",i);
-			}
-		} else for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
+			for(i=0; i < 4; i++)  image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
+
+		} else  for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
 
 		f->state = DWT;
 		//image_grad(&frame->img[0], BAYER, wc->steps, 2);
@@ -189,6 +252,7 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 		else if(wc->ccol == BAYER ) {
 			for(i=0; i < 4; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
 			//ccol transform
+			/*
 			if(isteps == wc->steps) {
 			f->d.w = f->img[0].d.w + f->img[1].d.w;
 			f->d.h = f->img[0].d.h + f->img[2].d.h;
@@ -200,9 +264,8 @@ uint32 frame_idwt(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps)
 				f->d.h = f->img[0].l[i].s[0].h + f->img[2].l[i].s[0].h;
 				idwt_53_2d_one(f->d.pic, f->img[0].l[i].s[0].pic, f->img[1].l[i].s[0].pic,f->img[2].l[i].s[0].pic, f->img[3].l[i].s[0].pic,
 						(int16*)g->buf, f->d.w, f->d.h);
-			}
-		}
-		else for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
+			}*/
+		} else for(i=0; i < 3; i++) image_idwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps, isteps);
 
 		f->state = IDWT;
 		return 1;
