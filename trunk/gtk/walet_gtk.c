@@ -128,7 +128,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		Frame *f0 = &gw->gop.frames[0], *f1 = &gw->gop.frames[1];
 
 		printf("video/x-raw-rgb\n");
-		for(i=0; i< gw->wc.gop_size; i++) frame_copy(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+		for(i=0; i< gw->wc.gop_size; i++) frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 		if(gw->wc.ccol == RGB){
@@ -150,14 +150,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			utils_grey_draw(f0->img[i].p, gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), f0->img[i].w, f0->img[i].h, 128);
 			gtk_widget_queue_draw(gw->drawingarea[i+1]);
 		}
-
-
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 		clock_t start, end;
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol			= BAYER;	/// Input color space
-		gw->wc.ccol			= CS420;	/// Compression color space
+		gw->wc.ccol			= RGB;	/// Compression color space
 		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		walet_encoder_init(&gw->gop, &gw->wc);
@@ -166,7 +164,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		Frame *f0 = &gw->gop.frames[0], *f1 = &gw->gop.frames[1];
 
 		printf("video/x-raw-bayer\n");
-		for(i=0; i< gw->wc.gop_size; i++)  frame_copy(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
+		for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 		//frame_copy(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 		new_buffer (gw->orig[0], f0->b.w, f0->b.h);

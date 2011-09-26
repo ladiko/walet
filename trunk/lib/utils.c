@@ -63,7 +63,23 @@ static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uin
 	}
 }
 
-uint8* utils_dwt_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps)
+uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps)
+{
+	uint32 i, j, x, y, w = img->w;
+
+	if(steps != 0){
+		for(j=0; j < steps; j++){
+			printf("img->l[j].s[0].w = %d img->l[j].s[0].h = %d\n", img->l[j].s[0].w, img->l[j].s[0].h);
+			drawrect(rgb, img->l[j].s[1].pic, img->l[j].s[0].w,	0,                img->l[j].s[1].w, img->l[j].s[1].h, w, 128);
+			drawrect(rgb, img->l[j].s[2].pic, 0,                img->l[j].s[0].h, img->l[j].s[2].w, img->l[j].s[2].h, w, 128);
+			drawrect(rgb, img->l[j].s[3].pic, img->l[j].s[0].w, img->l[j].s[0].h, img->l[j].s[3].w, img->l[j].s[3].h, w, 128);
+		}
+		drawrect(rgb, img->l[steps-1].s[0].pic, 0, 0, img->l[steps-1].s[0].w, img->l[steps-1].s[0].h, w, 128);
+	}
+	return rgb;
+}
+
+uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps)
 {
 	uint32 i, j, x, y, w;
 	Frame *f = &g->frames[fn];
