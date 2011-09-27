@@ -20,7 +20,7 @@ static uint32 check_state(uint32 state, uint32 check)
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
 */
-void frames_init(GOP *g, uint32 fn, WaletConfig *wc)
+void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 w = wc->w, h = wc->h;
 	Frame *f = &g->frames[fn];
@@ -121,9 +121,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == CS420) {
 			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		} else if(wc->ccol == RGB){
-			utils_bayer_to_RGB(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg, 0);
-		} else {
-			printf("Don't support this transform\n");
+			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS422 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
@@ -150,60 +148,69 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 	\param	wc	The walet config structure.
 	\param	rgb	The pointer to RGB24 image.
 	\param	isteps	The invert DWT transform steps.
+	\param	w	The output image width.
+	\param  h	The output image height.
 */
-void frame_ouput(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint32 isteps)
+void frame_ouput(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint32 isteps, uint32 *w, uint32 *h)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
 
 	if(wc->ccol == BAYER) {
 		if(isteps == wc->steps) {
-		f->d.w = f->img[0].d.w + f->img[1].d.w;
-		f->d.h = f->img[0].d.h + f->img[2].d.h;
-		idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic, (int16*)g->buf, f->d.w, f->d.h);
+			f->d.w = f->img[0].d.w + f->img[1].d.w;
+			f->d.h = f->img[0].d.h + f->img[2].d.h;
+			idwt_53_2d_one(f->d.pic, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[3].d.pic, (int16*)g->buf, f->d.w, f->d.h);
+			utils_RGB_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+			*w = f->d.w; *h = f->d.h;
 		} else {
 			i = wc->steps - isteps;
 			f->d.w = f->img[0].l[i-1].s[0].w + f->img[1].l[i-1].s[0].w;
 			f->d.h = f->img[0].l[i-1].s[0].h + f->img[2].l[i-1].s[0].h;
 			idwt_53_2d_one(f->d.pic, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->img[3].l[i-1].s[0].pic,
 					(int16*)g->buf, f->d.w, f->d.h);
+			*w = f->d.w; *h = f->d.h;
 		}
-		utils_bayer_to_RGB24(f->d.pic, rgb, (int16*)g->buf, f->d.w, f->d.h, wc->bg, 128);
+		utils_bayer_to_RGB24(f->d.pic, rgb, (int16*)g->buf, f->d.w, f->d.h, wc->bg, wc->bpp);
 	} else if(wc->ccol == CS444){
 		if(isteps == wc->steps) {
-			utils_YUV444_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+			*w = f->img[0].w; *h = f->img[0].h;
+			utils_YUV444_to_RGB24(rgb, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, *w, *h, wc->bpp);
 		} else {
 			i = wc->steps - isteps;
-			f->d.w = f->img[0].l[i-1].s[0].w;
-			f->d.h = f->img[0].l[i-1].s[0].h;
-			utils_YUV444_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+			*w = f->img[0].l[i-1].s[0].w;
+			*h = f->img[0].l[i-1].s[0].h;
+			utils_YUV444_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, *w, *h, wc->bpp);
 		}
 	} else if(wc->ccol == CS420){
 		if(isteps == wc->steps) {
-			utils_YUV420_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+			*w = f->img[0].w; *h = f->img[0].h;
+			utils_YUV420_to_RGB24(rgb, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, *w, *h, wc->bpp);
 		} else {
 			i = wc->steps - isteps;
-			f->d.w = f->img[0].l[i-1].s[0].w;
-			f->d.h = f->img[0].l[i-1].s[0].h;
-			utils_YUV420_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+			*w = f->img[0].l[i-1].s[0].w;
+			*h = f->img[0].l[i-1].s[0].h;
+			utils_YUV420_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, *w, *h, wc->bpp);
 		}
 	} else if(wc->ccol == GREY) {
 		if(isteps == wc->steps) {
-			utils_grey_draw(f->img[0].p, rgb, f->img[0].w, f->img[0].h, 128);
+			*w = f->img[0].w; *h = f->img[0].h;
+			utils_grey_draw(f->img[0].d.pic, rgb, *w, *h, 128);
 		} else {
 			i = wc->steps - isteps;
-			f->d.w = f->img[0].l[i-1].s[0].w;
-			f->d.h = f->img[0].l[i-1].s[0].h;
-			utils_grey_draw(f->img[0].p, rgb, f->d.w, f->d.h, 128);
+			*w = f->img[0].l[i-1].s[0].w;
+			*h = f->img[0].l[i-1].s[0].h;
+			utils_grey_draw(f->img[0].l[i-1].s[0].pic, rgb, *w, *h, 128);
 		}
 	} else if(wc->ccol == RGB) {
 		if(isteps == wc->steps) {
-			utils_RGB_to_RGB24(rgb, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp);
+			*w = f->img[0].w; *h = f->img[0].h;
+			utils_RGB_to_RGB24(rgb, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, *w, *h, wc->bpp);
 		} else {
 			i = wc->steps - isteps;
-			f->d.w = f->img[0].l[i-1].s[0].w;
-			f->d.h = f->img[0].l[i-1].s[0].h;
-			utils_RGB_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, f->d.w, f->d.h, wc->bpp);
+			*w = f->img[0].l[i-1].s[0].w;
+			*h = f->img[0].l[i-1].s[0].h;
+			utils_RGB_to_RGB24(rgb, f->img[0].l[i-1].s[0].pic, f->img[1].l[i-1].s[0].pic, f->img[2].l[i-1].s[0].pic, *w, *h, wc->bpp);
 		}
 	}
 	f->state = FRAME_COPY;
@@ -347,13 +354,13 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	size = (wc->w*wc->h*wc->bpp)/times;
 	//df1 = size;
 
-	for(j=0; j < 4; j++) printf("bl[%d] = %d ", j, f->img[j].qst); printf("\n");
+	//for(j=0; j < 4; j++) printf("bl[%d] = %d ", j, f->img[j].qst); printf("\n");
 
 
 	if(check_state(f->state, FILL_SUBBAND)){
-		if (wc->ccol == BAYER){
+		/*if (wc->ccol == BAYER){
 			f->state |= BITS_ALLOCATION;
-			/*
+
 			//s += image_size_test(&f->img[3], wc->steps, 0, wc->steps);
 			for(i=0; i < wc->steps; i++) for(j=1; j < 4; j++) f->img[3].l[i].s[j].q_bits = 0;
 			for(i=0; i < wc->steps-2; i++) for(j=1; j < 4; j++) f->img[1].l[i].s[j].q_bits = 0;
@@ -442,13 +449,13 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			bl[1] = size*5/18;
 			bl[2] = size*5/18;
 			bl[3] = 0;
-			*/
-			/*
+
+
 			bl[0] = size*4/9;
 			bl[1] = size*2/9;
 			bl[2] = size*2/9;
 			bl[3] = size/9;
-			*/
+
 
 			bl[0] = size>>1;
 			bl[1] = size>>2;
@@ -459,8 +466,24 @@ uint32 frame_bits_alloc(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 			for(j=0; j < 4; j++) s += image_size(&f->img[j], wc->steps, bl[j]);
 
 				//printf("img = %d\n", j);
+		}*/
+		if(wc->ccol == GREY) {
+			s = image_size(&f->img[0], wc->steps, size);
+		} else if(wc->ccol == BAYER){
+			s  = image_size(&f->img[0], wc->steps, size*4/6);
+			s += image_size(&f->img[1], wc->steps, size/6);
+			s += image_size(&f->img[2], wc->steps, size/6);
+			s += image_size(&f->img[3], wc->steps, 0);
+		} else if (wc->ccol == CS444 || wc->ccol == CS420){
+			s  = image_size(&f->img[0], wc->steps, size*22/24);
+			s += image_size(&f->img[1], wc->steps, size/24);
+			s += image_size(&f->img[2], wc->steps, size/24);
+		} else if(wc->ccol == RGB){
+			printf("img = %p steps = %d size = %d\n", &f->img[0], wc->steps, size/3);
+			s  = image_size(&f->img[0], wc->steps, size/3);
+			s += image_size(&f->img[1], wc->steps, size/3);
+			s += image_size(&f->img[2], wc->steps, size/3);
 		}
-		//TODO: Bits allocation for gray and YUV ccol space.
 		printf("Frame size = %d bits  %d bites qs = %d\n", s, s/8, qs);
 		f->state |= BITS_ALLOCATION;
 		return 1;

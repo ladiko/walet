@@ -23,7 +23,7 @@ void walet_encoder_init(GOP *gop, WaletConfig *wc)
 	//Frames init
 	gop->frames = (Frame *)calloc(wc->gop_size, sizeof(Frame));
 
-	for(i=0; i < wc->gop_size; i++) frames_init(gop, i, wc);
+	for(i=0; i < wc->gop_size; i++) frame_init(gop, i, wc);
 	printf("Frames  init\n");
 
 	//Segmentation parts init

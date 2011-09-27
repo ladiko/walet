@@ -633,9 +633,9 @@ uint32 image_size(Image *im, uint32 steps, int sz){
 	//The order of subband bits allocation
 	uint32 i, j, k, l, size = 0, size1, min, in, jn;
 	int *st, tmp;
-	st = im->qfl;
+	//st = im->qfl;
 	// Levels bits counter should be less than 5
-	for(i=0; i < steps; i++) st[i] = 0;
+	//for(i=0; i < steps; i++) st[i] = 0;
 	for(i=0; i < steps; i++) for(j=1; j < 4; j++) {
 		im->l[i].s[j].q_bits = 2;
 		im->l[i].s[j].ssq = subb_size(&im->l[i].s[j]);
@@ -649,7 +649,7 @@ uint32 image_size(Image *im, uint32 steps, int sz){
 	while(size < sz){
 		min = 0xFFFFFFFF;
 		//printf("\n");
-		for(i=0; i < steps; i++) for(j = 1; j < 4; j++) {
+		for(i=0; i < steps; i++) for(j = 1; j < (!i ? 3 : 4); j++) {
 
 			if(im->l[i].s[j].ssd < min) { min = im->l[i].s[j].ssd; in = i; jn = j; }
 

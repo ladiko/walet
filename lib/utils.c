@@ -229,7 +229,7 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	\param shift	The image shift for display.
 	\retval			Output RGB image..
 */
-uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint32 h, BayerGrid bay, uint32 bpp){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -240,7 +240,7 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2;
+	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1);;
 	int16 *l0, *l1, *l2, *tm;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
 
@@ -299,7 +299,7 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 	\param shift	The image shift for display.
 	\retval			Output RGB image..
 */
-void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay, int shift){
+void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
 	int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
@@ -322,26 +322,26 @@ void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, u
 		for(x=xs, x1=0; x < w1; x++, x1++){
 			wy 	= x1 + yw;
 			x2 = x1 + 1;
-			//xwy3 = wy + wy + wy;
-
 			if(!(y&1) && !(x&1)){
-				R[wy] 	= 	lb1(l1[x2] + shift);
-				G[wy+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
-				B[wy+2] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
+				R[wy] = l1[x2];
+				G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+				B[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
 			}else if (!(y&1) && (x&1)){
-				R[wy] = 	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
-				G[wy+1] = 	lb1(l1[x2] + shift);
-				B[wy+2] =	lb1(((l0[x2] + l2[x2])>>1) + shift);
+				R[wy] = (l1[x2-1] + l1[x2+1])>>1;
+				G[wy] = l1[x2];
+				B[wy] =	(l0[x2] + l2[x2])>>1;
 			}else if ((y&1) && !(x&1)){
-				R[wy] = 	lb1(((l0[x2] + l2[x2])>>1) + shift);
-				G[wy+1] = 	lb1(l1[x2] + shift);
-				B[wy+2] =	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
+				R[wy] = (l0[x2] + l2[x2])>>1;
+				G[wy] = l1[x2];
+				B[wy] =	(l1[x2-1] + l1[x2+1])>>1;
 			}else {
-				R[wy] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
-				G[wy+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
-				B[wy+2] = 	lb1(l1[x2] + shift);
+				R[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+				G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+				B[wy] = l1[x2];
 			}
+			//if(x1 < 10) printf("%3d ", R[wy]);
 		}
+		//printf("\n");
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
 	}
 }
@@ -703,12 +703,11 @@ void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint
 	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
 	for(i=0; i<size; i++) {
 		i3 = i*3;
-		img[i3]   = r[i] + shift;
-		img[i3+1] = g[i] + shift;
-		img[i3+2] = b[i] + shift;
+		img[i3]   = lb1(r[i] + shift);
+		img[i3+1] = lb1(g[i] + shift);
+		img[i3+2] = lb1(b[i] + shift);
 	}
 }
-
 
 /** \brief Convert YUV444 image to RGB.
 	\param rgb 	The output RGB image.
