@@ -8,15 +8,32 @@ int nf = -1;
 void new_buffer(Pixbuf *orig, guint width, guint height)
 {
 	guchar *data;
-	if(orig->width != width || orig->height != height){
-		if(orig->init) g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
+	if(!orig->init) {
 		data = (guchar *)g_malloc(width*height*3);
 		orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
 					     FALSE, 8, width, height, width*3, NULL, NULL);
 		//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
 		orig->width = width; orig->height = height;
 		orig->init = 1;
-	} else data = (guchar *)g_malloc(width*height*3);
+		return;
+	}
+	if(orig->width < width || orig->height < height){
+		g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
+		data = (guchar *)g_malloc(width*height*3);
+		orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
+					     FALSE, 8, width, height, width*3, NULL, NULL);
+		//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
+		orig->width = width; orig->height = height;
+
+	} //else data = (guchar *)g_malloc(width*height*3);
+}
+
+void new_buffer_size(Pixbuf *orig, guint width, guint height)
+{
+	orig->width = width; orig->height = height;
+	orig->pxb = gdk_pixbuf_new_from_data (gdk_pixbuf_get_pixels(orig->pxb), GDK_COLORSPACE_RGB,
+				     FALSE, 8, width, height, width*3, NULL, NULL);
+
 }
 
 void zoom(Pixbuf *orig, Pixbuf *scal, gdouble zoom)
@@ -362,75 +379,27 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	Frame *f0 = &gw->gop.frames[0];
-	uint32 i, w, h, isteps = gw->wc.steps-1;
+	uint32 i, w, h, isteps = gw->wc.steps;
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
     if(frame_idwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, isteps )){
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("IDWT time = %f\n",(double)(end-start)/1000000.);
 
-		if(gw->wc.ccol == RGB){
-			new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
-			frame_ouput	(&gw->gop, 0, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), isteps);
-			gtk_widget_queue_draw(gw->drawingarea[1]);
+		new_buffer (gw->orig[1], gw->wc.w, gw->wc.h);
+		frame_ouput	(&gw->gop, 0, &gw->wc, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), isteps, &w, &h);
+		new_buffer_size (gw->orig[1], w, h);
+		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
-			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
-			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
-		} else if (gw->wc.ccol == CS444){
-			if(isteps == gw->wc.steps) {
-				new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
-				utils_YUV444_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
-			} else {
-				i = gw->wc.steps - isteps;
-				w = f0->img[0].l[i-1].s[0].w;
-				h = f0->img[0].l[i-1].s[0].h;
-				printf("w = %d h = %d\n", w, h);
-				new_buffer (gw->orig[1], w, h);
-				utils_YUV444_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic,
-						w, h, gw->wc.bpp);
-			}
-			gtk_widget_queue_draw(gw->drawingarea[1]);
-			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
-			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
-			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
-		} else if (gw->wc.ccol == CS420){
-			if(isteps == gw->wc.steps) {
-				new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
-				utils_YUV420_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].p, f0->img[1].p, f0->img[2].p, f0->img[0].w, f0->img[0].h, gw->wc.bpp);
-			} else {
-				i = gw->wc.steps - isteps;
-				w = f0->img[0].l[i-1].s[0].w;
-				h = f0->img[0].l[i-1].s[0].h;
-				new_buffer (gw->orig[1], w, h);
-				utils_YUV420_to_RGB24(gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic,
-						w, h, gw->wc.bpp);
-			}
-			gtk_widget_queue_draw(gw->drawingarea[1]);
+		if(gw->wc.ccol == RGB || gw->wc.ccol == CS444 || gw->wc.ccol == CS420){
 			printf("APE = %f\n",utils_ape_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
 			printf("PNSR = %f\n",utils_psnr_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w*f0->img[0].h, 1));
 			printf("SSIM = %f\n",utils_ssim_16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 8, 3, 1));
 		} else if (gw->wc.ccol == BAYER){
-			if(isteps == gw->wc.steps) {
-			f0->d.w = f0->img[0].d.w + f0->img[1].d.w;
-			f0->d.h = f0->img[0].d.h + f0->img[2].d.h;
-			idwt_53_2d_one(f0->d.pic, f0->img[0].d.pic, f0->img[1].d.pic, f0->img[2].d.pic, f0->img[3].d.pic, (int16*)gw->gop.buf, f0->d.w, f0->d.h);
-			} else {
-				i = gw->wc.steps - isteps;
-				f0->d.w = f0->img[0].l[i-1].s[0].w + f0->img[1].l[i-1].s[0].w;
-				f0->d.h = f0->img[0].l[i-1].s[0].h + f0->img[2].l[i-1].s[0].h;
-				idwt_53_2d_one(f0->d.pic, f0->img[0].l[i-1].s[0].pic, f0->img[1].l[i-1].s[0].pic, f0->img[2].l[i-1].s[0].pic, f0->img[3].l[i-1].s[0].pic,
-						(int16*)gw->gop.buf, f0->d.w, f0->d.h);
-			}
-			new_buffer (gw->orig[1], f0->d.w, f0->d.h);
-			utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->d.w, f0->d.h, gw->wc.bg, 128);
-			gtk_widget_queue_draw(gw->drawingarea[1]);
-
 			printf("APE = %f\n",utils_ape_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
 			printf("PNSR = %f\n",utils_psnr_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w*gw->gop.frames[0].b.h, 1));
 			printf("SSIM = %f\n",utils_ssim_16(gw->gop.frames[0].b.pic, gw->gop.frames[0].d.pic, gw->gop.frames[0].b.w, gw->gop.frames[0].b.h, 8, 3, 1));
 		}
-
     }
 }
 

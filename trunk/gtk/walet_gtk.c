@@ -103,7 +103,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//gw->wc.ocol			= RGB;		/// Output color space
 		//gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
-		gw->wc.steps		= 4;  		/// DWT steps.
+		gw->wc.steps		= 5;  		/// DWT steps.
 		gw->wc.gop_size		= 1;		/// GOP size
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
@@ -169,7 +169,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 		new_buffer (gw->orig[0], f0->b.w, f0->b.h);
 		gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-		utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 128);
+		utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("utils_bayer_to_RGB time = %f\n",(double)(end-start)/1000000.);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
