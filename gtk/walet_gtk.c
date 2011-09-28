@@ -103,7 +103,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//gw->wc.ocol			= RGB;		/// Output color space
 		//gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
-		gw->wc.steps		= 5;  		/// DWT steps.
+		gw->wc.steps		= 3;  		/// DWT steps.
 		gw->wc.gop_size		= 1;		/// GOP size
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
@@ -155,7 +155,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol			= BAYER;	/// Input color space
-		gw->wc.ccol			= RGB;	/// Compression color space
+		gw->wc.ccol			= BAYER;	/// Compression color space
 		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		walet_encoder_init(&gw->gop, &gw->wc);

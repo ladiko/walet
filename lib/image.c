@@ -894,6 +894,44 @@ void image_median_filter(Image *im, uint8 *buf){
 	filter_median(im->p, (int16*)buf, im->w, im->h);
 }
 
+/**	\brief Make block structure from subband.
+	\param img	 		The pointer to input image structure.
+	\param out 			The output image.
+	\param steps 		The steps of DWT transform.
+ */
+void image_suband_to_block(Image *img, int16 *out, uint32 steps)
+{
+	uint32 x, y, x1, y1, yw, yw1, yx, yx1, xsh, ysh, l, i, l1;
+
+	for(l=0; l < steps; l++){
+		l1 = (1<<l);
+		//printf("l = %d l1 = %d\n", l, l1);
+		for(i=!l ? 0 : 1; i < 4; i++){
+			xsh = i&1 ? l1 : 0;
+			ysh = i>1 ? l1 : 0;
+			//printf("i = %d xsh = %d ysh = %d\n", i, xsh, ysh);
+			//for(y=0; y < 2; y+=l1){
+			for(y=0; y < img->l[steps-1-l].s[i].h; y+=l1){
+				for(x=0; x < img->l[steps-1-l].s[i].w; x+=l1){
+				//for(x=0; x < 5; x+=l1){
+					for(y1=0; y1 < l1; y1++){
+						yw = (y+y1)*img->l[steps-1-l].s[i].w;
+						yw1 = ((y<<(steps-l))+ysh+y1)*img->w;
+						for(x1=0; x1 < l1; x1++){
+							yx = yw + x + x1;
+							yx1 = yw1 + (x<<(steps-l))+ xsh + x1;
+							//printf("steps = %d xsh = %d (x<<steps) = %d %d\n", steps, xsh, (x<<steps), (x<<steps)+ xsh + x1);
+							out[yx1] = img->l[steps-1-l].s[i].pic[yx];
+							//img->l[steps-1-l].s[i].pic[yx] = 255;
+							//out[yx1] = 255;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 uint32 image_write_level(Image *im, FILE *wl, uint32 steps, uint32 lev)
 {
 

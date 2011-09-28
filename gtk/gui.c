@@ -368,11 +368,22 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
 
-		for(i=0; i < 3; i++){
+		for(i=0; i < 2; i++){
 			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
 			utils_dwt_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
 			gtk_widget_queue_draw(gw->drawingarea[i+1]);
 		}
+
+		image_suband_to_block(&f0->img[0], f0->img[0].d.pic, gw->wc.steps);
+
+		new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
+		utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
+		gtk_widget_queue_draw(gw->drawingarea[i+1]);
+
+		//new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
+		//utils_dwt_image_draw(&f0->img[0], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.steps);
+		//gtk_widget_queue_draw(gw->drawingarea[1]);
+
 	}
 }
 
