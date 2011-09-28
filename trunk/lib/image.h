@@ -40,6 +40,7 @@ void 	image_quantization	(Image *im, uint32 steps, uint8 *buf);
 uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);
 uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);
 void 	image_median_filter	(Image *im, uint8 *buf);
+void 	image_suband_to_block(Image *img, int16 *out, uint32 steps);
 
 
 void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
