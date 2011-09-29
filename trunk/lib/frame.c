@@ -121,9 +121,9 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == CS420) {
 			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 			//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-			//prediction_decoder(f->img[0].d.pic, f->img[0].p, f->img[0].w, f->img[0].h);
-			//prediction_decoder(f->img[1].d.pic, f->img[1].p, f->img[1].w, f->img[1].h);
-			//prediction_decoder(f->img[2].d.pic, f->img[2].p, f->img[2].w, f->img[2].h);
+			//prediction_encoder(f->img[0].d.pic, f->img[0].p, f->img[0].w, f->img[0].h);
+			//prediction_encoder(f->img[1].d.pic, f->img[1].p, f->img[1].w, f->img[1].h);
+			//prediction_encoder(f->img[2].d.pic, f->img[2].p, f->img[2].w, f->img[2].h);
 		} else if(wc->ccol == RGB){
 			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
