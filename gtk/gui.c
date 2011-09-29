@@ -463,8 +463,9 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 	frame_range_encode(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 
-	printf("Frame size  = %d Encoded frame size = %d compess = %f time = %f\n",
-			gw->wc.w*gw->wc.h, size, (double)(gw->wc.w*gw->wc.h)/(double)size, (double)(end-start)/1000000.);
+	printf("Frame size  = %d Encoded frame size = %d compess = %f bits_per_pix = %f time = %f\n",
+			gw->wc.w*gw->wc.h, size, (double)(gw->wc.w*gw->wc.h)/(double)size,
+			(double)gw->wc.bg*size/(double)gw->wc.w*gw->wc.h, (double)(end-start)/1000000.);
 }
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)

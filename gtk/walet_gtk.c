@@ -103,7 +103,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		//gw->wc.ocol			= RGB;		/// Output color space
 		//gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		gw->wc.bpp			= bpp;		/// Image bits per pixel.
-		gw->wc.steps		= 2;  		/// DWT steps.
+		gw->wc.steps		= 5;  		/// DWT steps.
 		gw->wc.gop_size		= 1;		/// GOP size
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
