@@ -38,6 +38,8 @@ void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
 
+double entropy(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp);
+
 
 //uint8* 		utils_subband_draw		(Image *img, uint8 *rgb, ColorSpace color, uint32 steps);
 //uint8* 		utils_bayer_draw		(uint8 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay, uint8 bpp);

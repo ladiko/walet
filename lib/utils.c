@@ -36,6 +36,7 @@ int g[9][2] = {
 #define border(x,w)	(x) < 0 ? (-x) : (((x) < w) ? x : (w<<1) - (x) - 2)
 
 
+
 static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
 {
 	uint32 x, y, tmp;
@@ -2248,5 +2249,27 @@ void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h)
 		}
 	}
 
+}
+
+/* \brief Calculate image entropy.
+	\param img 	The input image.
+	\param buf 	The buffer for probability distribution.
+	\param w 	The image width.
+	\param h 	The image height.
+	\retval 	The entropy (bits per pixel).
+ */
+double entropy(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
+{
+	double s = 0., s0 = log2(w*h);
+	uint32  half = 1<<(bpp-1), size = 1<<bpp, sz = w*h;
+	int i;
+
+	for(i=0; i < size; i++) buf[i] = 0;
+	for(i=0; i < sz; i++) buf[img[i]+half]++;
+
+	for(i=0; i < size; i++){
+		if(buf[i]) s -= buf[i]*(log2(buf[i]) - s0);
+	}
+	return s/sz;
 }
 

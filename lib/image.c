@@ -15,22 +15,68 @@
 //|---------|---------|
 
 
-
 #define lim(max,min, x)  	((x) > max ? max :((x) < min ? min : (x)))
 #define max(x, m) 			(((x) > m) ? (m) : (x))
 
+void prediction_encoder(int16 *in, int16 *out, uint32 w, uint32 h)
+{
+	uint32 x, y=1, yw, yx, g[3];
+	out[0] = in[0];
+	for(x=1; x < w; x++){
+		out[x] = in[x] - in[x-1];
+	}
+	for(y=1; y < h; y++){
+		yw = y*w;
+		out[yw] = in[yw] - in[yw-w];
+		for(x=1; x < w; x++){
+			yx = yw + x;
+			//JPEG-LS prediction
+			if(in[yx-1-w] > in[yx-w] && in[yx-1-w] > in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-1] : in[yx-w]);
+			else if(in[yx-1-w] < in[yx-w] && in[yx-1-w] < in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-w] : in[yx-1]);
+			else out[yx] = in[yx] - (in[yx-1] + in[yx-w] - in[yx-1-w]);
+			/*
+			g[0] = abs(in[yx-w] - in[yx-1-w]);
+			g[1] = abs(in[yx-1] - in[yx-1-w]);
+			g[2] = abs(in[yx-w] - in[yx-1]);
 
-void dwt_haar_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h){
-///	\fn void dwt_2d_haar8(int8 *in, uint16 w, uint16 h, int8 *out0, int8 *out1, int8 *out2, int8 *out3)
-///	\brief One step 2D Haar DWT transform.
-///	\param in	 		The input image data.
-///	\param w 			The width
-///	\param h 			The height
-///	\param ll	 		The pointer to LL subbabnd
-///	\param hl	 		The pointer to HL subbabnd
-///	\param lh	 		The pointer to LH subbabnd
-///	\param hh	 		The pointer to HH subbabnd
+			if(g[0] >= g[1] && g[0] >= g[2]) out[yx] = in[yx] - in[yx-w];
+			else if(g[1] > g[0] && g[1] >= g[2]) out[yx] = in[yx] - in[yx-1];
+			else out[yx] = in[yx] - in[yx-1-w];
+			*/
+			//out[yx] = abs(in[yx-w] - in[yx-1-w]) > abs(in[yx-1] - in[yx-1-w]) ? in[yx] - in[yx-w] : in[yx] - in[yx-1];
+			//if(y == h-1) printf("%d ", yx);
+		}
+	}
+}
 
+void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
+{
+	int x, y, yw, yx;
+	out[0] = in[0];
+	for(x=1; x < w; x++){
+		out[x] = in[x] + out[x-1];
+	}
+	for(y=1; y < h; y++){
+		yw = y*w;
+		out[yw] = in[yw] + out[yw-w];
+		for(x=1; x < w; x++){
+			yx = yw + x;
+			out[yx] = abs(out[yx-w] - out[yx-1-w]) > abs(out[yx-1] - out[yx-1-w]) ? in[yx] + out[yx-w] : in[yx] + out[yx-1];
+		}
+	}
+}
+
+/*	\brief One step 2D Haar DWT transform.
+	\param in	 		The input image.
+	\param ll	 		The pointer to LL subbabnd
+	\param hl	 		The pointer to HL subbabnd
+	\param lh	 		The pointer to LH subbabnd
+	\param hh	 		The pointer to HH subbabnd
+	\param w 			The width
+	\param h 			The height
+*/
+void dwt_haar_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+{
 	uint32 x, y, y1, y2, yx, yx0, yx1, yx2, sz = w*((h>>1)<<1);
 	uint32 wy = w<<1, wy1 = (w>>1) + (w&1), wy2 = (w>>1), wx = ((w>>1)<<1);
 	//uint32 yx0, yx01, yx11;
@@ -68,17 +114,17 @@ void dwt_haar_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int1
 	}
 }
 
-void idwt_haar_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h){
-///	\fn void idwt_2d_haar8(int8 *out, uint16 w, uint16 h, int8 *ll, int8 *hl, int8 *lh, int8 *hh)
-///	\brief One step 2D Haar IDWT transform.
-///	\param out	 		The input image data.
-///	\param w 			The width
-///	\param h 			The height
-///	\param ll	 		The pointer to LL subbabnd
-///	\param hl	 		The pointer to HL subbabnd
-///	\param lh	 		The pointer to LH subbabnd
-///	\param hh	 		The pointer to HH subbabnd
-
+/*	\brief One step inverse 2D Haar DWT transform.
+	\param out	 		The output image.
+	\param ll	 		The pointer to LL subbabnd
+	\param hl	 		The pointer to HL subbabnd
+	\param lh	 		The pointer to LH subbabnd
+	\param hh	 		The pointer to HH subbabnd
+	\param w 			The width
+	\param h 			The height
+*/
+void idwt_haar_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h)
+{
 	uint32 x, y, y1, y2, yx, yx1, yx2, sz = w*((h>>1)<<1);
 	uint32 wy = w<<1, wy1 = (w>>1) + (w&1), wy2 = (w>>1), wx = ((w>>1)<<1);
 	int tmp[4], tm;
@@ -381,7 +427,7 @@ void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps){
 	int16 *tmp;
 	img->w = w; img->h = h;
 	img->p = (int16 *)calloc(w*h, sizeof(int16));
-
+	// For test only
 	img->d.w = w; img->d.h = h;
 	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
 

@@ -28,6 +28,8 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
+void prediction_encoder(int16 *in, int16 *out, uint32 w, uint32 h);
+void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h);
 
 //New interface
 void 	image_init			(Image *im, uint32 width, uint32 height, uint32 bpp, uint32 steps);
