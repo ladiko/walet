@@ -74,6 +74,8 @@ uint32 	frame_match			(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc);
 void 	frame_compress		(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
 void 	frame_decompress	(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
 
+void 	frame_predict_subband(GOP *g, uint32 fn, WaletConfig *wc);
+void 	frame_range			(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size);
 
 void 	frame_test			(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);
 

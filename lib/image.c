@@ -18,9 +18,33 @@
 #define lim(max,min, x)  	((x) > max ? max :((x) < min ? min : (x)))
 #define max(x, m) 			(((x) > m) ? (m) : (x))
 
-void prediction_encoder(int16 *in, int16 *out, uint32 w, uint32 h)
+void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 {
 	uint32 x, y=1, yw, yx, g[3];
+	int16 *l0, *l1, *tm;
+	l0 = buff; l1 = &buff[w];
+
+	for(x=0; x < w; x++) l0[x] = in[x];
+	out[0] = l0[0];
+	for(x=1; x < w; x++){
+		out[x] = l0[x] - l0[x-1];
+	}
+	for(y=1; y < h; y++){
+		yw = y*w;
+		for(x=0; x < w; x++) l1[x] = in[yw + x];
+		out[yw] = l1[0] - l0[0];
+		for(x=1; x < w; x++){
+			yx = yw + x;
+			//JPEG-LS prediction
+			if(l0[x-1] > l0[x] && l0[x-1] > l1[x-1]) out[yx] = l1[x] - (l0[x] > l1[x-1] ? l1[x-1] : l0[x]);
+			else if(l0[x-1] < l0[x] && l0[x-1] < l1[x-1]) out[yx] = l1[x] - (l0[x] > l1[x-1] ? l0[x] : l1[x-1]);
+			else out[yx] = l1[x] - (l1[x-1] + l0[x] - l0[x-1]);
+			//out[yx] = abs(l0[x] - l0[x-1]) > abs(l1[x-1] - l0[x-1]) ? l1[x] - l0[x] : l1[x] - l1[x-1];
+		}
+		tm = l0; l0 = l1; l1 = tm;
+	}
+
+	/*
 	out[0] = in[0];
 	for(x=1; x < w; x++){
 		out[x] = in[x] - in[x-1];
@@ -34,19 +58,10 @@ void prediction_encoder(int16 *in, int16 *out, uint32 w, uint32 h)
 			if(in[yx-1-w] > in[yx-w] && in[yx-1-w] > in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-1] : in[yx-w]);
 			else if(in[yx-1-w] < in[yx-w] && in[yx-1-w] < in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-w] : in[yx-1]);
 			else out[yx] = in[yx] - (in[yx-1] + in[yx-w] - in[yx-1-w]);
-			/*
-			g[0] = abs(in[yx-w] - in[yx-1-w]);
-			g[1] = abs(in[yx-1] - in[yx-1-w]);
-			g[2] = abs(in[yx-w] - in[yx-1]);
-
-			if(g[0] >= g[1] && g[0] >= g[2]) out[yx] = in[yx] - in[yx-w];
-			else if(g[1] > g[0] && g[1] >= g[2]) out[yx] = in[yx] - in[yx-1];
-			else out[yx] = in[yx] - in[yx-1-w];
-			*/
 			//out[yx] = abs(in[yx-w] - in[yx-1-w]) > abs(in[yx-1] - in[yx-1-w]) ? in[yx] - in[yx-w] : in[yx] - in[yx-1];
-			//if(y == h-1) printf("%d ", yx);
 		}
 	}
+	*/
 }
 
 void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
@@ -61,7 +76,11 @@ void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
 		out[yw] = in[yw] + out[yw-w];
 		for(x=1; x < w; x++){
 			yx = yw + x;
-			out[yx] = abs(out[yx-w] - out[yx-1-w]) > abs(out[yx-1] - out[yx-1-w]) ? in[yx] + out[yx-w] : in[yx] + out[yx-1];
+			//JPEG-LS prediction
+			if(out[yx-1-w] > out[yx-w] && out[yx-1-w] > out[yx-1]) out[yx] = in[yx] + (out[yx-w] > out[yx-1] ? out[yx-1] : out[yx-w]);
+			else if(out[yx-1-w] < out[yx-w] && out[yx-1-w] < out[yx-1]) out[yx] = in[yx] + (out[yx-w] > out[yx-1] ? out[yx-w] : out[yx-1]);
+			else out[yx] = in[yx] + (out[yx-1] + out[yx-w] - out[yx-1-w]);
+			//out[yx] = abs(out[yx-w] - out[yx-1-w]) > abs(out[yx-1] - out[yx-1-w]) ? in[yx] + out[yx-w] : in[yx] + out[yx-1];
 		}
 	}
 }
@@ -939,6 +958,52 @@ void image_median_filter(Image *im, uint8 *buf){
 
 	filter_median(im->p, (int16*)buf, im->w, im->h);
 }
+
+void image_predict_subband(Image *im, uint16 *buf, uint32 steps)
+{
+	int i, j, k, sz;
+
+	for(i=steps-1; i+1; i--){
+		for(j = (i == steps-1) ? 0 : 1; j < 4; j++) {
+			prediction_encoder(im->l[i].s[j].pic, im->l[i].s[j].pic, buf, im->l[i].s[j].w, im->l[i].s[j].h);
+			sz = im->l[i].s[j].w, im->l[i].s[j].h;
+			for(k=0; k < sz; k++) im->l[i].s[j].pic[k] = buf[k];
+		}
+	}
+}
+
+uint32 image_range(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt){
+	double e;
+	int i, j, k, sq, half = 1<<(bpp), sz = 1<<(bpp+1);
+	uint32 *dist, size;
+	int *q = ibuf;
+	for(j=0; j < sz; j++) q[j] = j-half;
+
+	sq = im->w*im->h;
+	e = entropy(im->p, (uint32*)buf, im->w, im->h, bpp+1);
+	dist = (uint32*)buf;
+	buf = &buf[(1<<(bpp+1))*sizeof(uint32)];
+	//printf("l[%d].s[%d] a_bits = %d q_bits = %d\n",i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits);
+	switch(rt){
+		case(ADAP):{
+			size = range_encoder_ad(im->p, sq, bpp, bpp, buf, q, dist);
+			break; }
+		case(NADAP):{
+			size = range_encoder(im->p, sq, bpp, bpp, buf, q, dist, &ibuf[1<<(bpp+1)]);
+			break; }
+		case(FAST):{
+			size = range_encoder_fast(im->p, sq, bpp, bpp, buf, q, dist, &ibuf[1<<(bpp+1)]);
+			break; }
+		default:{
+		printf("Don't support %d range coder type\n", rt);
+		return; }
+	}
+	//size1 = range_encoder(im->l[i].s[j].pic, sq, im->l[i].s[j].a_bits, im->l[i].s[j].q_bits, &buf[size], q, (uint32*)&ibuf[1<<(bpp+2)]);
+	printf("bits = %d comp = %d decom = %d entropy = %f real = %f\n", bpp, size, sq, e, ((float)(size*bpp)/(float)sq));
+	return size;
+}
+
+
 
 /**	\brief Make block structure from subband.
 	\param img	 		The pointer to input image structure.

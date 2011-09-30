@@ -182,7 +182,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_bayer_draw(gw->gop.frames[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->gop.frames[0].d.w, gw->gop.frames[0].d.h, gw->wc.bg);
 		gtk_widget_queue_draw(gw->drawingarea[1]);
 
-	}else if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".ppm")){
+	}/*else if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".ppm")){
 		printf("Open %s file\n", gw->filename_open);
 		nf++;
 
@@ -222,7 +222,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		gtk_widget_queue_draw(gw->drawingarea[nf+1]);
 		//free(img);
 
-	} else {
+	} */else {
 		//printf("Can't open file %s\n", gw->filename_open);
 		printf("Open %s file\n", gw->filename_open);
 		if(gw->gst_init){
@@ -417,9 +417,12 @@ void on_idwt_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_fill_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	if(&gw->gop == NULL ) return;
+	//frame_predict_subband(&gw->gop, gw->gop.cur_gop_frame, &gw->wc);
+
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_fill_subb(&gw->gop, gw->gop.cur_gop_frame, &gw->wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+
 	printf("Fill subband time = %f\n",(double)(end-start)/1000000.);
 }
 
@@ -459,13 +462,15 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	uint32 size;
 	if(&gw->gop == NULL ) return;
+
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_range_encode(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
+	//frame_range_encode(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
+	frame_range(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 
 	printf("Frame size  = %d Encoded frame size = %d compess = %f bits_per_pix = %f time = %f\n",
 			gw->wc.w*gw->wc.h, size, (double)(gw->wc.w*gw->wc.h)/(double)size,
-			(double)gw->wc.bg*size/(double)gw->wc.w*gw->wc.h, (double)(end-start)/1000000.);
+			(double)(gw->wc.bpp*size)/(double)(gw->wc.w*gw->wc.h), (double)(end-start)/1000000.);
 }
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -494,7 +499,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 	Frame *f0 = &gw->gop.frames[0];
 	int i;
 	//if(&gw->gop == NULL ) return;
-	prediction_encoder(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h);
+	prediction_encoder(f0->img[0].p, f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 
 	new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
 	utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
@@ -502,7 +507,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	prediction_decoder(f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 
-	printf("Bits per pixel = %f\n", entropy(f0->img[0].d.pic, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp+1));
+	//printf("Bits per pixel = %f\n", entropy(f0->img[0].d.pic, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp+1));
 
 	new_buffer (gw->orig[2], f0->img[0].w, f0->img[0].h);
 	utils_grey_draw((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->img[0].w, f0->img[0].h, 128);

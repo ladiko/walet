@@ -28,7 +28,7 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-void prediction_encoder(int16 *in, int16 *out, uint32 w, uint32 h);
+void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
 void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h);
 
 //New interface
@@ -43,7 +43,8 @@ uint32 	image_range_encode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int
 uint32 	image_range_decode	(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);
 void 	image_median_filter	(Image *im, uint8 *buf);
 void 	image_suband_to_block(Image *img, int16 *out, uint32 steps);
-
+void 	image_predict_subband(Image *im, uint16 *buf, uint32 steps);
+uint32 	image_range			(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, RangeType rt);
 
 void dwt_53_2d_one(int16 *in, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
 void idwt_53_2d_one(int16 *out, int16 *ll, int16 *hl, int16 *lh, int16 *hh, int16 *buf, const uint32 w, const uint32 h);
