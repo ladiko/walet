@@ -108,7 +108,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.rates		= 0;		/// Frame rates
 		gw->wc.comp			= 20;		/// Compression in times to original image if 1 - lossless 0 - without any compression.
 		gw->wc.fb			= FR_5_3;	/// Filters bank for wavelet transform.
-		gw->wc.rt			= NADAP;		/// Range coder type
+		gw->wc.rt			= ADAP;		/// Range coder type
 		gw->wc.mv			= 12;		/// The motion vector search in pixeles.
 	}
 	//printf("%d\n", strncmp("video/x-raw-rgb", gst_caps_to_string(caps),15));
@@ -149,6 +149,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
 			utils_grey_draw(f0->img[i].p, gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), f0->img[i].w, f0->img[i].h, 128);
 			gtk_widget_queue_draw(gw->drawingarea[i+1]);
+			printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
 		}
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 		clock_t start, end;

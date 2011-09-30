@@ -121,9 +121,9 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == CS420) {
 			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 			//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-			//prediction_encoder(f->img[0].d.pic, f->img[0].p, f->img[0].w, f->img[0].h);
-			//prediction_encoder(f->img[1].d.pic, f->img[1].p, f->img[1].w, f->img[1].h);
-			//prediction_encoder(f->img[2].d.pic, f->img[2].p, f->img[2].w, f->img[2].h);
+			prediction_encoder(f->img[0].p, f->img[0].p, (int16*)g->buf, f->img[0].w, f->img[0].h);
+			prediction_encoder(f->img[1].p, f->img[1].p, (int16*)g->buf, f->img[1].w, f->img[1].h);
+			prediction_encoder(f->img[2].p, f->img[2].p, (int16*)g->buf, f->img[2].w, f->img[2].h);
 		} else if(wc->ccol == RGB){
 			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
@@ -139,7 +139,11 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == CS444) {
 			utils_RGB24_to_YUV444(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
 		} else if(wc->ccol == CS420) {
-			utils_RGB24_to_YUV420(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
+			//utils_RGB24_to_YUV420(y, f->img[0].p, f->img[1].p, f->img[2].p, f->img[0].w, f->img[0].h, wc->bpp, 1);
+			utils_RGB24_to_YUV420(y, f->img[0].d.pic, f->img[1].d.pic, f->img[2].d.pic, f->img[0].w, f->img[0].h, wc->bpp, 1);
+			//prediction_encoder(f->img[0].d.pic, f->img[0].p, f->img[0].w, f->img[0].h);
+			//prediction_encoder(f->img[1].d.pic, f->img[1].p, f->img[1].w, f->img[1].h);
+			//prediction_encoder(f->img[2].d.pic, f->img[2].p, f->img[2].w, f->img[2].h);
 		}
 	}
 	f->state = FRAME_COPY;
@@ -577,6 +581,18 @@ uint32 frame_range_decode(GOP *g, uint32 fn, WaletConfig *wc, uint32 *size)
 	} else return 0;
 }
 
+void frame_predict_subband(GOP *g, uint32 fn, WaletConfig *wc)
+{
+	uint32 i;
+	Frame *f = &g->frames[fn];
+
+	if(wc->ccol == GREY) image_predict_subband(&f->img[0], (int16*)g->buf, wc->steps);
+	else if(wc->ccol == BAYER)
+		for(i=0; i < 3; i++)  image_predict_subband(&f->img[i], (int16*)g->buf, wc->steps);
+	else
+		for(i=0; i < 3; i++)  image_predict_subband(&f->img[i], (int16*)g->buf, wc->steps);
+}
+
 /**	\brief	Median filter.
 	\param	g		The GOP structure.
 	\param	fn		The frame number.
@@ -632,6 +648,31 @@ uint32 frame_fill_hist(GOP *g, uint32 fn, WaletConfig *wc)
 		return 1;
 	} else return 0;
 }
+
+void frame_range(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
+{
+	uint32 i;
+	Frame *f = &g->frames[fn];
+	*size = 0;
+
+	*size = 0;
+	if(wc->ccol == GREY) {
+		f->img[0].isz = image_range(&f->img[0], wc->steps, wc->bpp, g->buf, g->ibuf, wc->rt);
+		*size = f->img[0].isz;
+	}
+	else if(wc->ccol == BAYER)
+		for(i=0; i < 4; i++)  {
+			printf("image %d\n", i);
+			f->img[i].isz = image_range(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+			*size += f->img[i].isz;
+		}
+	else
+		for(i=0; i < 3; i++)  {
+			f->img[i].isz = image_range(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+			*size += f->img[i].isz;
+		}
+}
+
 
 /**	\brief	Make white balance and gamma correction of the frame (for bayer ccol space only).
 	\param	g		The GOP structure.
