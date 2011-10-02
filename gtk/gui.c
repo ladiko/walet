@@ -497,22 +497,40 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	Frame *f0 = &gw->gop.frames[0];
-	int i;
+	int i, sz = f0->img[0].w*f0->img[0].h;
 	//if(&gw->gop == NULL ) return;
-	prediction_encoder(f0->img[0].p, f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
+	resize_down_2x(f0->img[0].p, f0->img[0].l[0].s[0].pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 
+	int w = (f0->img[0].w>>1) + (f0->img[0].w&1), h = (f0->img[0].h>>1) + (f0->img[0].h&1);
+	new_buffer (gw->orig[2], w, h);
+	utils_grey_draw(f0->img[0].l[0].s[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 128);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
+
+	resize_up_2x( f0->img[0].l[0].s[0].pic, f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 	new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
 	utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
-	prediction_decoder(f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
+	for(i=0; i < sz; i++) ((int16*)gw->gop.buf)[i] = f0->img[0].p[i] - f0->img[0].d.pic[i];
+	new_buffer (gw->orig[0], f0->img[0].w, f0->img[0].h);
+	utils_grey_draw((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].w, f0->img[0].h, 128);
+	gtk_widget_queue_draw(gw->drawingarea[0]);
+
+	printf("Bits per pixel = %f\n", entropy((int16*)gw->gop.buf, (uint32*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h, gw->wc.bpp+1));
+	//prediction_encoder(f0->img[0].p, f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
+
+	//new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
+	//utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
+	//gtk_widget_queue_draw(gw->drawingarea[3]);
+
+	//prediction_decoder(f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 
 	//printf("Bits per pixel = %f\n", entropy(f0->img[0].d.pic, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp+1));
 
-	new_buffer (gw->orig[2], f0->img[0].w, f0->img[0].h);
-	utils_grey_draw((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->img[0].w, f0->img[0].h, 128);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
-	printf("APE = %f\n",utils_ape_16(f0->img[0].p, (int16*)gw->gop.buf, f0->img[0].w*f0->img[0].h, 1));
+	//new_buffer (gw->orig[2], f0->img[0].w, f0->img[0].h);
+	//utils_grey_draw((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->img[0].w, f0->img[0].h, 128);
+	//gtk_widget_queue_draw(gw->drawingarea[2]);
+	//printf("APE = %f\n",utils_ape_16(f0->img[0].p, (int16*)gw->gop.buf, f0->img[0].w*f0->img[0].h, 1));
 }
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)

@@ -31,12 +31,20 @@ typedef enum {
  */
 typedef enum {
 	CS420,	
-  	CS422,	
   	CS444,
   	RGB,
   	GREY,
   	BAYER,
 } ColorSpace;
+
+/**
+	\brief The Decorrelation  method.
+ */
+typedef enum {
+	WAVELET,
+	PREDICT,
+  	RESIZE,
+} Decorrelation;
 
 /**
 	\brief The gamma correction method.

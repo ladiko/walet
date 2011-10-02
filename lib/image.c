@@ -18,6 +18,13 @@
 #define lim(max,min, x)  	((x) > max ? max :((x) < min ? min : (x)))
 #define max(x, m) 			(((x) > m) ? (m) : (x))
 
+/*	\brief Prediction encoder.
+	\param in	 		The input image.
+	\param out	 		The output image.
+	\param buff	 		The temporary buffer, should include 2 rows.
+	\param w 			The image width.
+	\param h 			The image height.
+*/
 void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 {
 	uint32 x, y=1, yw, yx, g[3];
@@ -43,7 +50,6 @@ void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 		}
 		tm = l0; l0 = l1; l1 = tm;
 	}
-
 	/*
 	out[0] = in[0];
 	for(x=1; x < w; x++){
@@ -64,6 +70,12 @@ void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 	*/
 }
 
+/*	\brief Prediction decoder.
+	\param in	 		The input image.
+	\param out	 		The output image.
+	\param w 			The image width.
+	\param h 			The image height.
+*/
 void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
 {
 	int x, y, yw, yx;
@@ -81,6 +93,67 @@ void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
 			else if(out[yx-1-w] < out[yx-w] && out[yx-1-w] < out[yx-1]) out[yx] = in[yx] + (out[yx-w] > out[yx-1] ? out[yx-w] : out[yx-1]);
 			else out[yx] = in[yx] + (out[yx-1] + out[yx-w] - out[yx-1-w]);
 			//out[yx] = abs(out[yx-w] - out[yx-1-w]) > abs(out[yx-1] - out[yx-1-w]) ? in[yx] + out[yx-w] : in[yx] + out[yx-1];
+		}
+	}
+}
+
+/*	\brief Resize image down to two times on x and y.
+	\param in	 		The input image.
+	\param out	 		The output image.
+	\param buff	 		The temporary buffer, should include 1 row.
+	\param w 			The image width.
+	\param h 			The image height.
+*/
+void resize_down_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
+{
+	int x, y, yw, yx, yw1, w1 = w>>1, w2 = w1 + (w&1), h1 = h>>1, h2 = h1 + (h&1);
+	int16 *l = buff;
+
+	for(y=0; y < h2; y++){
+		yw = y*w2;
+		yw1 = (y<<1)*w;
+		for(x=0; x < w1; x++) l[x] = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+		if(w&1) l[x] = in[yw1 + (x<<1)]<<1;
+		yw1 = (y==h2-1 && (y&1)) ? (y<<1)*w : ((y<<1)+1)*w;
+		for(x=0; x < w1; x++) l[x] += in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+		if(w&1) l[x] = +in[yw1 + (x<<1)]<<1;
+
+		for(x=0; x < w2; x++){
+			yx = yw + x;
+			out[yx] = l[x]>>2;
+		}
+	}
+}
+
+/*	\brief Resize image up to two times on x and y (bilinear interpolation).
+	\param in	 		The input image.
+	\param out	 		The output image.
+	\param buff	 		The temporary buffer, should include 1 row.
+	\param w 			The width of bigger image.
+	\param h 			The height of bigger image.
+*/
+void resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
+{
+	int x, x2, y, yw, yx, yw1, w2 = (w>>1) + (w&1);
+	int16 *l0 = buff, *l1 = &buff[w2+2], *l2 = &buff[(w2+2)<<1], *tm;
+
+	l0[0] = in[0]; for(x=0; x < w2; x++) l0[x+1] = in[x]; l0[x+1] = in[x-1];
+	l1[0] = in[0]; for(x=0; x < w2; x++) l1[x+1] = in[x]; l1[x+1] = in[x-1];
+	for(y=0; y < h; y++){
+		yw = y*w;
+		if(!(y&1)) {
+			if(y > 0) { tm = l0; l0 = l1; l1 = l2; l2 = tm; }
+			yw1 = (y == h-1) ? (y>>1)*w2 : ((y>>1)+1)*w2;
+			l2[0] = in[yw1]; for(x=0; x < w2; x++) l2[x+1] = in[x+yw1]; l2[x+1] = in[x-1+yw1];
+			//printf("y = %d yw1 = %d \n", y, yw1);
+		}
+		for(x=0; x < w; x++){
+			yx = yw + x;
+			x2 = (x>>1) + 1;
+			if(!(x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l0[x2]*3 + l0[x2-1])>>4;
+			else if ((x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2+1]*3 + l0[x2]*3 + l0[x2+1])>>4;
+			else if (!(x&1) && (y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l2[x2]*3 + l2[x2-1])>>4;
+			else out[yx] = (l1[x2]*9 + l1[x2+1]*3 + l2[x2]*3 + l2[x2+1])>>4;
 		}
 	}
 }
