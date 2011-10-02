@@ -44,11 +44,6 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 		image_init(&f->img[0], w,    h,    wc->bpp, wc->steps);
 		image_init(&f->img[1], w>>1, h>>1, wc->bpp, wc->steps);
 		image_init(&f->img[2], w>>1, h>>1, wc->bpp, wc->steps);
-	} else if (wc->ccol == CS422){
-	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w,    h, wc->bpp, wc->steps);
-		image_init(&f->img[1], w>>1, h, wc->bpp, wc->steps);
-		image_init(&f->img[2], w>>1, h, wc->bpp, wc->steps);
 	} else if (wc->ccol == CS444 || wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
@@ -127,7 +122,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == RGB){
 			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
-	} else if(wc->icol == CS444 || wc->icol == CS422 || wc->icol == CS420){
+	} else if(wc->icol == CS444 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
 		utils_image_copy(u, f->img[1].p,  f->img[1].w, f->img[1].h, wc->bpp);
 		utils_image_copy(v, f->img[2].p,  f->img[2].w, f->img[2].h, wc->bpp);
@@ -774,7 +769,7 @@ uint32 frame_write(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
 
     if(wc->ccol == BAYER) {
     	ic = 4; sz = (wc->steps*3 + 1)*ic; }
-    else if(wc->ccol == CS420 || wc->ccol == CS422 ||wc->ccol == CS444){
+    else if(wc->ccol == CS420 || wc->ccol == CS444){
     	ic = 3; sz = (wc->steps*3 + 1)*ic; }
     else {
     	ic = 1; sz =  wc->steps*3 + 1; }
@@ -838,7 +833,7 @@ uint32 frame_read(GOP *g, uint32 fn, WaletConfig *wc, FILE *wl)
 
     if(wc->ccol == BAYER) {
     	ic = 4; sz = (wc->steps*3 + 1)*ic; }
-    else if(wc->ccol == CS420 || wc->ccol == CS422 ||wc->ccol == CS444){
+    else if(wc->ccol == CS420 || wc->ccol == CS444){
     	ic = 3; sz = (wc->steps*3 + 1)*ic; }
     else {
     	ic = 1; sz =  wc->steps*3 + 1; }
