@@ -2,6 +2,45 @@
 #include <stdio.h>
 #include <math.h>
 
+void seg_grad16(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 th)
+{
+	/// | |x| |      | | | |      |x| | |      | | |x|
+	/// | |x| |      |x|x|x|      | |x| |      | |x| |
+	/// | |x| |      | | | |      | | |x|      |x| | |
+	///  g[2]         g[0]         g[1]         g[3]
+	/// Direction
+	///   n=0          n=2         n=3          n=1
+	/// | | | |      | ||| |      | | |/|      |\| | |
+	/// |-|-|-|      | ||| |      | |/| |      | |\| |
+	/// | | | |      | ||| |      |/| | |      | | |\|
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
+	uint8 max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+			//if(y == w)
+			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
+			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
+			//max = g[0]; in = 2;
+			//if(max < g[1]) { max = g[1]; in = 3; }
+			//if(max < g[2]) { max = g[2]; in = 0; }
+			//if(max < g[3]) { max = g[3]; in = 1; }
+			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			//max = max > 252 ? 252 : max;
+			//img1[yx] = max;
+			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
+			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			//img1[yx] = max>>th ? max : 0;
+			//printf("yx = %d max = %d\n", yx, max);
+		}
+	}
+}
+
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|

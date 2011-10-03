@@ -150,6 +150,7 @@ void resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 		for(x=0; x < w; x++){
 			yx = yw + x;
 			x2 = (x>>1) + 1;
+			//out[yx] = l1[x2];
 			if(!(x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l0[x2]*3 + l0[x2-1])>>4;
 			else if ((x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2+1]*3 + l0[x2]*3 + l0[x2+1])>>4;
 			else if (!(x&1) && (y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l2[x2]*3 + l2[x2-1])>>4;
