@@ -18,6 +18,7 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
+void seg_grad16(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 th);
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_local_max( Pixel *pix,  uint32 *npix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h);
