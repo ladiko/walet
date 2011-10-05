@@ -2,17 +2,83 @@
 #include <stdio.h>
 #include <math.h>
 
+
+//Mean-shift 3d algorithm
+
+uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, uint32 r)
+{
+	int x, y, z, zy, yx, xyz, w2 = d->x*d->y;
+	int xm = 0, ym = 0, zm = 0, ms = 0;
+	for(z=-r; z <= r; z++){
+		zy = (z + p->z)*w2;
+		for(y=-r; y <= r; y++){
+			yx = zy + (y + p->y)*d->x;
+			for(x=-r; x <= r; x++){
+				xyz = yx + x + p->x;
+				if(i3d[xyz]){
+					ms += i3d[xyz];
+					xm += i3d[xyz]*x;
+					ym += i3d[xyz]*y;
+					zm += i3d[xyz]*z;
+				}
+			}
+		}
+	}
+	p->x = xm/ms; p->y = ym/ms; p->z = zm/ms;
+}
+
+void fill_3d_array(int16 *x, int16 *y, int16 *z, uint32 w, uint32 h, uint32 *i3d, uint32 bpp, p3d *q)
+{
+	int i, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w*(d>>q->y), size = w2*(d>>q->z);
+	memset(i3d, 0, size*sizeof(uint32));
+	for(i=0; i < sz; i++)  i3d[(z[i]>>q->z)*w2 + (y[i]>>q->y)*w1 + (x[i]>>q->x)]++;
+}
+
+void find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, uint32 *buf)
+{
+	int i, j, x, y, z, zy, yx, xyz, val, w2, sz = 1<<bpp;
+	uint32 mask = 0x80000000;
+	p3d p, d, q;
+
+	q.x = 3; q.y = 2; q.z = 3;
+	d.x = sz>>q.x; d.y = sz>>q.y; d.z = sz>>q.z;
+	w2 = d.x*d.y;
+
+	fill_3d_array(r, g, b, w, h, i3d, bpp, &q);
+
+	for(z=0; z < d.z; z++){
+		zy = z*w2;
+		for(y=0; y < d.y; y++){
+			yx = zy + y*d.x;
+			for(x=0; x < d.x; x++){
+				xyz = yx + x;
+				if(i3d[xyz] && !(i3d[xyz]&mask)){
+					p.x = x; p.y = y; p.z = z;
+					buf[0] = xyz; buf[1] = 0;
+					for(i=1; buf[i-1] != buf[i]; i++){
+						center_mass(i3d, &d, &p, rd);
+						buf[i] = p.z*w2 + p.y*d.x + p.x;
+						i3d[buf[i]] |= mask;
+					}
+					val = (p.x<<11) + (p.y<<5) + p.z;
+					for(j=0; j <= i; j++) lut[buf[j]] = val;
+				}
+			}
+		}
+	}
+}
+
 void seg_grad16(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 th)
 {
-	/// | |x| |      | | | |      |x| | |      | | |x|
-	/// | |x| |      |x|x|x|      | |x| |      | |x| |
-	/// | |x| |      | | | |      | | |x|      |x| | |
-	///  g[2]         g[0]         g[1]         g[3]
-	/// Direction
-	///   n=0          n=2         n=3          n=1
-	/// | | | |      | ||| |      | | |/|      |\| | |
-	/// |-|-|-|      | ||| |      | |/| |      | |\| |
-	/// | | | |      | ||| |      |/| | |      | | |\|
+/// | |x| |      | | | |      |x| | |      | | |x|
+/// | |x| |      |x|x|x|      | |x| |      | |x| |
+/// | |x| |      | | | |      | | |x|      |x| | |
+///  g[2]         g[0]         g[1]         g[3]
+/// Direction
+///   n=0          n=2         n=3          n=1
+/// | | | |      | ||| |      | | |/|      |\| | |
+/// |-|-|-|      | ||| |      | |/| |      | |\| |
+/// | | | |      | ||| |      |/| | |      | | |\|
 	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
 	uint8 max, in;
 	uint32 g[4];

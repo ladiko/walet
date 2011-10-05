@@ -337,6 +337,12 @@ typedef struct{
 	Pic8u	V;			//V image for 420 422 444
 }YUV8;
 
+typedef struct{
+	int	x;
+	int	y;
+	int	z;
+} p3d;
+
 
 #define rnd(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
 #define ruc(x)	((x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ))
