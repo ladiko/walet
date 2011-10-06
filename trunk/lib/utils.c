@@ -2266,8 +2266,8 @@ double entropy(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
 
 	for(i=0; i < size; i++) buf[i] = 0;
 	for(i=0; i < sz; i++) buf[img[i]+half]++;
-	for(i=0; i < size; i++) printf("%d ",  buf[i]);
-	printf("\n");
+	//for(i=0; i < size; i++) printf("%d ",  buf[i]);
+	//printf("\n");
 
 	for(i=0; i < size; i++){
 		if(buf[i]) s -= buf[i]*(log2(buf[i]) - s0);

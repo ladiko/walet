@@ -5,16 +5,29 @@
 
 //Mean-shift 3d algorithm
 
-uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, uint32 r)
+uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, int r)
 {
 	int x, y, z, zy, yx, xyz, w2 = d->x*d->y;
 	int xm = 0, ym = 0, zm = 0, ms = 0;
-	for(z=-r; z <= r; z++){
-		zy = (z + p->z)*w2;
-		for(y=-r; y <= r; y++){
-			yx = zy + (y + p->y)*d->x;
-			for(x=-r; x <= r; x++){
-				xyz = yx + x + p->x;
+	p3d b, e;
+
+	b.x = (p->x - r) < 0 ? 0 : p->x - r;
+	e.x = (p->x + r) > (d->x - 1) ? d->x - 1 : p->x + r;
+	b.y = (p->y - r) < 0 ? 0 : p->y - r;
+	e.y = (p->y + r) > (d->y - 1) ? d->y - 1 : p->y + r;
+	b.z = (p->z - r) < 0 ? 0 : p->z - r;
+	e.z = (p->z + r) > (d->z - 1) ? d->z - 1 : p->z + r;
+	//printf("r = %d x = %d y = %d z = %d\n", r, p->x, p->y, p->z);
+
+	for(z=b.z; z <= e.z; z++){
+		zy = z*w2;
+		//printf("zy = %d\n", zy);
+		for(y=b.y; y <= e.y; y++){
+			yx = zy + y*d->x;
+			//printf("yx = %d\n", yx);
+			for(x=b.x; x <= e.x; x++){
+				xyz = yx + x;
+				//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
 				if(i3d[xyz]){
 					ms += i3d[xyz];
 					xm += i3d[xyz]*x;
@@ -24,43 +37,72 @@ uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, uint32 r)
 			}
 		}
 	}
+	printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
 	p->x = xm/ms; p->y = ym/ms; p->z = zm/ms;
 }
 
-void fill_3d_array(int16 *x, int16 *y, int16 *z, uint32 w, uint32 h, uint32 *i3d, uint32 bpp, p3d *q)
+void fill_3d_array(int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 *i3d, uint32 bpp, p3d *q)
 {
-	int i, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w*(d>>q->y), size = w2*(d>>q->z);
+	int i, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w1*(d>>q->y), size = w2*(d>>q->z);
 	memset(i3d, 0, size*sizeof(uint32));
-	for(i=0; i < sz; i++)  i3d[(z[i]>>q->z)*w2 + (y[i]>>q->y)*w1 + (x[i]>>q->x)]++;
+	for(i=0; i < sz; i++)  i3d[(b[i]>>q->z)*w2 + (g[i]>>q->y)*w1 + (r[i]>>q->x)]++;
+	/*
+	int x, y, z;
+	for(z=0; z < 1<<(bpp-q->z); z++){
+		for(y=0; y < 1<<(bpp-q->y); y++){
+			for(x=0; x < 1<<(bpp-q->x); x++){
+				printf("%4d ", i3d[w2*z + w1*y + x]);
+			}
+			printf("\n");
+		}
+		printf("\n\n");
+	}*/
 }
 
-void find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, uint32 *buf)
+void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q, uint32 *buf)
 {
 	int i, j, x, y, z, zy, yx, xyz, val, w2, sz = 1<<bpp;
-	uint32 mask = 0x80000000;
-	p3d p, d, q;
+	uint32 mask = 0x80000000, max;
+	p3d p, d;
+	int k = 0;
 
-	q.x = 3; q.y = 2; q.z = 3;
-	d.x = sz>>q.x; d.y = sz>>q.y; d.z = sz>>q.z;
-	w2 = d.x*d.y;
+	d.x = sz>>q->x; d.y = sz>>q->y; d.z = sz>>q->z;
+	w2 = d.x*d.y; max = w2*d.z  + 1;
 
-	fill_3d_array(r, g, b, w, h, i3d, bpp, &q);
+	memset(lut, 0, w2*d.z*sizeof(uint16));
+
+	fill_3d_array(r, g, b, w, h, i3d, bpp, q);
+	printf("Finesh fill_3d_array\n");
+	printf("d.x = %d d.y = %d d.z = %d \n", d.x, d.y, d.z);
 
 	for(z=0; z < d.z; z++){
 		zy = z*w2;
+		//printf("zy = %d\n", zy);
 		for(y=0; y < d.y; y++){
 			yx = zy + y*d.x;
+			//printf("yx = %d\n", yx);
 			for(x=0; x < d.x; x++){
 				xyz = yx + x;
 				if(i3d[xyz] && !(i3d[xyz]&mask)){
 					p.x = x; p.y = y; p.z = z;
-					buf[0] = xyz; buf[1] = 0;
+					printf("i3d[%d] = %d x = %d y = %d z = %d \n", xyz, i3d[xyz], p.x, p.y, p.z);
+					buf[0] = xyz; buf[1] = max;
+					val = 0;
 					for(i=1; buf[i-1] != buf[i]; i++){
 						center_mass(i3d, &d, &p, rd);
 						buf[i] = p.z*w2 + p.y*d.x + p.x;
+						printf("i3d[%d] = %d x = %d y = %d z = %d \n", buf[i], i3d[buf[i]], p.x, p.y, p.z);
+						if(i3d[buf[i]]&mask) {
+							val = lut[buf[i]];
+							//p.x = lut[buf[i]]&0xF800;
+							//p.y = lut[buf[i]]&0x7E0;
+							//p.z = lut[buf[i]]&0x1F;
+							break;
+						}
 						i3d[buf[i]] |= mask;
 					}
-					val = (p.x<<11) + (p.y<<5) + p.z;
+					if(!val) val = (p.x<<11) + (p.y<<5) + p.z;
+					printf("%d color = %d num = %d\n", k++, val, i);
 					for(j=0; j <= i; j++) lut[buf[j]] = val;
 				}
 			}
