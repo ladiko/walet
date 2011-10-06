@@ -156,7 +156,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol			= BAYER;	/// Input color space
-		gw->wc.ccol			= CS420;	/// Compression color space
+		gw->wc.ccol			= RGB;	/// Compression color space
 		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		walet_encoder_init(&gw->gop, &gw->wc);

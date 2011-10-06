@@ -568,22 +568,26 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	GstStateChangeReturn ret;
 	GstState state;
-	uint8 *buf;
-	uint32 i, j, w, h, npix;
-	Frame *frm[2];
-	//uint32 i , j, sz = (gw->gop.w)*(gw->gop.h), nregs=0, nrows=0, npregs=0, nobjs=0, nprows=0, ncors, fn, w, h, sn;
-	//clock_t start, end;
-	//double time=0., tmp;
-	//struct timeval tv;
-	//Image *im = &gw->gop.frames[fn].img[0];
-	//Frame *frm = &gw->gop.frames[fn];
-	//uint8 *pic, *pic1;
+	uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp;
+	clock_t start, end;
+	double time=0., tmp;
+	struct timeval tv;
+	Frame *fr = &gw->gop.frames[0];
+	int16 *r = fr->img[0].p, *g = fr->img[1].p, *b = fr->img[2].p;
+	p3d q, d;
+	q.x = 3; q.y = 2; q.z = 3;
+	d.x = 1<<(bpp-q.x); d.y = 1<<(bpp-q.y); d.z = 1<<(bpp-q.z);
+	printf("d.x = %d d.y = %d d.z = %d \n", d.x, d.y, d.z);
 
-	w = gw->gop.frames[0].Y.w;
-	h = gw->gop.frames[0].Y.h;
+	uint32 *i3d = (uint32*)gw->gop.buf;
+	uint16 *lut = (uint16*)&gw->gop.buf[d.x*d.y*d.z*sizeof(uint32)];
+	uint32 *buf = (uint32*)&gw->gop.buf[d.x*d.y*d.z*(sizeof(uint32)+sizeof(uint16))];
+
+	seg_find_clusters(i3d, lut, r, g, b, w, h, 2, bpp, &q, buf);
+
 	// Regions segmentation
-	printf("nf = %d\n", nf);
-
+	//printf("nf = %d\n", nf);
+	/*
 	if(nf){
 		for(i=0; i<= nf; i++) {
 			frm[i] = &gw->gop.frames[i];
@@ -610,10 +614,6 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	} else {
 		frm[0] = &gw->gop.frames[0];
 		frame_segmetation(&gw->gop, 0, &gw->wc);
-		//seg_draw_lines(frm[0]->pixs, npix, frm[0]->line.pic, frm[0]->grad[0].width, frm[0]->grad[0].height);
-		//seg_draw_edges(frm[0]->pixs, frm[0]->edges, frm[0]->nedge , frm[0]->edge.pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0, 0);
-		//seg_draw_pix(frm[0]->pixs, frm[0]->Y[0].pic, frm[0]->grad[0].pic, frm[0]->grad[0].width, frm[0]->grad[0].height, 0);
-
 
 		new_buffer (gw->orig[1], w, h);
 		utils_grey_draw8(frm[0]->Y.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
@@ -634,11 +634,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_grey_draw8(frm[0]->edge.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h, 0);
 		gtk_widget_queue_draw(gw->drawingarea[0]);
 
-		//new_buffer (gw->orig[3], w, h);
-		//utils_grey_draw(gw->gop.frames[1].grad[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h);
-		//gtk_widget_queue_draw(gw->drawingarea[3]);
-
-	}
+	}*/
 }
 
 gboolean on_drawingarea0123_expose_event (GtkWidget *widget, GdkEventExpose *event, GtkWalet *gw)
