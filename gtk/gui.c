@@ -583,7 +583,15 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint16 *lut = (uint16*)&gw->gop.buf[d.x*d.y*d.z*sizeof(uint32)];
 	uint32 *buf = (uint32*)&gw->gop.buf[d.x*d.y*d.z*(sizeof(uint32)+sizeof(uint16))];
 
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	seg_find_clusters(i3d, lut, r, g, b, w, h, 2, bpp, &q, buf);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("seg_find_clusters time = %f\n",(double)(end-start)/1000000.);
+
+	new_buffer (gw->orig[1], w, h);
+	seg_quantization(lut, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), r, g, b, w, h, bpp, &q);
+	gtk_widget_queue_draw(gw->drawingarea[1]);
+
 
 	// Regions segmentation
 	//printf("nf = %d\n", nf);
