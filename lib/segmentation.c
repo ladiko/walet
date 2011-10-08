@@ -7,7 +7,7 @@
 
 uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, int r)
 {
-	int x, y, z, zy, yx, xyz, w2 = d->x*d->y;
+	int x, y, z, zy, yx, xyz, w2 = d->x*d->y, mask = 0x7FFFFFFF;
 	int xm = 0, ym = 0, zm = 0, ms = 0;
 	p3d b, e;
 
@@ -29,23 +29,23 @@ uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, int r)
 				xyz = yx + x;
 				//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
 				if(i3d[xyz]){
-					ms += i3d[xyz];
-					xm += i3d[xyz]*x;
-					ym += i3d[xyz]*y;
-					zm += i3d[xyz]*z;
+					ms += i3d[xyz]&mask;
+					xm += (i3d[xyz]&mask)*x;
+					ym += (i3d[xyz]&mask)*y;
+					zm += (i3d[xyz]&mask)*z;
 				}
 			}
 		}
 	}
-	printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
+	//printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
 	p->x = xm/ms; p->y = ym/ms; p->z = zm/ms;
 }
 
 void fill_3d_array(int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 *i3d, uint32 bpp, p3d *q)
 {
-	int i, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w1*(d>>q->y), size = w2*(d>>q->z);
+	int i, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w1*(d>>q->y), size = w2*(d>>q->z), sh = d>>1;
 	memset(i3d, 0, size*sizeof(uint32));
-	for(i=0; i < sz; i++)  i3d[(b[i]>>q->z)*w2 + (g[i]>>q->y)*w1 + (r[i]>>q->x)]++;
+	for(i=0; i < sz; i++)  i3d[((b[i]+sh)>>q->z)*w2 + ((g[i]+sh)>>q->y)*w1 + ((r[i]+sh)>>q->x)]++;
 	/*
 	int x, y, z;
 	for(z=0; z < 1<<(bpp-q->z); z++){
@@ -62,7 +62,7 @@ void fill_3d_array(int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 *i3d
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q, uint32 *buf)
 {
 	int i, j, x, y, z, zy, yx, xyz, val, w2, sz = 1<<bpp;
-	uint32 mask = 0x80000000, max;
+	uint32 msb = 0x80000000, mask = 0x7FFFFFFF, max;
 	p3d p, d;
 	int k = 0;
 
@@ -83,30 +83,63 @@ void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, u
 			//printf("yx = %d\n", yx);
 			for(x=0; x < d.x; x++){
 				xyz = yx + x;
-				if(i3d[xyz] && !(i3d[xyz]&mask)){
+				if(!(i3d[xyz]&msb) && (i3d[xyz]&mask)){
+					//printf("new\n");
 					p.x = x; p.y = y; p.z = z;
-					printf("i3d[%d] = %d x = %d y = %d z = %d \n", xyz, i3d[xyz], p.x, p.y, p.z);
-					buf[0] = xyz; buf[1] = max;
-					val = 0;
-					for(i=1; buf[i-1] != buf[i]; i++){
+					//printf("i3d[%d] = %d x = %d y = %d z = %d \n", xyz, i3d[xyz]&mask, p.x, p.y, p.z);
+					buf[0] = xyz; //buf[1] = max;
+					val = 0; i = 0;
+					do{
+						i++;
+					//for(i=1; buf[i-1] != buf[i]; i++){
 						center_mass(i3d, &d, &p, rd);
 						buf[i] = p.z*w2 + p.y*d.x + p.x;
-						printf("i3d[%d] = %d x = %d y = %d z = %d \n", buf[i], i3d[buf[i]], p.x, p.y, p.z);
-						if(i3d[buf[i]]&mask) {
+						//printf("i3d[%d] = %d x = %d y = %d z = %d \n", buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
+						if(i3d[buf[i]]&msb) {
 							val = lut[buf[i]];
+							if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
 							//p.x = lut[buf[i]]&0xF800;
 							//p.y = lut[buf[i]]&0x7E0;
 							//p.z = lut[buf[i]]&0x1F;
 							break;
 						}
-						i3d[buf[i]] |= mask;
-					}
+						//i3d[buf[i]] |= msb;
+
+						//if(i > 100) break;
+					} while(buf[i-1] != buf[i]);
 					if(!val) val = (p.x<<11) + (p.y<<5) + p.z;
-					printf("%d color = %d num = %d\n", k++, val, i);
-					for(j=0; j <= i; j++) lut[buf[j]] = val;
+					for(j=0; j <= i; j++) { lut[buf[j]] = val; i3d[buf[j]] |= msb; }
+					k++;
+					//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 				}
 			}
 		}
+	}
+	printf("Colors = %d\n", k-1);
+	uint32 sum=0;
+	for(i=0, k=0; i < w2*d.z; i++) if(lut[i] == i) printf("%d i3d = %d\n", i, i3d[i]&mask);
+
+	for(i=0, k=0; i < w2*d.z; i++) {
+		if(i3d[i]) {
+			if(i != lut[i]) { i3d[lut[i]] += (i3d[i]&mask); i3d[i] = 0; }
+			else printf("i = %d i3d = %d\n", i, i3d[i]&mask);
+		}
+	}
+	for(i=0, k=0; i < w2*d.z; i++)  sum += i3d[i]&mask; printf("sum = %d\n", sum);
+	for(i=0, k=0; i < w2*d.z; i++) if(i3d[i]) printf("%d color = %3d %3d %3d num = %d lut = %d i = %d\n",
+			k++, (lut[i]&0xF800)>>(11-q->x), (lut[i]&0x7E0)>>(5-q->y), (lut[i]&0x1F)<<q->z, i3d[i]&mask, lut[i], i);
+}
+
+void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q)
+{
+	int i, i3, val, sz = w*h, d = 1<<bpp, w1 = (d>>q->x), w2 = w1*(d>>q->y), size = w2*(d>>q->z), sh = d>>1;
+	for(i=0; i < sz; i++) {
+		i3 = i*3;
+		val = lut[((b[i]+sh)>>q->z)*w2 + ((g[i]+sh)>>q->y)*w1 + ((r[i]+sh)>>q->x)];
+		rgb[i3] 	= (val&0xF800)>>(11-q->x);
+		rgb[i3+1] 	= (val&0x7E0)>>(5-q->y);
+		rgb[i3+2] 	= (val&0x1F)<<q->z;
+		//printf("%3d %3d %3d  %3d %3d %3d   ", r[i], g[i], b[i], rgb[i3], rgb[i3+1], rgb[i3+2]);
 	}
 }
 
