@@ -1030,7 +1030,7 @@ void image_median_filter(Image *im, uint8 *buf){
 ///	\param color 		The color space of the stream.
 ///	\param steps 		The steps of DWT transform.
 
-	filter_median(im->p, (int16*)buf, im->w, im->h);
+	//filter_median(im->p, (int16*)buf, im->w, im->h);
 }
 
 void image_predict_subband(Image *im, uint16 *buf, uint32 steps)
