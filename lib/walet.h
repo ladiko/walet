@@ -174,7 +174,7 @@ typedef struct {
 	uint8		icol;			/// Input color space
 	uint8		ccol;			/// Compresion color space
 	//uint8		ocol;			/// Output color space
-
+	uint8		dec;			/// Decorrelation method
 	//uint8		color;			/// Color space
 	uint8		bg;				/// Bayer grid pattern
 	uint8		bpp;			/// Image bits per pixel.

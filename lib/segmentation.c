@@ -5,6 +5,49 @@
 
 //Mean-shift 3d algorithm
 
+void mean_print(uint32 *i3d, uint16 *lut, p3d *d, p3d *p, int r)
+{
+	int x, y, z, zy, yx, xyz, w2 = d->x*d->y, mask = 0x7FFFFFFF;
+	//int xm = 0, ym = 0, zm = 0, ms = 0;
+	p3d b, e;
+
+	b.x = (p->x - r) < 0 ? 0 : p->x - r;
+	e.x = (p->x + r) > (d->x - 1) ? d->x - 1 : p->x + r;
+	b.y = (p->y - r) < 0 ? 0 : p->y - r;
+	e.y = (p->y + r) > (d->y - 1) ? d->y - 1 : p->y + r;
+	b.z = (p->z - r) < 0 ? 0 : p->z - r;
+	e.z = (p->z + r) > (d->z - 1) ? d->z - 1 : p->z + r;
+	//printf("r = %d x = %d y = %d z = %d\n", r, p->x, p->y, p->z);
+
+	for(z=b.z; z <= e.z; z++){
+		zy = z*w2;
+		//printf("zy = %d\n", zy);
+		for(y=b.y; y <= e.y; y++){
+			yx = zy + y*d->x;
+			//printf("yx = %d\n", yx);
+			for(x=b.x; x <= e.x; x++){
+				xyz = yx + x;
+				//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
+				//if(i3d[xyz]){
+					printf("%6d ", i3d[xyz]&mask);
+				//}
+			}
+			printf("  ");
+			for(x=b.x; x <= e.x; x++){
+				xyz = yx + x;
+				//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
+				//if(i3d[xyz]){
+					printf("%6d ", lut[xyz]);
+				//}
+			}
+			printf("\n");
+		}
+		printf("\n\n");
+	}
+	//printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
+	//p->x = xm/ms; p->y = ym/ms; p->z = zm/ms;
+}
+
 uint32 center_mass(uint32 *i3d, p3d *d, p3d *p, int r)
 {
 	int x, y, z, zy, yx, xyz, w2 = d->x*d->y, mask = 0x7FFFFFFF;
@@ -91,10 +134,9 @@ void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, u
 					val = 0; i = 0;
 					do{
 						i++;
-					//for(i=1; buf[i-1] != buf[i]; i++){
 						center_mass(i3d, &d, &p, rd);
 						buf[i] = p.z*w2 + p.y*d.x + p.x;
-						//printf("i3d[%d] = %d x = %d y = %d z = %d \n", buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
+						//printf("i3d[%d] = %d x = %d y = %d z = %d buf[%d] = %d\n", buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z, i, buf[i]);
 						if(i3d[buf[i]]&msb) {
 							val = lut[buf[i]];
 							if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
@@ -107,8 +149,14 @@ void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, u
 
 						//if(i > 100) break;
 					} while(buf[i-1] != buf[i]);
-					if(!val) val = (p.x<<11) + (p.y<<5) + p.z;
+					if(!val) {
+						val = (p.x<<11) + (p.y<<5) + p.z;
+						//for(j=0; j <= i; j++) { lut[buf[j]] = val; i3d[buf[j]] |= msb; }
+						//printf("val = %d lut[buf[i]] = %d\n", val, lut[buf[i]]);
+						//mean_print(i3d, lut, &d, &p, rd);
+					}
 					for(j=0; j <= i; j++) { lut[buf[j]] = val; i3d[buf[j]] |= msb; }
+					//mean_print(i3d, lut, &d, &p, rd);
 					k++;
 					//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 				}
@@ -117,17 +165,20 @@ void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, u
 	}
 	printf("Colors = %d\n", k-1);
 	uint32 sum=0;
-	for(i=0, k=0; i < w2*d.z; i++) if(lut[i] == i) printf("%d i3d = %d\n", i, i3d[i]&mask);
+	//for(i=0, k=0; i < w2*d.z; i++) if(lut[i] == i) printf("%d i3d = %d\n", i, i3d[i]&mask);
 
 	for(i=0, k=0; i < w2*d.z; i++) {
 		if(i3d[i]) {
-			if(i != lut[i]) { i3d[lut[i]] += (i3d[i]&mask); i3d[i] = 0; }
+			xyz = ((lut[i]&0xF800)>>11) + d.x*((lut[i]&0x7E0)>>5) + w2*(lut[i]&0x1F);
+			if(i != xyz) { i3d[xyz] += (i3d[i]&mask); i3d[i] = 0; }
 			else printf("i = %d i3d = %d\n", i, i3d[i]&mask);
 		}
 	}
 	for(i=0, k=0; i < w2*d.z; i++)  sum += i3d[i]&mask; printf("sum = %d\n", sum);
-	for(i=0, k=0; i < w2*d.z; i++) if(i3d[i]) printf("%d color = %3d %3d %3d num = %d lut = %d i = %d\n",
-			k++, (lut[i]&0xF800)>>(11-q->x), (lut[i]&0x7E0)>>(5-q->y), (lut[i]&0x1F)<<q->z, i3d[i]&mask, lut[i], i);
+	for(i=0, k=0; i < w2*d.z; i++) if(i3d[i]) {
+		printf("%d color = %3d %3d %3d num = %d lut = %d i = %d\n",
+				k++, (lut[i]&0xF800)>>(11-q->x), (lut[i]&0x7E0)>>(5-q->y), (lut[i]&0x1F)<<q->z, i3d[i]&mask, lut[i], i);
+	}
 }
 
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q)
@@ -143,7 +194,7 @@ void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uin
 	}
 }
 
-void seg_grad16(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 th)
+void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
 /// | |x| |      | | | |      |x| | |      | | |x|
 /// | |x| |      |x|x|x|      | |x| |      | |x| |

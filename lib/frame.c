@@ -699,24 +699,25 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	Frame *f = &g->frames[fn];
 
-	if(check_state(f->state, FRAME_COPY)){
-		if(wc->ccol == BAYER){
+	//if(check_state(f->state, FRAME_COPY)){
+		//if(wc->ccol == BAYER){
 		//utils_bayer_to_Y(im->p, wc->buf, wc->w, wc->h);
-		//filter_median(wc->buf, frm->Y.pic, frm->Y.w, frm->Y.h);
-		//seg_grad(frm->Y.pic, frm->grad.pic, frm->Y.w, frm->Y.h, 3);
+	utils_shift(f->img[0].p, g->buf, f->Y.w,f->Y.h, 128);
+	filter_median(g->buf, f->Y.pic , f->Y.w, f->Y.h);
+	seg_grad(f->Y.pic, f->grad.pic, f->Y.w, f->Y.h, 2);
 
 		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
 
-		//seg_fall_forest(frm->grad[0].pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_fall_forest1(frm->grad[0].pic, frm->edge.pic, frm->line.pic, frm->grad[0].width, frm->grad[0].height);
-		//frm->nedge = seg_line(frm->pixs, frm->edges, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
+	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
+
+
 		//seg_pixels(f->pixs, f->grad.pic, f->grad.w, f->grad.h);
 		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
 		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		}
+		//}
 		f->state |= SEGMENTATION;
 		return 1;
-	} else return 0;
+	//} else return 0;
 }
 
 /**	\brief	Match the singular points in two frames

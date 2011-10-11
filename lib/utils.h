@@ -37,6 +37,7 @@ void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
+uint8* utils_shift(int16 *img, uint8 *rgb, uint32 w, uint32 h, int sh);
 
 double entropy(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp);
 

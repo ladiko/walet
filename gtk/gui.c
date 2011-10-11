@@ -518,7 +518,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	printf("Bits per pixel = %f\n", entropy((int16*)gw->gop.buf, (uint32*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h, gw->wc.bpp));
 	//prediction_encoder((int16*)gw->gop.buf, f0->img[0].d.pic, (int16*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h);
-	seg_grad16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 0);
+	//seg_grad16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 0);
 
 	new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
 	utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].w, f0->img[0].h, 0);
@@ -582,15 +582,29 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint32 *i3d = (uint32*)gw->gop.buf;
 	uint16 *lut = (uint16*)&gw->gop.buf[d.x*d.y*d.z*sizeof(uint32)];
 	uint32 *buf = (uint32*)&gw->gop.buf[d.x*d.y*d.z*(sizeof(uint32)+sizeof(uint16))];
-
+	/*
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	seg_find_clusters(i3d, lut, r, g, b, w, h, 2, bpp, &q, buf);
+	seg_find_clusters(i3d, lut, r, g, b, w, h, 1, bpp, &q, buf);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("seg_find_clusters time = %f\n",(double)(end-start)/1000000.);
 
 	new_buffer (gw->orig[1], w, h);
 	seg_quantization(lut, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), r, g, b, w, h, bpp, &q);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
+	*/
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	frame_segmetation(&gw->gop, 0, &gw->wc);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("frame_segmetation time = %f\n",(double)(end-start)/1000000.);
+
+	new_buffer (gw->orig[3], w, h);
+	utils_grey_draw8(fr->Y.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+	new_buffer (gw->orig[2], w, h);
+	utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
+
 
 
 	// Regions segmentation

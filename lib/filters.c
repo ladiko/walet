@@ -29,7 +29,7 @@ static  inline uint8  median_3(uint8 s0, uint8 s1, uint8 s2)
 					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
 }
 
-void filter_median(int16 *img, int16 *img1, uint32 w, uint32 h)
+void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
