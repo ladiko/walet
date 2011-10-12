@@ -53,7 +53,7 @@ extern "C" {
 void 	frame_init			(GOP *g, uint32 fn, WaletConfig *wc);
 void 	frame_input			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v);
 void 	frame_ouput			(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint32 isteps, uint32 *w, uint32 *h);
-uint32 	frame_dwt			(GOP *g, uint32 fn, WaletConfig *wc);
+uint32 	frame_transform		(GOP *g, uint32 fn, WaletConfig *wc);
 uint32 	frame_idwt			(GOP *g, uint32 fn, WaletConfig *wc, uint32 isteps);
 uint32 	frame_fill_subb		(GOP *g, uint32 fn, WaletConfig *wc);
 uint32	frame_bits_alloc	(GOP *g, uint32 fn, WaletConfig *wc, uint32 times);

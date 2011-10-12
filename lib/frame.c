@@ -35,28 +35,28 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	if (wc->ccol == BAYER ){
 	//Init ccol components
 	    f->img = (Image *)calloc(4, sizeof(Image));
-		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), wc->bpp, wc->steps);
-		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), wc->bpp, wc->steps);
-		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->bpp, wc->steps);
-		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->bpp, wc->steps);
+		image_init(&f->img[0], (w>>1) + (w&1), (h>>1) + (h&1), wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[1], (w>>1)        , (h>>1) + (h&1), wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[2], (w>>1) + (w&1), (h>>1)        , wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[3], (w>>1)        , (h>>1)        , wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == CS420){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w,    h,    wc->bpp, wc->steps);
-		image_init(&f->img[1], w>>1, h>>1, wc->bpp, wc->steps);
-		image_init(&f->img[2], w>>1, h>>1, wc->bpp, wc->steps);
+		image_init(&f->img[0], w,    h,    wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[1], w>>1, h>>1, wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[2], w>>1, h>>1, wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == CS444 || wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
-		image_init(&f->img[1], w, h, wc->bpp, wc->steps);
-		image_init(&f->img[2], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[1], w, h, wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[2], w, h, wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == GREY){
 	    f->img = (Image *)calloc(1, sizeof(Image));
-		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
-		image_init(&f->img[0], w, h, wc->bpp, wc->steps);
-		image_init(&f->img[1], w, h, wc->bpp, wc->steps);
-		image_init(&f->img[2], w, h, wc->bpp, wc->steps);
+		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[1], w, h, wc->bpp, wc->steps, wc->dec);
+		image_init(&f->img[2], w, h, wc->bpp, wc->steps, wc->dec);
 	} else {
 		printf("Wrong color space.\n");
 	}
@@ -226,23 +226,25 @@ void frame_ouput(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint32 isteps, 
 	\param	wc	The walet config structure.
 	\retval		1 - if all OK, 0 - if not
 */
-uint32 frame_dwt(GOP *g, uint32 fn, WaletConfig *wc)
+uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 i;
 	Frame *f = &g->frames[fn];
 	//DWT taransform
-	if(check_state(f->state, FRAME_COPY | IDWT)){
+	//if(check_state(f->state, FRAME_COPY | IDWT)){
+	if(wc->dec == WAVELET){
 		if (wc->ccol == GREY) image_dwt(&f->img[0], (int16*)g->buf, wc->fb, wc->steps);
-		else if(wc->ccol == BAYER) {
-			//dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
-			for(i=0; i < 4; i++)  image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
-
-		} else  for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
-
+		else if(wc->ccol == BAYER) for(i=0; i < 4; i++)  image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
+		else  for(i=0; i < 3; i++) image_dwt(&f->img[i], (int16*)g->buf, wc->fb, wc->steps);
+	} else if(wc->dec == RESIZE){
+		if (wc->ccol == GREY) image_resize_down_2x(&f->img[0], (int16*)g->buf, wc->steps);
+		else if(wc->ccol == BAYER) for(i=0; i < 4; i++)  image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
+		else  for(i=0; i < 3; i++) image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
+	}
 		f->state = DWT;
 		//image_grad(&frame->img[0], BAYER, wc->steps, 2);
 		return 1;
-	} else return 0;
+	//} else return 0;
 }
 
 /**	\brief	The Frame invert discrete wavelet transform.
@@ -889,7 +891,7 @@ void frame_compress(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	uint32 size;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	frame_dwt(g, fn, wc);
+	frame_transform(g, fn, wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	tmp = (double)(end-start)/1000000.; time +=tmp;
 	printf("DWT time             = %f\n", tmp);
@@ -955,9 +957,9 @@ void frame_test(GOP *g, uint32 fn, WaletConfig *wc, uint32 times)
 	uint32 sz = (wc->w*wc->h*wc->bpp)/times;
 
 	fn = 0;
-	frame_dwt(g, fn, wc);
+	frame_transform(g, fn, wc);
 	frame_fill_subb	(g, fn, wc);
-	frame_dwt(g, 1, wc);
+	frame_transform(g, 1, wc);
 
 	for(im = 0; im < 4; im++) for(i=0; i < wc->steps; i++) for(j = (i == wc->steps-1) ? 0 : 1; j < 4; j++)
 		size += subb_size(&g->frames[fn].img[im].l[i].s[j]);

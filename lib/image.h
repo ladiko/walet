@@ -9,6 +9,7 @@ typedef struct {
 	uint16 		w;		//Image width
 	uint16 		h;		//Image width
 	Pic16s		d;		//Image after DWT and IDWT for test only
+	Pic16s		*dw;		//The down sampling image for resize only
 	Level		*l;		//The levels of DWT transform
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
@@ -34,10 +35,11 @@ void resize_down_2x	(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
 void resize_up_2x	(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
 
 //New interface
-void 	image_init			(Image *im, uint32 width, uint32 height, uint32 bpp, uint32 steps);
+void 	image_init			(Image *im, uint32 width, uint32 height, uint32 bpp, uint32 steps, uint32 dec);
 //void 	image_copy			(Image *im, uint32 bpp, uint8 *v);
 void 	image_dwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps);
 void 	image_idwt			(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 isteps);
+void 	image_resize_down_2x(Image *im, int16 *buf, uint32 steps);
 void 	image_fill_subb		(Image *im, uint32 steps);
 uint32 	image_size			(Image *im, uint32 steps, int qstep);
 void 	image_quantization	(Image *im, uint32 steps, uint8 *buf);
