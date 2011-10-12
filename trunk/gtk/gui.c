@@ -17,7 +17,7 @@ void new_buffer(Pixbuf *orig, guint width, guint height)
 		orig->init = 1;
 		return;
 	}
-	if(orig->width < width || orig->height < height){
+	else { //(orig->width < width || orig->height < height){
 		g_object_unref(orig->pxb); //gdk_pixbuf_unref(tp->pxb[1]);
 		data = (guchar *)g_malloc(width*height*3);
 		orig->pxb = gdk_pixbuf_new_from_data (data, GDK_COLORSPACE_RGB,
@@ -25,7 +25,8 @@ void new_buffer(Pixbuf *orig, guint width, guint height)
 		//gw->orig[n]->pxb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, width, height);
 		orig->width = width; orig->height = height;
 
-	} //else data = (guchar *)g_malloc(width*height*3);
+	} //else data = (guchar *)g_malloc(width*height*3);*/
+
 }
 
 void new_buffer_size(Pixbuf *orig, guint width, guint height)
@@ -364,21 +365,28 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	int i;
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	if(frame_dwt(&gw->gop, gw->gop.cur_gop_frame, &gw->wc)) {
+	if(frame_transform(&gw->gop, gw->gop.cur_gop_frame, &gw->wc)) {
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
+		if(gw->wc.dec == WAVELET){
+			for(i=0; i < 2; i++){
+				new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
+				utils_dwt_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+				gtk_widget_queue_draw(gw->drawingarea[i+1]);
+			}
 
-		for(i=0; i < 2; i++){
-			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
-			utils_dwt_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
-			gtk_widget_queue_draw(gw->drawingarea[i+1]);
+			image_suband_to_block(&f0->img[0], f0->img[0].d.pic, gw->wc.steps);
+
+			new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
+			utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
+			gtk_widget_queue_draw(gw->drawingarea[3]);
+		} else if(gw->wc.dec == RESIZE){
+			for(i=0; i < 3; i++){
+				new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
+				utils_resize_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+				gtk_widget_queue_draw(gw->drawingarea[i+1]);
+			}
 		}
-
-		image_suband_to_block(&f0->img[0], f0->img[0].d.pic, gw->wc.steps);
-
-		new_buffer (gw->orig[3], f0->img[0].w, f0->img[0].h);
-		utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->img[0].w, f0->img[0].h, 128);
-		gtk_widget_queue_draw(gw->drawingarea[3]);
 
 		//new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
 		//utils_dwt_image_draw(&f0->img[0], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.steps);
@@ -464,8 +472,8 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 	if(&gw->gop == NULL ) return;
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	//frame_range_encode(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
-	frame_range(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
+	frame_range_encode(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
+	//frame_range(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, &size);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 
 	printf("Frame size  = %d Encoded frame size = %d compess = %f bits_per_pix = %f time = %f\n",
@@ -582,7 +590,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	uint32 *i3d = (uint32*)gw->gop.buf;
 	uint16 *lut = (uint16*)&gw->gop.buf[d.x*d.y*d.z*sizeof(uint32)];
 	uint32 *buf = (uint32*)&gw->gop.buf[d.x*d.y*d.z*(sizeof(uint32)+sizeof(uint16))];
-	/*
+
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	seg_find_clusters(i3d, lut, r, g, b, w, h, 1, bpp, &q, buf);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
@@ -591,7 +599,8 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[1], w, h);
 	seg_quantization(lut, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), r, g, b, w, h, bpp, &q);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
-	*/
+
+	/*
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_segmetation(&gw->gop, 0, &gw->wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
@@ -604,7 +613,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[2], w, h);
 	utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
-
+	*/
 
 
 	// Regions segmentation

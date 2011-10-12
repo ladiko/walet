@@ -80,11 +80,27 @@ uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps)
 	return rgb;
 }
 
+uint8* utils_resize_image_draw(Image *img, uint8 *rgb, uint32 steps)
+{
+	uint32 i, j, x, y, w = img->w;
+
+	if(steps != 0){
+		x = 0; y = 0;
+		//for(j=steps-1; j >= 0 ; j--){
+		for(j=0; j < steps ; j++){
+			printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
+
+			drawrect(rgb, img->dw[j].pic, x, y, img->dw[j].w, img->dw[j].h, w, 128);
+			x += img->dw[j].w; y += img->dw[j].h;
+		}
+	}
+	return rgb;
+}
+
 uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps)
 {
 	uint32 i, j, x, y, w;
 	Frame *f = &g->frames[fn];
-
 	w = f->img[0].w + f->img[1].w;
 	if(steps == wc->steps && wc->steps){
 		for(j=0; j < steps; j++){
