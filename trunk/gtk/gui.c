@@ -582,6 +582,19 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	struct timeval tv;
 	Frame *fr = &gw->gop.frames[0];
 	int16 *r = fr->img[0].p, *g = fr->img[1].p, *b = fr->img[2].p;
+
+	utils_shift16(r, r, w, h, 128);
+
+	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+	seg_find_clusters_2d(r, w, h, 4, 4, 8, (uint32*)gw->gop.buf);
+	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
+
+
+	new_buffer (gw->orig[3], w, h);
+	utils_grey_draw(r, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
+	gtk_widget_queue_draw(gw->drawingarea[3]);
+	/*
 	p3d q, d;
 	q.x = 3; q.y = 2; q.z = 3;
 	d.x = 1<<(bpp-q.x); d.y = 1<<(bpp-q.y); d.z = 1<<(bpp-q.z);
@@ -599,7 +612,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[1], w, h);
 	seg_quantization(lut, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), r, g, b, w, h, bpp, &q);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
-
+	*/
 	/*
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_segmetation(&gw->gop, 0, &gw->wc);
