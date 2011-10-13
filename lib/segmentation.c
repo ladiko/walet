@@ -194,21 +194,24 @@ void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uin
 	}
 }
 
-uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, uint32 ix, uint32 iy, uint32 *ox, uint32 *oy, uint32 ds, uint32 dc, uint32 bpp)
+uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int ix, int iy, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
 {
 	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
-	int xm = 0, ym = 0, ms = 0;
+	int xm = 0, ym = 0, ms = 0, im;
+	uint32 mask = 0xFF;
+	im = img[xy]&mask;
 
 	xy = iy*w + ix;
+	//printf("xy = %d\n", xy);
 
 	bx = (ix - ds) < 0 ? 0 : ix - ds;
 	ex = (ix + ds) > (w - 1) ? w - 1 : ix + ds;
 	by = (iy - ds) < 0 ? 0 : iy - ds;
 	ey = (iy + ds) > (h - 1) ? h - 1 : iy + ds;
-	bc = (img[xy] - dc) < 0 ? 0 : img[xy] - dc;
-	ec = (img[xy] + dc) > (z - 1) ? z - 1 : img[xy] + dc;
+	bc = (im - dc) < 0 ? 0 : im - dc;
+	ec = (im + dc) > (z - 1) ? z - 1 : im + dc;
 
-	//printf("r = %d x = %d y = %d z = %d\n", r, p->x, p->y, p->z);
+	//printf("bx = %d ex = %d by = %d ey = %d bc = %d ec = %d\n", bx, ex, by, ey, bc, ec);
 
 	for(y=by; y <= ey; y++){
 		yx = y*w;
@@ -216,8 +219,8 @@ uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, uint32 ix, uint32 iy, uint
 		for(x=bx; x <= ex; x++){
 			xy = yx + x;
 			//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
-			if(img[xy] >= bc && img[xy] <= ec){
-				ms++;
+			if(im >= bc && im <= ec){
+				ms += im;
 				xm += x;
 				ym += y;
 				//zm += i2d;
@@ -229,9 +232,9 @@ uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, uint32 ix, uint32 iy, uint
 	*ox = xm/ms; *oy = ym/ms;
 }
 
-void seg_find_clusters_2d(int16 *img, uint8 *lut, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
+void seg_find_clusters_2d(int16 *img, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
 {
-	int i, j, k, x, y, z, zy, yx, xy, val, w2, outx, outy;
+	int i, j, k, x, y, z, zy, yx, xy, val, w2, outx, outy, col;
 	uint32 msb = 0x100, mask = 0xFF, max, sz = w*h;
 
 	for(y=0; y < h; y++){
@@ -239,25 +242,29 @@ void seg_find_clusters_2d(int16 *img, uint8 *lut, uint32 w, uint32 h, uint32 ds,
 		//printf("yx = %d\n", yx);
 		for(x=0; x < w; x++){
 			xy = yx + x;
-			buf[0] = xy; //buf[1] = max;
-			val = 0; i = 0;
-			do{
-				i++;
-				center_mass_2d(img, w, h, x, y, &outx, &outy, ds, dc, bpp);
-				buf[i] = outy*w + outx;
-				//printf("i3d[%d] = %d x = %d y = %d z = %d buf[%d] = %d\n", buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z, i, buf[i]);
-				if(img[buf[i]]&msb) {
-					val = img[buf[i]];
-					//if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
-					//p.x = lut[buf[i]]&0xF800;
-					//p.y = lut[buf[i]]&0x7E0;
-					//p.z = lut[buf[i]]&0x1F;
-					break;
-				}
-				//i3d[buf[i]] |= msb;
+			//printf("xy = %d\n", yx);
+			if(!(img[xy]&msb)){
+				buf[0] = xy; //buf[1] = max;
+				val = 0; i = 0;
+				do{
+					i++;
+					center_mass_2d(img, w, h, x, y, &outx, &outy, &col, ds, dc, bpp);
+					buf[i] = outy*w + outx;
+					//printf("%d buf = %d x = %d y = %d img = %d\n", i, buf[i], x, y, img[xy]);
+					if(img[buf[i]]&msb) {
+						val = col;
+						//val = img[buf[i]];
+						//if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
+						//p.x = lut[buf[i]]&0xF800;
+						//p.y = lut[buf[i]]&0x7E0;
+						//p.z = lut[buf[i]]&0x1F;
+						break;
+					}
+					//i3d[buf[i]] |= msb;
 
-				//if(i > 100) break;
-			} while(buf[i-1] != buf[i]);
+					//if(i > 100) break;
+				} while(buf[i-1] != buf[i]);
+			}
 
 			if(!val) val = img[buf[i]];
 			for(j=0; j <= i; j++) img[buf[j]] = val + msb;

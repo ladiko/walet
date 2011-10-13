@@ -178,6 +178,13 @@ uint8* utils_shift(int16 *img, uint8 *rgb, uint32 w, uint32 h, int sh)
 	return rgb;
 }
 
+int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh)
+{
+	int i, sz = h*w;
+	for(i=0; i < sz; i++) rgb[i] = img[i] + sh;
+	return rgb;
+}
+
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
 {
 	int i, j, dim = h*w*3;
