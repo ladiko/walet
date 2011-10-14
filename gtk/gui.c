@@ -586,13 +586,13 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_shift16(r, r, w, h, 128);
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-	seg_find_clusters_2d(r, w, h, 4, 4, 8, (uint32*)gw->gop.buf);
+	seg_find_clusters_2d(r, fr->img[0].d.pic, w, h, 4, 4, 8, (uint32*)gw->gop.buf);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
 
 	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw(r, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
+	utils_grey_draw(fr->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 	/*
 	p3d q, d;
