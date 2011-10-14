@@ -194,23 +194,36 @@ void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uin
 	}
 }
 
-uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int ix, int iy, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
+void mean_print_2d(int16 *img, int16 *out, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
 {
 	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
-	int xm = 0, ym = 0, ms = 0, im;
+	int xm = 0, ym = 0, cm = 0, ms = 0, im;
 	uint32 mask = 0xFF;
-	im = img[xy]&mask;
+	//im = img[xy]&mask;
 
-	xy = iy*w + ix;
+	xy = (*oy)*w + *ox;
+	im = img[xy];
+
 	//printf("xy = %d\n", xy);
+	if(*ox - ds < 0){ bx = 0; ex = *ox<<1; }
+	else if(*ox + ds > (w - 1)) { bx = (*ox<<1) - w +1; ex = w - 1; }
+	else { bx = *ox - ds; ex = *ox + ds; }
 
-	bx = (ix - ds) < 0 ? 0 : ix - ds;
-	ex = (ix + ds) > (w - 1) ? w - 1 : ix + ds;
-	by = (iy - ds) < 0 ? 0 : iy - ds;
-	ey = (iy + ds) > (h - 1) ? h - 1 : iy + ds;
+	if(*oy - ds < 0){ by = 0; ey = *oy<<1; }
+	else if(*oy + ds > (h - 1)) { by = (*oy<<1) - h +1; ey = h - 1; }
+	else { by = *oy - ds; ey = *oy + ds; }
+
+	if(im - dc < 0){ bc = 0; ec = im<<1; }
+	else if(im + dc > (z - 1)) { bc = (im<<1) - z +1; ec = z - 1; }
+	else { bc = im - dc; ec = im + dc; }
+	/*
+	bx = (*ox - ds) < 0 ? 0 : *ox - ds;
+	ex = (*ox + ds) > (w - 1) ? w - 1 : *ox + ds;
+	by = (*oy - ds) < 0 ? 0 : *oy - ds;
+	ey = (*oy + ds) > (h - 1) ? h - 1 : *oy + ds;
 	bc = (im - dc) < 0 ? 0 : im - dc;
 	ec = (im + dc) > (z - 1) ? z - 1 : im + dc;
-
+	*/
 	//printf("bx = %d ex = %d by = %d ey = %d bc = %d ec = %d\n", bx, ex, by, ey, bc, ec);
 
 	for(y=by; y <= ey; y++){
@@ -219,8 +232,74 @@ uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int ix, int iy, int *ox, i
 		for(x=bx; x <= ex; x++){
 			xy = yx + x;
 			//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
-			if(im >= bc && im <= ec){
-				ms += im;
+			printf("%3d ", img[xy]);
+			//if(img[xy] >= bc && img[xy] <= ec){
+			//	printf("%3d ", img[xy]);
+			//}else printf("%3d ", 0);
+		}
+		printf("   ");
+		for(x=bx; x <= ex; x++){
+			xy = yx + x;
+			//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
+			//printf("%3d ", img[xy]);
+			if(img[xy] >= bc && img[xy] <= ec){
+				printf("%3d ", img[xy]);
+			}else printf("%3d ", 0);
+		}
+		printf("   ");
+		for(x=bx; x <= ex; x++){
+			xy = yx + x;
+			printf("%3d ", out[xy]);
+		}
+		printf("\n");
+	}
+	printf("\n\n");
+	//ms = (ex - bx + 1)*(ey - by + 1);
+	//printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
+	//*ox = xm/ms; *oy = ym/ms; *col = cm/ms;
+}
+
+uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
+{
+	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
+	int xm = 0, ym = 0, cm = 0, ms = 0, im;
+	uint32 mask = 0xFF;
+	//im = img[xy]&mask;
+
+	xy = (*oy)*w + *ox;
+	im = img[xy];
+
+	//printf("xy = %d\n", xy);
+	if(*ox - ds < 0){ bx = 0; ex = *ox<<1; }
+	else if(*ox + ds > (w - 1)) { bx = (*ox<<1) - w +1; ex = w - 1; }
+	else { bx = *ox - ds; ex = *ox + ds; }
+
+	if(*oy - ds < 0){ by = 0; ey = *oy<<1; }
+	else if(*oy + ds > (h - 1)) { by = (*oy<<1) - h +1; ey = h - 1; }
+	else { by = *oy - ds; ey = *oy + ds; }
+
+	if(im - dc < 0){ bc = 0; ec = im<<1; }
+	else if(im + dc > (z - 1)) { bc = (im<<1) - z +1; ec = z - 1; }
+	else { bc = im - dc; ec = im + dc; }
+	/*
+	bx = (*ox - ds) < 0 ? 0 : *ox - ds;
+	ex = (*ox + ds) > (w - 1) ? w - 1 : *ox + ds;
+	by = (*oy - ds) < 0 ? 0 : *oy - ds;
+	ey = (*oy + ds) > (h - 1) ? h - 1 : *oy + ds;
+	bc = (im - dc) < 0 ? 0 : im - dc;
+	ec = (im + dc) > (z - 1) ? z - 1 : im + dc;
+	*/
+	//printf("bx = %d ex = %d by = %d ey = %d bc = %d ec = %d\n", bx, ex, by, ey, bc, ec);
+
+	for(y=by; y <= ey; y++){
+		yx = y*w;
+		//printf("yx = %d\n", yx);
+		for(x=bx; x <= ex; x++){
+			xy = yx + x;
+			//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
+			if(img[xy] >= bc && img[xy] <= ec){
+				ms++;
+				cm += img[xy];
 				xm += x;
 				ym += y;
 				//zm += i2d;
@@ -229,48 +308,58 @@ uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int ix, int iy, int *ox, i
 	}
 	//ms = (ex - bx + 1)*(ey - by + 1);
 	//printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
-	*ox = xm/ms; *oy = ym/ms;
+	*ox = xm/ms; *oy = ym/ms; *col = cm/ms;
 }
 
-void seg_find_clusters_2d(int16 *img, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
+void seg_find_clusters_2d(int16 *in, int16 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
 {
 	int i, j, k, x, y, z, zy, yx, xy, val, w2, outx, outy, col;
 	uint32 msb = 0x100, mask = 0xFF, max, sz = w*h;
 
+	memset(out, 0, w*h*sizeof(int16));
+	//y=0;{
 	for(y=0; y < h; y++){
-		yx = y*h;
+		yx = y*w;
 		//printf("yx = %d\n", yx);
 		for(x=0; x < w; x++){
 			xy = yx + x;
 			//printf("xy = %d\n", yx);
-			if(!(img[xy]&msb)){
+			//printf("new\n");
+			if(!out[xy]){
+				//printf("new\n");
 				buf[0] = xy; //buf[1] = max;
+				outx = x; outy = y;
+				out[buf[0]] = in[buf[0]];
 				val = 0; i = 0;
+
 				do{
 					i++;
-					center_mass_2d(img, w, h, x, y, &outx, &outy, &col, ds, dc, bpp);
+					//mean_print_2d(in, out, w, h, &outx, &outy, &col, ds, dc, bpp);
+					center_mass_2d(in, w, h, &outx, &outy, &col, ds, dc, bpp);
 					buf[i] = outy*w + outx;
-					//printf("%d buf = %d x = %d y = %d img = %d\n", i, buf[i], x, y, img[xy]);
-					if(img[buf[i]]&msb) {
-						val = col;
-						//val = img[buf[i]];
+					//out[buf[i]] = col;
+					//printf("%d buf[i-1] = %d buf[i] = %d x = %d y = %d img = %d col = %d \n", i, buf[i-1], buf[i], outx, outy, in[buf[i]], col);
+					if(out[buf[i]]) {
+						//val = out[buf[i]];
 						//if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
 						//p.x = lut[buf[i]]&0xF800;
 						//p.y = lut[buf[i]]&0x7E0;
 						//p.z = lut[buf[i]]&0x1F;
 						break;
 					}
+					out[buf[i]] = col;
 					//i3d[buf[i]] |= msb;
 
 					//if(i > 100) break;
-				} while(buf[i-1] != buf[i]);
+				} while(1);//while(buf[i-1] != buf[i]);
+				//if(!val) val = col;
+				for(j=0; j <= i; j++) out[buf[j]] = out[buf[i]];
+				//mean_print(i3d, lut, &d, &p, rd);
+				k++;
+				//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
+
 			}
 
-			if(!val) val = img[buf[i]];
-			for(j=0; j <= i; j++) img[buf[j]] = val + msb;
-			//mean_print(i3d, lut, &d, &p, rd);
-			k++;
-			//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 		}
 
 
@@ -293,7 +382,6 @@ void seg_find_clusters_2d(int16 *img, uint32 w, uint32 h, uint32 ds, uint32 dc, 
 	}
 	*/
 }
-
 
 void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
