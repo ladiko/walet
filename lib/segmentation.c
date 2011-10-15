@@ -194,7 +194,7 @@ void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uin
 	}
 }
 
-void mean_print_2d(int16 *img, int16 *out, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
+void mean_print_2d(uint8 *img, int16 *out, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
 {
 	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
 	int xm = 0, ym = 0, cm = 0, ms = 0, im;
@@ -259,7 +259,7 @@ void mean_print_2d(int16 *img, int16 *out, uint32 w, uint32 h, int *ox, int *oy,
 	//*ox = xm/ms; *oy = ym/ms; *col = cm/ms;
 }
 
-uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
+uint32 center_mass_2d(uint8 *img, uint32 w, uint32 h, int *ox, int *oy, int *col, int ds, int dc, uint32 bpp)
 {
 	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
 	int xm = 0, ym = 0, cm = 0, ms = 0, im;
@@ -311,12 +311,12 @@ uint32 center_mass_2d(int16 *img, uint32 w, uint32 h, int *ox, int *oy, int *col
 	*ox = xm/ms; *oy = ym/ms; *col = cm/ms;
 }
 
-void seg_find_clusters_2d(int16 *in, int16 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
+void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
 {
-	int i, j, k, x, y, z, zy, yx, xy, val, w2, outx, outy, col;
+	int i, j, k=0, c = 0, e = 0, x, y, z, zy, yx, xy, val, w2, outx, outy, col;
 	uint32 msb = 0x100, mask = 0xFF, max, sz = w*h;
 
-	memset(out, 0, w*h*sizeof(int16));
+	memset(out, 0, w*h*sizeof(uint8));
 	//y=0;{
 	for(y=0; y < h; y++){
 		yx = y*w;
@@ -340,11 +340,8 @@ void seg_find_clusters_2d(int16 *in, int16 *out, uint32 w, uint32 h, uint32 ds, 
 					//out[buf[i]] = col;
 					//printf("%d buf[i-1] = %d buf[i] = %d x = %d y = %d img = %d col = %d \n", i, buf[i-1], buf[i], outx, outy, in[buf[i]], col);
 					if(out[buf[i]]) {
-						//val = out[buf[i]];
-						//if(val == 0) printf("val = %d %d buf = %d i3d = %d x = %d y = %d z = %d \n", val, i, buf[i], i3d[buf[i]]&mask, p.x, p.y, p.z);
-						//p.x = lut[buf[i]]&0xF800;
-						//p.y = lut[buf[i]]&0x7E0;
-						//p.z = lut[buf[i]]&0x1F;
+						if(i == 1) e++;
+						out[buf[i]] = col;
 						break;
 					}
 					out[buf[i]] = col;
@@ -353,18 +350,14 @@ void seg_find_clusters_2d(int16 *in, int16 *out, uint32 w, uint32 h, uint32 ds, 
 					//if(i > 100) break;
 				} while(1);//while(buf[i-1] != buf[i]);
 				//if(!val) val = col;
-				for(j=0; j <= i; j++) out[buf[j]] = out[buf[i]];
+				for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
 				//mean_print(i3d, lut, &d, &p, rd);
-				k++;
+				k+= i; c++;
 				//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
-
 			}
-
 		}
-
-
 	}
-	printf("Colors = %d\n", k-1);
+	printf("Colors = %d clusters = %d one = %d\n", k, c, e);
 	uint32 sum=0;
 	//for(i=0, k=0; i < w2*d.z; i++) if(lut[i] == i) printf("%d i3d = %d\n", i, i3d[i]&mask);
 	/*
