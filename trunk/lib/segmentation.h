@@ -20,7 +20,7 @@ extern "C" {
 
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q,uint32 *buf);
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q);
-void seg_find_clusters_2d(int16 *in, int16 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf);
+void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf);
 
 void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
