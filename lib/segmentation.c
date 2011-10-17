@@ -331,7 +331,6 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 				outx = x; outy = y;
 				out[buf[0]] = in[buf[0]];
 				val = 0; i = 0;
-
 				do{
 					i++;
 					//mean_print_2d(in, out, w, h, &outx, &outy, &col, ds, dc, bpp);
@@ -340,8 +339,14 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 					//out[buf[i]] = col;
 					//printf("%d buf[i-1] = %d buf[i] = %d x = %d y = %d img = %d col = %d \n", i, buf[i-1], buf[i], outx, outy, in[buf[i]], col);
 					if(out[buf[i]]) {
-						if(i == 1) e++;
-						out[buf[i]] = col;
+						/*
+						if(i == 1) {
+							e++;
+						} else {
+							for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
+						}*/
+						//out[buf[i]] = col;
+
 						break;
 					}
 					out[buf[i]] = col;
@@ -349,9 +354,8 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 
 					//if(i > 100) break;
 				} while(1);//while(buf[i-1] != buf[i]);
-				//if(!val) val = col;
+
 				for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
-				//mean_print(i3d, lut, &d, &p, rd);
 				k+= i; c++;
 				//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 			}
@@ -436,20 +440,8 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-			//if(y == w)
-			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
-			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
-			//max = g[0]; in = 2;
-			//if(max < g[1]) { max = g[1]; in = 3; }
-			//if(max < g[2]) { max = g[2]; in = 0; }
-			//if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
-			//max = max > 252 ? 252 : max;
-			//img1[yx] = max;
-			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
 			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
-			//img1[yx] = max>>th ? max : 0;
-			//printf("yx = %d max = %d\n", yx, max);
 		}
 	}
 }
@@ -1074,7 +1066,7 @@ static inline uint32 find_lines(Pixel *pix, uint8 *img, uint32 x, uint32 y, uint
 		dx1 = dx; dy1 = dy;
 		dir1(img, w, yx, -dx, -dy, &dx, &dy);
 		if(c > 2 && is_in_line(dx, dy, dx2, dy2)){ //New point
-			//printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
+			printf("dx1 = %d dx = %d dy1 = %d dy = %d c = %d\n", dx1, dx, dy1, dy, c);
 			new_pix(&pix[yx], img[yx], x, y);
 			img[yx] = 255; //im = img[yx], Save previous value
 			set_blocks(&pix[yx], yx, dx && dx1, dy && dy1, w);
