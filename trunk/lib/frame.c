@@ -706,14 +706,13 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//utils_bayer_to_Y(im->p, wc->buf, wc->w, wc->h);
 	//utils_shift(f->img[0].p, g->buf, f->Y.w,f->Y.h, 128);
 	//filter_median(g->buf, f->Y.pic , f->Y.w, f->Y.h);
-	utils_shift(f->img[0].p, f->Y.pic, f->Y.w,f->Y.h, 128);
-	seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->Y.w, f->Y.h, 3, 3, 8, (uint32*)g->buf);
-	//seg_grad(f->Y.pic, f->grad.pic, f->Y.w, f->Y.h, 2);
+	utils_shift(f->img[0].dw[0].pic, f->Y.pic, f->img[0].dw[0].w, f->img[0].dw[0].h, 128);
+	seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->img[0].dw[0].w, f->img[0].dw[0].h, 4, 4, 8, (uint32*)g->buf);
 
-		//seg_grad1(frm->Y[0].pic, frm->grad[0].pic, frm->edge.pic, frm->Y[0].width, frm->Y[0].height, 3);
-
+	//seg_grad16(f->img[0].p, f->grad.pic, f->Y.w, f->Y.h, 2);
 	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
 
+	printf("nedge = %d\n", f->nedge);
 
 		//seg_pixels(f->pixs, f->grad.pic, f->grad.w, f->grad.h);
 		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
