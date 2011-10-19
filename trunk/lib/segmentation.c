@@ -311,10 +311,71 @@ uint32 center_mass_2d(uint8 *img, uint32 w, uint32 h, int *ox, int *oy, int *col
 	*ox = xm/ms; *oy = ym/ms; *col = cm/ms;
 }
 
+uint32 center_mass_2d_rgb(uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, int *ox, int *oy, int ds, int dc, uint32 bpp)
+{
+	int x, y, yx, xy, bx, by, bc, ex, ey, ec, z = 1<<bpp;
+	int xm = 0, ym = 0, rm = 0, gm = 0, bm = 0, ms = 0, im;
+	uint32 mask = 0xFF;
+	//im = img[xy]&mask;
+
+	xy = (*oy)*w + *ox;
+	//im = r[xy];
+
+	// X coordinate
+	if(*ox - ds < 0){ bx = 0; ex = *ox<<1; }
+	else if(*ox + ds > (w - 1)) { bx = (*ox<<1) - w +1; ex = w - 1; }
+	else { bx = *ox - ds; ex = *ox + ds; }
+	// Y coordinate
+	if(*oy - ds < 0){ by = 0; ey = *oy<<1; }
+	else if(*oy + ds > (h - 1)) { by = (*oy<<1) - h +1; ey = h - 1; }
+	else { by = *oy - ds; ey = *oy + ds; }
+	// Red color
+	if(r[xy] - dc < 0){ bc = 0; ec = r[xy]<<1; }
+	else if(r[xy] + dc > (z - 1)) { bc = (r[xy]<<1) - z +1; ec = z - 1; }
+	else { bc = r[xy] - dc; ec = r[xy] + dc; }
+	// Green color
+	if(g[xy] - dc < 0){ bc = 0; ec = g[xy]<<1; }
+	else if(g[xy] + dc > (z - 1)) { bc = (g[xy]<<1) - z +1; ec = z - 1; }
+	else { bc = g[xy] - dc; ec = g[xy] + dc; }
+	// Blue color
+	if(b[xy] - dc < 0){ bc = 0; ec = b[xy]<<1; }
+	else if(b[xy] + dc > (z - 1)) { bc = (b[xy]<<1) - z +1; ec = z - 1; }
+	else { bc = b[xy] - dc; ec = b[xy] + dc; }
+	/*
+	bx = (*ox - ds) < 0 ? 0 : *ox - ds;
+	ex = (*ox + ds) > (w - 1) ? w - 1 : *ox + ds;
+	by = (*oy - ds) < 0 ? 0 : *oy - ds;
+	ey = (*oy + ds) > (h - 1) ? h - 1 : *oy + ds;
+	bc = (im - dc) < 0 ? 0 : im - dc;
+	ec = (im + dc) > (z - 1) ? z - 1 : im + dc;
+	*/
+	//printf("bx = %d ex = %d by = %d ey = %d bc = %d ec = %d\n", bx, ex, by, ey, bc, ec);
+
+	for(y=by; y <= ey; y++){
+		yx = y*w;
+		//printf("yx = %d\n", yx);
+		for(x=bx; x <= ex; x++){
+			xy = yx + x;
+			//printf("i3d[%d] = %d\n", xyz, i3d[xyz]);
+			if((r[xy] >= bc && r[xy] <= ec) && (g[xy] >= bc && g[xy] <= ec) && (b[xy] >= bc && b[xy] <= ec)){
+				ms++;
+				//rm += r[xy]; gm += g[xy]; bm += b[xy];
+				xm += x;
+				ym += y;
+				//zm += i2d;
+			}
+		}
+	}
+	//ms = (ex - bx + 1)*(ey - by + 1);
+	//printf("ms = %d xm = %d ym = %d zm = %d\n", ms, xm, ym, zm);
+	*ox = xm/ms; *oy = ym/ms; //*col = cm/ms;
+}
+
+
 void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
 {
 	int i, j, k=0, c = 0, e = 0, x, y, z, zy, yx, xy, val, w2, outx, outy, col;
-	uint32 msb = 0x100, mask = 0xFF, max, sz = w*h;
+	uint32 msb = 0x100, mask = 0xFF, min, sz = w*h;
 
 	memset(out, 0, w*h*sizeof(uint8));
 	//y=0;{
@@ -329,7 +390,8 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 				//printf("new\n");
 				buf[0] = xy; //buf[1] = max;
 				outx = x; outy = y;
-				out[buf[0]] = in[buf[0]];
+				//out[buf[0]] = in[buf[0]];
+				out[buf[0]] = 1;
 				val = 0; i = 0;
 				do{
 					i++;
@@ -338,24 +400,34 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 					buf[i] = outy*w + outx;
 					//out[buf[i]] = col;
 					//printf("%d buf[i-1] = %d buf[i] = %d x = %d y = %d img = %d col = %d \n", i, buf[i-1], buf[i], outx, outy, in[buf[i]], col);
-					if(out[buf[i]]) {
-						/*
-						if(i == 1) {
-							e++;
-						} else {
-							for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
-						}*/
-						//out[buf[i]] = col;
+					if(out[buf[i]] > 1) {
+						break;
+					}else if(out[buf[i]] == 1){
+						//Find clusters
+						min = in[buf[i]];
 
+						if(buf[i] > w && buf[i] < w*(h-1)){
+							if(abs(in[buf[i]-1  ] - in[buf[i]]) < min) { val = in[buf[i]-1  ]; }
+							if(abs(in[buf[i]-1-w] - in[buf[i]]) < min) { val = in[buf[i]-1-w]; }
+							if(abs(in[buf[i]  -w] - in[buf[i]]) < min) { val = in[buf[i]  -w]; }
+							if(abs(in[buf[i]+1-w] - in[buf[i]]) < min) { val = in[buf[i]+1-w]; }
+							if(abs(in[buf[i]+1  ] - in[buf[i]]) < min) { val = in[buf[i]+1  ]; }
+							if(abs(in[buf[i]+1+w] - in[buf[i]]) < min) { val = in[buf[i]+1+w]; }
+							if(abs(in[buf[i]  +w] - in[buf[i]]) < min) { val = in[buf[i]  +w]; }
+							if(abs(in[buf[i]-1+w] - in[buf[i]]) < min) { val = in[buf[i]-1+w]; }
+						}
+
+						out[buf[i]] = val;
+						if(i > 10) for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
 						break;
 					}
-					out[buf[i]] = col;
+					out[buf[i]] = 1;
 					//i3d[buf[i]] |= msb;
 
 					//if(i > 100) break;
 				} while(1);//while(buf[i-1] != buf[i]);
 
-				for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
+				//for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
 				k+= i; c++;
 				//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 			}
@@ -1199,10 +1271,10 @@ uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 					dir1(img, w,  yx,  0,  0,  &dx,  &dy);
 					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
 					edges[nedge].yxe = find_lines(pix, img, x, y, dx,  dy,  &edges[nedge].pixs, &edges[nedge].lines, w, 1);
-					//printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
+					printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
 					edges[nedge].yxs = find_lines(pix, img, x, y, dx1, dy1, &edges[nedge].pixs, &edges[nedge].lines, w, 0);
-					//printf("0 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
-					//printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
+					printf("0 pixs = %3d lines = %3d ", edges[nedge].pixs, edges[nedge].lines);
+					printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
 					npix += edges[nedge].pixs;
 					nline += edges[nedge].lines;
 					if(edges[nedge].yxs != edges[nedge].yxe) nedge++;
