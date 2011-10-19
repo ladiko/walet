@@ -174,7 +174,7 @@ void shift_w_to_b(int8 *in, uint8 *out, int shift, uint32 size)
 uint8* utils_shift(int16 *img, uint8 *rgb, uint32 w, uint32 h, int sh)
 {
 	int i, sz = h*w;
-	for(i=0; i < sz; i++) rgb[i] = img[i] + sh;
+	for(i=0; i < sz; i++) { rgb[i] = img[i] + sh; rgb[i] = rgb[i] < 2 ? 2 : rgb[i]; }
 	return rgb;
 }
 
