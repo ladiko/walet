@@ -68,7 +68,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	//Old init
 	f->size = w*h;
 
-	f->pixs = (Pixel *)calloc((w>>1)*(h>>1), sizeof(Pixel));
+	f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
 	f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
 	f->rgb.w  = w;
@@ -715,8 +715,9 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->Y.w,f->Y.h, 4, 4, 8, (uint32*)g->buf);
 
-	seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 2);
-	f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
+	seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
+	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
+	seg_points(f->grad.pic, f->grad.w, f->grad.h);
 
 	printf("nedge = %d\n", f->nedge);
 
