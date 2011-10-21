@@ -38,6 +38,7 @@ void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_region(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_points(uint8 *img, uint32 w, uint32 h);
+void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h);
 
 void seg_quant(uint8 *img1, uint8 *img2, uint32 w, uint32 h, uint32 q);
 void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);

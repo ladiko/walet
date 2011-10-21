@@ -383,7 +383,7 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		} else if(gw->wc.dec == RESIZE){
 			for(i=0; i < 3; i++){
 				new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
-				utils_resize_image_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+				utils_resize_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
 				gtk_widget_queue_draw(gw->drawingarea[i+1]);
 			}
 		}
@@ -594,19 +594,28 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
+	new_buffer (gw->orig[2], fr->img[0].w, fr->img[0].h);
+	utils_gradient_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
+	gtk_widget_queue_draw(gw->drawingarea[2]);
 
-	new_buffer (gw->orig[3], w, h);
-	utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
+	new_buffer (gw->orig[3], fr->img[0].w, fr->img[0].h);
+	utils_contour_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
+	//new_buffer (gw->orig[3], w, h);
+	//utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
+	//gtk_widget_queue_draw(gw->drawingarea[3]);
+
 	//new_buffer (gw->orig[3], fr->img[0].dw[0].w, fr->img[0].dw[0].h);
 	//utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->img[0].dw[0].w, fr->img[0].dw[0].h, 0);
 	//gtk_widget_queue_draw(gw->drawingarea[3]);
 
-	seg_draw_lines(fr->pixs, 0, gw->gop.buf, w, h);
+	//seg_draw_lines(fr->pixs, 0, gw->gop.buf, w, h);
 
-	new_buffer (gw->orig[2], w, h);
-	utils_grey_draw8(gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
+	//new_buffer (gw->orig[2], w, h);
+	//utils_grey_draw8(fr->Y.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
+	//gtk_widget_queue_draw(gw->drawingarea[2]);
 
 	/*
 	p3d q, d;

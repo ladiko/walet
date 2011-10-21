@@ -1026,6 +1026,48 @@ void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 	printf("Numbers of pixels  = %d\n", *npix);
 }
 
+void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
+{
+	uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0;
+	int d1, d2, npix = 0;
+
+	for(y=1, y1=w; y1 < sq; y++, y1+=w){
+		for(x=1; x < w1; x++){
+			yx = y1 + x;
+			//if(img[yx] && img[yx]!= 255){
+			if(grad[yx] && grad[yx] != 255){
+				if(loc_max(grad, yx, w)){
+					yx1 = yx; yx2 = yx;
+					out[yx1] = grad[yx1]; //grad[yx1] = 255;
+					d1 = dir(grad, yx1, w, 0);
+					d2 = dir(grad, yx1, w, d1);
+					while(1){
+						yx1 = yx1 + d1;
+						if(out[yx1] || !grad[yx1]) {
+							//out[yx1] = 255;
+							break;
+						}
+						npix++;
+						out[yx1] = grad[yx1]; //grad[yx1] = 255;
+						d1 = dir(grad, yx1, w, -d1);
+					}
+					while(1){
+						yx2 = yx2 + d2; //yx2 = yx2 + dy2*w + dx2; //x = x + dx; y = y + dy;
+						if(out[yx2] || !grad[yx2]) {
+							//out[yx2] = 255;
+							break;
+						}
+						npix++;
+						out[yx2] = grad[yx2]; //grad[yx2] = 255;
+						d2 = dir(grad, yx2, w, -d2);
+					}
+				}
+			}
+		}
+	}
+	printf("Numbers of pixels  = %d\n", npix);
+}
+
 static inline uint32 is_in_line(int dx, int dy, int dx1, int dy1)
 {
 	if(dx == dx1 && dy == dy1) return 0;
@@ -1399,7 +1441,6 @@ uint32 seg_points(uint8 *img, uint32 w, uint32 h)
 	}
 	for(x=0; x < sz; x++) img[x] = (img[x] == 254) ? 0 : img[x];
 	return nedge;
-
 }
 
 void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h)

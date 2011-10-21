@@ -52,6 +52,21 @@ static inline void drawrect(uint8 *rgb, int16 *pic, uint32 x0, uint32 y0, uint32
 	}
 }
 
+static inline void drawrect8(uint8 *rgb, uint8 *pic, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
+{
+	uint32 x, y, tmp;
+	for(y=0; y < h; y++ ){
+		for(x=0; x < w; x++){
+			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
+			tmp = lb1(shift + pic[y*w+x]);
+			//if(tmp > 255) printf("tmp = %d pic = %d\n", tmp, pic[y*w+x]);
+			rgb[3*((y+y0)*size +x0 +x)]   = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+1] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+2] = tmp; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+		}
+	}
+}
+
 static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
 {
 	uint32 x, y, tmp;
@@ -80,7 +95,7 @@ uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps)
 	return rgb;
 }
 
-uint8* utils_resize_image_draw(Image *img, uint8 *rgb, uint32 steps)
+uint8* utils_resize_draw(Image *img, uint8 *rgb, uint32 steps)
 {
 	uint32 i, j, x, y, w = img->w;
 
@@ -88,10 +103,44 @@ uint8* utils_resize_image_draw(Image *img, uint8 *rgb, uint32 steps)
 		x = 0; y = 0;
 		//for(j=steps-1; j >= 0 ; j--){
 		for(j=0; j < steps ; j++){
-			printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
+			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
 
 			drawrect(rgb, img->dw[j].pic, x, y, img->dw[j].w, img->dw[j].h, w, 128);
 			x += img->dw[j].w; y += img->dw[j].h;
+		}
+	}
+	return rgb;
+}
+
+uint8* utils_gradient_draw(Image *img, uint8 *rgb, uint32 steps)
+{
+	uint32 i, j, x, y, w = img->w;
+
+	if(steps != 0){
+		x = 0; y = 0;
+		//for(j=steps-1; j >= 0 ; j--){
+		for(j=0; j < steps ; j++){
+			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
+
+			drawrect8(rgb, img->dg[j].pic, x, y, img->dg[j].w, img->dg[j].h, w, 0);
+			x += img->dg[j].w; y += img->dg[j].h;
+		}
+	}
+	return rgb;
+}
+
+uint8* utils_contour_draw(Image *img, uint8 *rgb, uint32 steps)
+{
+	uint32 i, j, x, y, w = img->w;
+
+	if(steps != 0){
+		x = 0; y = 0;
+		//for(j=steps-1; j >= 0 ; j--){
+		for(j=0; j < steps ; j++){
+			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
+
+			drawrect8(rgb, img->dc[j].pic, x, y, img->dc[j].w, img->dc[j].h, w, 0);
+			x += img->dc[j].w; y += img->dc[j].h;
 		}
 	}
 	return rgb;

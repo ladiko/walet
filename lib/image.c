@@ -520,7 +520,12 @@ void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps, uint32
 	int16 *tmp;
 	img->w = w; img->h = h;
 	img->p = (int16 *)calloc(w*h, sizeof(int16));
-	// For test only
+	//For segmentation only----------------
+	img->grad.w = w; img->grad.h = h;
+	img->grad.pic = (uint8 *)calloc(img->grad.w*img->grad.h, sizeof(uint8));
+	img->con.w = w; img->con.h = h;
+	img->con.pic = (uint8 *)calloc(img->con.w*img->con.h, sizeof(uint8));
+	// For test only -------------------
 	img->d.w = w; img->d.h = h;
 	img->d.pic = (int16 *)calloc(img->d.w*img->d.h, sizeof(int16));
 
@@ -545,13 +550,33 @@ void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps, uint32
 		}
 	} else if (dec = RESIZE){
 		img->dw = (Pic16s *)calloc(steps, sizeof(Pic16s));
-		img->dw[i].w = (w>>1) + (w&1);
-		img->dw[i].h = (h>>1) + (h&1);
-		img->dw[i].pic = (int16 *)calloc(img->dw[i].w*img->dw[i].h, sizeof(int16));
+		img->dw[0].w = (w>>1) + (w&1);
+		img->dw[0].h = (h>>1) + (h&1);
+		img->dw[0].pic = (int16 *)calloc(img->dw[0].w*img->dw[0].h, sizeof(int16));
 		for(i=1; i < steps; i++) {
 			img->dw[i].w = (img->dw[i-1].w>>1) + (img->dw[i-1].w&1);
 			img->dw[i].h = (img->dw[i-1].h>>1) + (img->dw[i-1].h&1);
 			img->dw[i].pic = (int16 *)calloc(img->dw[i].w*img->dw[i].h, sizeof(int16));
+		}
+
+		img->dg = (Pic8u *)calloc(steps, sizeof(Pic8u));
+		img->dg[0].w = (w>>1) + (w&1);
+		img->dg[0].h = (h>>1) + (h&1);
+		img->dg[0].pic = (uint8 *)calloc(img->dg[0].w*img->dg[0].h, sizeof(int16));
+		for(i=1; i < steps; i++) {
+			img->dg[i].w = (img->dg[i-1].w>>1) + (img->dg[i-1].w&1);
+			img->dg[i].h = (img->dg[i-1].h>>1) + (img->dg[i-1].h&1);
+			img->dg[i].pic = (uint8 *)calloc(img->dg[i].w*img->dg[i].h, sizeof(int16));
+		}
+
+		img->dc = (Pic8u *)calloc(steps, sizeof(Pic8u));
+		img->dc[0].w = (w>>1) + (w&1);
+		img->dc[0].h = (h>>1) + (h&1);
+		img->dc[0].pic = (uint8 *)calloc(img->dc[0].w*img->dc[0].h, sizeof(int16));
+		for(i=1; i < steps; i++) {
+			img->dc[i].w = (img->dc[i-1].w>>1) + (img->dc[i-1].w&1);
+			img->dc[i].h = (img->dc[i-1].h>>1) + (img->dc[i-1].h&1);
+			img->dc[i].pic = (uint8 *)calloc(img->dc[i].w*img->dc[i].h, sizeof(int16));
 		}
 	}
 
@@ -625,6 +650,29 @@ void image_resize_down_2x(Image *im, int16 *buf, uint32 steps){
 	uint32 i;
 	resize_down_2x(im->p, im->dw[0].pic, buf, im->w, im->h);
 	for(i=1; i < steps; i++) resize_down_2x(im->dw[i-1].pic, im->dw[i].pic, buf, im->dw[i-1].w, im->dw[i-1].h);
+}
+
+/**	\brief Get gradients of down sampling images.
+	\param im	 	The image structure.
+	\param buf		The temporary buffer.
+	\param steps	The steps of resizes.
+	\param th		The gradient threshold ((img>>th)<<th)
+*/
+void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
+	uint32 i;
+	seg_grad16(im->p, im->grad.pic, im->w, im->h, 2);
+	for(i=0; i < steps; i++) seg_grad16(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, 2);
+}
+
+/**	\brief Get contours from gradients of down sampling images.
+	\param im	 	The image structure.
+	\param buf		The temporary buffer.
+	\param steps	The steps of resizes.
+*/
+void image_contour(Image *im, uint8 *buf, uint32 steps){
+	uint32 i;
+	seg_local_max1(im->grad.pic, im->con.pic, im->w, im->h);
+	for(i=0; i < steps; i++) seg_local_max1(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 }
 
 /*
