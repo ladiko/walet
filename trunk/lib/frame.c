@@ -700,6 +700,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	Frame *f = &g->frames[fn];
+	uint32 npix;
 
 	//if(check_state(f->state, FRAME_COPY)){
 		//if(wc->ccol == BAYER){
@@ -715,11 +716,16 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->Y.w,f->Y.h, 4, 4, 8, (uint32*)g->buf);
 
-	seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
-	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
-	seg_points(f->grad.pic, f->grad.w, f->grad.h);
+	image_gradient(&f->img[0], g->buf, wc->steps, 2);
+	image_contour(&f->img[0], g->buf, wc->steps);
 
-	printf("nedge = %d\n", f->nedge);
+	//seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
+	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
+	//seg_points(f->grad.pic, f->grad.w, f->grad.h);
+	//seg_local_max(f->pixs, &npix, f->grad.pic, f->grad.w, f->grad.h);
+	//seg_local_max1(f->grad.pic, f->Y.pic, f->grad.w, f->grad.h);
+
+	//printf("nedge = %d\n", f->nedge);
 
 		//seg_pixels(f->pixs, f->grad.pic, f->grad.w, f->grad.h);
 		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
