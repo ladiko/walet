@@ -146,6 +146,80 @@ uint8* utils_contour_draw(Image *img, uint8 *rgb, uint32 steps)
 	return rgb;
 }
 
+uint8* utils_contour_rgb_draw(Image *img, uint8 *rgb)
+{
+	uint32 i, j, x, y, w = img->dc[0].w, h = img->dc[0].h;
+	uint32 yw, yx, yx3, yy, xy;
+
+	for(y=0; y < img->dc[0].h; y++){
+		yw = y*img->dc[0].w;
+		for(x=0; x < img->dc[0].w; x++){
+			yx = yw + x;
+			yx3 = yx*3;
+			rgb[yx3+2] = img->dc[0].pic[yx];
+		}
+	}
+	for(y=0; y < img->dc[1].h; y++){
+		yw = y*img->dc[0].w*2;
+		for(x=0; x < img->dc[1].w; x++){
+			//yx = yw + x*2;
+			//yx3 = yx*3;
+			for(i=0; i < 2; i++){
+				yy = yw + i*img->dc[0].w;
+				for(j=0; j < 2; j++){
+					yx = yy + x*2 + j;
+					yx3 = yx*3;
+					xy = y*img->dc[1].w + x;
+					rgb[yx3+1] = img->dc[1].pic[xy];
+				}
+			}
+		}
+	}
+	for(y=0; y < img->dc[2].h; y++){
+		yw = y*img->dc[0].w*4;
+		for(x=0; x < img->dc[2].w; x++){
+			//yx = yw + x*2;
+			//yx3 = yx*3;
+			for(i=0; i < 4; i++){
+				yy = yw + i*img->dc[0].w;
+				for(j=0; j < 4; j++){
+					yx = yy + x*4 + j;
+					yx3 = yx*3;
+					xy = y*img->dc[2].w + x;
+					rgb[yx3] = img->dc[2].pic[xy];
+				}
+			}
+		}
+	}
+	return rgb;
+}
+
+uint8* utils_contour(Image *img, uint8 *rgb, uint32 n)
+{
+	uint32 i, j, x, y, w = img->dc[0].w, h = img->dc[0].h;
+	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
+
+	for(y=0; y < img->dc[n].h; y++){
+		yw = y*img->dc[0].w*s;
+		for(x=0; x < img->dc[n].w; x++){
+			//yx = yw + x*2;
+			//yx3 = yx*3;
+			for(i=0; i < s; i++){
+				yy = yw + i*img->dc[0].w;
+				for(j=0; j < s; j++){
+					yx = yy + x*s + j;
+					yx3 = yx*3;
+					xy = y*img->dc[n].w + x;
+					rgb[yx3  ] = img->dc[n].pic[xy];
+					rgb[yx3+1] = img->dc[n].pic[xy];
+					rgb[yx3+2] = img->dc[n].pic[xy];
+				}
+			}
+		}
+	}
+	return rgb;
+}
+
 uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps)
 {
 	uint32 i, j, x, y, w;
