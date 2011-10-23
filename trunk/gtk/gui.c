@@ -594,6 +594,15 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
+	for(i=0; i < 4; i++){
+		new_buffer (gw->orig[i], fr->img[0].dc[0].w, fr->img[0].dc[0].h);
+		utils_contour(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		gtk_widget_queue_draw(gw->drawingarea[i]);
+	}
+	//new_buffer (gw->orig[2], fr->img[0].dc[0].w, fr->img[0].dc[0].h);
+	//utils_contour_rgb_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb));
+	//gtk_widget_queue_draw(gw->drawingarea[2]);
+	/*
 	new_buffer (gw->orig[2], fr->img[0].w, fr->img[0].h);
 	utils_gradient_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps);
 	gtk_widget_queue_draw(gw->drawingarea[2]);
@@ -601,7 +610,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	new_buffer (gw->orig[3], fr->img[0].w, fr->img[0].h);
 	utils_contour_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
-
+	*/
 
 	//new_buffer (gw->orig[3], w, h);
 	//utils_grey_draw8(fr->grad.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);

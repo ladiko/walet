@@ -14,6 +14,8 @@ uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps);
 uint8* utils_resize_draw(Image *img, uint8 *rgb, uint32 steps);
 uint8* utils_gradient_draw(Image *img, uint8 *rgb, uint32 steps);
 uint8* utils_contour_draw(Image *img, uint8 *rgb, uint32 steps);
+uint8* utils_contour_rgb_draw(Image *img, uint8 *rgb);
+uint8* utils_contour(Image *img, uint8 *rgb, uint32 n);
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
 void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);
