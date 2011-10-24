@@ -716,8 +716,10 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->Y.w,f->Y.h, 4, 4, 8, (uint32*)g->buf);
 
-	image_gradient(&f->img[0], g->buf, wc->steps, 0);
-	image_contour(&f->img[0], g->buf, wc->steps);
+	image_gradient(&f->img[0], g->buf, wc->steps, 3);
+	image_fall_forest(&f->img[0], g->buf, wc->steps);
+	//image_contour(&f->img[0], g->buf, wc->steps);
+	//image_points(&f->img[0], g->buf, wc->steps);
 
 	//seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
 	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);

@@ -323,23 +323,23 @@ uint32 center_mass_2d_rgb(uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, int 
 
 	// X coordinate
 	if(*ox - ds < 0){ bx = 0; ex = *ox<<1; }
-	else if(*ox + ds > (w - 1)) { bx = (*ox<<1) - w +1; ex = w - 1; }
+	else if(*ox + ds > (w - 1)) { bx = (*ox<<1) - w + 1; ex = w - 1; }
 	else { bx = *ox - ds; ex = *ox + ds; }
 	// Y coordinate
 	if(*oy - ds < 0){ by = 0; ey = *oy<<1; }
-	else if(*oy + ds > (h - 1)) { by = (*oy<<1) - h +1; ey = h - 1; }
+	else if(*oy + ds > (h - 1)) { by = (*oy<<1) - h + 1; ey = h - 1; }
 	else { by = *oy - ds; ey = *oy + ds; }
 	// Red color
 	if(r[xy] - dc < 0){ bc = 0; ec = r[xy]<<1; }
-	else if(r[xy] + dc > (z - 1)) { bc = (r[xy]<<1) - z +1; ec = z - 1; }
+	else if(r[xy] + dc > (z - 1)) { bc = (r[xy]<<1) - z + 1; ec = z - 1; }
 	else { bc = r[xy] - dc; ec = r[xy] + dc; }
 	// Green color
 	if(g[xy] - dc < 0){ bc = 0; ec = g[xy]<<1; }
-	else if(g[xy] + dc > (z - 1)) { bc = (g[xy]<<1) - z +1; ec = z - 1; }
+	else if(g[xy] + dc > (z - 1)) { bc = (g[xy]<<1) - z + 1; ec = z - 1; }
 	else { bc = g[xy] - dc; ec = g[xy] + dc; }
 	// Blue color
 	if(b[xy] - dc < 0){ bc = 0; ec = b[xy]<<1; }
-	else if(b[xy] + dc > (z - 1)) { bc = (b[xy]<<1) - z +1; ec = z - 1; }
+	else if(b[xy] + dc > (z - 1)) { bc = (b[xy]<<1) - z + 1; ec = z - 1; }
 	else { bc = b[xy] - dc; ec = b[xy] + dc; }
 	/*
 	bx = (*ox - ds) < 0 ? 0 : *ox - ds;
@@ -473,23 +473,29 @@ void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-			//if(y == w)
-			//printf("yx-1 = %3d yx+1 = %3d yx-w = %3d yx+w = %3d yx-1-w = %3d yx+1+w = %3d yx+1-w = %3d yx-1+w = %3d\n",
-			//		yx-1, yx+1, yx-w, yx+w, yx-1-w, yx+1+w, yx+1-w, yx-1+w);
-			//max = g[0]; in = 2;
-			//if(max < g[1]) { max = g[1]; in = 3; }
-			//if(max < g[2]) { max = g[2]; in = 0; }
-			//if(max < g[3]) { max = g[3]; in = 1; }
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
-			//max = max > 252 ? 252 : max;
-			//img1[yx] = max;
-			//img1[yx] = max>>th ? (max >= 255 ? 254 : (max>>th)<<th): 0;
 			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
-			//img1[yx] = max>>th ? max : 0;
-			//printf("yx = %d max = %d\n", yx, max);
 		}
 	}
 }
+
+void seg_corner(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1, sh = 1<<th;
+	int max, in;
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			max = 	abs(img[yx-1  ] - img[yx-1-w]) + abs(img[yx-1-w] - img[yx-w  ]) +
+					abs(img[yx-w  ] - img[yx+1-w]) + abs(img[yx+1-w] - img[yx+1  ]) +
+					abs(img[yx+1  ] - img[yx+1+w]) + abs(img[yx+1+w] - img[yx+w  ]) +
+					abs(img[yx+w  ] - img[yx-1+w]) + abs(img[yx-1+w] - img[yx-1  ]);
+			max = (max>>2) - sh;
+			img1[yx] = (max > 0) ? (max > 252 ? 252 : max) : 0;
+		}
+	}
+}
+
 
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
@@ -1039,6 +1045,7 @@ void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
 				if(loc_max(grad, yx, w)){
 					yx1 = yx; yx2 = yx;
 					out[yx1] = grad[yx1]; //grad[yx1] = 255;
+					grad[yx] = 255;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
@@ -1066,6 +1073,32 @@ void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
 		}
 	}
 	printf("Numbers of pixels  = %d\n", npix);
+}
+
+void seg_point(uint8 *con, uint32 w, uint32 h)
+{
+	uint32 y, y1, x, yx, in, sq = w*h - w, w1 = w-1;
+	int npix = 0;
+
+	for(y=1, y1=w; y1 < sq; y++, y1+=w){
+		for(x=1; x < w1; x++){
+			yx = y1 + x;
+			//if(img[yx] && img[yx]!= 255){
+			in = 0;
+			if(con[yx]){
+				if(con[yx-1  ]) in++;
+				if(con[yx-1-w]) in++;
+				if(con[yx  -w]) in++;
+				if(con[yx+1-w]) in++;
+				if(con[yx+1  ]) in++;
+				if(con[yx+1+w]) in++;
+				if(con[yx  +w]) in++;
+				if(con[yx-1+w]) in++;
+			}
+			if(in > 2 || in == 1 ) { con[yx] = 255; npix++; }
+		}
+	}
+	printf("Numbers of points  = %d\n", npix);
 }
 
 static inline uint32 is_in_line(int dx, int dy, int dx1, int dy1)
