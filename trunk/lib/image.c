@@ -660,8 +660,10 @@ void image_resize_down_2x(Image *im, int16 *buf, uint32 steps){
 */
 void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
 	uint32 i;
-	seg_grad16(im->p, im->grad.pic, im->w, im->h, 2);
-	for(i=0; i < steps; i++) seg_grad16(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, 2);
+	//seg_corner(im->p, im->grad.pic, im->w, im->h, th);
+	//for(i=0; i < steps; i++) seg_corner(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, th);
+	seg_grad16(im->p, im->grad.pic, im->w, im->h, th);
+	for(i=0; i < steps; i++) seg_grad16(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, th);
 }
 
 /**	\brief Get contours from gradients of down sampling images.
@@ -673,6 +675,23 @@ void image_contour(Image *im, uint8 *buf, uint32 steps){
 	uint32 i;
 	seg_local_max1(im->grad.pic, im->con.pic, im->w, im->h);
 	for(i=0; i < steps; i++) seg_local_max1(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+}
+
+/**	\brief Get contours from gradients of down sampling images.
+	\param im	 	The image structure.
+	\param buf		The temporary buffer.
+	\param steps	The steps of resizes.
+*/
+void image_points(Image *im, uint8 *buf, uint32 steps){
+	uint32 i;
+	seg_point(im->con.pic, im->w, im->h);
+	for(i=0; i < steps; i++) seg_point(im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+}
+
+void image_fall_forest(Image *im, uint8 *buf, uint32 steps){
+	uint32 i;
+	seg_fall_forest(im->grad.pic, im->con.pic, im->w, im->h);
+	for(i=0; i < steps; i++) seg_fall_forest(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 }
 
 /*

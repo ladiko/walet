@@ -599,6 +599,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 		utils_contour(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		gtk_widget_queue_draw(gw->drawingarea[i]);
 	}
+
 	//new_buffer (gw->orig[2], fr->img[0].dc[0].w, fr->img[0].dc[0].h);
 	//utils_contour_rgb_draw(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[2]->pxb));
 	//gtk_widget_queue_draw(gw->drawingarea[2]);

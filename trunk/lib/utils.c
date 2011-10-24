@@ -151,6 +151,7 @@ uint8* utils_contour_rgb_draw(Image *img, uint8 *rgb)
 	uint32 i, j, x, y, w = img->dc[0].w, h = img->dc[0].h;
 	uint32 yw, yx, yx3, yy, xy;
 
+
 	for(y=0; y < img->dc[0].h; y++){
 		yw = y*img->dc[0].w;
 		for(x=0; x < img->dc[0].w; x++){
