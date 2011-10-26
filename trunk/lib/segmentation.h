@@ -28,7 +28,7 @@ void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_local_max( Pixel *pix,  uint32 *npix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h);
-void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h);
+void seg_draw_lines(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, uint32 h, uint32 px, uint32 col);
 void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, uint32 h, uint32 px, uint32 col);
 void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, uint8 *grad1, uint8 *grad2, uint8 *img1, uint8 *img2, uint8 *mmb, uint32 w, uint32 h, uint32 mvs);
