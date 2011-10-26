@@ -694,6 +694,25 @@ void image_fall_forest(Image *im, uint8 *buf, uint32 steps){
 	for(i=0; i < steps; i++) seg_fall_forest(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 }
 
+void image_mean_shift(Image *im, uint8 *buf, uint32 steps){
+	uint32 i;
+	//seg_find_clusters_2d(im->p, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
+	for(i=0; i < steps; i++) utils_shift(im->dw[i].pic, im->dg[i].pic, im->dg[i].w, im->dg[i].h, 128);
+	for(i=0; i < steps; i++) seg_find_clusters_2d(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h, 2, 2, 8, (uint32*)buf);
+
+}
+
+void image_line(Image *im, uint8 *buf, uint32 steps, Pixel *pixs, Edge *edges){
+	uint32 i, npix;
+	i=steps-2;{
+	//for(i=0; i < steps; i++) {
+		npix = seg_line(pixs, edges, im->dg[i].pic, im->dg[i].w, im->dg[i].h);
+		seg_reduce_line(pixs,im->dg[i].pic, im->dg[i].w, im->dg[i].h);
+		seg_draw_lines(pixs, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+	}
+
+}
+
 /*
 void image_copy(Image *im, uint32 bpp, uint8 *v){
 ///	\fn void image_copy(Image *im, uint32 bpp,  *v)

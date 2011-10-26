@@ -48,6 +48,8 @@ void 	image_gradient		(Image *im, uint8 *buf, uint32 steps, uint32 th);
 void 	image_contour		(Image *im, uint8 *buf, uint32 steps);
 void 	image_points		(Image *im, uint8 *buf, uint32 steps);
 void 	image_fall_forest	(Image *im, uint8 *buf, uint32 steps);
+void 	image_mean_shift	(Image *im, uint8 *buf, uint32 steps);
+void 	image_line			(Image *im, uint8 *buf, uint32 steps, Pixel *pixs, Edge *edges);
 
 void 	image_fill_subb		(Image *im, uint32 steps);
 uint32 	image_size			(Image *im, uint32 steps, int qstep);

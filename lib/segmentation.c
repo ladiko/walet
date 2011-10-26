@@ -401,9 +401,12 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 					//out[buf[i]] = col;
 					//printf("%d buf[i-1] = %d buf[i] = %d x = %d y = %d img = %d col = %d \n", i, buf[i-1], buf[i], outx, outy, in[buf[i]], col);
 					if(out[buf[i]] > 1) {
+						out[buf[i]] = col;
 						break;
-					}else if(out[buf[i]] == 1){
+					} else if (out[buf[i]] == 1) {
+						out[buf[i]] = in[buf[i]];
 						//Find clusters
+						/*
 						min = in[buf[i]];
 
 						if(buf[i] > w && buf[i] < w*(h-1)){
@@ -418,7 +421,7 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 						}
 
 						out[buf[i]] = val;
-						if(i > 10) for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
+						if(i > 10) for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];*/
 						break;
 					}
 					out[buf[i]] = 1;
@@ -428,6 +431,7 @@ void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, 
 				} while(1);//while(buf[i-1] != buf[i]);
 
 				//for(j=0; j < i; j++) out[buf[j]] = out[buf[i]];
+				//for(j=0; j < i; j++) out[buf[j]] = col;
 				k+= i; c++;
 				//printf("%d val = %d color = %3d %3d %3d num = %d i3d = %d\n", k, val, (val&0xF800)>>(11-q->x), (val&0x7E0)>>(5-q->y), (val&0x1F)<<q->z, i, i3d[val]&mask);
 			}
@@ -474,6 +478,7 @@ void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			//max = g[2];
 			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
 		}
 	}
@@ -519,6 +524,7 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			//max = g[0];
 			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
 		}
 	}
@@ -1419,6 +1425,7 @@ uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 	uint32 y, x, yx, yw, w1 = w-1, h1 = h-1;
 	uint32 npix = 0, nline = 0, nedge = 0, px, ln;
 	int dx, dy, dx1, dy1;
+	printf("w = %d h = %d\n", w, h);
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
@@ -1533,7 +1540,7 @@ static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint
 	return max;
 }
 
-void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
+void seg_draw_lines(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, pixs = 0, nline = 0;
 	Vector xy;
@@ -1542,7 +1549,7 @@ void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 			//if(pix[i].nout) {
 			//if(pix[i].pow == 255) {
 			if(pix[i].nout) {
-				if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
+				//if(pix[i].nout > 1) printf("nout = %d\n",pix[i].nout);
 				//printf("dx = %d dy = %d pow = %d\n", pix[i].x - pix[i].out->x, pix[i].y - pix[i].out->y, pix[i].pow);
 				xy.x1 = pix[i].x; xy.y1 = pix[i].y;
 				xy.x2 = pix[i].out->x; xy.y2 = pix[i].out->y;
@@ -1552,10 +1559,11 @@ void seg_draw_lines(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 	}
 	for(i=0; i < w*h; i++){
 		if(pix[i].nout || pix[i].nin){
+			img[i] = 255;
 		//if(pix[i].nout){
-			img[i] = pix[i].pow<<1;
-			img[i + pix[i].yx] = pix[i].pow<<1;
-			img[i - pix[i].yx] = pix[i].pow<<1;
+			//img[i] = pix[i].pow<<1;
+			//img[i + pix[i].yx] = pix[i].pow<<1;
+			//img[i - pix[i].yx] = pix[i].pow<<1;
 			pixs++;
 		}
 	}
