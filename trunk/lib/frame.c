@@ -65,6 +65,10 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->hist = (uint32 *)calloc((1<<wc->bpp)*3, sizeof(uint32));
 	f->look = (uint16 *)calloc((1<<wc->bpp)*3, sizeof(uint16));
 
+	//Init new sermentation
+	f->lc = (LineColor *)calloc((w>>1)*(h>>1), sizeof(LineColor));
+	f->vx = (Vertex *)calloc((w>>2)*(h>>2), sizeof(Vertex));
+
 	//Old init
 	f->size = w*h;
 
@@ -719,9 +723,10 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	//image_mean_shift(&f->img[0], g->buf, wc->steps);
 
 	image_gradient(&f->img[0], g->buf, wc->steps, 3);
-	image_line(&f->img[0], g->buf, wc->steps, f->pixs, f->edges);
+	//image_line(&f->img[0], g->buf, wc->steps, f->pixs, f->edges);
+
 	//image_fall_forest(&f->img[0], g->buf, wc->steps);
-	//image_contour(&f->img[0], g->buf, wc->steps);
+	image_contour(&f->img[0], g->buf, wc->steps);
 	//image_points(&f->img[0], g->buf, wc->steps);
 
 	//seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
