@@ -14,6 +14,10 @@ typedef struct{
 	uint32 		*hist;		//distribution probabilities array for white balancing
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
 
+	// New segmentation interface
+	LineColor 	*lc;
+	Vertex		*vx;
+
 	//Old interface
 	//Pic8u rgb; // Scaled image for each color
 	Pic8u Y;	// The Y color componets

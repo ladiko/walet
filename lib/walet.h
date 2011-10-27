@@ -196,6 +196,22 @@ typedef struct Edgelet Edgelet;
 typedef struct Pixel Pixel;
 typedef struct Vector Vector;
 
+typedef struct Vertex Vertex;
+typedef struct LineColor LineColor;
+
+struct LineColor	{
+	uint8 l[3];		//Left color
+	uint8 c[3];		//Line color
+	uint8 r[3];		//Right color
+};
+
+struct Vertex {
+	uint16 		x,y;	//X and Y coordinate
+	uint8		n;		//The number of neighborhood vertex
+	Vertex		*v[8];	//The pointers to neighborhood vertex
+	LineColor	*lc[8];	//The lines color
+};
+
 struct Vector {
 	 uint16		x1, y1;		//X coordinate
 	 uint16		x2, y2;		//X coordinate
