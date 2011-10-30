@@ -15,8 +15,9 @@ typedef struct{
 	uint16 		*look;		//Look up table for white balancing and gamma correction.
 
 	// New segmentation interface
-	LineColor 	*lc;
-	Vertex		*vx;
+	Line	 	*ln;		// The Line array
+	Vertex		*vx;		// The vertex array
+	Vertex		**vp;		// The pointer to Vertex array
 
 	//Old interface
 	//Pic8u rgb; // Scaled image for each color
