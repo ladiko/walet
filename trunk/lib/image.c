@@ -671,10 +671,15 @@ void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
 	\param buf		The temporary buffer.
 	\param steps	The steps of resizes.
 */
-void image_contour(Image *im, uint8 *buf, uint32 steps){
-	uint32 i;
-	seg_local_max1(im->grad.pic, im->con.pic, im->w, im->h);
-	for(i=0; i < steps; i++) seg_local_max1(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uint32 steps){
+	uint32 i, vxc;
+	//find_intersect(im->grad.pic, im->con.pic, im->w, im->h);
+	for(i=steps-1; i < steps; i++) {
+		find_intersect(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+		vxc = seg_vertex(im->dc[i].pic, vx, vp, ln, im->dg[i].w, im->dg[i].h);
+		seg_vector(im->dc[i].pic, vx, vp, ln, vxc, im->dg[i].w);
+		//seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dg[i].w);
+	}
 }
 
 /**	\brief Get contours from gradients of down sampling images.

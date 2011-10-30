@@ -81,8 +81,14 @@ static inline void direction(uint8 *img, uint32 w, uint yx, int *dx1, int *dy1)
 	}
 }
 
+/*	\brief	Find the maximum around the pixel.
+	\param	img		The pointer to gradient image.
+	\param	yx		The pixel coordinate (yx = y*w + x)
+	\param	w		The image width.
+	\param  in1		The previous maximum direction.
+	\retval			The direction of of local max.
+*/
 static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
-//Check for pixel
 {
 	uint32 max = 0;
 	int in = 0;
@@ -163,23 +169,32 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 }
 
+/*	\brief	Check is a pixel the local maximum.
+	\param	img		The pointer to gradient image.
+	\param	yx		The pixel coordinate (yx = y*w + x)
+	\param  w		The image width.
+	\retval			1 if local max, 0 - if not
+*/
 static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 {
-	uint32 in = 0;
-	//if(img[yx]){
 	if( img[yx-1] 	<= img[yx] &&
-			img[yx-w]	<= img[yx] &&
-			img[yx+1] 	<= img[yx] &&
-			img[yx+w] 	<= img[yx] &&
-			img[yx-1-w] <= img[yx] &&
-			img[yx+1-w] <= img[yx] &&
-			img[yx-1+w] <= img[yx] &&
-			img[yx+1+w] <= img[yx] ) return 1;
+		img[yx-w]	<= img[yx] &&
+		img[yx+1] 	<= img[yx] &&
+		img[yx+w] 	<= img[yx] &&
+		img[yx-1-w] <= img[yx] &&
+		img[yx+1-w] <= img[yx] &&
+		img[yx-1+w] <= img[yx] &&
+		img[yx+1+w] <= img[yx] ) return 1;
 	else return 0;
-	//} else return 0;
 }
 
-void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
+/*	\brief	Finf pixels with lines intersection.
+	\param	grad	The pointer to input gradient image.
+	\param	con		The pointer to output contour image.
+	\param  w		The image width.
+	\param  h		The image height.
+*/
+void find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
 	int d1, d2, npix = 0;
@@ -190,31 +205,31 @@ void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-			if(grad[yx] && !out[yx]){
+			if(grad[yx] && !con[yx]){
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
 					yx1 = yx; yx2 = yx;
-					out[yx1] = grad[yx1];
+					con[yx1] = grad[yx1];
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
 						yx1 = yx1 + d1;
-						if(out[yx1] || !grad[yx1]) {
-							out[yx1] = 255; grad[yx1] = 255;
+						if(con[yx1]) {
+							con[yx1] = 255; grad[yx1] = 255;
 							npix++;
 							break;
 						}
-						out[yx1] = grad[yx1]; grad[yx1] = 254;
+						con[yx1] = grad[yx1]; grad[yx1] = 254;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
 						yx2 = yx2 + d2;
-						if(out[yx2] || !grad[yx2]) {
-							out[yx2] = 255; grad[yx2] = 255;
+						if(con[yx2]) {
+							con[yx2] = 255; grad[yx2] = 255;
 							npix++;
 							break;
 						}
-						out[yx2] = grad[yx2]; grad[yx2] = 254;
+						con[yx2] = grad[yx2]; grad[yx2] = 254;
 						d2 = dir(grad, yx2, w, -d2);
 					}
 				}
@@ -222,45 +237,176 @@ void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h)
 			}
 		}
 	}
-	printf("Numbers of vertex  = %d\n", npix);
+	printf("Numbers of intersection  = %d\n", npix);
 }
 
-uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, uint32 *p, Vertex *vx, LineColor *lc, uint32 w, uint32 h)
+/*	\brief	Check neighborhoods around the pixel.
+	\param	img		The pointer to gradient image.
+	\param	yx		The pixel coordinate (yx = y*w + x)
+	\param  w		The image width.
+	\param  di		The pointer to direction storage.
+	\retval			The number of neighborhoods.
+*/
+static inline uint8 check_neighbor(uint8 *img, uint32 yx, uint32 w, uint8 *di)
+///Directions around the pixel
+/// |1|2|3| uint8 01234567
+/// |0|x|4|
+/// |7|6|5|
+{
+	uint32 c = 0;
+	*di = 0;
+	if(img[yx-1  ]) { *di += 128; 	c++; }
+	if(img[yx-w-1]) { *di += 64; 	c++; }
+	if(img[yx-w  ]) { *di += 32; 	c++; }
+	if(img[yx-w+1]) { *di += 16;	c++; }
+	if(img[yx+1  ]) { *di += 8; 	c++; }
+	if(img[yx+w+1]) { *di += 4; 	c++; }
+	if(img[yx+w  ]) { *di += 2; 	c++; }
+	if(img[yx+w-1]) { *di += 1; 	c++; }
+	return c;
+}
+
+/*	\brief	Create vertexes and lines arrays
+	\param	con		The pointer to contour image.
+	\param	vx		The pointer to Vertex array.
+	\param	ln		The pointer to Line array.
+	\param  w		The image width.
+	\param  h		The image height.
+	\retval			The number of vertex.
+*/
+uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, w1 = w-1, h1 = h-1;
-	uint32 npix = 0, nline = 0, nedge = 0, px, ln;
-	int dx, dy, dx1, dy1;
-	printf("w = %d h = %d\n", w, h);
+	uint32 vxc = 0, lnc = 0;
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-			if(con[yx] == 255) {
-
+			if(con[yx] == 255) { //New vertex
+				vx[yx].x = x; vx[yx].y = y;
+				vx[yx].n = check_neighbor(con, yx, w, &vx[yx].di);
+				vx[yx].cn = 0;
+				vx[yx].ln = &ln[lnc];
+				vp[vxc] = &vx[yx];
+				vxc++; lnc += vx[yx].n;
 			}
-			/*
-			if(img[yx] && img[yx] < 253){
-				if(loc_max(img, yx, w)){
-					dir1(img, w,  yx,  0,  0,  &dx,  &dy);
-					dir1(img, w,  yx, dx, dy, &dx1, &dy1);
-					edges[nedge].yxe = find_lines(pix, img, x, y, dx,  dy,  &edges[nedge].pixs, &edges[nedge].lines, w, 1);
-					//printf("nedge = %d 1 pixs = %3d lines = %3d ", nedge, edges[nedge].pixs, edges[nedge].lines);
-					edges[nedge].yxs = find_lines(pix, img, x, y, dx1, dy1, &edges[nedge].pixs, &edges[nedge].lines, w, 0);
-					//printf(" 0 pixs = %3d lines = %3d \n", edges[nedge].pixs, edges[nedge].lines);
-					//printf("yxs = %7d yxe = %7d pixs = %3d lines = %3d\n", edges[nedge].yxs, edges[nedge].yxe, edges[nedge].pixs, edges[nedge].lines);
-					npix += edges[nedge].pixs;
-					nline += edges[nedge].lines;
-					if(edges[nedge].yxs != edges[nedge].yxe) nedge++;
-					//find_lines(pix, img, x, y, w);
-				}
-			}*/
 		}
 	}
-	printf("Numbers of pixels  = %6d\n", npix);
-	printf("Numbers of lines   = %6d\n", nline);
-	printf("Numbers of edges   = %6d\n", nedge);
-	return nedge;
+	printf("Numbers of vertexs  = %6d\n", vxc);
+	printf("Numbers of lines    = %6d\n", lnc>>1);
+	return vxc;
+}
 
+/*	\brief	Set finished direction bit.
+	\param	vx		The pointer to vertex.
+	\param	d		The direction.
+	\param	w		The image width.
+*/
+static inline void finish_dir(Vertex *vx, int d, uint32 w)
+{
+	if		(d == -1  ) vx->cn += 128;
+	else if	(d == -w-1) vx->cn += 64;
+	else if (d == -w  ) vx->cn += 32;
+	else if (d == -w+1) vx->cn += 16;
+	else if (d ==  1  ) vx->cn += 8;
+	else if (d ==  w+1) vx->cn += 4;
+	else if (d ==  w  ) vx->cn += 2;
+	else if (d ==  w-1) vx->cn += 1;
+	printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+/*	\brief	Remove direction bit.
+	\param	vx		The pointer to vertex.
+	\param	d		The direction.
+	\param	w		The image width.
+*/
+static inline void remove_dir(Vertex *vx, int d, uint32 w)
+{
+	if		(d == -1  ) { vx->di -= 128; 	vx->cn -= 128; 	}
+	else if	(d == -w-1) { vx->di -= 64;		vx->cn -= 64;	}
+	else if (d == -w  ) { vx->di -= 32;		vx->cn -= 32;	}
+	else if (d == -w+1) { vx->di -= 16;		vx->cn -= 16;	}
+	else if (d ==  1  ) { vx->di -= 8;		vx->cn -= 8;	}
+	else if (d ==  w+1) { vx->di -= 4;		vx->cn -= 4;	}
+	else if (d ==  w  ) { vx->di -= 2;		vx->cn -= 2;	}
+	else if (d ==  w-1) { vx->di -= 1; 		vx->cn -= 1;	}
+	printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+/*	\brief	Get next not finished direction.
+	\param	vx		The pointer to vertex.
+	\param	d		The pointer to direction.
+	\retval			1 if exist not finished direction, 0 - if not
+*/
+static inline uint32 get_next_dir(Vertex *vx, int *d, uint32 w)
+{
+	if		((vx->di&128) && !(vx->cn&128)) { *d =-1;	vx->cn += 128;	return 1; }
+	else if	((vx->di&64 ) && !(vx->cn&64 )) { *d =-w-1; vx->cn += 64; 	return 1; }
+	else if ((vx->di&32 ) && !(vx->cn&32 )) { *d =-w;   vx->cn += 32; 	return 1; }
+	else if ((vx->di&16 ) && !(vx->cn&16 )) { *d =-w+1; vx->cn += 16; 	return 1; }
+	else if ((vx->di&8  ) && !(vx->cn&8  )) { *d = 1; 	vx->cn += 8; 	return 1; }
+	else if ((vx->di&4  ) && !(vx->cn&4  )) { *d = w+1; vx->cn += 4; 	return 1; }
+	else if ((vx->di&2  ) && !(vx->cn&2  )) { *d = w; 	vx->cn += 2; 	return 1; }
+	else if ((vx->di&1  ) && !(vx->cn&1  )) { *d = w-1; vx->cn += 1; 	return 1; }
+	return 0;
+}
+
+uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
+{
+	uint32 i, j, y, x, yx;
+	int d, d1;
+	for(i=0; i < vxc; i++){
+		printf("Virtex = %d n = %d\n", i, vp[i]->n);
+		printf("dir = %o %o\n", vp[i]->di, vp[i]->cn);
+		for(j=0; j < vp[i]->n; j++){
+			yx = vp[i]->y*w + vp[i]->x;
+			if(get_next_dir(vp[i], &d, w)){
+				printf("d = %d %o %o\n", d, vp[i]->di, vp[i]->cn);
+				while(1){
+					yx = yx + d;
+					printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
+					if(d == 0 && con[yx-d1] == 255){
+						remove_dir(&vx[yx-d1], d1, w);
+						break;
+					}
+					if(con[yx] == 255) {
+						finish_dir(&vx[yx], -d, w);
+						break;
+					}
+					if(d == 0){
+						//printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
+						printf("img[yx-1  ] = %d ",con[yx-1  ]);
+						printf("img[yx-1-w] = %d ",con[yx-1-w]);
+						printf("img[yx  -w] = %d ",con[yx  -w]);
+						printf("img[yx+1-w] = %d ",con[yx+1-w]);
+						printf("img[yx+1  ] = %d ",con[yx+1  ]);
+						printf("img[yx+1+w] = %d ",con[yx+1+w]);
+						printf("img[yx  +w] = %d ",con[yx  +w]);
+						printf("img[yx-1+w] = %d\n",con[yx-1+w]);
+
+						con[yx] = 128;
+						break;
+					}
+					d1 = d;
+					d = dir(con, yx, w, -d);
+					con[yx] = 0;
+				}
+			}
+		}
+	}
+	for(i=0; i < vxc; i++) if(vp[i]->di != vp[i]->cn) printf("%d %o %o %o\n", i, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+	printf("Numbers of vertexs  = %6d\n", vxc);
+	return vxc;
+
+}
+
+void seg_vertex_draw(uint8 *con, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
+{
+	uint32 i, yx;
+	for(i=0; i < vxc; i++){
+		yx = vp[i]->y*w + vp[i]->x;
+		con[yx] = 0;
+	}
 }
 
 

@@ -18,6 +18,14 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
+//New segmentation interface
+void 	find_intersect	(uint8 *grad, uint8 *out, uint32 w, uint32 h);
+uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h);
+uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
+
+void seg_vertex_draw(uint8 *con, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
+
+
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q,uint32 *buf);
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q);
 void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf);
@@ -40,7 +48,7 @@ void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_region(Pixel *pix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_points(uint8 *img, uint32 w, uint32 h);
-void seg_local_max1(uint8 *grad, uint8 *out, uint32 w, uint32 h);
+
 
 void seg_quant(uint8 *img1, uint8 *img2, uint32 w, uint32 h, uint32 q);
 void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);
