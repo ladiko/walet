@@ -255,14 +255,14 @@ static inline uint8 check_neighbor(uint8 *img, uint32 yx, uint32 w, uint8 *di)
 {
 	uint32 c = 0;
 	*di = 0;
-	if(img[yx-1  ]) { *di += 128; 	c++; }
-	if(img[yx-w-1]) { *di += 64; 	c++; }
-	if(img[yx-w  ]) { *di += 32; 	c++; }
-	if(img[yx-w+1]) { *di += 16;	c++; }
-	if(img[yx+1  ]) { *di += 8; 	c++; }
-	if(img[yx+w+1]) { *di += 4; 	c++; }
-	if(img[yx+w  ]) { *di += 2; 	c++; }
-	if(img[yx+w-1]) { *di += 1; 	c++; }
+	if(img[yx-1  ]) { *di |= 128; 	c++; }
+	if(img[yx-w-1]) { *di |= 64; 	c++; }
+	if(img[yx-w  ]) { *di |= 32; 	c++; }
+	if(img[yx-w+1]) { *di |= 16;	c++; }
+	if(img[yx+1  ]) { *di |= 8; 	c++; }
+	if(img[yx+w+1]) { *di |= 4; 	c++; }
+	if(img[yx+w  ]) { *di |= 2; 	c++; }
+	if(img[yx+w-1]) { *di |= 1; 	c++; }
 	return c;
 }
 
@@ -304,15 +304,15 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 */
 static inline void finish_dir(Vertex *vx, int d, uint32 w)
 {
-	if		(d == -1  ) vx->cn += 128;
-	else if	(d == -w-1) vx->cn += 64;
-	else if (d == -w  ) vx->cn += 32;
-	else if (d == -w+1) vx->cn += 16;
-	else if (d ==  1  ) vx->cn += 8;
-	else if (d ==  w+1) vx->cn += 4;
-	else if (d ==  w  ) vx->cn += 2;
-	else if (d ==  w-1) vx->cn += 1;
-	printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+	if		(d == -1  ) vx->cn |= 128;
+	else if	(d == -w-1) vx->cn |= 64;
+	else if (d == -w  ) vx->cn |= 32;
+	else if (d == -w+1) vx->cn |= 16;
+	else if (d ==  1  ) vx->cn |= 8;
+	else if (d ==  w+1) vx->cn |= 4;
+	else if (d ==  w  ) vx->cn |= 2;
+	else if (d ==  w-1) vx->cn |= 1;
+	//printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
 /*	\brief	Remove direction bit.
@@ -322,15 +322,16 @@ static inline void finish_dir(Vertex *vx, int d, uint32 w)
 */
 static inline void remove_dir(Vertex *vx, int d, uint32 w)
 {
-	if		(d == -1  ) { vx->di -= 128; 	vx->cn -= 128; 	}
-	else if	(d == -w-1) { vx->di -= 64;		vx->cn -= 64;	}
-	else if (d == -w  ) { vx->di -= 32;		vx->cn -= 32;	}
-	else if (d == -w+1) { vx->di -= 16;		vx->cn -= 16;	}
-	else if (d ==  1  ) { vx->di -= 8;		vx->cn -= 8;	}
-	else if (d ==  w+1) { vx->di -= 4;		vx->cn -= 4;	}
-	else if (d ==  w  ) { vx->di -= 2;		vx->cn -= 2;	}
-	else if (d ==  w-1) { vx->di -= 1; 		vx->cn -= 1;	}
-	printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+	if		(d == -1  ) { vx->di ^= 128; 	vx->cn ^= 128; 	}
+	else if	(d == -w-1) { vx->di ^= 64;		vx->cn ^= 64;	}
+	else if (d == -w  ) { vx->di ^= 32;		vx->cn ^= 32;	}
+	else if (d == -w+1) { vx->di ^= 16;		vx->cn ^= 16;	}
+	else if (d ==  1  ) { vx->di ^= 8;		vx->cn ^= 8;	}
+	else if (d ==  w+1) { vx->di ^= 4;		vx->cn ^= 4;	}
+	else if (d ==  w  ) { vx->di ^= 2;		vx->cn ^= 2;	}
+	else if (d ==  w-1) { vx->di ^= 1; 		vx->cn ^= 1;	}
+	vx->n--;
+	//printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
 /*	\brief	Get next not finished direction.
@@ -340,33 +341,55 @@ static inline void remove_dir(Vertex *vx, int d, uint32 w)
 */
 static inline uint32 get_next_dir(Vertex *vx, int *d, uint32 w)
 {
-	if		((vx->di&128) && !(vx->cn&128)) { *d =-1;	vx->cn += 128;	return 1; }
-	else if	((vx->di&64 ) && !(vx->cn&64 )) { *d =-w-1; vx->cn += 64; 	return 1; }
-	else if ((vx->di&32 ) && !(vx->cn&32 )) { *d =-w;   vx->cn += 32; 	return 1; }
-	else if ((vx->di&16 ) && !(vx->cn&16 )) { *d =-w+1; vx->cn += 16; 	return 1; }
-	else if ((vx->di&8  ) && !(vx->cn&8  )) { *d = 1; 	vx->cn += 8; 	return 1; }
-	else if ((vx->di&4  ) && !(vx->cn&4  )) { *d = w+1; vx->cn += 4; 	return 1; }
-	else if ((vx->di&2  ) && !(vx->cn&2  )) { *d = w; 	vx->cn += 2; 	return 1; }
-	else if ((vx->di&1  ) && !(vx->cn&1  )) { *d = w-1; vx->cn += 1; 	return 1; }
+	if		((vx->di&128) && !(vx->cn&128)) { *d =-1;	vx->cn |= 128;	return 1; }
+	else if	((vx->di&64 ) && !(vx->cn&64 )) { *d =-w-1; vx->cn |= 64; 	return 1; }
+	else if ((vx->di&32 ) && !(vx->cn&32 )) { *d =-w;   vx->cn |= 32; 	return 1; }
+	else if ((vx->di&16 ) && !(vx->cn&16 )) { *d =-w+1; vx->cn |= 16; 	return 1; }
+	else if ((vx->di&8  ) && !(vx->cn&8  )) { *d = 1; 	vx->cn |= 8; 	return 1; }
+	else if ((vx->di&4  ) && !(vx->cn&4  )) { *d = w+1; vx->cn |= 4; 	return 1; }
+	else if ((vx->di&2  ) && !(vx->cn&2  )) { *d = w; 	vx->cn |= 2; 	return 1; }
+	else if ((vx->di&1  ) && !(vx->cn&1  )) { *d = w-1; vx->cn |= 1; 	return 1; }
 	return 0;
+}
+
+void print_around(uint8 *con, uint32 yx, uint32 w)
+{
+	printf("%3d ",con[yx-1-w]);
+	printf("%3d ",con[yx  -w]);
+	printf("%3d\n",con[yx+1-w]);
+	printf("%3d ",con[yx-1  ]);
+	printf("%3d ",con[yx    ]);
+	printf("%3d\n",con[yx+1  ]);
+	printf("%3d ",con[yx-1+w]);
+	printf("%3d ",con[yx  +w]);
+	printf("%3d\n\n",con[yx+1+w]);
 }
 
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 {
-	uint32 i, j, y, x, yx;
-	int d, d1;
+	uint32 y, x, yx;
+	int i, j, d, d1;
+	//print_around(con, vp[802]->y*w + vp[802]->x, w);
+	//printf("n = %d %o %o\n", vp[802]->n, vp[802]->di, vp[802]->cn);
+	//i = 802;{
 	for(i=0; i < vxc; i++){
-		printf("Virtex = %d n = %d\n", i, vp[i]->n);
-		printf("dir = %o %o\n", vp[i]->di, vp[i]->cn);
+		//printf("Virtex = %d n = %d\n", i, vp[i]->n);
+		//printf("dir = %o %o\n", vp[i]->di, vp[i]->cn);
 		for(j=0; j < vp[i]->n; j++){
 			yx = vp[i]->y*w + vp[i]->x;
+			//if(i == 802) {
+			//	print_around(con, yx, w);
+			//	printf("n = %d %o %o\n", vp[i]->n, vp[i]->di, vp[i]->cn);
+			//}
+
 			if(get_next_dir(vp[i], &d, w)){
-				printf("d = %d %o %o\n", d, vp[i]->di, vp[i]->cn);
+				//printf("d = %d %o %o\n", d, vp[i]->di, vp[i]->cn);
 				while(1){
 					yx = yx + d;
-					printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
+					//printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
 					if(d == 0 && con[yx-d1] == 255){
 						remove_dir(&vx[yx-d1], d1, w);
+						j--;
 						break;
 					}
 					if(con[yx] == 255) {
@@ -374,16 +397,8 @@ uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uin
 						break;
 					}
 					if(d == 0){
-						//printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
-						printf("img[yx-1  ] = %d ",con[yx-1  ]);
-						printf("img[yx-1-w] = %d ",con[yx-1-w]);
-						printf("img[yx  -w] = %d ",con[yx  -w]);
-						printf("img[yx+1-w] = %d ",con[yx+1-w]);
-						printf("img[yx+1  ] = %d ",con[yx+1  ]);
-						printf("img[yx+1+w] = %d ",con[yx+1+w]);
-						printf("img[yx  +w] = %d ",con[yx  +w]);
-						printf("img[yx-1+w] = %d\n",con[yx-1+w]);
-
+						printf("d = %d\n", d1);
+						print_around(con, yx, w);
 						con[yx] = 128;
 						break;
 					}
@@ -394,7 +409,14 @@ uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uin
 			}
 		}
 	}
-	for(i=0; i < vxc; i++) if(vp[i]->di != vp[i]->cn) printf("%d %o %o %o\n", i, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+	//i = 802;  if(vp[i]->di != vp[i]->cn) {
+	for(i=0; i < vxc; i++) if(vp[i]->di != vp[i]->cn) {
+		printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+		con[vp[i]->y*w + vp[i]->x-w] = 255;
+		con[vp[i]->y*w + vp[i]->x-1] = 255;
+		con[vp[i]->y*w + vp[i]->x+w] = 255;
+		con[vp[i]->y*w + vp[i]->x+1] = 255;
+	}
 	printf("Numbers of vertexs  = %6d\n", vxc);
 	return vxc;
 
@@ -408,7 +430,6 @@ void seg_vertex_draw(uint8 *con, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 		con[yx] = 0;
 	}
 }
-
 
 //Mean-shift 3d algorithm
 

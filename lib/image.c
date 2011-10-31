@@ -674,7 +674,8 @@ void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
 void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uint32 steps){
 	uint32 i, vxc;
 	//find_intersect(im->grad.pic, im->con.pic, im->w, im->h);
-	for(i=steps-1; i < steps; i++) {
+	//for(i=steps-1; i < steps; i++) {
+	for(i=0; i < steps; i++) {
 		find_intersect(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 		vxc = seg_vertex(im->dc[i].pic, vx, vp, ln, im->dg[i].w, im->dg[i].h);
 		seg_vector(im->dc[i].pic, vx, vp, ln, vxc, im->dg[i].w);
