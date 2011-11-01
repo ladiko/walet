@@ -13,7 +13,10 @@
 static inline void direction(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
 {
 	uint32 max = 0;
-	if(*dx == 0 && *dy == 0  ){
+	int dx1 = *dx, dy1 = *dy;
+	*dx = 0; *dy = 0;
+	//printf("direction dx = %d dy = %d\n", *dx, *dy);
+	if(dx1 == 0 && dy1 == 0  ){
 		if(img[yx-1  ] > max) { max = img[yx-1  ]; *dx = -1; *dy =  0;}
 		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
 		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
@@ -23,62 +26,63 @@ static inline void direction(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
 		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
 		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
 	}
-	else if(*dx == -1 && *dy == 0){
+	else if(dx1 == -1 && dy1 == 0){
 		//if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
 		if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
 		if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
 		if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
 		//if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
 	}
-	else if(*dx == -1 && *dy == -1){
+	else if(dx1 == -1 && dy1 == -1){
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
 		if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
 		if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
 		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
 	}
-	else if(*dx ==  0 && *dy == -1){
+	else if(dx1 ==  0 && dy1 == -1){
 		//if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
 		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
 		if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
 		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
 		//if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
 	}
-	else if(*dx ==  1 && *dy == -1){
+	else if(dx1 ==  1 && dy1 == -1){
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
 		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
 		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
 		if(img[yx  -1] > max) { max = img[yx  -1]; *dx = -1; *dy =  0;}
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
 	}
-	else if(*dx ==  1 && *dy ==  0){
+	else if(dx1 ==  1 && dy1 ==  0){
 		//if(img[yx  +w] > max) { max = img[yx  +w]; *dx1 =  0; *dy1 =  1;}
 		if(img[yx  -1] > max) { max = img[yx  -1]; *dx = -1; *dy =  0;}
 		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
 		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
 		//if(img[yx  -w] > max) { max = img[yx  -w]; *dx1 =  0; *dy1 = -1;}
 	}
-	else if(*dx ==  1 && *dy ==  1){
+	else if(dx1 ==  1 && dy1 ==  1){
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx1 = -1; *dy1 =  1;}
 		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
 		if(img[yx  -1] > max) { max = img[yx  -1]; *dx = -1; *dy =  0;}
 		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx1 =  1; *dy1 = -1;}
 	}
-	else if(*dx ==  0 && *dy ==  1){
+	else if(dx1 ==  0 && dy1 ==  1){
 		//if(img[yx  -1] > max) { max = img[yx  -1]; *dx1 = -1; *dy1 =  0;}
 		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
 		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
 		if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
 		//if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx1 =  1; *dy1 =  0;}
 	}
-	else if(*dx == -1 && *dy ==  1){
+	else if(dx1 == -1 && dy1 ==  1){
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx1 = -1; *dy1 = -1;}
 		if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
 		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
 		if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx1 =  1; *dy1 =  1;}
 	}
+	//printf("direction dx = %d dy = %d\n", *dx, *dy);
 }
 
 /*	\brief	Find the maximum around the pixel.
@@ -266,52 +270,70 @@ static inline uint8 check_neighbor(uint8 *img, uint32 yx, uint32 w, uint8 *di)
 	return c;
 }
 
-static inline void new_vertex(uint8 *con, Vertex *vx, Vertex **vp, uint32 x, uint32 y, uint32 yx, uint32 w, uint32 vxc)
+static inline void new_vertex(uint8 *con, Vertex *vx, Vertex **vp, uint32 x, uint32 y, uint32 yx, uint32 w)
 {
 	vx->x = x; vx->y = y;
 	vx->n = check_neighbor(con, yx, w, &vx->di);
 	vx->cn = 0;
-	vp[vxc] = &vx[yx];
+	*vp = vx;
+	//printf("x = %d y = %d n = %d vp = %p\n", (*vp)->x, (*vp)->y, (*vp)->n, *vp);
 
 }
 
-/*	\brief	Set finished direction bit.
-	\param	vx		The pointer to vertex.
-	\param	dx		The direction in X axis.
-	\param	dy		The direction in Y axis.
-	\param	w		The image width.
+/*      \brief  Set finished direction bit.
+        \param  vx              The pointer to vertex.
+        \param  d               The direction.
+        \param  w               The image width.
 */
-static inline void finish_dir(Vertex *vx, int dx, int dy)
+static inline void finish_dir(Vertex *vx, int d, uint32 w)
 {
-	if		(dx == -1 && dy ==  0) vx->cn |= 128;
-	else if	(dx == -1 && dy == -1) vx->cn |= 64;
-	else if (dx ==  0 && dy == -1) vx->cn |= 32;
-	else if (dx ==  1 && dy == -1) vx->cn |= 16;
-	else if (dx ==  1 && dy ==  0) vx->cn |= 8;
-	else if (dx ==  1 && dy ==  1) vx->cn |= 4;
-	else if (dx ==  0 && dy ==  1) vx->cn |= 2;
-	else if (dx == -1 && dy ==  1) vx->cn |= 1;
-	//printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+        if      (d == -1  ) vx->cn |= 128;
+        else if (d == -w-1) vx->cn |= 64;
+        else if (d == -w  ) vx->cn |= 32;
+        else if (d == -w+1) vx->cn |= 16;
+        else if (d ==  1  ) vx->cn |= 8;
+        else if (d ==  w+1) vx->cn |= 4;
+        else if (d ==  w  ) vx->cn |= 2;
+        else if (d ==  w-1) vx->cn |= 1;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
-/*	\brief	Remove direction bit.
-	\param	vx		The pointer to vertex.
-	\param	dx		The direction in X axis.
-	\param	dy		The direction in Y axis.
-	\param	w		The image width.
+/*      \brief  Set finished direction bit.
+        \param  vx              The pointer to vertex.
+        \param  d               The direction.
+        \param  w               The image width.
 */
-static inline void remove_dir(Vertex *vx, int dx, int dy)
+static inline void add_finish_dir(Vertex *vx, int d, uint32 w)
 {
-	if		(dx == -1 && dy ==  0) { vx->di ^= 128; vx->cn ^= 128; 	}
-	else if	(dx == -1 && dy == -1) { vx->di ^= 64;	vx->cn ^= 64;	}
-	else if (dx ==  0 && dy == -1) { vx->di ^= 32;	vx->cn ^= 32;	}
-	else if (dx ==  1 && dy == -1) { vx->di ^= 16;	vx->cn ^= 16;	}
-	else if (dx ==  1 && dy ==  0) { vx->di ^= 8;	vx->cn ^= 8;	}
-	else if (dx ==  1 && dy ==  1) { vx->di ^= 4;	vx->cn ^= 4;	}
-	else if (dx ==  0 && dy ==  1) { vx->di ^= 2;	vx->cn ^= 2;	}
-	else if (dx == -1 && dy ==  1) { vx->di ^= 1; 	vx->cn ^= 1;	}
-	vx->n--;
-	//printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+        if      (d == -1  ) { vx->di |= 128;    vx->cn |= 128;  }
+        else if (d == -w-1) { vx->di |= 64; 	vx->cn |= 64;   }
+        else if (d == -w  ) { vx->di |= 32;     vx->cn |= 32;   }
+        else if (d == -w+1) { vx->di |= 16;     vx->cn |= 16;   }
+        else if (d ==  1  ) { vx->di |= 8;      vx->cn |= 8;    }
+        else if (d ==  w+1) { vx->di |= 4;      vx->cn |= 4;    }
+        else if (d ==  w  ) { vx->di |= 2;      vx->cn |= 2;    }
+        else if (d ==  w-1) { vx->di |= 1;      vx->cn |= 1;    }
+        vx->n++;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+/*      \brief  Remove direction bit.
+        \param  vx              The pointer to vertex.
+        \param  d               The direction.
+        \param  w               The image width.
+*/
+static inline void remove_dir(Vertex *vx, int d, uint32 w)
+{
+        if      (d == -1  ) { vx->di ^= 128;    vx->cn ^= 128;  }
+        else if (d == -w-1) { vx->di ^= 64; 	vx->cn ^= 64;   }
+        else if (d == -w  ) { vx->di ^= 32;     vx->cn ^= 32;   }
+        else if (d == -w+1) { vx->di ^= 16;     vx->cn ^= 16;   }
+        else if (d ==  1  ) { vx->di ^= 8;      vx->cn ^= 8;    }
+        else if (d ==  w+1) { vx->di ^= 4;      vx->cn ^= 4;    }
+        else if (d ==  w  ) { vx->di ^= 2;      vx->cn ^= 2;    }
+        else if (d ==  w-1) { vx->di ^= 1;      vx->cn ^= 1;    }
+        vx->n--;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
 /*	\brief	Get next not finished direction.
@@ -366,72 +388,77 @@ static inline uint32 is_new_line1(int d, uint32 *cn, int *fs, int *sc)
 */
 uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h)
 {
-	uint32 j, y, x, x1, y1, yx, yx1, yw, w1 = w-1, h1 = h-1;
-	uint32 vxc = 0, lnc = 0;
-	int d, d1, dx, dy, dx1, dy1, fs, sc, cn;
+	uint32 j, y, x, x1, y1, yx, yw, w1 = w-1, h1 = h-1;
+	int vxc = -1, lnc = 0;
+	int d, d1, dx, dy, fs, sc, cn;
+	Vertex *vxp;
+
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(con[yx] == 255) { //New vertex
-				yx1 = yx;
 				x1 = x; y1 = y;
-				new_vertex(con, &vx[yx1], &vp[vxc], x, y, yx1, w, vxc); vxc++;
-				for(j=0; j < vp[yx1]->n; j++){
-					//yx = vp[i]->y*w + vp[i]->x;
-					//if(i == 802) {
-					//	print_around(con, yx, w);
-					//	printf("n = %d %o %o\n", vp[i]->n, vp[i]->di, vp[i]->cn);
-					//}
-					if(get_next_dir(&vx[yx1], &dx, &dy)){
+				new_vertex(con, &vx[yx], &vp[++vxc], x1, y1, yx, w);
+				vxp = &vx[yx];
+				printf("vxc = %d n = %d\n", vxc, vxp->n);
+				print_around(con, yx, w);
+
+				for(j=0; j < vxp->n; j++){
+					if(get_next_dir(vxp, &dx, &dy)){
 						fs = 0; sc = 0; cn = 0;
-						//printf("d = %d %o %o\n", d, vp[i]->di, vp[i]->cn);
 						while(1){
-							x1 = x1 + dx; y1 = y1 + dy;
-							d = dx1 + w*dy;
-							yx1 = yx1 + d;
+							x1 += dx; y1 += dy;
+							d = dx + w*dy;
+							yx = yx + d;
+							//printf("d = %d dx = %d dy = %d %o %o\n", d, dx, dy, vxp->di,  vxp->cn);
+							//print_around(con, yx, w);
 							//printf("y = %d x = %d d = %d w = %d\n", (yx-d)/w, (yx-d)%w, d, w);
-							if(d == 0 && con[yx1-d1] == 255){
-								remove_dir(&vx[yx1-d1], dx1, dy1);
+							if(d == 0 && con[yx-d1] == 255){
+								remove_dir(&vx[yx-d1], d1, w);
 								j--;
 								break;
 							}
-							if(con[yx1] == 255) {
-								finish_dir(&vx[yx1], -dx, -dy);
+							if(con[yx] == 255) {
+								new_vertex(con, &vx[yx], &vp[++vxc], x1, y1, yx, w);
+								add_finish_dir(&vx[yx], -d, w);
+								printf("d = %d dx = %d dy = %d %o %o\n", d, dx, dy, vx[yx].di, vx[yx].cn);
 								break;
 							}
 							if(d == 0){
 								printf("d = %d\n", d1);
-								print_around(con, yx1, w);
-								con[yx1] = 128;
+								print_around(con, yx, w);
+								con[yx] = 128;
 								break;
 							}
+							/*
 							if(is_new_line1(d, &cn, &fs, &sc)){
-								new_vertex(con, &vx[yx1-d], &vp[vxc], x, y, yx1-d, w, vxc); vxc++;
-								remove_dir(&vx[yx1-d], -d1, w);
+								new_vertex(con, &vx[yx-d], vp[vxc], x1, y1, yx-d, w); vxc++;
+								finish_dir(&vx[yx-d], -d1, w);
 								con[yx1] = 254;
 								break;
-							}
+							}*/
 							d1 = d;
 							dx = -dx; dy = -dy;
-							direction(con, w, yx1, &dx, &dy);
-							con[yx1] = 0;
+
+							direction(con, w, yx, &dx, &dy);
+							con[yx] = 0;
 						}
 					}
 				}
-				/*
-				vx[yx].x = x; vx[yx].y = y;
-				vx[yx].n = check_neighbor(con, yx, w, &vx[yx].di);
-				vx[yx].cn = 0;
-				//vx[yx].ln = &ln[lnc];
-				vp[vxc] = &vx[yx];
-				*/
-				lnc += vx[yx1].n;
+				lnc += vx[yx].n;
 			}
 		}
 	}
 	printf("Numbers of vertexs  = %6d\n", vxc);
 	printf("Numbers of lines    = %6d\n", lnc>>1);
+	for(j=0; j < vxc+1; j++) if(vp[j]->di != vp[j]->cn) {
+		printf("%d n = %d %o %o %o\n", j, vp[j]->n, vp[j]->di, vp[j]->cn, vp[j]->cn^vp[j]->di);
+		con[vp[j]->y*w + vp[j]->x-w] = 255;
+		con[vp[j]->y*w + vp[j]->x-1] = 255;
+		con[vp[j]->y*w + vp[j]->x+w] = 255;
+		con[vp[j]->y*w + vp[j]->x+1] = 255;
+	}
 	return vxc;
 }
 
