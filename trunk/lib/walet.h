@@ -202,10 +202,10 @@ typedef struct Vertex Vertex;
 typedef struct Line Line;
 
 struct Line {
-	Vertex 	*v[2];		//The two pointers to pixeles
-	uint8 	*di[2];		//The direction of two pixeles
+	Vertex 	*v;		//The pointer to vertex
+	//uint8 	*di[2];		//The direction of two pixeles
 	uint8 	l[3];		//Left color
-	uint8 	c[3];		//Line color
+	//uint8 	c[3];		//Line color
 	uint8 	r[3];		//Right color
 };
 
