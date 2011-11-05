@@ -461,14 +461,18 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 						x1 += dx; y1 += dy;
 						d = dx + w*dy;
 						yx1 = yx1 + d;
+						//if(yx1 == 33973) printf("      d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
+						//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 						if(!con[yx1]){
 							//remove_dir(&vx[yx1-d], d, w);
 							//yx1 = yx; x1 = x; y1 = y;
+							//if(yx1 == 33973) printf("remove d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
+							//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
-							yx1 = yx2; x1 = x2; y1 = y2;
+							yx1 = yx; x1 = x; y1 = y;
+							//yx1 = yx2; x1 = x2; y1 = y2;
 							break;
 						}
-						//printf("d = %d dx = %d dy = %d %o %o\n", d, dx, dy, vxp->di,  vxp->cn);
 						//print_around(con, yx1, w);
 						//printf("y = %d x = %d d = %d w = %d\n", (yx1-d)/w, (yx1-d)%w, d, w);
 						if(con[yx1] == 255 || con[yx1] == 254) {
@@ -476,8 +480,12 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 								new_vertex(con, &vx[yx1], &vp[vxc++], &ln[lnc+=8],x1, y1, yx1, w);
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
 								con[yx1] = 254;
+								//if(yx1 == 33973) printf("255 new d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
+								//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							} else {
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
+								//if(yx1 == 33973) printf("255     d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
+								//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							}
 							new_line1(&vx[yx2].ln[nd2], &vx[yx1], 0, 0);
 							new_line1(&vx[yx1].ln[nd1], &vx[yx2], 0, 0);
@@ -492,6 +500,8 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 							new_in_line_vertex(&vx[yx1], &vp[vxc++], &ln[lnc+=8], x1, y1, w, d, -d1);
 							nd1 = finish_dir(&vx[yx1], -d1, w);
 
+							//if(yx1 == 33973) printf("new line d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
+							//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							//new_vertex(con, &vx[yx1], &vp[vxc++], &ln[lnc+=8], x1, y1, yx1, w);
 							//nd1 = add_finish_dir(&vx[yx1], -d1, w);
 							new_line1(&vx[yx2].ln[nd2], &vx[yx1], 0, 0);
@@ -560,34 +570,33 @@ static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint
 
 void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 {
-	uint32 i, yx, nd, tmp;
+	uint32 i, yx, nd;//, tmp;
 	int dx , dy;
 	Vector v;
 
 	for(i=0; i < vxc; i++) vp[i]->cn = 0;
-	printf("Number of vertex = %d", vxc);
-	for(i=0; i < 1340; i++){
+	//printf("Number of vertex = %d", vxc);
+	for(i=0; i < vxc; i++){
 		yx = vp[i]->y*w + vp[i]->x;
 		//printf("%i  n = %d nd = %d di = %o cn = %o \n", i, vp[i]->n, nd,  vp[i]->di , vp[i]->cn);
-        if(i == 1339){
-                 img[yx-w] = 255;
-                 img[yx-1] = 255;
-                 img[yx+w] = 255;
-                 img[yx+1] = 255;
-
-         }
+        //if(i == 1339){
+        //         img[yx-w] = 255;
+        //         img[yx-1] = 255;
+        //         img[yx+w] = 255;
+       //          img[yx+1] = 255;
+      //   }
         //if(i != 1339){
-        tmp = 0;
+        //tmp = 0;
 		while(get_next_dir( vp[i], &dx, &dy, &nd)){
-			if(tmp < 3) {
+			//if(tmp < 3) {
 			v.x1 = vp[i]->x; v.y1 = vp[i]->y;
-			printf("%i  n = %d nd = %d di = %o cn = %o \n", i, vp[i]->n, nd,  vp[i]->di , vp[i]->cn);
-			printf("x1 = %d y1 = %d \n", v.x1, v.y1);
+			//printf("%i  n = %d nd = %d di = %o cn = %o \n", i, vp[i]->n, nd,  vp[i]->di , vp[i]->cn);
+			//printf("x1 = %d y1 = %d \n", v.x1, v.y1);
 			v.x2 = vp[i]->ln[nd].v->x; v.y2 = vp[i]->ln[nd].v->y;
-			printf("x2 = %d y2 = %d\n", v.x2, v.y2);
+			//printf("x2 = %d y2 = %d\n", v.x2, v.y2);
 			draw_line(img, &v, w, 128, 1);
-			}
-			tmp++;
+			//}
+			//tmp++;
 			//printf("yx = %d\n", yx);
 		}
 		//}

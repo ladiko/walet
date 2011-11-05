@@ -672,15 +672,18 @@ void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
 	\param steps	The steps of resizes.
 */
 void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uint32 steps){
-	uint32 i, vxc;
+	uint32 i, vxc = 0;
 	//find_intersect(im->grad.pic, im->con.pic, im->w, im->h);
 	//for(i=steps-1; i < steps; i++) {
-	for(i=2; i < 3; i++) {
+	for(i=0; i < steps; i++) {
+		//memset(vp, 0, vxc*sizeof(Vertex*));
+		//memset(ln, 0, 8*vxc*sizeof(Line));
 		find_intersect(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 		vxc = seg_vertex(im->dc[i].pic, vx, vp, ln, im->dg[i].w, im->dg[i].h);
 		//printf("Number of vertex = %d", vxc);
-		//memset(im->dc[i].pic, 0, im->dc[i].w*im->dc[i].h);
-		//seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dc[i].w);
+		memset(im->dc[i].pic, 0, im->dc[i].w*im->dc[i].h);
+		seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dc[i].w);
+		memset(vx, 0, im->dg[i].w*im->dg[i].h*sizeof(Vertex));
 	}
 }
 
