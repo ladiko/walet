@@ -680,9 +680,9 @@ void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uin
 		//memset(ln, 0, 8*vxc*sizeof(Line));
 		find_intersect(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 		vxc = seg_vertex(im->dc[i].pic, vx, vp, ln, im->dg[i].w, im->dg[i].h);
-		//printf("Number of vertex = %d", vxc);
+
 		memset(im->dc[i].pic, 0, im->dc[i].w*im->dc[i].h);
-		seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dc[i].w);
+		seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dg[i].w);
 		memset(vx, 0, im->dg[i].w*im->dg[i].h*sizeof(Vertex));
 	}
 }

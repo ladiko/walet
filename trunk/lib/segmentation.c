@@ -424,6 +424,19 @@ static inline uint32 is_new_line1(int d, uint32 *cn, int *fs, int *sc)
 	return 0;
 }
 
+static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
+{
+	if(!*fs) *fs = d;
+	else if(!*sc && *fs != d ) {
+		if(*cn > 5) { (*cn)++; return 1;}
+		else *sc = d;
+	}
+	else if(*fs != d && *sc != d) { (*cn)++; return 1;}
+	(*cn)++;
+	//printf("fs = %d sc = %d cn =%d\n", *fs, *sc, *cn);
+	return 0;
+}
+
 /*	\brief	Create vertexes and lines arrays
 	\param	con		The pointer to contour image.
 	\param	vx		The pointer to Vertex array.
@@ -494,7 +507,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 							break;
 						}
 
-						if(is_new_line1(d, &cn, &fs, &sc)){
+						if(is_new_line2(d, &cn, &fs, &sc)){
 							yx1 -= d; x1 -= dx; y1 -= dy;
 							//printf("New line yx = %d\n", yx1-d);
 							new_in_line_vertex(&vx[yx1], &vp[vxc++], &ln[lnc+=8], x1, y1, w, d, -d1);
@@ -568,6 +581,62 @@ static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint
 	return max;
 }
 
+static inline uint32 draw_line1(uint8 *img, Vector *v, uint32 w, uint32 col, uint8 end)
+//Draw line, return number of pixels in line
+//If end 1 not draw last pixel, if 0 draw
+
+{
+	uint32 i;
+	int dx = v->x2 - v->x1, dy = v->y2 - v->y1;
+	int stx, sty;
+	uint32 max , min = 0, n;
+	//printf("dxa = %d dya = %d\n", dxa, dya);
+
+	stx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
+	sty = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
+
+	dx = abs(dx)+1; dy = abs(dy)+1;
+	//v->y1 *= w;
+
+	if(dx >= dy) {
+		n = dx - 2; max = dx;
+		if(stx >= 0){
+			for(i=0; i < n; i++){
+				min += dy; v->x1 += stx;
+				if(min >= max) { max += dx; v->y1 += sty; }
+				img[v->y1*w + v->x1] = col;
+			}
+		} else {
+			for(i=0; i < n; i++){
+				min += dy; v->x2 -= stx;
+				if(min >= max) { max += dx; v->y2 += sty; }
+				img[v->y2*w + v->x2] = col;
+			}
+
+		}
+		return dx;
+	}
+	else {
+		n = dy - 2; max = dy;
+		if(sty >= 0){
+			for(i=0; i < n; i++){
+				min += dx; v->y1 += sty;
+				if(min >= max) { max += dy; v->x1 += stx; }
+				img[v->y1*w + v->x1] = col;
+			}
+		} else {
+			for(i=0; i < n; i++){
+				min += dx; v->y2 -= sty;
+				if(min >= max) { max += dy; v->x2 += stx; }
+				img[v->y2*w + v->x2] = col;
+			}
+
+		}
+
+		return dy;
+	}
+}
+
 void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 {
 	uint32 i, yx, nd;//, tmp;
@@ -594,7 +663,7 @@ void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 			//printf("x1 = %d y1 = %d \n", v.x1, v.y1);
 			v.x2 = vp[i]->ln[nd].v->x; v.y2 = vp[i]->ln[nd].v->y;
 			//printf("x2 = %d y2 = %d\n", v.x2, v.y2);
-			draw_line(img, &v, w, 128, 1);
+			draw_line1(img, &v, w, 128, 0);
 			//}
 			//tmp++;
 			//printf("yx = %d\n", yx);
