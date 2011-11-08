@@ -158,7 +158,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		gw->wc.icol			= BAYER;	/// Input color space
 		gw->wc.ccol			= CS444;	/// Compression color space
 		//gw->wc.dec			= WAVELET;	/// Decorrelation method
-		gw->wc.dec			= RESIZE;	/// Decorrelation method
+		gw->wc.dec			= VECTORIZE;	/// Decorrelation method
 		//gw->wc.ocol			= RGB;		/// Output color space
 		gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
 		walet_encoder_init(&gw->gop, &gw->wc);

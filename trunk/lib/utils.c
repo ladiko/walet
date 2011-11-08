@@ -374,6 +374,53 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	return rgb;
 }
 
+uint8* utils_bayer_to_RGB24_fast(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	//int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1);
+	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = (w>>1)*3, h1 = h>>1;
+
+	switch(bay){
+		case(BGGR):{
+			for(y=0, y1=0; y < h; y+=2, y1++){
+				wy = w*y; wy1 = w1*y1;
+				for(x=0, x1=0; x < w; x+=2, x1+=3){
+					yx 	= x + wy;
+					yx1 = x1 + wy1;
+					rgb[yx1]   = img[yx + w + 1];
+					rgb[yx1+1] = (img[yx + 1] + img[yx + w])>>1;
+					rgb[yx1+2] = img[yx];
+				}
+			}
+			break;
+			}
+		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{
+			for(y=0, y1=0; y < h; y+=2, y1++){
+			wy = w*y; wy1 = w1*y1;
+			for(x=0, x1=0; x < w; x+=2, x1+=3){
+				yx 	= x + wy;
+				yx1 = x1 + wy1;
+				rgb[yx1]   = img[yx];
+				rgb[yx1+1] = (img[yx + 1] + img[yx + w])>>1;
+				rgb[yx1+2] = img[yx + w + 1];
+			}
+		}
+		break;}
+	}
+	return rgb;
+}
+
+
 /**	\brief Bilinear algorithm for bayer to RGB interpolation use 3 rows buffer.
     \param img	 	The input Bayer image.
  	\param rgb		The output RGB image.

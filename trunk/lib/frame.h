@@ -4,7 +4,10 @@
 typedef struct{
 	Pic16s	b;			//Bayer image 16 bits
 	Pic16s	d;			//Bayer image abter DWT -> quantization -> IDWT for test only
-	Pic8u 	rgb;		//RGB image for test only
+	Pic8u 	*rgb;		//RGB image for test only
+	Pic16s		*dw;	//The down sampling images for resize only
+	Pic8u		*dg;	//The gradients of down sampling images.
+	Pic8u		*dc;	//The contour of down sampling images.
 	//Pic16s	C[4];	// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
 	Image 		*img;		//Pointer to images

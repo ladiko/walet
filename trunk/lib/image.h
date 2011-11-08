@@ -11,9 +11,6 @@ typedef struct {
 	Pic16s		d;		//Image after DWT and IDWT for test only
 	Pic8u		grad;	//The image gradient.
 	Pic8u		con;	//The image contour.
-	Pic16s		*dw;	//The down sampling images for resize only
-	Pic8u		*dg;	//The gradients of down sampling images.
-	Pic8u		*dc;	//The contour of down sampling images.
 	Level		*l;		//The levels of DWT transform
 	uint32 		*qfl;		//The quantization floor
 	uint32 		qst;		//The number of quantization steps.
