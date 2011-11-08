@@ -33,6 +33,7 @@ typedef enum {
 	CS420,	
   	CS444,
   	RGB,
+  	RGB24,
   	GREY,
   	BAYER,
 } ColorSpace;
@@ -44,6 +45,7 @@ typedef enum {
 	WAVELET,
 	PREDICT,
   	RESIZE,
+  	VECTORIZE,
 } Decorrelation;
 
 /**

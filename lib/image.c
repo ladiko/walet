@@ -125,6 +125,34 @@ void resize_down_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 	}
 }
 
+/*	\brief Resize rgb color image down to two times on x and y.
+	\param in	 		The input image.
+	\param out	 		The output image.
+	\param buff	 		The temporary buffer, should include 1 row.
+	\param w 			The image width.
+	\param h 			The image height.
+*/
+void resize_down_2x_rgb(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
+{
+	int x, y, yw, yx, yw1, w1 = w>>1, w2 = w1 + (w&1), h1 = h>>1, h2 = h1 + (h&1);
+	int16 *l = buff;
+
+	for(y=0; y < h2; y++){
+		yw = y*w2;
+		yw1 = (y<<1)*w;
+		for(x=0; x < w1; x++) l[x] = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+		if(w&1) l[x] = in[yw1 + (x<<1)]<<1;
+		yw1 = (y==h2-1 && (y&1)) ? (y<<1)*w : ((y<<1)+1)*w;
+		for(x=0; x < w1; x++) l[x] += in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+		if(w&1) l[x] = +in[yw1 + (x<<1)]<<1;
+
+		for(x=0; x < w2; x++){
+			yx = yw + x;
+			out[yx] = l[x]>>2;
+		}
+	}
+}
+
 /*	\brief Resize image up to two times on x and y (bilinear interpolation).
 	\param in	 		The input image.
 	\param out	 		The output image.
@@ -549,35 +577,6 @@ void image_init(Image *img, uint32 w, uint32 h, uint32 bpp, uint32 steps, uint32
 			}
 		}
 	} else if (dec = RESIZE){
-		img->dw = (Pic16s *)calloc(steps, sizeof(Pic16s));
-		img->dw[0].w = (w>>1) + (w&1);
-		img->dw[0].h = (h>>1) + (h&1);
-		img->dw[0].pic = (int16 *)calloc(img->dw[0].w*img->dw[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			img->dw[i].w = (img->dw[i-1].w>>1) + (img->dw[i-1].w&1);
-			img->dw[i].h = (img->dw[i-1].h>>1) + (img->dw[i-1].h&1);
-			img->dw[i].pic = (int16 *)calloc(img->dw[i].w*img->dw[i].h, sizeof(int16));
-		}
-
-		img->dg = (Pic8u *)calloc(steps, sizeof(Pic8u));
-		img->dg[0].w = (w>>1) + (w&1);
-		img->dg[0].h = (h>>1) + (h&1);
-		img->dg[0].pic = (uint8 *)calloc(img->dg[0].w*img->dg[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			img->dg[i].w = (img->dg[i-1].w>>1) + (img->dg[i-1].w&1);
-			img->dg[i].h = (img->dg[i-1].h>>1) + (img->dg[i-1].h&1);
-			img->dg[i].pic = (uint8 *)calloc(img->dg[i].w*img->dg[i].h, sizeof(int16));
-		}
-
-		img->dc = (Pic8u *)calloc(steps, sizeof(Pic8u));
-		img->dc[0].w = (w>>1) + (w&1);
-		img->dc[0].h = (h>>1) + (h&1);
-		img->dc[0].pic = (uint8 *)calloc(img->dc[0].w*img->dc[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			img->dc[i].w = (img->dc[i-1].w>>1) + (img->dc[i-1].w&1);
-			img->dc[i].h = (img->dc[i-1].h>>1) + (img->dc[i-1].h&1);
-			img->dc[i].pic = (uint8 *)calloc(img->dc[i].w*img->dc[i].h, sizeof(int16));
-		}
 	}
 
 	img->qfl  = (uint32 *)calloc(steps, sizeof(uint32));

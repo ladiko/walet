@@ -22,7 +22,7 @@ static uint32 check_state(uint32 state, uint32 check)
 */
 void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 {
-	uint32 w = wc->w, h = wc->h;
+	uint32 i, w = wc->w, h = wc->h;
 	Frame *f = &g->frames[fn];
 
 	if (wc->icol == BAYER ){
@@ -30,6 +30,46 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(int16));
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
+
+		f->rgb = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->rgb[0].w = (w>>1) + (w&1);
+		f->rgb[0].h = (h>>1) + (h&1);
+		f->rgb[0].pic = (uint8 *)calloc(f->rgb[0].w*f->rgb[0].h*3, sizeof(int16));
+		for(i=1; i < wc->steps; i++) {
+			f->rgb[i].w = (f->rgb[i-1].w>>1) + (f->rgb[i-1].w&1);
+			f->rgb[i].h = (f->rgb[i-1].h>>1) + (f->rgb[i-1].h&1);
+			f->rgb[i].pic = (uint8 *)calloc(f->rgb[i].w*f->rgb[i].h*3, sizeof(int16));
+		}
+
+		f->dw = (Pic16s *)calloc(steps, sizeof(Pic16s));
+		f->dw[0].w = (w>>1) + (w&1);
+		f->dw[0].h = (h>>1) + (h&1);
+		f->dw[0].pic = (int16 *)calloc(f->dw[0].w*f->dw[0].h, sizeof(int16));
+		for(i=1; i < steps; i++) {
+			f->dw[i].w = (f->dw[i-1].w>>1) + (f->dw[i-1].w&1);
+			f->dw[i].h = (f->dw[i-1].h>>1) + (f->dw[i-1].h&1);
+			f->dw[i].pic = (int16 *)calloc(f->dw[i].w*f->dw[i].h, sizeof(int16));
+		}
+
+		f->dg = (Pic8u *)calloc(steps, sizeof(Pic8u));
+		f->dg[0].w = (w>>1) + (w&1);
+		f->dg[0].h = (h>>1) + (h&1);
+		f->dg[0].pic = (uint8 *)calloc(f->dg[0].w*f->dg[0].h, sizeof(int16));
+		for(i=1; i < steps; i++) {
+			f->dg[i].w = (f->dg[i-1].w>>1) + (f->dg[i-1].w&1);
+			f->dg[i].h = (f->dg[i-1].h>>1) + (f->dg[i-1].h&1);
+			f->dg[i].pic = (uint8 *)calloc(f->dg[i].w*f->dg[i].h, sizeof(int16));
+		}
+
+		f->dc = (Pic8u *)calloc(steps, sizeof(Pic8u));
+		f->dc[0].w = (w>>1) + (w&1);
+		f->dc[0].h = (h>>1) + (h&1);
+		f->dc[0].pic = (uint8 *)calloc(f->dc[0].w*f->dc[0].h, sizeof(int16));
+		for(i=1; i < steps; i++) {
+			f->dc[i].w = (f->dc[i-1].w>>1) + (f->dc[i-1].w&1);
+			f->dc[i].h = (f->dc[i-1].h>>1) + (f->dc[i-1].h&1);
+			f->dc[i].pic = (uint8 *)calloc(f->dc[i].w*f->dc[i].h, sizeof(int16));
+		}
 	}
 
 	if (wc->ccol == BAYER ){
@@ -52,6 +92,9 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	} else if (wc->ccol == GREY){
 	    f->img = (Image *)calloc(1, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
+	} else if (wc->ccol == RGB24){
+	    f->img = (Image *)calloc(1, sizeof(Image));
+		image_init(&f->img[0],  w, h, wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
@@ -76,15 +119,15 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
 	f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
-	f->rgb.w  = w;
-	f->rgb.h = h;
-	f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
+	//f->rgb.w  = w;
+	//f->rgb.h = h;
+	//f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
 	f->Y.w  = w;
 	f->Y.h = h;
-	f->Y.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
+	f->Y.pic = (uint8 *)calloc(f->Y.w*f->Y.h*3, sizeof(uint8));
 	f->grad.w  = w;
 	f->grad.h = h;
-	f->grad.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
+	f->grad.pic = (uint8 *)calloc(f->grad.w*f->grad.h*3, sizeof(uint8));
 
 
 	f->line.w  = w;
@@ -245,6 +288,15 @@ uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 		if (wc->ccol == GREY) image_resize_down_2x(&f->img[0], (int16*)g->buf, wc->steps);
 		else if(wc->ccol == BAYER) for(i=0; i < 4; i++)  image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
 		else  for(i=0; i < 3; i++) image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
+	} else if(wc->dec == VECTORIZE){
+		utils_bayer_to_RGB24_fast(f->b.pic, f->rgb[0].pic, f->rgb[0].w, f->rgb[0].h, wc->bg);
+		for(i=1; i < wc->steps; i++) {
+			resize_down_2x_rgb(f->rgb[i-1].pic, f->rgb[i].pic, g->buf, f->rgb[i-1].w, f->rgb[i-1].h);
+		}
+		utils_bayer_to_Y_fast(f->b.pic, f->dw[0].pic, f->dw[0].w, f->dw[0].h, wc->bg);
+		for(i=1; i < wc->steps; i++) {
+			resize_down_2x(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+		}
 	}
 		f->state = DWT;
 		//image_grad(&frame->img[0], BAYER, wc->steps, 2);
