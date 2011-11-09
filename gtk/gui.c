@@ -383,9 +383,14 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 		} else if(gw->wc.dec == RESIZE){
 			for(i=0; i < 3; i++){
 				new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
-				utils_resize_draw(&f0->img[i], gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps);
+				utils_resize_draw(f0->dw, gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), gw->wc.steps, f0->img[i].w);
 				gtk_widget_queue_draw(gw->drawingarea[i+1]);
 			}
+		} else if(gw->wc.dec == VECTORIZE){
+			new_buffer (gw->orig[3], f0->b.w, f0->b.h);
+			utils_resize_draw(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps, f0->b.w);
+			gtk_widget_queue_draw(gw->drawingarea[3]);
+
 		}
 
 		//new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
@@ -507,7 +512,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 	Frame *f0 = &gw->gop.frames[0];
 	int i, sz = f0->img[0].w*f0->img[0].h;
 	//if(&gw->gop == NULL ) return;
-	resize_down_2x(f0->img[0].p, f0->img[0].l[0].s[0].pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
+	//resize_down_2x(f0->img[0].p, f0->img[0].l[0].s[0].pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 
 	int w = (f0->img[0].w>>1) + (f0->img[0].w&1), h = (f0->img[0].h>>1) + (f0->img[0].h&1);
 	new_buffer (gw->orig[2], w, h);
@@ -590,13 +595,12 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_segmetation(&gw->gop, 0, &gw->wc);
-	//seg_find_clusters_2d(r, fr->img[0].d.pic, w, h, 2, 2, 8, (uint32*)gw->gop.buf);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
 	for(i=0; i < 4; i++){
-		new_buffer (gw->orig[i], fr->img[0].dc[0].w, fr->img[0].dc[0].h);
-		utils_contour(&fr->img[0], gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		new_buffer (gw->orig[i], fr->dc[0].w, fr->dc[0].h);
+		utils_contour(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		gtk_widget_queue_draw(gw->drawingarea[i]);
 	}
 

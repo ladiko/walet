@@ -198,7 +198,7 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 	\param  w		The image width.
 	\param  h		The image height.
 */
-void find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
+void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
 	int d1, d2, npix = 0;
@@ -649,12 +649,14 @@ void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 			v.x2 = vp[i]->ln[nd].v->x; v.y2 = vp[i]->ln[nd].v->y;
 			//printf("x2 = %d y2 = %d\n", v.x2, v.y2);
 			draw_line1(img, &v, w, vp[i]->ln[nd].l[0], 0);
+			//draw_line1(img, &v, w, 128, 0);
 			//}
 			//tmp++;
 			//printf("yx = %d\n", yx);
 		}
 		//}
 		img[yx] = vp[i]->ln[0].l[0];
+		//img[yx] = 255;
 	}
 }
 

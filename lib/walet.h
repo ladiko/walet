@@ -33,7 +33,7 @@ typedef enum {
 	CS420,	
   	CS444,
   	RGB,
-  	RGB24,
+  	RGBY,
   	GREY,
   	BAYER,
 } ColorSpace;

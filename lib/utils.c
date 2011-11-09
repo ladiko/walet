@@ -95,125 +95,39 @@ uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps)
 	return rgb;
 }
 
-uint8* utils_resize_draw(Image *img, uint8 *rgb, uint32 steps)
+uint8* utils_resize_draw(Pic8u *p, uint8 *rgb, uint32 steps, uint32 w)
 {
-	uint32 i, j, x, y, w = img->w;
+	uint32 i, j, x, y;
 
 	if(steps != 0){
 		x = 0; y = 0;
-		//for(j=steps-1; j >= 0 ; j--){
 		for(j=0; j < steps ; j++){
-			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
-
-			drawrect(rgb, img->dw[j].pic, x, y, img->dw[j].w, img->dw[j].h, w, 128);
-			x += img->dw[j].w; y += img->dw[j].h;
+			drawrect8(rgb, p[j].pic, x, y, p[j].w, p[j].h, w, 0);
+			x += p[j].w; y += p[j].h;
 		}
 	}
 	return rgb;
 }
 
-uint8* utils_gradient_draw(Image *img, uint8 *rgb, uint32 steps)
+uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n)
 {
-	uint32 i, j, x, y, w = img->w;
-
-	if(steps != 0){
-		x = 0; y = 0;
-		//for(j=steps-1; j >= 0 ; j--){
-		for(j=0; j < steps ; j++){
-			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
-
-			drawrect8(rgb, img->dg[j].pic, x, y, img->dg[j].w, img->dg[j].h, w, 0);
-			x += img->dg[j].w; y += img->dg[j].h;
-		}
-	}
-	return rgb;
-}
-
-uint8* utils_contour_draw(Image *img, uint8 *rgb, uint32 steps)
-{
-	uint32 i, j, x, y, w = img->w;
-
-	if(steps != 0){
-		x = 0; y = 0;
-		//for(j=steps-1; j >= 0 ; j--){
-		for(j=0; j < steps ; j++){
-			//printf("j = %d x = %d y = %d w = %d h = %d\n", j, x, y, img->dw[j].w, img->dw[j].h);
-
-			drawrect8(rgb, img->dc[j].pic, x, y, img->dc[j].w, img->dc[j].h, w, 0);
-			x += img->dc[j].w; y += img->dc[j].h;
-		}
-	}
-	return rgb;
-}
-
-uint8* utils_contour_rgb_draw(Image *img, uint8 *rgb)
-{
-	uint32 i, j, x, y, w = img->dc[0].w, h = img->dc[0].h;
-	uint32 yw, yx, yx3, yy, xy;
-
-
-	for(y=0; y < img->dc[0].h; y++){
-		yw = y*img->dc[0].w;
-		for(x=0; x < img->dc[0].w; x++){
-			yx = yw + x;
-			yx3 = yx*3;
-			rgb[yx3+2] = img->dc[0].pic[yx];
-		}
-	}
-	for(y=0; y < img->dc[1].h; y++){
-		yw = y*img->dc[0].w*2;
-		for(x=0; x < img->dc[1].w; x++){
-			//yx = yw + x*2;
-			//yx3 = yx*3;
-			for(i=0; i < 2; i++){
-				yy = yw + i*img->dc[0].w;
-				for(j=0; j < 2; j++){
-					yx = yy + x*2 + j;
-					yx3 = yx*3;
-					xy = y*img->dc[1].w + x;
-					rgb[yx3+1] = img->dc[1].pic[xy];
-				}
-			}
-		}
-	}
-	for(y=0; y < img->dc[2].h; y++){
-		yw = y*img->dc[0].w*4;
-		for(x=0; x < img->dc[2].w; x++){
-			//yx = yw + x*2;
-			//yx3 = yx*3;
-			for(i=0; i < 4; i++){
-				yy = yw + i*img->dc[0].w;
-				for(j=0; j < 4; j++){
-					yx = yy + x*4 + j;
-					yx3 = yx*3;
-					xy = y*img->dc[2].w + x;
-					rgb[yx3] = img->dc[2].pic[xy];
-				}
-			}
-		}
-	}
-	return rgb;
-}
-
-uint8* utils_contour(Image *img, uint8 *rgb, uint32 n)
-{
-	uint32 i, j, x, y, w = img->dc[0].w, h = img->dc[0].h;
+	uint32 i, j, x, y, w = p[0].w, h = p[0].h;
 	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
 
-	for(y=0; y < img->dc[n].h; y++){
-		yw = y*img->dc[0].w*s;
-		for(x=0; x < img->dc[n].w; x++){
+	for(y=0; y < p[n].h; y++){
+		yw = y*p[0].w*s;
+		for(x=0; x < p[n].w; x++){
 			//yx = yw + x*2;
 			//yx3 = yx*3;
 			for(i=0; i < s; i++){
-				yy = yw + i*img->dc[0].w;
+				yy = yw + i*p[0].w;
 				for(j=0; j < s; j++){
 					yx = yy + x*s + j;
 					yx3 = yx*3;
-					xy = y*img->dc[n].w + x;
-					rgb[yx3  ] = img->dc[n].pic[xy];
-					rgb[yx3+1] = img->dc[n].pic[xy];
-					rgb[yx3+2] = img->dc[n].pic[xy];
+					xy = y*p[n].w + x;
+					rgb[yx3  ] = p[n].pic[xy];
+					rgb[yx3+1] = p[n].pic[xy];
+					rgb[yx3+2] = p[n].pic[xy];
 				}
 			}
 		}
@@ -374,7 +288,7 @@ uint8* utils_bayer_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid ba
 	return rgb;
 }
 
-uint8* utils_bayer_to_RGB24_fast(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay){
+void utils_bayer_to_RGB_fast(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, BayerGrid bay, uint32 sh){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -385,39 +299,58 @@ uint8* utils_bayer_to_RGB24_fast(int16 *img, uint8 *rgb, uint32 w, uint32 h, Bay
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	//int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1);
-	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = (w>>1)*3, h1 = h>>1;
+	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = w>>1, h1 = h>>1;
 
 	switch(bay){
 		case(BGGR):{
-			for(y=0, y1=0; y < h; y+=2, y1++){
-				wy = w*y; wy1 = w1*y1;
-				for(x=0, x1=0; x < w; x+=2, x1+=3){
+			break;
+		}
+		case(GRBG):{
+			break;
+		}
+		case(GBRG):{
+			break;
+		}
+		case(RGGB):{
+			for(y=0; y < h1; y++){
+				wy = y*w1;
+				wy1 = (y<<1)*w;
+				for(x=0; x < w1; x++){
 					yx 	= x + wy;
-					yx1 = x1 + wy1;
-					rgb[yx1]   = img[yx + w + 1];
-					rgb[yx1+1] = (img[yx + 1] + img[yx + w])>>1;
-					rgb[yx1+2] = img[yx];
+					yx1 = (x<<1) + wy1;
+					r[yx] = img[yx1] + sh;
+					g[yx] = ((img[yx1 + 1] + img[yx1 + w])>>1) + sh;
+					b[yx] = img[yx1 + w + 1] + sh;
 				}
 			}
 			break;
-			}
-		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{
-			for(y=0, y1=0; y < h; y+=2, y1++){
-			wy = w*y; wy1 = w1*y1;
-			for(x=0, x1=0; x < w; x+=2, x1+=3){
-				yx 	= x + wy;
-				yx1 = x1 + wy1;
-				rgb[yx1]   = img[yx];
-				rgb[yx1+1] = (img[yx + 1] + img[yx + w])>>1;
-				rgb[yx1+2] = img[yx + w + 1];
-			}
 		}
-		break;}
 	}
-	return rgb;
+}
+
+uint8* utils_bayer_to_Y_fast(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh){
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = w>>1, h1 = h>>1;
+
+	for(y=0; y < h1; y++){
+		wy = y*w1;
+		wy1 = (y<<1)*w;
+		for(x=0; x < w1; x++){
+			yx 	= x + wy;
+			yx1 = (x<<1) + wy1;
+			Y[yx] = ((img[yx1] + img[yx1 + 1] + img[yx1 + w] + img[yx1 + w + 1])>>2) + sh;
+		}
+	}
+	return Y;
 }
 
 
@@ -909,6 +842,18 @@ void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint
 		img[i3+1] = lb1(g[i] + shift);
 		img[i3+2] = lb1(b[i] + shift);
 	}
+}
+
+uint8* utils_RGB_to_RGB24_8(uint8 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, uint32 shift)
+{
+	uint32 i, i3, size = w*h;
+	for(i=0; i<size; i++) {
+		i3 = i*3;
+		img[i3]   = lb1(r[i] + shift);
+		img[i3+1] = lb1(g[i] + shift);
+		img[i3+2] = lb1(b[i] + shift);
+	}
+	return img;
 }
 
 /** \brief Convert YUV444 image to RGB.

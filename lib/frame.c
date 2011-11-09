@@ -31,44 +31,62 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 
-		f->rgb = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->rgb[0].w = (w>>1) + (w&1);
-		f->rgb[0].h = (h>>1) + (h&1);
-		f->rgb[0].pic = (uint8 *)calloc(f->rgb[0].w*f->rgb[0].h*3, sizeof(int16));
+		f->R = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->R[0].w = (w>>1);
+		f->R[0].h = (h>>1);
+		f->R[0].pic = (uint8 *)calloc(f->R[0].w*f->R[0].h, sizeof(uint8));
 		for(i=1; i < wc->steps; i++) {
-			f->rgb[i].w = (f->rgb[i-1].w>>1) + (f->rgb[i-1].w&1);
-			f->rgb[i].h = (f->rgb[i-1].h>>1) + (f->rgb[i-1].h&1);
-			f->rgb[i].pic = (uint8 *)calloc(f->rgb[i].w*f->rgb[i].h*3, sizeof(int16));
+			f->R[i].w = (f->R[i-1].w>>1);
+			f->R[i].h = (f->R[i-1].h>>1);
+			f->R[i].pic = (uint8 *)calloc(f->R[i].w*f->R[i].h, sizeof(uint8));
+		}
+		f->G = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->G[0].w = (w>>1);
+		f->G[0].h = (h>>1);
+		f->G[0].pic = (uint8 *)calloc(f->G[0].w*f->G[0].h, sizeof(uint8));
+		for(i=1; i < wc->steps; i++) {
+			f->G[i].w = (f->G[i-1].w>>1);
+			f->G[i].h = (f->G[i-1].h>>1);
+			f->G[i].pic = (uint8 *)calloc(f->G[i].w*f->G[i].h, sizeof(uint8));
+		}
+		f->B = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->B[0].w = (w>>1);
+		f->B[0].h = (h>>1);
+		f->B[0].pic = (uint8 *)calloc(f->B[0].w*f->B[0].h, sizeof(uint8));
+		for(i=1; i < wc->steps; i++) {
+			f->B[i].w = (f->B[i-1].w>>1);
+			f->B[i].h = (f->B[i-1].h>>1);
+			f->B[i].pic = (uint8 *)calloc(f->B[i].w*f->B[i].h, sizeof(uint8));
 		}
 
-		f->dw = (Pic16s *)calloc(steps, sizeof(Pic16s));
-		f->dw[0].w = (w>>1) + (w&1);
-		f->dw[0].h = (h>>1) + (h&1);
-		f->dw[0].pic = (int16 *)calloc(f->dw[0].w*f->dw[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			f->dw[i].w = (f->dw[i-1].w>>1) + (f->dw[i-1].w&1);
-			f->dw[i].h = (f->dw[i-1].h>>1) + (f->dw[i-1].h&1);
-			f->dw[i].pic = (int16 *)calloc(f->dw[i].w*f->dw[i].h, sizeof(int16));
+		f->dw = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->dw[0].w = (w>>1);
+		f->dw[0].h = (h>>1);
+		f->dw[0].pic = (uint8 *)calloc(f->dw[0].w*f->dw[0].h, sizeof(uint8));
+		for(i=1; i < wc->steps; i++) {
+			f->dw[i].w = (f->dw[i-1].w>>1);
+			f->dw[i].h = (f->dw[i-1].h>>1);
+			f->dw[i].pic = (uint8 *)calloc(f->dw[i].w*f->dw[i].h, sizeof(uint8));
 		}
 
-		f->dg = (Pic8u *)calloc(steps, sizeof(Pic8u));
-		f->dg[0].w = (w>>1) + (w&1);
-		f->dg[0].h = (h>>1) + (h&1);
-		f->dg[0].pic = (uint8 *)calloc(f->dg[0].w*f->dg[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			f->dg[i].w = (f->dg[i-1].w>>1) + (f->dg[i-1].w&1);
-			f->dg[i].h = (f->dg[i-1].h>>1) + (f->dg[i-1].h&1);
-			f->dg[i].pic = (uint8 *)calloc(f->dg[i].w*f->dg[i].h, sizeof(int16));
+		f->dg = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->dg[0].w = (w>>1);
+		f->dg[0].h = (h>>1);
+		f->dg[0].pic = (uint8 *)calloc(f->dg[0].w*f->dg[0].h, sizeof(uint8));
+		for(i=1; i < wc->steps; i++) {
+			f->dg[i].w = (f->dg[i-1].w>>1);
+			f->dg[i].h = (f->dg[i-1].h>>1);
+			f->dg[i].pic = (uint8 *)calloc(f->dg[i].w*f->dg[i].h, sizeof(uint8));
 		}
 
-		f->dc = (Pic8u *)calloc(steps, sizeof(Pic8u));
-		f->dc[0].w = (w>>1) + (w&1);
-		f->dc[0].h = (h>>1) + (h&1);
-		f->dc[0].pic = (uint8 *)calloc(f->dc[0].w*f->dc[0].h, sizeof(int16));
-		for(i=1; i < steps; i++) {
-			f->dc[i].w = (f->dc[i-1].w>>1) + (f->dc[i-1].w&1);
-			f->dc[i].h = (f->dc[i-1].h>>1) + (f->dc[i-1].h&1);
-			f->dc[i].pic = (uint8 *)calloc(f->dc[i].w*f->dc[i].h, sizeof(int16));
+		f->dc = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
+		f->dc[0].w = (w>>1);
+		f->dc[0].h = (h>>1);
+		f->dc[0].pic = (uint8 *)calloc(f->dc[0].w*f->dc[0].h, sizeof(uint8));
+		for(i=1; i < wc->steps; i++) {
+			f->dc[i].w = (f->dc[i-1].w>>1);
+			f->dc[i].h = (f->dc[i-1].h>>1);
+			f->dc[i].pic = (uint8 *)calloc(f->dc[i].w*f->dc[i].h, sizeof(uint8));
 		}
 	}
 
@@ -92,9 +110,6 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	} else if (wc->ccol == GREY){
 	    f->img = (Image *)calloc(1, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
-	} else if (wc->ccol == RGB24){
-	    f->img = (Image *)calloc(1, sizeof(Image));
-		image_init(&f->img[0],  w, h, wc->bpp, wc->steps, wc->dec);
 	} else if (wc->ccol == RGB){
 	    f->img = (Image *)calloc(3, sizeof(Image));
 		image_init(&f->img[0], w, h, wc->bpp, wc->steps, wc->dec);
@@ -116,29 +131,29 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	//Old init
 	f->size = w*h;
 
-	f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
-	f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
+	//f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
+	//f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
 
 	//f->rgb.w  = w;
 	//f->rgb.h = h;
 	//f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
 	f->Y.w  = w;
 	f->Y.h = h;
-	f->Y.pic = (uint8 *)calloc(f->Y.w*f->Y.h*3, sizeof(uint8));
+	//f->Y.pic = (uint8 *)calloc(f->Y.w*f->Y.h*3, sizeof(uint8));
 	f->grad.w  = w;
 	f->grad.h = h;
-	f->grad.pic = (uint8 *)calloc(f->grad.w*f->grad.h*3, sizeof(uint8));
+	//f->grad.pic = (uint8 *)calloc(f->grad.w*f->grad.h*3, sizeof(uint8));
 
 
 	f->line.w  = w;
 	f->line.h = h;
-	f->line.pic = (uint8 *)calloc(f->line.w*f->line.h, sizeof(uint8));
+	//f->line.pic = (uint8 *)calloc(f->line.w*f->line.h, sizeof(uint8));
 	f->edge.w  = w;
 	f->edge.h = h;
-	f->edge.pic = (uint8 *)calloc(f->edge.w*f->edge.h, sizeof(uint8));
+	//f->edge.pic = (uint8 *)calloc(f->edge.w*f->edge.h, sizeof(uint8));
 	f->vec.w  = w;
 	f->vec.h = h;
-	f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
+	//f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
 	f->state = 0;
 }
 
@@ -169,6 +184,9 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 			//prediction_encoder(f->img[2].p, f->img[2].p, (int16*)g->buf, f->img[2].w, f->img[2].h);
 		} else if(wc->ccol == RGB){
 			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+		} else if(wc->ccol == RGBY){
+			utils_bayer_to_RGB_fast(f->b.pic, f->R[0].pic, f->G[0].pic, f->B[0].pic, f->b.w, f->b.h, wc->bg, 128);
+			utils_bayer_to_Y_fast(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
@@ -289,18 +307,22 @@ uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 		else if(wc->ccol == BAYER) for(i=0; i < 4; i++)  image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
 		else  for(i=0; i < 3; i++) image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
 	} else if(wc->dec == VECTORIZE){
-		utils_bayer_to_RGB24_fast(f->b.pic, f->rgb[0].pic, f->rgb[0].w, f->rgb[0].h, wc->bg);
 		for(i=1; i < wc->steps; i++) {
-			resize_down_2x_rgb(f->rgb[i-1].pic, f->rgb[i].pic, g->buf, f->rgb[i-1].w, f->rgb[i-1].h);
+			resize_down_2x(f->R[i-1].pic, f->R[i].pic, g->buf, f->R[i-1].w, f->R[i-1].h);
 		}
-		utils_bayer_to_Y_fast(f->b.pic, f->dw[0].pic, f->dw[0].w, f->dw[0].h, wc->bg);
+		for(i=1; i < wc->steps; i++) {
+			resize_down_2x(f->G[i-1].pic, f->G[i].pic, g->buf, f->G[i-1].w, f->G[i-1].h);
+		}
+		for(i=1; i < wc->steps; i++) {
+			resize_down_2x(f->B[i-1].pic, f->B[i].pic, g->buf, f->B[i-1].w, f->B[i-1].h);
+		}
 		for(i=1; i < wc->steps; i++) {
 			resize_down_2x(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
 		}
 	}
-		f->state = DWT;
-		//image_grad(&frame->img[0], BAYER, wc->steps, 2);
-		return 1;
+	f->state = DWT;
+	//image_grad(&frame->img[0], BAYER, wc->steps, 2);
+	return 1;
 	//} else return 0;
 }
 
@@ -757,46 +779,23 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	Frame *f = &g->frames[fn];
-	uint32 npix;
+	uint32 i, npix, vxc;
 
-	//if(check_state(f->state, FRAME_COPY)){
-		//if(wc->ccol == BAYER){
-		//utils_bayer_to_Y(im->p, wc->buf, wc->w, wc->h);
-	//utils_shift(f->img[0].p, g->buf, f->Y.w,f->Y.h, 128);
-	//filter_median(g->buf, f->Y.pic , f->Y.w, f->Y.h);
-	//utils_shift(f->img[0].dw[0].pic, f->Y.pic, f->img[0].dw[0].w, f->img[0].dw[0].h, 128);
-	//seg_find_clusters_2d(g->buf, f->grad.pic, f->img[0].dw[0].w, f->img[0].dw[0].h, 4, 4, 8, (uint32*)g->buf);
-	//utils_shift(f->img[0].p, f->Y.pic, f->Y.w,f->Y.h, 128);
+	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
+	for(i=0; i < wc->steps; i++) seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
+	for(i=0; i < wc->steps; i++) {
+		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->dg[i].w, f->dg[i].h);
 
-	//utils_shift(f->img[0].p, g->buf, f->Y.w,f->Y.h, 128);
-	//filter_median(g->buf, f->Y.pic , f->Y.w, f->Y.h);
+		memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
+		seg_vertex_draw	(f->dc[i].pic, f->vp, f->ln, vxc, f->dg[i].w);
+		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
+	}
 
-	//seg_find_clusters_2d(f->Y.pic, f->grad.pic, f->Y.w,f->Y.h, 4, 4, 8, (uint32*)g->buf);
 
-	//image_mean_shift(&f->img[0], g->buf, wc->steps);
-
-	image_gradient(&f->img[0], g->buf, wc->steps, 3);
-	//image_line(&f->img[0], g->buf, wc->steps, f->pixs, f->edges);
-
-	//image_fall_forest(&f->img[0], g->buf, wc->steps);
-	image_segment(&f->img[0], f->vx, f->vp, f->ln, g->buf, wc->steps);
-	//image_points(&f->img[0], g->buf, wc->steps);
-
-	//seg_grad16(f->img[0].p,f->grad.pic, f->Y.w, f->Y.h, 3);
-	//f->nedge = seg_line(f->pixs, f->edges, f->grad.pic, f->grad.w, f->grad.h);
-	//seg_points(f->grad.pic, f->grad.w, f->grad.h);
-	//seg_local_max(f->pixs, &npix, f->grad.pic, f->grad.w, f->grad.h);
-	//seg_local_max1(f->grad.pic, f->Y.pic, f->grad.w, f->grad.h);
-
-	//printf("nedge = %d\n", f->nedge);
-
-		//seg_pixels(f->pixs, f->grad.pic, f->grad.w, f->grad.h);
-		//seg_region(frm->pixs, frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//seg_reduce_line(frm->pixs,  frm->grad[0].pic, frm->grad[0].width, frm->grad[0].height);
-		//}
-		f->state |= SEGMENTATION;
-		return 1;
-	//} else return 0;
+	//image_segment(&f->img[0], f->vx, f->vp, f->ln, g->buf, wc->steps);
+	f->state |= SEGMENTATION;
+	return 1;
 }
 
 /**	\brief	Match the singular points in two frames

@@ -104,49 +104,19 @@ void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h)
 	\param w 			The image width.
 	\param h 			The image height.
 */
-void resize_down_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
+void resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
 {
-	int x, y, yw, yx, yw1, w1 = w>>1, w2 = w1 + (w&1), h1 = h>>1, h2 = h1 + (h&1);
-	int16 *l = buff;
+	int x, y, yw, yx, yw1, w1 = w>>1, h1 = h>>1;
+	int16 *l = (int16*)buff;
 
-	for(y=0; y < h2; y++){
-		yw = y*w2;
+	for(y=0; y < h1; y++){
+		yw = y*w1;
 		yw1 = (y<<1)*w;
-		for(x=0; x < w1; x++) l[x] = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
-		if(w&1) l[x] = in[yw1 + (x<<1)]<<1;
-		yw1 = (y==h2-1 && (y&1)) ? (y<<1)*w : ((y<<1)+1)*w;
+		for(x=0; x < w1; x++) l[x]  = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+		yw1 = yw1 + w;
 		for(x=0; x < w1; x++) l[x] += in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
-		if(w&1) l[x] = +in[yw1 + (x<<1)]<<1;
 
-		for(x=0; x < w2; x++){
-			yx = yw + x;
-			out[yx] = l[x]>>2;
-		}
-	}
-}
-
-/*	\brief Resize rgb color image down to two times on x and y.
-	\param in	 		The input image.
-	\param out	 		The output image.
-	\param buff	 		The temporary buffer, should include 1 row.
-	\param w 			The image width.
-	\param h 			The image height.
-*/
-void resize_down_2x_rgb(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
-{
-	int x, y, yw, yx, yw1, w1 = w>>1, w2 = w1 + (w&1), h1 = h>>1, h2 = h1 + (h&1);
-	int16 *l = buff;
-
-	for(y=0; y < h2; y++){
-		yw = y*w2;
-		yw1 = (y<<1)*w;
-		for(x=0; x < w1; x++) l[x] = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
-		if(w&1) l[x] = in[yw1 + (x<<1)]<<1;
-		yw1 = (y==h2-1 && (y&1)) ? (y<<1)*w : ((y<<1)+1)*w;
-		for(x=0; x < w1; x++) l[x] += in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
-		if(w&1) l[x] = +in[yw1 + (x<<1)]<<1;
-
-		for(x=0; x < w2; x++){
+		for(x=0; x < w1; x++){
 			yx = yw + x;
 			out[yx] = l[x]>>2;
 		}
@@ -647,8 +617,8 @@ void image_idwt(Image *im, int16 *buf, FilterBank fb, uint32 steps, uint32 istep
 */
 void image_resize_down_2x(Image *im, int16 *buf, uint32 steps){
 	uint32 i;
-	resize_down_2x(im->p, im->dw[0].pic, buf, im->w, im->h);
-	for(i=1; i < steps; i++) resize_down_2x(im->dw[i-1].pic, im->dw[i].pic, buf, im->dw[i-1].w, im->dw[i-1].h);
+	//resize_down_2x(im->p, im->dw[0].pic, buf, im->w, im->h);
+	//for(i=1; i < steps; i++) resize_down_2x(im->dw[i-1].pic, im->dw[i].pic, buf, im->dw[i-1].w, im->dw[i-1].h);
 }
 
 /**	\brief Get gradients of down sampling images.
@@ -659,10 +629,8 @@ void image_resize_down_2x(Image *im, int16 *buf, uint32 steps){
 */
 void image_gradient(Image *im, uint8 *buf, uint32 steps, uint32 th){
 	uint32 i;
-	//seg_corner(im->p, im->grad.pic, im->w, im->h, th);
-	//for(i=0; i < steps; i++) seg_corner(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, th);
-	seg_grad16(im->p, im->grad.pic, im->w, im->h, th);
-	for(i=0; i < steps; i++) seg_grad16(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, th);
+	//seg_grad16(im->p, im->grad.pic, im->w, im->h, th);
+	//for(i=0; i < steps; i++) seg_grad16(im->dw[i].pic, im->dg[i].pic, im->dw[i].w, im->dw[i].h, th);
 }
 
 /**	\brief Get contours from gradients of down sampling images.
@@ -674,16 +642,15 @@ void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uin
 	uint32 i, vxc = 0;
 	//find_intersect(im->grad.pic, im->con.pic, im->w, im->h);
 	//for(i=steps-1; i < steps; i++) {
+	/*
 	for(i=0; i < steps; i++) {
-		//memset(vp, 0, vxc*sizeof(Vertex*));
-		//memset(ln, 0, 8*vxc*sizeof(Line));
 		find_intersect(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 		vxc = seg_vertex(im->dc[i].pic, vx, vp, ln, im->dg[i].w, im->dg[i].h);
 
 		memset(im->dc[i].pic, 0, im->dc[i].w*im->dc[i].h);
 		seg_vertex_draw	(im->dc[i].pic, vp, ln, vxc, im->dg[i].w);
 		memset(vx, 0, im->dg[i].w*im->dg[i].h*sizeof(Vertex));
-	}
+	}*/
 }
 
 /**	\brief Get contours from gradients of down sampling images.
@@ -693,32 +660,32 @@ void image_segment(Image *im, Vertex *vx, Vertex **vp, Line *ln, uint8 *buf, uin
 */
 void image_points(Image *im, uint8 *buf, uint32 steps){
 	uint32 i;
-	seg_point(im->con.pic, im->w, im->h);
-	for(i=0; i < steps; i++) seg_point(im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+	//seg_point(im->con.pic, im->w, im->h);
+	//for(i=0; i < steps; i++) seg_point(im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 }
 
 void image_fall_forest(Image *im, uint8 *buf, uint32 steps){
 	uint32 i;
-	seg_fall_forest(im->grad.pic, im->con.pic, im->w, im->h);
-	for(i=0; i < steps; i++) seg_fall_forest(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
+	//seg_fall_forest(im->grad.pic, im->con.pic, im->w, im->h);
+	//for(i=0; i < steps; i++) seg_fall_forest(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
 }
 
 void image_mean_shift(Image *im, uint8 *buf, uint32 steps){
 	uint32 i;
 	//seg_find_clusters_2d(im->p, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf)
-	for(i=0; i < steps; i++) utils_shift(im->dw[i].pic, im->dg[i].pic, im->dg[i].w, im->dg[i].h, 128);
-	for(i=0; i < steps; i++) seg_find_clusters_2d(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h, 2, 2, 8, (uint32*)buf);
+	//for(i=0; i < steps; i++) utils_shift(im->dw[i].pic, im->dg[i].pic, im->dg[i].w, im->dg[i].h, 128);
+	//for(i=0; i < steps; i++) seg_find_clusters_2d(im->dg[i].pic, im->dc[i].pic, im->dg[i].w, im->dg[i].h, 2, 2, 8, (uint32*)buf);
 
 }
 
 void image_line(Image *im, uint8 *buf, uint32 steps, Pixel *pixs, Edge *edges){
 	uint32 i, npix;
-	i=steps-2;{
-	//for(i=0; i < steps; i++) {
+	/*
+	for(i=0; i < steps; i++) {
 		npix = seg_line(pixs, edges, im->dg[i].pic, im->dg[i].w, im->dg[i].h);
 		seg_reduce_line(pixs,im->dg[i].pic, im->dg[i].w, im->dg[i].h);
 		seg_draw_lines(pixs, im->dc[i].pic, im->dg[i].w, im->dg[i].h);
-	}
+	}*/
 
 }
 
