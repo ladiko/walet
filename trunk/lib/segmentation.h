@@ -19,7 +19,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 //New segmentation interface
-void 	find_intersect	(uint8 *grad, uint8 *out, uint32 w, uint32 h);
+void seg_find_intersect	(uint8 *grad, uint8 *out, uint32 w, uint32 h);
 uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h);
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
 
