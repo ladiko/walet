@@ -12,7 +12,9 @@ uint8* utils_bayer_to_rgb_grad	(int16 *img, uint8 *rgb, uint32 w, uint32 h, Baye
 uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps);
 
 uint8* utils_resize_draw(Pic8u *p, uint8 *rgb, uint32 steps, uint32 w);
+uint8* utils_resize_draw_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 steps, uint32 w);
 uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n);
+uint8* utils_contour_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 n);
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
 void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint32 h,  BayerGrid bay, uint32 bits);

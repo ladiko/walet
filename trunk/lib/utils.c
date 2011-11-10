@@ -67,6 +67,21 @@ static inline void drawrect8(uint8 *rgb, uint8 *pic, uint32 x0, uint32 y0, uint3
 	}
 }
 
+static inline void drawrect8_rgb(uint8 *rgb, uint8 *r, uint8 *g, uint8 *b, uint32 x0, uint32 y0, uint32 w, uint32 h, uint32 size, uint32 shift)
+{
+	uint32 x, y, tmp;
+	for(y=0; y < h; y++ ){
+		for(x=0; x < w; x++){
+			//tmp = rnd(im[y*w+x] < 0 ? -im[y*w+x]<<1 : im[y*w+x]<<1);
+			//tmp = lb1(shift + pic[y*w+x]);
+			//if(tmp > 255) printf("tmp = %d pic = %d\n", tmp, pic[y*w+x]);
+			rgb[3*((y+y0)*size +x0 +x)]   = lb1(shift + r[y*w+x]);; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+1] = lb1(shift + g[y*w+x]);; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+			rgb[3*((y+y0)*size +x0 +x)+2] = lb1(shift + b[y*w+x]);; //rnd(shift+im[y*w+x]); //im[y*w+x] ? 255 : 0; //
+		}
+	}
+}
+
 static inline void drawrect_rgb(uint8 *rgb, uint8 *im, uint32 w0, uint32 h0, uint32 w, uint32 h, uint32 w1)
 {
 	uint32 x, y, tmp;
@@ -109,6 +124,20 @@ uint8* utils_resize_draw(Pic8u *p, uint8 *rgb, uint32 steps, uint32 w)
 	return rgb;
 }
 
+uint8* utils_resize_draw_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 steps, uint32 w)
+{
+	uint32 i, j, x, y;
+
+	if(steps != 0){
+		x = 0; y = 0;
+		for(j=0; j < steps ; j++){
+			drawrect8_rgb(rgb, r[j].pic, g[j].pic, b[j].pic, x, y, r[j].w, r[j].h, w, 0);
+			x += r[j].w; y += r[j].h;
+		}
+	}
+	return rgb;
+}
+
 uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n)
 {
 	uint32 i, j, x, y, w = p[0].w, h = p[0].h;
@@ -128,6 +157,32 @@ uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n)
 					rgb[yx3  ] = p[n].pic[xy];
 					rgb[yx3+1] = p[n].pic[xy];
 					rgb[yx3+2] = p[n].pic[xy];
+				}
+			}
+		}
+	}
+	return rgb;
+}
+
+uint8* utils_contour_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 n)
+{
+	uint32 i, j, x, y, w = r[0].w, h = r[0].h;
+	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
+
+	for(y=0; y < r[n].h; y++){
+		yw = y*r[0].w*s;
+		for(x=0; x < r[n].w; x++){
+			//yx = yw + x*2;
+			//yx3 = yx*3;
+			for(i=0; i < s; i++){
+				yy = yw + i*r[0].w;
+				for(j=0; j < s; j++){
+					yx = yy + x*s + j;
+					yx3 = yx*3;
+					xy = y*r[n].w + x;
+					rgb[yx3  ] = r[n].pic[xy];
+					rgb[yx3+1] = g[n].pic[xy];
+					rgb[yx3+2] = b[n].pic[xy];
 				}
 			}
 		}
