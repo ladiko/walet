@@ -15,6 +15,21 @@ static uint32 check_state(uint32 state, uint32 check)
 	}
 }
 
+static void resize_init(Pic8u **p, uint32 w, uint32 h, uint32 steps)
+{
+	uint32 i;
+	*p = (Pic8u *)calloc(steps, sizeof(Pic8u));
+	(*p)[0].w = (w>>1);
+	(*p)[0].h = (h>>1);
+	(*p)[0].pic = (uint8 *)calloc((*p)[0].w*(*p)[0].h, sizeof(uint8));
+	for(i=1; i < steps; i++) {
+		(*p)[i].w = ((*p)[i-1].w>>1);
+		(*p)[i].h = ((*p)[i-1].h>>1);
+		(*p)[i].pic = (uint8 *)calloc((*p)[i].w*(*p)[i].h, sizeof(uint8));
+	}
+
+}
+
 /*	\brief	Frame initialization.
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
@@ -31,63 +46,16 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 
-		f->R = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->R[0].w = (w>>1);
-		f->R[0].h = (h>>1);
-		f->R[0].pic = (uint8 *)calloc(f->R[0].w*f->R[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->R[i].w = (f->R[i-1].w>>1);
-			f->R[i].h = (f->R[i-1].h>>1);
-			f->R[i].pic = (uint8 *)calloc(f->R[i].w*f->R[i].h, sizeof(uint8));
-		}
-		f->G = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->G[0].w = (w>>1);
-		f->G[0].h = (h>>1);
-		f->G[0].pic = (uint8 *)calloc(f->G[0].w*f->G[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->G[i].w = (f->G[i-1].w>>1);
-			f->G[i].h = (f->G[i-1].h>>1);
-			f->G[i].pic = (uint8 *)calloc(f->G[i].w*f->G[i].h, sizeof(uint8));
-		}
-		f->B = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->B[0].w = (w>>1);
-		f->B[0].h = (h>>1);
-		f->B[0].pic = (uint8 *)calloc(f->B[0].w*f->B[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->B[i].w = (f->B[i-1].w>>1);
-			f->B[i].h = (f->B[i-1].h>>1);
-			f->B[i].pic = (uint8 *)calloc(f->B[i].w*f->B[i].h, sizeof(uint8));
-		}
+	    resize_init(&f->R, w, h, wc->steps);
+	    resize_init(&f->G, w, h, wc->steps);
+	    resize_init(&f->B, w, h, wc->steps);
+	    resize_init(&f->dw, w, h, wc->steps);
+	    resize_init(&f->dg, w, h, wc->steps);
+	    resize_init(&f->dc, w, h, wc->steps);
+	    resize_init(&f->R1, w, h, wc->steps);
+	    resize_init(&f->G1, w, h, wc->steps);
+	    resize_init(&f->B1, w, h, wc->steps);
 
-		f->dw = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->dw[0].w = (w>>1);
-		f->dw[0].h = (h>>1);
-		f->dw[0].pic = (uint8 *)calloc(f->dw[0].w*f->dw[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->dw[i].w = (f->dw[i-1].w>>1);
-			f->dw[i].h = (f->dw[i-1].h>>1);
-			f->dw[i].pic = (uint8 *)calloc(f->dw[i].w*f->dw[i].h, sizeof(uint8));
-		}
-
-		f->dg = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->dg[0].w = (w>>1);
-		f->dg[0].h = (h>>1);
-		f->dg[0].pic = (uint8 *)calloc(f->dg[0].w*f->dg[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->dg[i].w = (f->dg[i-1].w>>1);
-			f->dg[i].h = (f->dg[i-1].h>>1);
-			f->dg[i].pic = (uint8 *)calloc(f->dg[i].w*f->dg[i].h, sizeof(uint8));
-		}
-
-		f->dc = (Pic8u *)calloc(wc->steps, sizeof(Pic8u));
-		f->dc[0].w = (w>>1);
-		f->dc[0].h = (h>>1);
-		f->dc[0].pic = (uint8 *)calloc(f->dc[0].w*f->dc[0].h, sizeof(uint8));
-		for(i=1; i < wc->steps; i++) {
-			f->dc[i].w = (f->dc[i-1].w>>1);
-			f->dc[i].h = (f->dc[i-1].h>>1);
-			f->dc[i].pic = (uint8 *)calloc(f->dc[i].w*f->dc[i].h, sizeof(uint8));
-		}
 	}
 
 	if (wc->ccol == BAYER ){
@@ -785,11 +753,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	for(i=0; i < wc->steps; i++) seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 	for(i=0; i < wc->steps; i++) {
 		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-		vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex(f->dc[i].pic, f->R[i].pic, f->G[i].pic, f->B[i].pic, f->vx, f->vp, f->ln, f->dg[i].w, f->dg[i].h);
 
-		memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
-		seg_vertex_draw	(f->dc[i].pic, f->vp, f->ln, vxc, f->dg[i].w);
+		//memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
+		seg_vertex_draw	(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, f->ln, vxc, f->dg[i].w);
 		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
+		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
 	}
 
 

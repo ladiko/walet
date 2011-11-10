@@ -282,10 +282,11 @@ static inline uint32 new_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, u
 
 }
 
-static inline void new_line1(Line *ln, Vertex *vx, uint8 lc, uint8 rc)
+static inline void new_line1(Line *ln, Vertex *vx, uint32 *rc, uint32 *gc, uint32 *bc)
 {
 	ln->v = vx;
-	ln->l[0] = lc; ln->r[0] = rc;
+	ln->l[0] = rc[0]; ln->l[1] = gc[0]; ln->l[2] = bc[0];
+	ln->r[0] = rc[1]; ln->r[1] = gc[1]; ln->r[2] = bc[1];
 }
 
 /*      \brief  Set finished direction bit.
@@ -386,6 +387,20 @@ static inline uint32 get_next_dir(Vertex *vx, int *dx, int *dy, uint32 *nd)
 	return 0;
 }
 
+static inline void get_per_dir(int d, uint32 w, int *ld, int *rd)
+{
+	if      (d == -1  ) { *ld = w;  	*rd = -w; 	}
+	else if (d == -w-1) { *ld = w-1;  	*rd = -w+1; }
+	else if (d == -w  ) { *ld = -1;  	*rd = 1; 	}
+	else if (d == -w+1) { *ld = -w-1;  	*rd = w+1; 	}
+	else if (d ==  1  ) { *ld = -w;  	*rd = w; 	}
+	else if (d ==  w+1) { *ld = -w+1;  	*rd = w-1; 	}
+	else if (d ==  w  ) { *ld = 1;  	*rd = -1;	}
+	else if (d ==  w-1) { *ld = w+1;  	*rd = -w-1; }
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+
 static inline uint32 new_in_line_vertex(Vertex *vx, Vertex **vp, Line *ln, uint32 x, uint32 y, uint32 w, int d1, int d2)
 {
 	vx->x = x; vx->y = y;
@@ -445,11 +460,12 @@ static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
 	\param  h		The image height.
 	\retval			The number of vertex.
 */
-uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h)
+uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint32 h)
 {
-	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, w1 = w-1, h1 = h-1, nd1, nd2, cl, cr, cc;
-	int vxc = 0, lnc = 0, lc = 0 ;
-	int d, d1, d2, dx, dy, fs, sc, cn;
+	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, w1 = w-1, h1 = h-1, nd1, nd2;
+	int vxc = 0, lnc = 0, lc = 0, rc[2], gc[2], bc[2], cc[2];
+	int d, d1, d2, dx, dy, fs, sc, cn, ld, rd;
+
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -470,43 +486,44 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 					//printf("d = %d dx = %d dy = %d %o %o\n", d, dx, dy, vx[yx1].di,  vx[yx1].cn);
 					yx2 = yx1; d2 = dx + w*dy; x2 = x1; y2 = y1;
 					fs = 0; sc = 0; cn = 0;
-					cl = 0; cc = 0;
+					//Find two perpendicular directions
+					get_per_dir(dx + w*dy, w, &ld, &rd);
+					rc[0] = r[yx1 + ld]; gc[0] = g[yx1 + ld]; bc[0] = b[yx1 + ld]; cc[0] = 1;
+					rc[1] = r[yx1 + rd]; gc[1] = g[yx1 + rd]; bc[1] = b[yx1 + rd]; cc[1] = 1;
+
+					//rc = r[yx1]; gc = g[yx1]; bc = b[yx1]; cc = 1;
 					while(1){
 						x1 += dx; y1 += dy;
 						d = dx + w*dy;
 						yx1 = yx1 + d;
 						//if(yx1 == 33973) printf("      d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
 						//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
-						if(!con[yx1]){
-							//remove_dir(&vx[yx1-d], d, w);
-							//yx1 = yx; x1 = x; y1 = y;
-							//if(yx1 == 33973) printf("remove d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
-							//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
+						if(!con[yx1]){ //Remove not connected direction
 							remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
 							yx1 = yx; x1 = x; y1 = y;
 							//yx1 = yx2; x1 = x2; y1 = y2;
 							break;
 						}
+						get_per_dir(d, w, &ld, &rd);
+						rc[0] += r[yx1 + ld]; gc[0] += g[yx1 + ld]; bc[0] += b[yx1 + ld]; cc[0]++;
+						rc[1] += r[yx1 + rd]; gc[1] += g[yx1 + rd]; bc[1] += b[yx1 + rd]; cc[1]++;
+						//rc += r[yx1]; gc += g[yx1]; bc += b[yx1]; cc++;
 						//print_around(con, yx1, w);
 						//printf("y = %d x = %d d = %d w = %d\n", (yx1-d)/w, (yx1-d)%w, d, w);
 						if(con[yx1] == 255 || con[yx1] == 254) {
 							if(con[yx1] == 255)  {
 								new_vertex(con, &vx[yx1], &vp[vxc++], &ln[lnc+=8],x1, y1, yx1, w);
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
-								cl += con[yx1]; cc++;
 								con[yx1] = 254;
-								//if(yx1 == 33973) printf("255 new d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
-								//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							} else {
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
-								//cl += con[yx1];
-								//if(yx1 == 33973) printf("255     d = %d dx = %d dy = %d %o %o n = %d yx = %d\n",
-								//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							}
-							cl = cc ? cl/cc : cl;
-							new_line1(&vx[yx2].ln[nd2], &vx[yx1], cl, 0);
-							new_line1(&vx[yx1].ln[nd1], &vx[yx2], cl, 0);
-							cl = 0; cc = 0;
+							rc[0] = rc[0]/cc[0]; gc[0] = gc[0]/cc[0]; bc[0] = bc[0]/cc[0];
+							rc[1] = rc[1]/cc[1]; gc[1] = gc[1]/cc[1]; bc[1] = bc[1]/cc[1];
+							//rc = rc/cc; gc = gc/cc; bc = bc/cc;
+							new_line1(&vx[yx2].ln[nd2], &vx[yx1], rc, gc, bc);
+							new_line1(&vx[yx1].ln[nd1], &vx[yx2], rc, gc, bc);
+							//cl = 0; cc = 0;
 							lc++;
 							yx1 = yx; x1 = x; y1 = y;
 							break;
@@ -514,7 +531,6 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 
 						if(is_new_line2(d, &cn, &fs, &sc)){
 							yx1 -= d; x1 -= dx; y1 -= dy;
-							//printf("New line yx = %d\n", yx1-d);
 							new_in_line_vertex(&vx[yx1], &vp[vxc++], &ln[lnc+=8], x1, y1, w, d, -d1);
 							nd1 = finish_dir(&vx[yx1], -d1, w);
 
@@ -522,10 +538,11 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 							//		d, dx, dy, vx[yx1].di,  vx[yx1].cn, vx[yx1].n, vx[yx1].y*w + vx[yx1].x);
 							//new_vertex(con, &vx[yx1], &vp[vxc++], &ln[lnc+=8], x1, y1, yx1, w);
 							//nd1 = add_finish_dir(&vx[yx1], -d1, w);
-							cl = cc ? cl/cc : cl;
-							new_line1(&vx[yx2].ln[nd2], &vx[yx1], cl, 0);
-							new_line1(&vx[yx1].ln[nd1], &vx[yx2], cl, 0);
-							cl = 0; cc = 0;
+							rc[0] = rc[0]/cc[0]; gc[0] = gc[0]/cc[0]; bc[0] = bc[0]/cc[0];
+							rc[1] = rc[1]/cc[1]; gc[1] = gc[1]/cc[1]; bc[1] = bc[1]/cc[1];
+							//rc = rc/cc; gc = gc/cc; bc = bc/cc;
+							new_line1(&vx[yx2].ln[nd2], &vx[yx1], rc, gc, bc);
+							new_line1(&vx[yx1].ln[nd1], &vx[yx2], rc, gc, bc);
 							lc++;
 							con[yx1] = 254;
 							break;
@@ -533,7 +550,6 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 w, uint3
 						d1 = d;
 						dx = -dx; dy = -dy;
 						direction(con, w, yx1, &dx, &dy);
-						cl += con[yx1]; cc++;
 						con[yx1] = 0;
 					}
 				}
@@ -589,7 +605,7 @@ static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint
 	return max;
 }
 
-static inline uint32 draw_line1(uint8 *img, Vector *v, uint32 w, uint32 col, uint8 end)
+static inline uint32 draw_line1(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint32 rc, uint32 gc, uint32 bc)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
 	int sty;
@@ -608,7 +624,7 @@ static inline uint32 draw_line1(uint8 *img, Vector *v, uint32 w, uint32 col, uin
 		for(i=0; i < n; i++){
 			min += dy; x++;
 			if(min >= max) { max += dx; y += sty; }
-			img[y + x] = col;
+			r[y + x] = rc; g[y + x] = gc; b[y + x] = bc;
 		}
 		return dx;
 	} else {
@@ -616,13 +632,13 @@ static inline uint32 draw_line1(uint8 *img, Vector *v, uint32 w, uint32 col, uin
 		for(i=0; i < n; i++){
 			min += dx; y += sty;
 			if(min >= max) { max += dy; x++; }
-			img[y + x] = col;
+			r[y + x] = rc; g[y + x] = gc; b[y + x] = bc;
 		}
 		return dy;
 	}
 }
 
-void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
+void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 {
 	uint32 i, yx, nd;//, tmp;
 	int dx , dy;
@@ -632,15 +648,6 @@ void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 	//printf("Number of vertex = %d", vxc);
 	for(i=0; i < vxc; i++){
 		yx = vp[i]->y*w + vp[i]->x;
-		//printf("%i  n = %d nd = %d di = %o cn = %o \n", i, vp[i]->n, nd,  vp[i]->di , vp[i]->cn);
-        //if(i == 1339){
-        //         img[yx-w] = 255;
-        //         img[yx-1] = 255;
-        //         img[yx+w] = 255;
-       //          img[yx+1] = 255;
-      //   }
-        //if(i != 1339){
-        //tmp = 0;
 		while(get_next_dir( vp[i], &dx, &dy, &nd)){
 			//if(tmp < 3) {
 			v.x1 = vp[i]->x; v.y1 = vp[i]->y;
@@ -648,15 +655,22 @@ void seg_vertex_draw(uint8 *img, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
 			//printf("x1 = %d y1 = %d \n", v.x1, v.y1);
 			v.x2 = vp[i]->ln[nd].v->x; v.y2 = vp[i]->ln[nd].v->y;
 			//printf("x2 = %d y2 = %d\n", v.x2, v.y2);
-			draw_line1(img, &v, w, vp[i]->ln[nd].l[0], 0);
+			//draw_line1(r, g, b, &v, w, vp[i]->ln[nd].l[0], vp[i]->ln[nd].l[1], vp[i]->ln[nd].l[2]);
+			draw_line1(r, g, b, &v, w,
+					(vp[i]->ln[nd].l[0] + vp[i]->ln[nd].r[0])>>1,
+					(vp[i]->ln[nd].l[1] + vp[i]->ln[nd].r[1])>>1,
+					(vp[i]->ln[nd].l[2] + vp[i]->ln[nd].r[2])>>1);
 			//draw_line1(img, &v, w, 128, 0);
 			//}
 			//tmp++;
 			//printf("yx = %d\n", yx);
 		}
 		//}
-		img[yx] = vp[i]->ln[0].l[0];
-		//img[yx] = 255;
+		//r[yx] = 255; g[yx] = 255; b[yx] = 255;
+		//r[yx] = vp[i]->ln[0].l[0]; g[yx] = vp[i]->ln[0].l[1]; b[yx] = vp[i]->ln[0].l[2];
+		r[yx] = (vp[i]->ln[nd].l[0] + vp[i]->ln[nd].r[0])>>1;
+		g[yx] = (vp[i]->ln[nd].l[1] + vp[i]->ln[nd].r[1])>>1;
+		b[yx] = (vp[i]->ln[nd].l[2] + vp[i]->ln[nd].r[2])>>1;
 	}
 }
 
