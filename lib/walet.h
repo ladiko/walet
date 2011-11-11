@@ -205,10 +205,8 @@ typedef struct Line Line;
 
 struct Line {
 	Vertex 	*v;		//The pointer to vertex
-	//uint8 	*di[2];		//The direction of two pixeles
-	uint8 	l[3];		//Left color
-	//uint8 	c[3];		//Line color
-	uint8 	r[3];		//Right color
+	uint8 	l[3];	//Left color 0 - red, 1 - gren, 2 - blue
+	uint8 	r[3];	//Right color 0 - red, 1 - gren, 2 - blue
 };
 
 ///Directions around the pixel
@@ -218,7 +216,7 @@ struct Line {
 
 struct Vertex {
 	uint16 		x,y;	//X and Y coordinate
-	uint8		n;		//The number of neighborhood vertex
+	//uint8		n;		//The number of neighborhood vertex
 	uint8		di;		//The direction round pixel to the neighborhood
 	uint8		cn;		//The counter of the directions
 	Line		*ln;	//The pointer to the lines array
