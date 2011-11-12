@@ -92,9 +92,10 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->look = (uint16 *)calloc((1<<wc->bpp)*3, sizeof(uint16));
 
 	//Init new sermentation
-	f->ln = (Line *)calloc(w*h, sizeof(Line));
+	f->ln = (Line *)calloc((w>>1)*(h>>1), sizeof(Line));
+	f->lp = (Line **)calloc(w*h, sizeof(Line*));
 	f->vx = (Vertex *)calloc(w*h, sizeof(Vertex));
-	f->vp = (Vertex **)calloc((w>>2)*(h>>2), sizeof(Vertex*));
+	f->vp = (Vertex **)calloc((w>>1)*(h>>1), sizeof(Vertex*));
 
 	//Old init
 	f->size = w*h;
@@ -753,10 +754,11 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	for(i=0; i < wc->steps; i++) seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 	for(i=0; i < wc->steps; i++) {
 		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-		vxc = seg_vertex(f->dc[i].pic, f->R[i].pic, f->G[i].pic, f->B[i].pic, f->vx, f->vp, f->ln, f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex(f->dc[i].pic, f->R[i].pic, f->G[i].pic, f->B[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
 
 		//memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
-		seg_vertex_draw	(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, f->ln, vxc, f->dg[i].w);
+		//seg_vertex_draw	(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, f->ln, vxc, f->dg[i].w);
+		seg_draw_line	(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w);
 		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
 		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
 	}

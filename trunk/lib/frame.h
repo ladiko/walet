@@ -24,6 +24,7 @@ typedef struct{
 
 	// New segmentation interface
 	Line	 	*ln;		// The Line array
+	Line	 	**lp;		// The pointer to Line array
 	Vertex		*vx;		// The vertex array
 	Vertex		**vp;		// The pointer to Vertex array
 
