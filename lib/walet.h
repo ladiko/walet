@@ -204,7 +204,7 @@ typedef struct Vertex Vertex;
 typedef struct Line Line;
 
 struct Line {
-	Vertex 	*v;		//The pointer to vertex
+	Vertex 	*vx[2];		//The pointer to vertex
 	uint8 	l[3];	//Left color 0 - red, 1 - gren, 2 - blue
 	uint8 	r[3];	//Right color 0 - red, 1 - gren, 2 - blue
 };
@@ -219,7 +219,7 @@ struct Vertex {
 	//uint8		n;		//The number of neighborhood vertex
 	uint8		di;		//The direction round pixel to the neighborhood
 	uint8		cn;		//The counter of the directions
-	Line		*ln;	//The pointer to the lines array
+	Line		**lp;	//The pointer to the lines array
 };
 
 struct Vector {
