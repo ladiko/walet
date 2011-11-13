@@ -763,7 +763,6 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
 	}
 
-
 	//image_segment(&f->img[0], f->vx, f->vp, f->ln, g->buf, wc->steps);
 	f->state |= SEGMENTATION;
 	return 1;

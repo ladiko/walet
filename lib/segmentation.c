@@ -611,12 +611,12 @@ static inline uint32 draw_line(uint8 *img, Vector *v, uint32 w, uint32 col, uint
 static inline uint32 draw_line1(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc, uint8 *rc)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
-	int sty, stx, lfx, lfy;
+	int sty, stx, yx, yxs, lfx, lfy;
 
 	x = v->x1; y = v->y1*w;
-	sty = v->y2 > v->y1 ? w : -w;
 	stx = v->x2 > v->x1 ? 1 : -1;
-	lfx = v->x2 > v->x1 ? -w : w;
+	sty = v->y2 > v->y1 ? w : -w;
+	lfx = v->x2 > v->x1 ? w : -w;
 	lfy = v->y2 > v->y1 ? 1 : -1;
 	/*
 	if(v->x2 >= v->x1){
@@ -629,27 +629,33 @@ static inline uint32 draw_line1(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 
 
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
 	if(dx >= dy){
-		n = dx - 2; max = dx;
+		n = dx - 0; max = dx;
 		for(i=0; i < n; i++){
+			yx = y + x;
+			yxs = yx - lfx;
+			r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
+			r[yx] = (lc[0] + rc[0])>>1;
+			g[yx] = (lc[1] + rc[1])>>1;
+			b[yx] = (lc[2] + rc[2])>>1;
+			yxs = yx + lfx;
+			r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
 			min += dy; x += stx;
 			if(min >= max) { max += dx; y += sty; }
-			r[y + x + lfx] = lc[0]; g[y + x + lfx] = lc[1]; b[y + x + lfx] = lc[2];
-			r[y + x] = (lc[0] + rc[0])>>1;
-			g[y + x] = (lc[1] + rc[1])>>1;
-			b[y + x] = (lc[2] + rc[2])>>1;
-			r[y + x - lfx] = rc[0]; g[y + x - lfx] = rc[1]; b[y + x - lfx] = rc[2];
 		}
 		return dx;
 	} else {
-		n = dy - 2; max = dy;
+		n = dy - 0; max = dy;
 		for(i=0; i < n; i++){
+			yx = y + x;
+			yxs = yx + lfy;
+			r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
+			r[yx] = (lc[0] + rc[0])>>1;
+			g[yx] = (lc[1] + rc[1])>>1;
+			b[yx] = (lc[2] + rc[2])>>1;
+			yxs = yx - lfy;
+			r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
 			min += dx; y += sty;
 			if(min >= max) { max += dy; x += stx; }
-			r[y + x + lfy] = lc[0]; g[y + x + lfy] = lc[1]; b[y + x + lfy] = lc[2];
-			r[y + x] = (lc[0] + rc[0])>>1;
-			g[y + x] = (lc[1] + rc[1])>>1;
-			b[y + x] = (lc[2] + rc[2])>>1;
-			r[y + x - lfy] = rc[0]; g[y + x - lfy] = rc[1]; b[y + x - lfy] = rc[2];
 		}
 		return dy;
 	}
@@ -667,31 +673,16 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32
 		yx = vp[i]->y*w + vp[i]->x;
 		while(get_next_dir( vp[i], &dx, &dy, &nd)){
 			//if(tmp < 3) {
-			v.x1 = vp[i]->x; v.y1 = vp[i]->y;
-			//printf("%i  n = %d nd = %d di = %o cn = %o \n", i, vp[i]->n, nd,  vp[i]->di , vp[i]->cn);
-			//printf("x1 = %d y1 = %d \n", v.x1, v.y1);
-			if(vp[i]->lp[nd]->vx[0] == vp[i]){
-				v.x2 = vp[i]->lp[nd]->vx[1]->x; v.y2 = vp[i]->lp[nd]->vx[1]->y;
-			} else {
-				v.x2 = vp[i]->lp[nd]->vx[0]->x; v.y2 = vp[i]->lp[nd]->vx[0]->y;
-			}
-			//printf("x2 = %d y2 = %d\n", v.x2, v.y2);
-			//draw_line1(r, g, b, &v, w, vp[i]->ln[nd].l[0], vp[i]->ln[nd].l[1], vp[i]->ln[nd].l[2]);
+			v.x1 =  vp[i]->lp[nd]->vx[0]->x; v.y1 =  vp[i]->lp[nd]->vx[0]->y;
+			v.x2 =  vp[i]->lp[nd]->vx[1]->x; v.y2 =  vp[i]->lp[nd]->vx[1]->y;
 			draw_line1(r, g, b, &v, w, vp[i]->lp[nd]->l, vp[i]->lp[nd]->r);
-					//(vp[i]->ln[nd].l[0] + vp[i]->ln[nd].r[0])>>1,
-					//(vp[i]->ln[nd].l[1] + vp[i]->ln[nd].r[1])>>1,
-					//(vp[i]->ln[nd].l[2] + vp[i]->ln[nd].r[2])>>1);
-			//draw_line1(img, &v, w, 128, 0);
-			//}
-			//tmp++;
-			//printf("yx = %d\n", yx);
 		}
 		//}
-		//r[yx] = 255; g[yx] = 255; b[yx] = 255;
+		r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		//r[yx] = vp[i]->ln[0].l[0]; g[yx] = vp[i]->ln[0].l[1]; b[yx] = vp[i]->ln[0].l[2];
-		r[yx] = (vp[i]->lp[nd]->l[0] + vp[i]->lp[nd]->r[0])>>1;
-		g[yx] = (vp[i]->lp[nd]->l[1] + vp[i]->lp[nd]->r[1])>>1;
-		b[yx] = (vp[i]->lp[nd]->l[2] + vp[i]->lp[nd]->r[2])>>1;
+		//r[yx] = (vp[i]->lp[nd]->l[0] + vp[i]->lp[nd]->r[0])>>1;
+		//g[yx] = (vp[i]->lp[nd]->l[1] + vp[i]->lp[nd]->r[1])>>1;
+		//b[yx] = (vp[i]->lp[nd]->l[2] + vp[i]->lp[nd]->r[2])>>1;
 	}
 }
 
@@ -708,14 +699,12 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 		//draw_line1(r, g, b, &v, w, vp[i]->ln[nd].l[0], vp[i]->ln[nd].l[1], vp[i]->ln[nd].l[2]);
 		draw_line1(r, g, b, &v, w, ln[i].l, ln[i].r);
 
+		/*
 		yx = ln[i].vx[0]->y*w + ln[i].vx[0]->x;
-		//if(tmp < 3) {
-		//r[yx] = (ln[i].l[0] + ln[i].r[0])>>1;
-		//g[yx] = (ln[i].l[1] + ln[i].r[1])>>1;
-		//b[yx] = (ln[i].l[2] + ln[i].r[2])>>1;
 		r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		yx = ln[i].vx[1]->y*w + ln[i].vx[1]->x;
 		r[yx] = 255; g[yx] = 255; b[yx] = 255;
+		*/
 	}
 }
 
