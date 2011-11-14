@@ -618,14 +618,6 @@ static inline uint32 draw_line1(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 
 	sty = v->y2 > v->y1 ? w : -w;
 	lfx = v->x2 > v->x1 ? w : -w;
 	lfy = v->y2 > v->y1 ? 1 : -1;
-	/*
-	if(v->x2 >= v->x1){
-		x = v->x1; y = v->y1*w;
-		sty = v->y2 > v->y1 ? w : -w;
-	} else {
-		x = v->x2; y = v->y2*w;
-		sty = v->y2 < v->y1 ? w : -w;
-	}*/
 
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
 	if(dx >= dy){
@@ -688,7 +680,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32
 
 void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 {
-	uint32 i, yx, nd;//, tmp;
+	uint32 i, yx, nd;
 	int dx , dy;
 	Vector v;
 
@@ -707,6 +699,121 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 		*/
 	}
 }
+
+static inline int fill_pixel(uint8 *r, uint8 *g, uint8 *b, uint32 yx, uint32 w, int d)
+{
+	uint32 cn = 0, c[3];
+	c[0] = 0; c[1] = 0; c[2] = 0;
+
+	if(r[yx-1  ]) { c[0]+=r[yx-1]; c[1]+=g[yx-1]; c[2]+=b[yx-1]; cn++; }
+	if(r[yx-w  ]) { c[0]+=r[yx-w]; c[1]+=g[yx-w]; c[2]+=b[yx-w]; cn++; }
+	if(r[yx+1  ]) { c[0]+=r[yx+1]; c[1]+=g[yx+1]; c[2]+=b[yx+1]; cn++; }
+	if(r[yx+w  ]) { c[0]+=r[yx+w]; c[1]+=g[yx+w]; c[2]+=b[yx+w]; cn++; }
+
+	if(cn == 1) 		{ r[yx] = c[0];    g[yx] = c[1];    b[yx] = c[2];   }
+	else if(cn == 2) { r[yx] = c[0]>>1; g[yx] = c[1]>>1; b[yx] = c[2]>>1;}
+	else if(cn == 3) { r[yx] = c[0]/3;  g[yx] = c[1]/3;  b[yx] = c[2]/3; }
+	else if(cn == 4) { r[yx] = c[0]>>2; g[yx] = c[1]>>2; b[yx] = c[2]>>2;}
+
+
+	if      (d == -1  ) {
+		if 		(!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+	}
+	else if (d == -w-1) {
+		if      (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+	}
+	else if (d == -w  ) {
+		if 		(!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+	}
+	else if (d == -w+1) {
+		if 		(!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+	}
+	else if (d ==  1  ) {
+		if 		(!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+	}
+	else if (d ==  w+1) {
+		if 		(!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+		else if (!r[yx + w  ]) return  w  ;
+	}
+	else if (d ==  w  ) {
+		if 		(!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+		else if (!r[yx + w-1]) return  w-1;
+	}
+	else if (d ==  w-1) {
+		if 		(!r[yx + w  ]) return  w  ;
+		else if (!r[yx + w+1]) return  w+1;
+		else if (!r[yx +   1]) return    1;
+		else if (!r[yx - w+1]) return -w+1;
+		else if (!r[yx - w  ]) return -w  ;
+		else if (!r[yx - w-1]) return -w-1;
+		else if (!r[yx -   1]) return   -1;
+	}
+	return 0;
+}
+
+void seg_fill_region(uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yx1, yw, fst = 0, yxf;
+	int d;
+	//Draw rectangle
+
+	for(y=0; y < h; y++){
+		yw = y*w;
+		for(x=0; x < w; x++){
+			yx = yw + x;
+			if(!r[yx]){
+				yx1 = yx;
+				if(!fst) { fst = 1; yxf = yx; }
+				d = fill_pixel(r, g, b, yx1, w, -1);
+				while(d){
+					yx1 += d;
+					d = fill_pixel(r, g, b, yx1, w, d);
+				}
+			}
+		}
+	}
+}
+
 
 /*
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
