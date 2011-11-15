@@ -50,24 +50,6 @@ void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 		}
 		tm = l0; l0 = l1; l1 = tm;
 	}
-	/*
-	out[0] = in[0];
-	for(x=1; x < w; x++){
-		out[x] = in[x] - in[x-1];
-	}
-	for(y=1; y < h; y++){
-		yw = y*w;
-		out[yw] = in[yw] - in[yw-w];
-		for(x=1; x < w; x++){
-			yx = yw + x;
-			//JPEG-LS prediction
-			if(in[yx-1-w] > in[yx-w] && in[yx-1-w] > in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-1] : in[yx-w]);
-			else if(in[yx-1-w] < in[yx-w] && in[yx-1-w] < in[yx-1]) out[yx] = in[yx] - (in[yx-w] > in[yx-1] ? in[yx-w] : in[yx-1]);
-			else out[yx] = in[yx] - (in[yx-1] + in[yx-w] - in[yx-1-w]);
-			//out[yx] = abs(in[yx-w] - in[yx-1-w]) > abs(in[yx-1] - in[yx-1-w]) ? in[yx] - in[yx-w] : in[yx] - in[yx-1];
-		}
-	}
-	*/
 }
 
 /*	\brief Prediction decoder.
