@@ -5,6 +5,23 @@
 #include <string.h>
 #include <math.h>
 
+static  inline uint8*  sort(uint8 *s, uint8 x1, uint8 x2, uint8 x3)
+{
+	if(x1 > x2){
+		if(x2 > x3) { s[0] = x3; s[1] = x2; s[2] = x1; }
+		else {
+			if(x1 > x3) { s[0] = x2; s[1] = x3; s[2] = x1; }
+			else 		{ s[0] = x2; s[1] = x1; s[2] = x3; }
+		}
+	} else {
+		if(x1 > x3) { s[0] = x3; s[1] = x1; s[2] = x2; }
+		else {
+			if(x3 > x2) { s[0] = x1; s[1] = x2; s[2] = x3; }
+			else 		{ s[0] = x1; s[1] = x3; s[2] = x2; }
+		}
+	}
+	return s;
+}
 static  inline uint8*  sort_3(uint8 *s)
 {
 	uint8 tmp;
@@ -27,6 +44,39 @@ static  inline uint8  median_3(uint8 s0, uint8 s1, uint8 s2)
 {
 	return (s2 > s1) ? (s1 > s0 ? s1 : (s2 > s0 ? s0 : s2))
 					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
+}
+
+void filter_median1(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+	// s[0]  s[1]  s[2]
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	//|     | yx  |     |
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
+	uint8 s[3][3];
+
+	for(y=w; y < sq; y+=w){
+		x = 1; i = 2;
+		yx = y + x;
+		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
+		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
+		sort_3(s[0]); sort_3(s[1]);
+		for(; x < w1; x++){
+			yx = y + x;
+			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
+			sort_3(s[i]);
+			img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
+								median_3(s[0][1], s[1][1], s[2][1]),
+								min_3   (s[0][2], s[1][2], s[2][2]));
+			i = (i == 2) ? 0 : i+1;
+		}
+	}
+	//Copy one pixel border
+	utils_copy_border(img, img1, 1, w, h);
 }
 
 void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
