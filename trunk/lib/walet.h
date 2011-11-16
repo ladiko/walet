@@ -196,6 +196,7 @@ typedef struct Corner Corner;
 typedef struct Edge Edge;
 typedef struct Edgelet Edgelet;
 typedef struct Pixel Pixel;
+typedef struct Reg Reg;
 typedef struct Vector Vector;
 
 
@@ -207,6 +208,12 @@ struct Line {
 	Vertex 	*vx[2];		//The pointer to vertex
 	uint8 	l[3];	//Left color 0 - red, 1 - gren, 2 - blue
 	uint8 	r[3];	//Right color 0 - red, 1 - gren, 2 - blue
+};
+
+struct Reg {
+	uint8 	c[3];	//Left color 0 - red, 1 - gren, 2 - blue
+	uint16 	n;		//Number of lines
+	Line	**lp;	//The pointer to the lines array
 };
 
 ///Directions around the pixel
