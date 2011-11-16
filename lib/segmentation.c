@@ -605,6 +605,31 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 	return linc;
 }
 
+uint32 seg_select_reg(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex **vp, Line *ln, Line **lp, Reg *rg, uint32 w, uint32 h)
+{
+	uint32 i, y, x, yx, yw, w1 = w-1, h1 = h-1, nd1, nd2, yxd;
+	uint32 regc;
+	/*
+	for(i=0; i < vxc; i++){
+		yx = vp[i]->y*w + vp[i]->x;
+
+		if(vp[i]->n > 1){
+
+		} else {
+
+		}
+		while(get_next_dir( vp[i], &dx, &dy, &nd)){
+			//if(tmp < 3) {
+			v.x1 =  vp[i]->lp[nd]->vx[0]->x; v.y1 =  vp[i]->lp[nd]->vx[0]->y;
+			v.x2 =  vp[i]->lp[nd]->vx[1]->x; v.y2 =  vp[i]->lp[nd]->vx[1]->y;
+			draw_three_lines(r, g, b, &v, w, vp[i]->lp[nd]->l, vp[i]->lp[nd]->r);
+		}
+		//}
+		r[yx] = 255; g[yx] = 255; b[yx] = 255;
+	}
+*/
+}
+
 static inline uint32 draw_line(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
@@ -717,8 +742,8 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 		v.x2 = ln[i].vx[1]->x; v.y2 = ln[i].vx[1]->y;
 		//printf("%d x1 = %d y1 = %d x2 = %d y2 = %d\n", i, v.x1, v.y1, v.x2, v.y2);
 		//draw_line1(r, g, b, &v, w, vp[i]->ln[nd].l[0], vp[i]->ln[nd].l[1], vp[i]->ln[nd].l[2]);
-		if(abs(v.x1-v.x2) > 2 || abs(v.y1-v.y2) > 2){
-			if(ln[i].vx[0]->n > 1 || ln[i].vx[1]->n > 1) {
+		//if(abs(v.x1-v.x2) > 2 || abs(v.y1-v.y2) > 2){
+			//if(ln[i].vx[0]->n > 1 || ln[i].vx[1]->n > 1) {
 				//draw_three_lines(r, g, b, &v, w, ln[i].l, ln[i].r);
 				draw_line(r, g, b, &v, w, ln[i].l);
 
@@ -727,8 +752,8 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 				yx = ln[i].vx[1]->y*w + ln[i].vx[1]->x;
 				r[yx] = 255; g[yx] = 255; b[yx] = 255;
 
-			}
-		}
+			//}
+		//}
 		//draw_line(r, g, b, &v, w, ln[i].l);
 
 
@@ -2984,12 +3009,12 @@ void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	uint32 y, x, yx, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
 	int dyx;
     //for(x=0; x<sq; x++) img1[x] = img[x];
-	for(x=0; x < sq; x++) img1[x] = 255;
+	//for(x=0; x < sq; x++) img1[x] = 255;
 	for(y=0; y < h; y++){
 		for(x=0; x < w; x++){
 			yx = y*w + x;
-			if(!img[yx]) img1[yx] = 0;
-			else {
+			//if(!img[yx]) img1[yx] = 0;
+			if(img[yx]) {
 				min = img[yx];
                 if(img[yx-1  ] < min) { min = img[yx-1  ]; dyx = -1;}
                 //if(img[yx-1-w] < min) { min = img[yx-1-w]; dyx = -1-w;}
