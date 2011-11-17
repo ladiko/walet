@@ -457,6 +457,29 @@ void print_around(uint8 *con, uint32 yx, uint32 w)
 	printf("%3d\n\n",con[yx+1+w]);
 }
 
+static inline uint32 is_new_line3(int d, uint32 *cn, int *fs, int *sc)
+{
+	uint32 cfs = 0, csc = 0, ln = 0;
+	if(!*fs) { *fs = d; cfs++; return 0; }
+	if(!*sc && *fs != d ) { *sc = d; ln = cfs; cfs = 0; csc++; return 0; }
+	if(*fs == d) {
+		cfs++; csc = 0;
+		if(ln) if(cfs >ln) return 1;
+		else return 0;
+	}
+	if(*sc == d){
+		if(!csc){
+			if(ln == cfs) { csc++; cfs = 0; return 0; }
+			else return 1;
+		} else {
+			return 1;
+		}
+	}
+	if(*fs != d && *sc != d) { return 1; }
+	(*cn)++;
+	//return 0;
+}
+
 static inline uint32 is_new_line1(int d, uint32 *cn, int *fs, int *sc)
 {
 	if(!*fs) *fs = d;
@@ -560,8 +583,8 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 							yx1 = yx; x1 = x; y1 = y;
 							break;
 						}
-
-						if(is_new_line2(d, &cn, &fs, &sc)){
+						//if(is_new_line2(d, &cn, &fs, &sc)){
+						if(is_new_line3(d, &cn, &fs, &sc)){
 							yx1 -= d; x1 -= dx; y1 -= dy;
 							new_in_line_vertex(&vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, w, d, -d1);
 							nd1 = finish_dir(&vx[yx1], -d1, w);
@@ -579,6 +602,7 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 							con[yx1] = 254;
 							break;
 						}
+
 						d1 = d;
 						dx = -dx; dy = -dy;
 						direction(con, w, yx1, &dx, &dy);
@@ -678,12 +702,12 @@ static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, u
 		for(i=0; i < n; i++){
 			yx = y + x;
 			yxs = yx - lfx;
-			r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
+			if(!r[yxs])  r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
 			r[yx] = (lc[0] + rc[0])>>1;
 			g[yx] = (lc[1] + rc[1])>>1;
 			b[yx] = (lc[2] + rc[2])>>1;
 			yxs = yx + lfx;
-			r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
+			if(!r[yxs])  r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
 			min += dy; x += stx;
 			if(min >= max) { max += dx; y += sty; }
 		}
@@ -693,12 +717,12 @@ static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, u
 		for(i=0; i < n; i++){
 			yx = y + x;
 			yxs = yx + lfy;
-			r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
+			if(!r[yxs])  r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
 			r[yx] = (lc[0] + rc[0])>>1;
 			g[yx] = (lc[1] + rc[1])>>1;
 			b[yx] = (lc[2] + rc[2])>>1;
 			yxs = yx - lfy;
-			r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
+			if(!r[yxs])  r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
 			min += dx; y += sty;
 			if(min >= max) { max += dy; x += stx; }
 		}
