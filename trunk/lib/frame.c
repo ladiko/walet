@@ -748,7 +748,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	Frame *f = &g->frames[fn];
-	uint32 i, npix, vxc;
+	uint32 i, npix, vxc, rgc;
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	for(i=0; i < wc->steps; i++) {
@@ -764,10 +764,18 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		vxc = seg_vertex(f->dc[i].pic, f->R[i].pic, f->G[i].pic, f->B[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
 
 		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w);
-		//seg_fill_region(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].w, f->dg[i].h);
+
+		seg_get_color(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf, f->dg[i].w, f->dg[i].h);
+
+		memset(f->R1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		memset(f->G1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		memset(f->B1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w);
+		seg_draw_color(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf, f->dg[i].w, f->dg[i].h);
+
+		//rgc = seg_fill_region(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].w, f->dg[i].h);
 		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
 		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
-
 
 	}
 
