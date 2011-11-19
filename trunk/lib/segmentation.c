@@ -792,15 +792,15 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w)
 static inline int get_next_pix(uint8 *r, uint32 yx, uint32 w, int d)
 {
 	if      (d == -1  ) {
-		if 		(!r[yx + w-1]) return  w-1;
-		else if (!r[yx + w  ]) return  w  ;
-		else if (!r[yx + w+1]) return  w+1;
+		//if 		(!r[yx + w-1]) return  w-1;
+		if 		(!r[yx + w  ]) return  w  ;
+		//else if (!r[yx + w+1]) return  w+1;
 		else if (!r[yx +   1]) return    1;
-		else if (!r[yx - w+1]) return -w+1;
+		//else if (!r[yx - w+1]) return -w+1;
 		else if (!r[yx - w  ]) return -w  ;
-		else if (!r[yx - w-1]) return -w-1;
+		//else if (!r[yx - w-1]) return -w-1;
 	}
-	else if (d == -w-1) {
+	/*else if (d == -w-1) {
 		if      (!r[yx -   1]) return   -1;
 		else if (!r[yx + w-1]) return  w-1;
 		else if (!r[yx + w  ]) return  w  ;
@@ -808,17 +808,17 @@ static inline int get_next_pix(uint8 *r, uint32 yx, uint32 w, int d)
 		else if (!r[yx +   1]) return    1;
 		else if (!r[yx - w+1]) return -w+1;
 		else if (!r[yx - w  ]) return -w  ;
-	}
+	}*/
 	else if (d == -w  ) {
-		if 		(!r[yx - w-1]) return -w-1;
-		else if (!r[yx -   1]) return   -1;
-		else if (!r[yx + w-1]) return  w-1;
+		//if 		(!r[yx - w-1]) return -w-1;
+		if 		(!r[yx -   1]) return   -1;
+		//else if (!r[yx + w-1]) return  w-1;
 		else if (!r[yx + w  ]) return  w  ;
-		else if (!r[yx + w+1]) return  w+1;
+		//else if (!r[yx + w+1]) return  w+1;
 		else if (!r[yx +   1]) return    1;
-		else if (!r[yx - w+1]) return -w+1;
+		//else if (!r[yx - w+1]) return -w+1;
 	}
-	else if (d == -w+1) {
+	/*else if (d == -w+1) {
 		if 		(!r[yx - w  ]) return -w  ;
 		else if (!r[yx - w-1]) return -w-1;
 		else if (!r[yx -   1]) return   -1;
@@ -826,17 +826,17 @@ static inline int get_next_pix(uint8 *r, uint32 yx, uint32 w, int d)
 		else if (!r[yx + w  ]) return  w  ;
 		else if (!r[yx + w+1]) return  w+1;
 		else if (!r[yx +   1]) return    1;
-	}
+	}*/
 	else if (d ==  1  ) {
-		if 		(!r[yx - w+1]) return -w+1;
-		else if (!r[yx - w  ]) return -w  ;
-		else if (!r[yx - w-1]) return -w-1;
+		//if 		(!r[yx - w+1]) return -w+1;
+		if 		(!r[yx - w  ]) return -w  ;
+		//else if (!r[yx - w-1]) return -w-1;
 		else if (!r[yx -   1]) return   -1;
-		else if (!r[yx + w-1]) return  w-1;
+		//else if (!r[yx + w-1]) return  w-1;
 		else if (!r[yx + w  ]) return  w  ;
-		else if (!r[yx + w+1]) return  w+1;
+		//else if (!r[yx + w+1]) return  w+1;
 	}
-	else if (d ==  w+1) {
+	/*else if (d ==  w+1) {
 		if 		(!r[yx +   1]) return    1;
 		else if (!r[yx - w+1]) return -w+1;
 		else if (!r[yx - w  ]) return -w  ;
@@ -844,17 +844,17 @@ static inline int get_next_pix(uint8 *r, uint32 yx, uint32 w, int d)
 		else if (!r[yx -   1]) return   -1;
 		else if (!r[yx + w-1]) return  w-1;
 		else if (!r[yx + w  ]) return  w  ;
-	}
+	}*/
 	else if (d ==  w  ) {
-		if 		(!r[yx + w+1]) return  w+1;
-		else if (!r[yx +   1]) return    1;
-		else if (!r[yx - w+1]) return -w+1;
+		//if 		(!r[yx + w+1]) return  w+1;
+		if 		(!r[yx +   1]) return    1;
+		//else if (!r[yx - w+1]) return -w+1;
 		else if (!r[yx - w  ]) return -w  ;
-		else if (!r[yx - w-1]) return -w-1;
+		//else if (!r[yx - w-1]) return -w-1;
 		else if (!r[yx -   1]) return   -1;
-		else if (!r[yx + w-1]) return  w-1;
+		//else if (!r[yx + w-1]) return  w-1;
 	}
-	else if (d ==  w-1) {
+	/*else if (d ==  w-1) {
 		if 		(!r[yx + w  ]) return  w  ;
 		else if (!r[yx + w+1]) return  w+1;
 		else if (!r[yx +   1]) return    1;
@@ -862,7 +862,7 @@ static inline int get_next_pix(uint8 *r, uint32 yx, uint32 w, int d)
 		else if (!r[yx - w  ]) return -w  ;
 		else if (!r[yx - w-1]) return -w-1;
 		else if (!r[yx -   1]) return   -1;
-	}
+	}*/
 	return 0;
 
 }
@@ -983,6 +983,35 @@ uint32  seg_get_color(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *g1, uint8 
 	return rgc;
 }
 
+static inline uint32 reg_number(uint8 *img, uint32 *line1, uint32 *line2, uint32 *num, uint32 yx, uint32 x, uint32 w)
+{
+	if(img[yx-w]) return line1[x  ];
+	if(img[yx-1]) return line2[x-1];
+	if(!img[yx-w+1] && !img[yx+1]) return line1[x+1];
+	return (*num)++;
+}
+
+
+uint32  seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *g1, uint8 *b1, uint32 *col, uint32 *buf, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yx1, yw, fst = 0, yxf, rgc = 0, cn, rc3, w1 = w-1, h1 = h-1;
+	uint32 *l[2], ind, in3;
+	int d;
+	l[0] = buf; l[1] = &buf[w];
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			ind = reg_number(r1, l[0], l[1], &rgc, yx, x, w);
+			in3 = ind<<2;
+			col[in3] += r[yx]; col[in3+1] += g[yx]; col[in3+2] += b[yx]; col[3]++;
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	return rgc;
+}
+
 uint32  seg_draw_color(uint8 *r1, uint8 *g1, uint8 *b1, uint8 *col, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yx1, yw, fst = 0, yxf, rgc = 0, cn, rc3;
@@ -990,7 +1019,7 @@ uint32  seg_draw_color(uint8 *r1, uint8 *g1, uint8 *b1, uint8 *col, uint32 w, ui
 	Vector v;
 	uint32 c[3];
 	uint8 cl[3];
-
+	printf("w = %d h = %d\n", w, h);
 	cl[0] = 255; cl[1] = 255; cl[2] = 255;
 	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
 	draw_line(r1, g1, b1, &v, w, cl);
@@ -1008,21 +1037,19 @@ uint32  seg_draw_color(uint8 *r1, uint8 *g1, uint8 *b1, uint8 *col, uint32 w, ui
 			yx = yw + x;
 			if(!r1[yx]){
 				yx1 = yx;
-				d = get_next_pix(r1, yx1, w, -1);
 				rc3 = rgc*3;
-				r1[yx1] = col[rc3]; g1[yx1] = col[rc3+1]; b1[yx1] = col[rc3+2];
-				while(d){
-					yx1 += d;
+				d = 1;
+				do{
 					r1[yx1] = col[rc3]; g1[yx1] = col[rc3+1]; b1[yx1] = col[rc3+2];
-					d = get_next_pix(r1, yx1, w, d);
-				}
+					printf("yx = %d d = %d r = %d g = %d b = %d\n", yx1, d, r1[yx1], g1[yx1], b1[yx1]);
+					d = get_next_pix(r1, yx1, w, -d);
+					yx1 += d;
+				} while(d);
 				rgc++;
-				break;
+				if(rgc > 3) return 0;
 			}
 		}
-		break;
 	}
-
 	printf("Numbers of regions  = %d\n", rgc);
 	return rgc;
 }
