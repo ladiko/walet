@@ -751,10 +751,10 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	uint32 i, npix, vxc, rgc;
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
-	//for(i= wc->steps-1; i < wc->steps; i++) {
-	for(i=0; i < 1; i++) {
-		//filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-		seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 2);
+	for(i= wc->steps-1; i < wc->steps; i++) {
+	//for(i=0; i < 1; i++) {
+		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		//seg_fall_forest(f->dg[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h);
 
 		memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
@@ -767,9 +767,9 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
 
 		//seg_get_color(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf, f->dg[i].w, f->dg[i].h);
-		seg_get_color1(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->R1[i].pic, (uint32*)&g->buf[f->dg[i].w<<3], (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
+		seg_get_color1(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->R1[i].pic, (uint32*)&g->buf[f->dg[i].w<<3], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
 
-
+		/*
 		memset(f->R1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		memset(f->G1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		memset(f->B1[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -779,11 +779,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_draw_line(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
 		//seg_draw_color(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf, f->dg[i].w, f->dg[i].h);
 		seg_draw_color1(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->R[i].pic, (uint32*)&g->buf[f->dg[i].w<<3], (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
-		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
+		//seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
 
 		//rgc = seg_fill_region(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].w, f->dg[i].h);
 		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
 		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
+	*/
 
 	}
 
