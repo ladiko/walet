@@ -984,19 +984,28 @@ uint32  seg_get_color(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *g1, uint8 
 static inline uint32 reg_number(uint8 *img, uint32 *line1, uint32 *line2, uint32 *col, uint32 *colp, uint32 *num,  uint32 yx, uint32 x, uint32 w)
 {
 	uint32 in3;
-	if(!img[yx-w]) { line2[x]  = line1[x]; return line2[x]; }
-	//if(!img[yx-w]) {
-	//	if(line2[x-1] != line1[x]) colp[line1[x]] = line2[x-1];
-	//	line2[x]  = line1[x];
-	//	return line2[x];
-	//}
-	if(!img[yx-1]) { line2[x]  = line2[x-1]; return line2[x]; }
-	if(!img[yx-w+1] && !img[yx+1]) {
-		line2[x]  = line1[x+1];
-		//if(x>1 && line1[x+1] != line2[x-1] && !colp[line1[x+1]] && colp[line2[x-1]] != line1[x+1]) colp[line1[x+1]] = line2[x-1];
-		if(x>1 && line1[x+1] != line2[x-1] && !colp[line1[x+1]] ) colp[line1[x+1]] = line2[x-1];
+	if(!img[yx-w]) {
+		line2[x]  = line1[x];
+		if(x>1 && !img[yx-1] && line2[x] != line2[x-1] && !colp[line2[x]]) {
+			colp[line2[x]] = line2[x-1];
+			if(line2[x-1] > 7000) printf("x = %d yx = %d line = %d %3d %3d %3d  %3d %3d %3d  %3d %3d %3d\n", x, yx, line2[x-1],
+					img[yx-w*2], img[yx-w*2+1], img[yx-w*2+2],
+					img[yx-w-1], img[yx-w], img[yx-w+1], img[yx-1], img[yx], img[yx+1]);
+		}
 		return line2[x];
 	}
+	if(!img[yx-1]) { line2[x]  = line2[x-1]; return line2[x]; }
+	if(!img[yx-w+1] && !img[yx+1]) { line2[x]  = line1[x+1]; return line2[x]; }
+	/*
+	if(!img[yx-w+1] && !img[yx+1]) {
+		line2[x]  = line1[x+1];
+		if(x>1  && !colp[line1[x+1]] ) { colp[line1[x+1]] = line2[x-1];
+		if(line2[x-1] > 7000) printf("x = %d yx = %d line = %d %3d %3d %3d  %3d %3d %3d  %3d %3d %3d\n", x, yx, line2[x-1],
+				img[yx-w*2], img[yx-w*2+1], img[yx-w*2+2],
+				img[yx-w-1], img[yx-w], img[yx-w+1], img[yx-1], img[yx], img[yx+1]);
+		}
+		return line2[x];
+	}*/
 	colp[*num] = 0;
 	in3 = (*num)<<2;
 	col[in3] = 0; col[in3+1] = 0; col[in3+2] = 0; col[in3+3] = 0;
@@ -1027,15 +1036,18 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 		tm = l[0]; l[0] = l[1]; l[1] = tm;
 	}
 	printf("Numbers of regions  = %d\n", rgc);
-	for(x=0; x < rgc; x++) printf("colp[%d] = %d\n", x, colp[x]);
+	//for(x=0; x < rgc; x++)  printf("colp[%d] = %d\n", x, colp[x]); //if(colp[x]> 7000)
 	// Group the same regions
 	for(x=0; x < rgc; x++){
 		if(colp[x]){
 			cp = x;
 			while(1){
+				printf("cp = %d ", cp);
+				if(cp == colp[colp[cp]]) break;
 				if(!colp[cp]) break;
 				cp = colp[cp];
 			}
+			printf("\n");
 			colp[x] = cp;
 			in3 = colp[x]<<2;
 			in2 = x<<2;
@@ -1043,7 +1055,6 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 			col[in3+1] 	+= col[in2+1];
 			col[in3+2]  += col[in2+2];
 			col[in3+3]  += col[in2+3];
-			nrg++;
 		}
 	}
 	// Calculate average colors
@@ -1053,6 +1064,7 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 			col[in3] 	= col[in3]/col[in3+3];
 			col[in3+1] 	= col[in3+1]/col[in3+3];
 			col[in3+2]  = col[in3+2]/col[in3+3];
+			nrg++;
 		}
 	}
 	// Set colors to rest regions
@@ -1067,7 +1079,7 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 		}
 		//printf("%d r = %d g = %d b = %d n = %d\n", x, col[in3], col[in3+1], col[in3+2], col[in3+3]);
 	}
-	printf("Numbers of real regions  = %d\n", rgc-nrg);
+	printf("Numbers of real regions  = %d\n", nrg);
 	return rgc;
 }
 
