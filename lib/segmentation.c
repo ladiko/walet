@@ -980,46 +980,37 @@ uint32  seg_get_color(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *g1, uint8 
 	printf("Numbers of regions  = %d\n", rgc);
 	return rgc;
 }
-
-static inline uint32 reg_number(uint8 *img, uint32 *line1, uint32 *line2, uint32 *col, uint32 *colp, uint32 *num,  uint32 yx, uint32 x, uint32 w)
+/*
+static inline uint32 reg_number(uint8 *img, uint32 *line1, uint32 *line2, uint32 *col, uint32 *colp, uint8 *pon, uint32 rgc,  uint32 yx, uint32 x, uint32 w)
 {
 	uint32 in3;
 	if(!img[yx-w]) {
 		line2[x]  = line1[x];
-		if(x>1 && !img[yx-1] && line2[x] != line2[x-1] && !colp[line2[x]]) {
+		if(x>1 && !img[yx-1] && line2[x] != line2[x-1] && !colp[line2[x]]) { // && !pon[line2[x-1]]) {
+			pon[line2[x-1]] = 1;
 			colp[line2[x]] = line2[x-1];
-			if(line2[x-1] > 7000) printf("x = %d yx = %d line = %d %3d %3d %3d  %3d %3d %3d  %3d %3d %3d\n", x, yx, line2[x-1],
-					img[yx-w*2], img[yx-w*2+1], img[yx-w*2+2],
-					img[yx-w-1], img[yx-w], img[yx-w+1], img[yx-1], img[yx], img[yx+1]);
+			//if(line2[x-1] > 7000) printf("x = %d yx = %d line = %d %3d %3d %3d  %3d %3d %3d  %3d %3d %3d\n", x, yx, line2[x-1],
+			//		img[yx-w*2], img[yx-w*2+1], img[yx-w*2+2],
+			//		img[yx-w-1], img[yx-w], img[yx-w+1], img[yx-1], img[yx], img[yx+1]);
 		}
 		return line2[x];
 	}
 	if(!img[yx-1]) { line2[x]  = line2[x-1]; return line2[x]; }
 	if(!img[yx-w+1] && !img[yx+1]) { line2[x]  = line1[x+1]; return line2[x]; }
-	/*
-	if(!img[yx-w+1] && !img[yx+1]) {
-		line2[x]  = line1[x+1];
-		if(x>1  && !colp[line1[x+1]] ) { colp[line1[x+1]] = line2[x-1];
-		if(line2[x-1] > 7000) printf("x = %d yx = %d line = %d %3d %3d %3d  %3d %3d %3d  %3d %3d %3d\n", x, yx, line2[x-1],
-				img[yx-w*2], img[yx-w*2+1], img[yx-w*2+2],
-				img[yx-w-1], img[yx-w], img[yx-w+1], img[yx-1], img[yx], img[yx+1]);
-		}
-		return line2[x];
-	}*/
-	colp[*num] = 0;
-	in3 = (*num)<<2;
+	colp[rgc] = 0; pon[rgc] = 0;
+	in3 = rgc<<2;
 	col[in3] = 0; col[in3+1] = 0; col[in3+2] = 0; col[in3+3] = 0;
-	line2[x] = *num;
-	return (*num)++;
+	line2[x] = rgc;
+	return rgc;
 }
-
-uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint32 *colp, uint32 *buf, uint32 w, uint32 h)
+*/
+uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint32 *colp, uint8 *pon, uint32 *buf, uint32 w, uint32 h)
 {
-	uint32 y, x, yx, yx1, yw, fst = 0, yxf, rgc = 0, cn, rc3, w1 = w-1, h1 = h-1;
-	uint32 *l[2], ind, in2, in3, *tm;
+	uint32 y, x, yx, yx1, yw, fst = 0, yxf, cn, rc3, w1 = w-1, h1 = h-1;
+	uint32 *l1, *l2, ind, in2, in3, *tm;
 	uint32 nrg = 0, cp;
-	int d;
-	l[0] = buf; l[1] = &buf[w];
+	int d,  rgc = -1;
+	l1 = buf; l2 = &buf[w];
 	//for(x=0; x < w; x++) l[0][x] = 0;
 
 	for(y=1; y < h1; y++){
@@ -1028,23 +1019,50 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(!r1[yx]){
-				ind = reg_number(r1, l[0], l[1], col, colp, &rgc, yx, x, w);
+				if(!r1[yx-w]) {
+					l2[x]  = l1[x];
+					if(x>1 && !r1[yx-1] && l2[x] != l2[x-1] && !colp[l2[x]]) {//
+						if(colp[l2[x-1]] != l2[x]){
+							if(!colp[l2[x-1]]){
+								colp[l2[x]] = l2[x-1];
+							}
+							else if(!colp[colp[l2[x-1]]]){
+								colp[l2[x]] = colp[l2[x-1]];
+							}
+						}
+						//pon[l2[x-1]] = 1;
+						//colp[l2[x]] = l2[x-1];
+					}
+					ind =  l2[x];
+				}
+				else if(!r1[yx-1]) { l2[x]  = l2[x-1]; ind = l2[x]; }
+				//else if(!r1[yx-w+1] && !r1[yx+1]) { l2[x] = l1[x+1]; ind = l2[x]; }
+				else{
+					rgc++;
+					colp[rgc] = 0; pon[rgc] = 0;
+					in3 = rgc<<2;
+					col[in3] = 0; col[in3+1] = 0; col[in3+2] = 0; col[in3+3] = 0;
+					l2[x] = rgc;
+					ind = rgc;
+				}
+
+				//ind = reg_number(r1, l[0], l[1], col, colp, pon, rgc, yx, x, w);
 				in3 = ind<<2;
 				col[in3] += r[yx]; col[in3+1] += g[yx]; col[in3+2] += b[yx]; col[in3+3]++;
 			}
 		}
-		tm = l[0]; l[0] = l[1]; l[1] = tm;
+		tm = l1; l1 = l2; l2 = tm;
 	}
 	printf("Numbers of regions  = %d\n", rgc);
-	//for(x=0; x < rgc; x++)  printf("colp[%d] = %d\n", x, colp[x]); //if(colp[x]> 7000)
+	for(x=0; x < rgc; x++)  printf("colp[%d] = %d\n", x, colp[x]); //if(colp[x]> 7000)
 	// Group the same regions
 	for(x=0; x < rgc; x++){
 		if(colp[x]){
 			cp = x;
 			while(1){
 				printf("cp = %d ", cp);
-				if(cp == colp[colp[cp]]) break;
 				if(!colp[cp]) break;
+				//if(cp == colp[colp[cp]]) break;
 				cp = colp[cp];
 			}
 			printf("\n");
@@ -1083,29 +1101,14 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 	return rgc;
 }
 
-static inline uint32 reg_number1(uint8 *img, uint32 *line1, uint32 *line2, uint32 *num,  uint32 yx, uint32 x, uint32 w)
+uint32 seg_draw_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint32 *buf, uint32 w, uint32 h)
 {
-
-	if(!img[yx-w]) { line2[x]  = line1[x]; return line1[x]; }
-	if(!img[yx-1]) { line2[x]  = line2[x-1]; return line2[x-1]; }
-	if(!img[yx-w+1] && !img[yx+1]) { line2[x]  = line1[x+1]; return line1[x+1]; }
-	line2[x]  = *num;
-	return (*num)++;
-}
-
-
-uint32  seg_draw_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint32 *buf, uint32 w, uint32 h)
-{
-	uint32 y, x, yx, yx1, yw, fst = 0, yxf, rgc = 0, cn, rc3, w1 = w-1, h1 = h-1;
-	uint32 *l[2], ind, in3, *tm;
-	int d;
-	l[0] = buf; l[1] = &buf[w];
+	uint32 y, x, yx, yx1, yw, fst = 0, yxf, cn, rc3, w1 = w-1, h1 = h-1;
+	uint32 *l1, *l2, ind, in2, in3, *tm;
+	uint32 nrg = 0, cp;
+	int d,  rgc = -1;
+	l1 = buf; l2 = &buf[w];
 	//for(x=0; x < w; x++) l[0][x] = 0;
-	/*
-	for(x=0; x < 1108; x++){
-		in3 = x<<2;
-		printf("%d r = %d g = %d b = %d n = %d\n", x, col[in3], col[in3+1], col[in3+2], col[in3+3]);
-	}*/
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -1113,14 +1116,23 @@ uint32  seg_draw_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, ui
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(!r1[yx]){
-				ind = reg_number1(r1, l[0], l[1], &rgc, yx, x, w);
+				if(!r1[yx-w]) { l2[x]  = l1[x]; ind =  l2[x]; }
+				else if(!r1[yx-1]) { l2[x]  = l2[x-1]; ind = l2[x]; }
+				//else if(!r1[yx-w+1] && !r1[yx+1]) { l2[x] = l1[x+1]; ind = l2[x]; }
+				else{
+					rgc++;
+					l2[x] = rgc;
+					ind = rgc;
+				}
+
+				//ind = reg_number(r1, l[0], l[1], col, colp, pon, rgc, yx, x, w);
 				in3 = ind<<2;
 				r[yx] = col[in3]; g[yx] = col[in3+1]; b[yx] = col[in3+2];
-				//printf("%d  r = %d g = %d b = %d\n", ind, col[in3], col[in3+1], col[in3+2]);
 			}
 		}
-		tm = l[0]; l[0] = l[1]; l[1] = tm;
+		tm = l1; l1 = l2; l2 = tm;
 	}
+	printf("Numbers of regions  = %d\n", rgc);
 	return rgc;
 }
 
