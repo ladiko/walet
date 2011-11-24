@@ -1136,6 +1136,7 @@ uint32 seg_get_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uint
 	return rgc;
 }
 
+
 uint32 seg_get_color2(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yxw, yw;
@@ -1267,6 +1268,99 @@ uint32 seg_draw_color1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *col, uin
 	printf("Numbers of regions  = %d\n", rgc);
 	return rgc;
 }
+
+uint32 seg_init_regs(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint32 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw;
+	uint32 in, rgc = 1;
+	uint32 num, *tm;//, c[4], ;
+
+	Vector v;
+	uint8 cs[3];
+
+	cs[0] = 255; cs[1] = 255; cs[2] = 255;
+	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
+	draw_line(r1, g, b, &v, w, cs);
+	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
+	draw_line(r1, g, b, &v, w, cs);
+	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
+	draw_line(r1, g, b, &v, w, cs);
+	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
+	draw_line(r1, g, b, &v, w, cs);
+
+	for(y=1; y < h-1; y++){
+		yw = y*w;
+		for(x=1; x < w-1; x++){
+			yx = yw + x;
+			if(!r1[yx]){
+				//printf("yx = %d r = %d\n", yx, r1[yx]);
+				in = rgc<<2;
+				col[in] = 0; col[in+1] = 0; col[in+2] = 0; col[in+3] = 0;
+				r1[yx] = 1; num = 1; l1[0] = yx; i = 0;
+				while(num){
+					for(j=0; j < num; j++){
+						yxw = l1[j] - 1;
+						if(!r1[yxw]) { r1[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						if(!r1[yxw]) { r1[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						if(!r1[yxw]) { r1[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						if(!r1[yxw]) { r1[yxw] = 1; l2[i++] = yxw; }
+						rg[l1[j]] = rgc;
+						col[in] += r[l1[j]]; col[in+1] += g[l1[j]]; col[in+2] += b[l1[j]]; col[in+3]++;
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				//in = rgc*3;
+				//col[in] = c[0]/c[3]; col[in+1] = c[1]/c[3]; col[in+2] = c[2]/c[3];
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
+uint32 seg_fill_regs(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint32 *col, uint32 *l1, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw;
+	uint32 in, rgc = 1;
+	uint32 num, min;//, c[4], *tm;
+	int d;
+
+
+	for(y=1; y < h-1; y++){
+		yw = y*w;
+		for(x=1; x < w-1; x++){
+			yx = yw + x;
+			if(r1[yx] != 1){
+				i = 0;
+				while(!rg[yx]){
+					min = r1[yx];
+					if(r1[yx-1  ] < min) { min = r1[yx-1  ]; d = -1;}
+					if(r1[yx  -w] < min) { min = r1[yx  -w]; d = -w;}
+					if(r1[yx+1  ] < min) { min = r1[yx+1  ]; d = 1;}
+					if(r1[yx  +w] < min) { min = r1[yx  +w]; d = w;}
+					yx = yx + d;
+					l1[i++] = yx;
+				}
+				for(j=0; j < i; i++) {
+					rg[l1[j]] = rg[yx];
+					col[rg[yx]] += r[l1[j]]; col[rg[yx]+1] += g[l1[j]]; col[rg[yx]+2] += b[l1[j]]; col[rg[yx]+3]++;
+				}
+			}
+				//if(rgc == 1) return 0;
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
 
 
 /*
