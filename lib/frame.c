@@ -755,12 +755,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	//for(i=0; i < 1; i++) {
 		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
 		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
-		//seg_fall_forest(f->dg[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h);
-		//seg_get_color2(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dg[i].pic, g->buf,
-		//		(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
+		seg_fall_forest(f->dg[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h);
+		seg_get_color2(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dg[i].pic, g->buf,
+				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
 		//seg_draw_color2(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf,
 		//		(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
-
+		/*
 		memset(f->dc[i].pic, 0, f->dc[i].w*f->dc[i].h);
 		//seg_find_intersect1(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h, 3);
 
@@ -794,7 +794,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//rgc = seg_fill_region(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].w, f->dg[i].h);
 		memset(f->vx, 0, f->dg[i].w*f->dg[i].h*sizeof(Vertex));
 		memset(f->ln, 0, f->dg[i].w*f->dg[i].h*sizeof(Line));
-
+		*/
 	}
 
 	//image_segment(&f->img[0], f->vx, f->vp, f->ln, g->buf, wc->steps);
