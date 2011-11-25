@@ -1419,7 +1419,7 @@ void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	}
 }
 
-uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
+uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yxw, yw, w1 = w-1, h1 = h-1;
 	uint32 in, rgc = 1, tmp;
@@ -1474,7 +1474,7 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uin
 	return rgc;
 }
 
-void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint16 *rg, uint8 *col, uint32 w, uint32 h)
+void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in;
 	int d;
