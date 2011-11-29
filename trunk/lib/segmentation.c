@@ -239,7 +239,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
 					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1];
+					con[yx1] = grad[yx1]; con[yx1] = 255;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
@@ -249,7 +249,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254;
+						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 255;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
@@ -259,7 +259,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx2] = grad[yx2]; grad[yx2] = 254;
+						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 255;
 						d2 = dir(grad, yx2, w, -d2);
 					}
 				}
@@ -1382,6 +1382,11 @@ static inline uint32 get_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
 	if(img[yx] == 2) return yx - w;
 	if(img[yx] == 3) return yx + 1;
 	if(img[yx] == 4) return yx + w;
+	/*
+	if(img[yx] == 5) return yx-1-w;
+	if(img[yx] == 6) return yx+1-w;
+	if(img[yx] == 7) return yx+1+w;
+	if(img[yx] == 8) return yx-1+w;*/
 	return yx1 + 1;
 }
 
@@ -1408,12 +1413,24 @@ void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(img[yx]) {
+				min = img[yx]; d = 0; img1[yx] = 0;
+                if(img[yx-1  ] < min) { min = img[yx-1  ]; img1[yx] = 1; }
+                if(img[yx  -w] < min) { min = img[yx  -w]; img1[yx] = 2; }
+                if(img[yx+1  ] < min) { min = img[yx+1  ]; img1[yx] = 3; }
+                if(img[yx  +w] < min) { min = img[yx  +w]; img1[yx] = 4; }
+                /*
+                if(img[yx-1-w] < min) { min = img[yx-1-w]; img1[yx] = 5; }
+                if(img[yx+1-w] < min) { min = img[yx+1-w]; img1[yx] = 6; }
+                if(img[yx+1+w] < min) { min = img[yx+1+w]; img1[yx] = 7; }
+                if(img[yx-1+w] < min) { min = img[yx-1+w]; img1[yx] = 8; }*/
+				/*
 				min = img[yx]; d = 0;
                 if(img[yx-1  ] < min) { min = img[yx-1  ]; d = -1;}
                 if(img[yx  -w] < min) { min = img[yx  -w]; d = -w;}
                 if(img[yx+1  ] < min) { min = img[yx+1  ]; d = 1;}
                 if(img[yx  +w] < min) { min = img[yx  +w]; d = w;}
                 set_dir(img1, yx, w, d);
+                */
  			} else img1[yx] = 0;
 		}
 	}
@@ -1433,7 +1450,7 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uin
 			if(!r1[yx]){
 				//printf("yx = %d r = %d\n", yx, r1[yx]);
 				c[0] = 0; c[1] = 0; c[2] = 0; c[3] = 0;
-				r1[yx] = 5; num = 1; l1[0] = yx; i = 0;
+				r1[yx] = 9; num = 1; l1[0] = yx; i = 0;
 				//printf("reg = %d\n", rgc);
 				while(num){
 					for(j=0; j < num; j++){
@@ -1444,16 +1461,29 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uin
 						//		r1[yx+w-1], r1[yx+w], r1[yx+w+1]);
 						yxw = l1[j] - 1;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { r1[yxw] = 5; l2[i++] = yxw; }
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
 						yxw = l1[j] - w;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { r1[yxw] = 5; l2[i++] = yxw; }
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
 						yxw = l1[j] + 1;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { r1[yxw] = 5; l2[i++] = yxw; }
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
 						yxw = l1[j] + w;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { r1[yxw] = 5; l2[i++] = yxw; }
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						/*
+						yxw = l1[j] - 1-w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] - w+1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + 1+w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + w-1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }*/
 
 						c[0] += r[l1[j]]; c[1] += g[l1[j]]; c[2] += b[l1[j]]; c[3]++;
 						rg[l1[j]] = rgc;
@@ -1489,7 +1519,25 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 	}
 }
 
-
+void seg_fill_contur(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
+	int d;
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(img[yx]) {
+				max = img[yx]; d = 0;
+                if(img[yx-1] > max) { max = img[yx-1  ]; d = yx-1; }
+                if(img[yx-w] > max) { max = img[yx  -w]; d = yx-w; }
+                if(img[yx+1] > max) { max = img[yx+1  ]; d = yx+1; }
+                if(img[yx+w] > max) { max = img[yx  +w]; d = yx+w; }
+                img1[yx+d]+=32;
+  			} else img1[yx] = 0;
+		}
+	}
+}
 
 /*
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w)
