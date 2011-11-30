@@ -1519,25 +1519,114 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 	}
 }
 
-void seg_fill_contur(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+void seg_max_rise(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, max;
 	int d;
+
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(img[yx]) {
-				max = img[yx]; d = 0;
-                if(img[yx-1] > max) { max = img[yx-1  ]; d = yx-1; }
-                if(img[yx-w] > max) { max = img[yx  -w]; d = yx-w; }
-                if(img[yx+1] > max) { max = img[yx+1  ]; d = yx+1; }
-                if(img[yx+w] > max) { max = img[yx  +w]; d = yx+w; }
-                img1[yx+d]+=32;
-  			} else img1[yx] = 0;
+				max = img[yx]; d = 0; img1[yx] = 0;
+                if(img[yx-1  ] > max) { max = img[yx-1  ]; img1[yx] = 1; }
+                if(img[yx  -w] > max) { max = img[yx  -w]; img1[yx] = 2; }
+                if(img[yx+1  ] > max) { max = img[yx+1  ]; img1[yx] = 3; }
+                if(img[yx  +w] > max) { max = img[yx  +w]; img1[yx] = 4; }
+ 			} else img1[yx] = 0;
 		}
 	}
 }
+
+void seg_max_con(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yw, sq = w*h, w1 = w-1, h1 = h-1, max, cn;
+	//int d;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(img[yx]) {
+				cn = 0;
+                if(img[yx-1] == 3) cn++;
+                if(img[yx-w] == 4) cn++;
+                if(img[yx+1] == 1) cn++;
+                if(img[yx+w] == 2) cn++;
+                if(cn < 1) img1[yx] = 255;
+ 			}
+		}
+	}
+}
+
+uint32 seg_group_pixels1(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw, w1 = w-1, h1 = h-1;
+	uint32 in, rgc = 1, tmp;
+	uint32 num, c[4], *tm;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(!r1[yx]){
+				//printf("yx = %d r = %d\n", yx, r1[yx]);
+				c[0] = 0; c[1] = 0; c[2] = 0; c[3] = 0;
+				r1[yx] = 9; num = 1; l1[0] = yx; i = 0;
+				//printf("reg = %d\n", rgc);
+				while(num){
+					for(j=0; j < num; j++){
+						//printf("j = %d\n", j);
+						//printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n",
+						//		r1[yx-w-1], r1[yx-w], r1[yx-w+1],
+						//		r1[yx-1], r1[yx], r1[yx+1],
+						//		r1[yx+w-1], r1[yx+w], r1[yx+w+1]);
+						yxw = l1[j] - 1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						/*
+						yxw = l1[j] - 1-w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] - w+1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + 1+w;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						yxw = l1[j] + w-1;
+						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }*/
+
+						c[0] += r[l1[j]]; c[1] += g[l1[j]]; c[2] += b[l1[j]]; c[3]++;
+						rg[l1[j]] = rgc;
+						//printf("i = %d\n", i);
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				in = rgc*3;
+				col[in] = c[0]/c[3]; col[in+1] = c[1]/c[3]; col[in+2] = c[2]/c[3];
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
 
 /*
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w)

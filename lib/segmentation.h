@@ -39,7 +39,8 @@ uint32 seg_draw_color2(uint8 *r, uint8 *g, uint8 *b, uint8 *col, uint32 *l1, uin
 uint32 seg_init_regs(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint32 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
 uint32 seg_fill_regs(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint32 *col, uint32 *l1, uint32 rgc, uint32 w, uint32 h);
 
-void seg_fill_contur(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+void seg_max_rise(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+void seg_max_con(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 
 void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
