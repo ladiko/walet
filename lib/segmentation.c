@@ -1506,7 +1506,7 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uin
 
 void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w, uint32 h)
 {
-	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in;
+	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in, cn, yxl;
 	int d;
 
 	for(y=1; y < h1; y++){
@@ -1515,6 +1515,36 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 			yx = yw + x;
 			in = rg[yx]*3;
 			r[yx] = col[in]; g[yx] = col[in+1]; b[yx] = col[in+2];
+			/*
+			cn = 0;
+            if(rg[yx-1] != rg[yx]) { cn++; yxl = yx-1; }
+            if(rg[yx-w] != rg[yx]) { cn++; yxl = yx-w; }
+            if(rg[yx+1] != rg[yx]) { cn++; yxl = yx+1; }
+            if(rg[yx+w] != rg[yx]) { cn++; yxl = yx+w; }
+
+            if(cn == 3) { in = rg[yxl]*3; r[yx] = col[in]; g[yx] = col[in+1]; b[yx] = col[in+2];}
+            else { r[yx] = col[in]; g[yx] = col[in+1]; b[yx] = col[in+2]; }
+            */
+		}
+	}
+}
+
+void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in;
+	int d;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			//in = rg[yx]*3;
+
+            if		(rg[yx-1] != rg[yx]) { out[yx] = grad[yx];}
+            else if	(rg[yx-w] != rg[yx]) { out[yx] = grad[yx];}
+            else if	(rg[yx+1] != rg[yx]) { out[yx] = grad[yx];}
+            else if	(rg[yx+w] != rg[yx]) { out[yx] = grad[yx];}
+            else { out[yx] = 0;}
 		}
 	}
 }
