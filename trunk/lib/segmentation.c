@@ -1436,12 +1436,12 @@ void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	}
 }
 
-uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
+uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *grad, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yxw, yw, w1 = w-1, h1 = h-1;
-	uint32 in, rgc = 1, tmp;
+	uint32 in, rgc = 1, tmp, fs, max;
 	uint32 num, c[4], *tm;
-
+	int d;
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -1459,7 +1459,7 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uin
 						//		r1[yx-w-1], r1[yx-w], r1[yx-w+1],
 						//		r1[yx-1], r1[yx], r1[yx+1],
 						//		r1[yx+w-1], r1[yx+w], r1[yx+w+1]);
-						yxw = l1[j] - 1;
+						yxw = l1[j] - 1; fs = i;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
 						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
 						yxw = l1[j] - w;
@@ -1471,6 +1471,19 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uin
 						yxw = l1[j] + w;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
 						if(l1[j] == tmp) { r1[yxw] = 9; l2[i++] = yxw; }
+						/*
+						if(fs == i) {
+							max = grad[l1[j]]; d = l1[j];
+							yxw = l1[j] - 1;
+							if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+							yxw = l1[j] - w;
+							if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+							yxw = l1[j] + 1;
+							if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+							yxw = l1[j] + w;
+							if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+							grad[d] = 255;
+						}*/
 						/*
 						yxw = l1[j] - 1-w;
 						tmp = get_dir(r1, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
@@ -1531,21 +1544,52 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h)
 {
-	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in;
+	uint32 y, x, yx, yxw, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in, cn, max;
 	int d;
+	Vector v;
+	uint8 cs[3];
+
+	cs[0] = 0; cs[1] = 0; cs[2] = 0;
+	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
+	draw_line(out, out, out, &v, w, cs);
+	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
+	draw_line(out, out, out, &v, w, cs);
+	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
+	draw_line(out, out, out, &v, w, cs);
+	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
+	draw_line(out, out, out, &v, w, cs);
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-			//in = rg[yx]*3;
-
             if		(rg[yx-1] != rg[yx]) { out[yx] = grad[yx];}
             else if	(rg[yx-w] != rg[yx]) { out[yx] = grad[yx];}
             else if	(rg[yx+1] != rg[yx]) { out[yx] = grad[yx];}
             else if	(rg[yx+w] != rg[yx]) { out[yx] = grad[yx];}
             else { out[yx] = 0;}
 		}
+            /*
+ 			cn = 0;
+            if		(rg[yx-1] != rg[yx]) cn++;
+            else if	(rg[yx-w] != rg[yx]) cn++;
+            else if	(rg[yx+1] != rg[yx]) cn++;
+            else if	(rg[yx+w] != rg[yx]) cn++;
+            if(cn){
+            	max = grad[yx]; d = yx;
+            	yxw = yx - 1;
+            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+            	yxw = yx - w;
+            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+            	yxw = yx + 1;
+            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+            	yxw = yx + w;
+            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
+            	grad[d] = 255;
+            }*/
+
+            //else { out[yx] = 0;}
+
 	}
 }
 

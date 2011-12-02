@@ -752,16 +752,32 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=2; i < 4; i++) {
+	for(i=0; i < 1; i++) {
 		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
 		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 
 		seg_fall_forest(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-		rgc = seg_group_pixels(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dc[i].pic,
+
+		rgc = seg_group_pixels(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dc[i].pic, f->dg[i].pic,
 				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], g->buf,
 				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
-		seg_draw_reg(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3],  g->buf, f->dg[i].w, f->dg[i].h);
-		//seg_draw_grad(f->dg[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], f->dg[i].w, f->dg[i].h);
+
+		seg_draw_grad(f->dg[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], f->dg[i].w, f->dg[i].h);
+		memset(f->dg[i].pic, 0, f->dc[i].w*f->dc[i].h);
+		seg_find_intersect(f->dc[i].pic, f->dg[i].pic, f->dg[i].w, f->dg[i].h);
+
+		vxc = seg_vertex(f->dg[i].pic, f->R[i].pic, f->G[i].pic, f->B[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
+
+		seg_draw_line(f->R1[i].pic, f->R1[i].pic, f->R1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
+
+		seg_get_color2(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->R1[i].pic, g->buf,
+				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
+		memset(f->R1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+
+		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
+
+		seg_draw_color2(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, g->buf,
+				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
 
 		//seg_max_rise(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
 		//seg_max_con(f->dc[i].pic,f->R1[i].pic, f->dw[i].w, f->dw[i].h);
