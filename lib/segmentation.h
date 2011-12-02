@@ -43,7 +43,7 @@ void seg_max_rise(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void seg_max_con(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 
 void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);
-uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
+uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1,  uint8 *con, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
 void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w, uint32 h);
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h);
 
