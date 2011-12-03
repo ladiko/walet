@@ -47,6 +47,8 @@ uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1,  uint8 *con, ui
 void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w, uint32 h);
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h);
 
+uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
+
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q,uint32 *buf);
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q);
 void seg_find_clusters_2d(uint8 *in, uint8 *out, uint32 w, uint32 h, uint32 ds, uint32 dc, uint32 bpp, uint32 *buf);

@@ -23,9 +23,12 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-			max = (g[0] + g[1] + g[2] + g[3])>>2;
-			//max = g[0];
-			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+
+			//max = (g[0] + g[1] + g[2] + g[3])>>2;
+			//img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+
+			max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+			img1[yx] = max > 252 ? 252 : max;
 		}
 	}
 }
@@ -1541,6 +1544,116 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 		}
 	}
 }
+
+static inline uint32 loc_min(uint8 *img, uint32 yx, uint32 w)
+{
+	if( img[yx-1] 	>= img[yx] &&
+		img[yx-w]	>= img[yx] &&
+		img[yx+1] 	>= img[yx] &&
+		img[yx+w] 	>= img[yx] &&
+		img[yx-1-w] >= img[yx] &&
+		img[yx+1-w] >= img[yx] &&
+		img[yx-1+w] >= img[yx] &&
+		img[yx+1+w] >= img[yx] ) return 1;
+	else return 0;
+}
+
+uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw, fs, c;
+	uint32 in, rgc = 0;
+	uint32 num, *tm;
+
+	Vector v;
+	uint8 cs[3];
+
+	cs[0] = 255; cs[1] = 255; cs[2] = 255;
+	v.x1 = 1; v.y1 = 1; v.x2 = w-2; v.y2 = 1;
+	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = w-2; v.y1 = 1; v.x2 = w-2; v.y2 = h-2;
+	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = w-2; v.y1 = h-2; v.x2 = 1; v.y2 = h-2;
+	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = 1; v.y1 = 1; v.x2 = 1; v.y2 = h-2;
+	draw_line(grad, grad, grad, &v, w, cs);
+
+	cs[0] = 1; cs[1] = 1; cs[2] = 1;
+	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+
+	for(y=1; y < h-1; y++){
+		yw = y*w;
+		for(x=1; x < w-1; x++){
+			yx = yw + x;
+			if(!con[yx] && (!grad[yx] || loc_min(grad, yx, w))){
+				printf("rgc = %d grad = %d x = %d y = %d\n", rgc, grad[yx], x, y);
+				con[yx] = 1; num = 1; l1[0] = yx; i = 0;
+				while(num){
+					for(j=0; j < num; j++){
+						//printf("grad = %d x = %d y = %d\n", grad[l1[j]], l1[j]%w,  l1[j]/w);
+						/*
+						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
+								grad[l1[j]-w-1], grad[l1[j]-w], grad[l1[j]-w+1],
+								grad[l1[j]-1], grad[l1[j]], grad[l1[j]+1],
+								grad[l1[j]+w-1], grad[l1[j]+w], grad[l1[j]+w+1]);
+						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
+								con[l1[j]-w-1], con[l1[j]-w], con[l1[j]-w+1],
+								con[l1[j]-1], con[l1[j]], con[l1[j]+1],
+								con[l1[j]+w-1], con[l1[j]+w], con[l1[j]+w+1]);*/
+						//Check for 0
+						/*
+						yxw = l1[j] - 1; fs = i;
+						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
+							*/
+						yxw = l1[j] - 1; fs = i; c = 0;
+						if(!con[yxw]){
+							c++;
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+						}
+						yxw = l1[j] - w;
+						if(!con[yxw]){
+							c++;
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+						}
+						yxw = l1[j] + 1;
+						if(!con[yxw]){
+							c++;
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+						}
+						yxw = l1[j] + w;
+						if(!con[yxw]){
+							c++;
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+						}
+						fs = i-fs;
+						if(c > fs) con[l1[j]] = 255;
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				return 0;
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
 
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h)
 {
