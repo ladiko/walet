@@ -754,10 +754,11 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	//for(i=1; i < wc->steps; i++) {
 	for(i=2; i < 3; i++) {
 		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		//seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		seg_grad_sub(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 
-		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
-		seg_new_contur(f->dg[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dw[i].w, f->dw[i].h);
+		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//seg_new_contur(f->dw[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dw[i].w, f->dw[i].h);
 
 		/*
 		seg_fall_forest(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
