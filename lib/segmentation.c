@@ -24,11 +24,31 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
-			//max = (g[0] + g[1] + g[2] + g[3])>>2;
-			//img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
 
-			max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
-			img1[yx] = max > 252 ? 252 : max;
+			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+			//img1[yx] = max > 252 ? 252 : max;
+		}
+	}
+}
+
+
+void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
+{
+	/// |x| |   | |x|
+	/// | |x|   |x| |
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
+	uint8 max, in;
+	uint32 g[4];
+	for(y=0; y < sq; y+=w){
+		for(x=0; x < w1; x++){
+			yx = y + x;
+			max = (abs(img[yx] - img[yx+1+w]) + abs(img[yx+w] - img[yx+1]))>>1;
+			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+
+			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+			//img1[yx] = max > 252 ? 252 : max;
 		}
 	}
 }
@@ -1563,6 +1583,7 @@ uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w,
 	uint32 i, j, y, x, yx, yxw, yw, fs, c;
 	uint32 in, rgc = 0;
 	uint32 num, *tm;
+	uint32 tmp = 0;
 
 	Vector v;
 	uint8 cs[3];
@@ -1587,17 +1608,27 @@ uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w,
 	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
 	draw_line(con, con, con, &v, w, cs);
 
+	for(y=1; y < 40; y++){
+		yw = y*w;
+		for(x=1; x < 40; x++){
+			yx = yw + x;
+			printf("%3d ", grad[yx]);
+		}
+		printf("\n");
+	}
+
 	for(y=1; y < h-1; y++){
 		yw = y*w;
 		for(x=1; x < w-1; x++){
 			yx = yw + x;
 			if(!con[yx] && (!grad[yx] || loc_min(grad, yx, w))){
 				printf("rgc = %d grad = %d x = %d y = %d\n", rgc, grad[yx], x, y);
-				con[yx] = 1; num = 1; l1[0] = yx; i = 0;
+				con[yx] = 50; num = 1; l1[0] = yx; i = 0;
 				while(num){
+					printf("num = %d\n", tmp);
 					for(j=0; j < num; j++){
 						//printf("grad = %d x = %d y = %d\n", grad[l1[j]], l1[j]%w,  l1[j]/w);
-						/*
+
 						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
 								grad[l1[j]-w-1], grad[l1[j]-w], grad[l1[j]-w+1],
 								grad[l1[j]-1], grad[l1[j]], grad[l1[j]+1],
@@ -1605,43 +1636,54 @@ uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w,
 						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
 								con[l1[j]-w-1], con[l1[j]-w], con[l1[j]-w+1],
 								con[l1[j]-1], con[l1[j]], con[l1[j]+1],
-								con[l1[j]+w-1], con[l1[j]+w], con[l1[j]+w+1]);*/
+								con[l1[j]+w-1], con[l1[j]+w], con[l1[j]+w+1]);
 						//Check for 0
-						/*
-						yxw = l1[j] - 1; fs = i;
-						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
-						yxw = l1[j] - w;
-						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
-						yxw = l1[j] + 1;
-						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
-						yxw = l1[j] + w;
-						if((!grad[yxw] && con[yxw] != 1) || (con[yxw] != 1 && grad[yxw] >= grad[l1[j]])) { con[yxw] = 1; l2[i++] = yxw; }
-							*/
 						yxw = l1[j] - 1; fs = i; c = 0;
 						if(!con[yxw]){
 							c++;
-							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) {
+								con[yxw] = 50; l2[i++] = yxw;
+							}
+						}
+						else if (con[yxw] == 255 ){
+
 						}
 						yxw = l1[j] - w;
 						if(!con[yxw]){
 							c++;
-							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) {
+								con[yxw] = 50; l2[i++] = yxw;
+							}
+						}
+						else if (con[yxw] == 255 ){
+
 						}
 						yxw = l1[j] + 1;
 						if(!con[yxw]){
 							c++;
-							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) {
+								con[yxw] = 50; l2[i++] = yxw;
+							}
+						}
+						else if (con[yxw] == 255 ){
+
 						}
 						yxw = l1[j] + w;
 						if(!con[yxw]){
 							c++;
-							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) { con[yxw] = 1; l2[i++] = yxw; }
+							if(!grad[yxw] || grad[yxw] >= grad[l1[j]]) {
+								con[yxw] = 50; l2[i++] = yxw;
+							}
+						}
+						else if (con[yxw] == 255 ){
+
 						}
 						fs = i-fs;
 						if(c > fs) con[l1[j]] = 255;
 					}
 					num = i; i = 0;
-					tm = l1; l1 = l2; l2 = tm;
+					tm = l1; l1 = l2; l2 = tm; tmp++;
+					if(tmp == 5)return 0;
 				}
 				return 0;
 				rgc++;
