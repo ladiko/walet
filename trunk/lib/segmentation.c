@@ -33,6 +33,47 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	}
 }
 
+void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th)
+{
+	/// | |x| |      | | | |      |x| | |      | | |x|
+	/// | |x| |      |x|x|x|      | |x| |      | |x| |
+	/// | |x| |      | | | |      | | |x|      |x| | |
+	///  g[2]         g[0]         g[1]         g[3]
+	/// Direction
+	///   n=0          n=2         n=3          n=1
+	/// | | | |      | ||| |      | | |/|      |\| | |
+	/// |-|-|-|      | ||| |      | |/| |      | |\| |
+	/// | | | |      | ||| |      |/| | |      | | |\|
+	uint32 y, x, yx, yw, yw1, h1 = h-1, w1 = w+1;
+	uint8 max;
+	//uint32 g[4];
+	uint8 *l0 = buff, *l1 = &buff[w+2], *l2 = &buff[(w+2)<<1], *tm;
+
+	l0[0] = img[0]; for(x=0; x < w; x++) l0[x+1] = img[x]; l0[x+1] = img[x-1];
+	l1[0] = img[0]; for(x=0; x < w; x++) l1[x+1] = img[x]; l1[x+1] = img[x-1];
+	for(y=0; y < h; y++){
+		yw = y*w;
+		yw1 = y < h1 ? yw + w : yw;
+		l2[0] = img[yw1]; for(x=0; x < w; x++) l2[x+1] = img[x+yw1]; l2[x+1] = img[x-1+yw1];
+
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			//g[0] = abs(l1[x-1] - l1[x+1]);
+			//g[1] = abs(l0[x-1] - l2[x+1]);
+			//g[2] = abs(l0[x  ] - l2[x  ]);
+			//g[3] = abs(l0[x+1] - l2[x-1]);
+
+			max = (	abs(l1[x-1] - l1[x+1]) + abs(l0[x-1] - l2[x+1]) +
+					abs(l0[x  ] - l2[x  ]) + abs(l0[x+1] - l2[x-1]))>>2;
+			img1[yx-1] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+
+			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+			//img1[yx] = max > 252 ? 252 : max;
+		}
+		tm = l0; l0 = l1; l1 = l2; l2 = tm;
+	}
+}
+
 
 void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
@@ -1400,6 +1441,7 @@ static void inline set_dir(uint8 *img, uint32 yx, uint32 w,  int d)
 
 static inline uint32 get_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
 {
+	if(img[yx] > 4) return yx1 + 1;
 	if(img[yx] == 0) return yx1;
 	if(img[yx] == 1) return yx - 1;
 	if(img[yx] == 2) return yx - w;
@@ -1410,54 +1452,102 @@ static inline uint32 get_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
 	if(img[yx] == 6) return yx+1-w;
 	if(img[yx] == 7) return yx+1+w;
 	if(img[yx] == 8) return yx-1+w;*/
-	return yx1 + 1;
+
+}
+
+static inline uint32 chk_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w, uint32 *i)
+{
+	if(img[yx] > 5) return yx1 + 1;
+	if(img[yx] == 0) return yx1;
+	if(img[yx] == 1) return yx - 1;
+	if(img[yx] == 2) return yx - w;
+	if(img[yx] == 3) return yx + 1;
+	if(img[yx] == 4) return yx + w;
+	if(img[yx] == 5) { img[yx] = 6; (*i)++; return yx1+1; }
+	/*
+	if(img[yx] == 5) return yx-1-w;
+	if(img[yx] == 6) return yx+1-w;
+	if(img[yx] == 7) return yx+1+w;
+	if(img[yx] == 8) return yx-1+w;*/
+
 }
 
 void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min;
-	int d;
 
-	Vector v;
-	uint8 cs[3];
-
-	cs[0] = 255; cs[1] = 255; cs[2] = 255;
-	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
-	draw_line(img1, img1, img1, &v, w, cs);
-	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
-	draw_line(img1, img1, img1, &v, w, cs);
-	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
-	draw_line(img1, img1, img1, &v, w, cs);
-	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
-	draw_line(img1, img1, img1, &v, w, cs);
+	for(x=0; x < w; x++) img1[x] = 5;
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
+		img1[yw] = 5;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			if(img[yx]) {
-				min = img[yx]; d = 0; img1[yx] = 0;
+				min = img[yx]; img1[yx] = 0;
                 if(img[yx-1  ] < min) { min = img[yx-1  ]; img1[yx] = 1; }
                 if(img[yx  -w] < min) { min = img[yx  -w]; img1[yx] = 2; }
                 if(img[yx+1  ] < min) { min = img[yx+1  ]; img1[yx] = 3; }
                 if(img[yx  +w] < min) { min = img[yx  +w]; img1[yx] = 4; }
-                /*
-                if(img[yx-1-w] < min) { min = img[yx-1-w]; img1[yx] = 5; }
-                if(img[yx+1-w] < min) { min = img[yx+1-w]; img1[yx] = 6; }
-                if(img[yx+1+w] < min) { min = img[yx+1+w]; img1[yx] = 7; }
-                if(img[yx-1+w] < min) { min = img[yx-1+w]; img1[yx] = 8; }*/
-				/*
-				min = img[yx]; d = 0;
-                if(img[yx-1  ] < min) { min = img[yx-1  ]; d = -1;}
-                if(img[yx  -w] < min) { min = img[yx  -w]; d = -w;}
-                if(img[yx+1  ] < min) { min = img[yx+1  ]; d = 1;}
-                if(img[yx  +w] < min) { min = img[yx  +w]; d = w;}
-                set_dir(img1, yx, w, d);
-                */
  			} else img1[yx] = 0;
 		}
+		img1[yx+1] = 5;
 	}
+	yw = y*w;
+	for(x=0; x < w; x++) img1[yw+x] = 5;
 }
+
+uint32 seg_group_reg(uint8 *img, uint8 *grad, uint32 *buff, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw, c;
+	uint32 in, rgc = 1, tmp, fs, max, num;
+	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+
+	for(y=0; y < h; y++){
+		yw = y*w;
+		for(x=0; x < w; x++){
+			yx = yw + x;
+			if(!img[yx]){
+				//printf("x = %d y = %d img = %d\n", x, y, img[yx]);
+				img[yx] = 6; num = 1; l1[0] = yx; i = 0;
+				//printf("reg = %d\n", rgc);
+				while(num){
+					for(j=0; j < num; j++){
+						//printf("j = %d\n", j);
+						//printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n",
+						//		img[yx-w-1], img[yx-w], img[yx-w+1],
+						//		img[yx-1], img[yx], img[yx+1],
+						//		img[yx+w-1], img[yx+w], img[yx+w+1]);
+						yxw = l1[j] - 1; fs = i; c = 0;
+						tmp = chk_dir(img, yxw, l1[j], w, &c); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { img[yxw] = 6; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						tmp = chk_dir(img, yxw, l1[j], w, &c); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { img[yxw] = 6; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						tmp = chk_dir(img, yxw, l1[j], w, &c); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { img[yxw] = 6; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						tmp = chk_dir(img, yxw, l1[j], w, &c); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == tmp) { img[yxw] = 6; l2[i++] = yxw; }
+						if(i > fs || c ) grad[l1[j]] = 0;
+						//rg[l1[j]] = rgc;
+						//printf("i = %d\n", i);
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	rgc--;
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
 
 uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint8 *grad, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
 {
@@ -1718,10 +1808,10 @@ void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h)
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-            if		(rg[yx-1] != rg[yx]) { out[yx] = grad[yx];}
-            else if	(rg[yx-w] != rg[yx]) { out[yx] = grad[yx];}
-            else if	(rg[yx+1] != rg[yx]) { out[yx] = grad[yx];}
-            else if	(rg[yx+w] != rg[yx]) { out[yx] = grad[yx];}
+            if		(rg[yx-1] != rg[yx]) out[yx+w] = 255; //{ out[yx] = grad[yx+w];}
+            else if	(rg[yx-w] != rg[yx]) out[yx+1] = 255; //{ out[yx] = grad[yx+1];}
+            else if	(rg[yx+1] != rg[yx]) out[yx+1] = 255; //{ out[yx] = grad[yx+1];}
+            else if	(rg[yx+w] != rg[yx]) out[yx+w] = 255; //{ out[yx] = grad[yx+w];}
             else { out[yx] = 0;}
 		}
             /*
