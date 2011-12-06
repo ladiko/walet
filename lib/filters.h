@@ -19,6 +19,8 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h);
 void filter_average(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 thresh);
 
+void filter_median_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h);
+
 
 #ifdef __cplusplus
 }

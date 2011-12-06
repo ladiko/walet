@@ -752,10 +752,18 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=2; i < 3; i++) {
-		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+	for(i=0; i < wc->steps; i++) {
+		//filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
 		//seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
+		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		seg_grad_sub(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		seg_fall_forest(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		//rgc =  seg_group_reg(f->dc[i].pic, f->dg[i].pic, (uint32*)g->buf, f->dw[i].w, f->dw[i].h);
+		rgc = seg_group_pixels(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dc[i].pic, f->dg[i].pic,
+				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], g->buf,
+				(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
+		seg_draw_grad(f->dg[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], f->dg[i].w, f->dg[i].h);
 
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//seg_new_contur(f->dw[i].pic, f->dc[i].pic, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dw[i].w, f->dw[i].h);
