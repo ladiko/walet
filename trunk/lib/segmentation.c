@@ -94,6 +94,37 @@ void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	}
 }
 
+void seg_grad_max(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+	/// |x| |   | |x|
+	/// | |x|   |x| |
+	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
+	uint8 max, in;
+	uint32 g[4];
+	for(y=w; y < sq; y+=w){
+		for(x=1; x < w1; x++){
+			yx = y + x;
+			if(img[yx-1] < img[yx]){
+				if(img[yx] > img[yx+1]) img1[yx] = 255;
+				if(img[yx] == img[yx+1]) img1[yx] = 255; //img[yx+1]++;
+			}
+			if(img[yx-w] < img[yx]){
+				if(img[yx] > img[yx+w]) img1[yx] = 255;
+				if(img[yx] == img[yx+w]) img1[yx] = 255; //img[yx+w]++;
+			}
+			/*
+			if(img[yx-w-1] < img[yx]){
+				if(img[yx] > img[yx+w+1]) img1[yx] = 255;
+				//if(img[yx] == img[yx+w]) img[yx+w]++;
+			}
+			if(img[yx-w+1] < img[yx]){
+				if(img[yx] > img[yx+w-1]) img1[yx] = 255;
+				//if(img[yx] == img[yx+w]) img[yx+w]++;
+			}*/
+		}
+	}
+}
+
 
 /*	\brief	Find the maximum around yx pixel.
 	\param	img		The pointer to gradient image.
