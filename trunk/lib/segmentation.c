@@ -26,7 +26,7 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
 			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
-
+			//img1[yx] = max>>th;
 			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
 			//img1[yx] = max > 252 ? 252 : max;
 		}
@@ -315,6 +315,39 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 	else return 0;
 }
 
+static inline uint32 draw_line(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc)
+{
+	uint32 i, max , min = 0, n, x, y, dx, dy;
+	int sty, stx, yx;
+
+	x = v->x1; y = v->y1*w;
+	stx = v->x2 > v->x1 ? 1 : -1;
+	sty = v->y2 > v->y1 ? w : -w;
+
+	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
+	if(dx >= dy){
+		n = dx - 0; max = dx;
+		for(i=0; i < n; i++){
+			yx = y + x;
+			r[yx] = lc[0]; g[yx] = lc[1]; b[yx] = lc[2];
+			min += dy; x += stx;
+			if(min >= max) { max += dx; y += sty; }
+		}
+		return dx;
+	} else {
+		n = dy - 0; max = dy;
+		for(i=0; i < n; i++){
+			yx = y + x;
+			r[yx] = lc[0]; g[yx] = lc[1]; b[yx] = lc[2];
+			min += dx; y += sty;
+			if(min >= max) { max += dy; x += stx; }
+		}
+		return dy;
+	}
+}
+
+
+
 /*	\brief	Finf pixels with lines intersection.
 	\param	grad	The pointer to input gradient image.
 	\param	con		The pointer to output contour image.
@@ -334,7 +367,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
 					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; con[yx1] = 255;
+					con[yx1] = grad[yx1]; //con[yx1] = 255;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
@@ -344,7 +377,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 255;
+						con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 255;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
@@ -354,7 +387,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 255;
+						con[yx2] = grad[yx2]; grad[yx2] = 254; //con[yx2] = 255;
 						d2 = dir(grad, yx2, w, -d2);
 					}
 				}
@@ -364,6 +397,90 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 	}
 	printf("Numbers of intersection  = %d\n", npix);
 }
+
+static inline uint32 check_nei(uint8 *img, uint32 yx, uint32 w)
+{
+	uint32 cn = 0;
+	if(img[yx-1] > 1) cn++;
+	if(img[yx-w] > 1) cn++;
+	if(img[yx+1] > 1) cn++;
+	if(img[yx+w] > 1) cn++;
+	if(img[yx-1-w] > 1) cn++;
+	if(img[yx+1-w] > 1) cn++;
+	if(img[yx-1+w] > 1) cn++;
+	if(img[yx+1+w] > 1) cn++;
+	if(cn <= 1) return 1;
+	else return 0;
+}
+
+uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw;
+	uint32 in, rgc = 0;
+	uint32 num, *tm;
+	uint32 *l1 = buff, *l2 = &buff[w*h>>2];
+
+	Vector v;
+	uint8 cs[3];
+
+	cs[0] = 255; cs[1] = 255; cs[2] = 255;
+	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
+	draw_line(con, con, con, &v, w, cs);
+
+	for(y=1; y < h-1; y++){
+		yw = y*w;
+		for(x=1; x < w-1; x++){
+			yx = yw + x;
+			if(!con[yx]){
+				printf("yx = %d r = %d\n", yx, con[yx]);
+				con[yx] = 1; num = 1; l1[0] = yx; i = 0;
+				while(num){
+					for(j=0; j < num; j++){
+
+						printf("x = %d y = %d\n", x, y);
+						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
+								con[l1[j]-w-1], con[l1[j]-w], con[l1[j]-w+1],
+								con[l1[j]-1], con[l1[j]], con[l1[j]+1],
+								con[l1[j]+w-1], con[l1[j]+w], con[l1[j]+w+1]);
+
+						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
+								tmp[l1[j]-w-1], tmp[l1[j]-w], tmp[l1[j]-w+1],
+								tmp[l1[j]-1], tmp[l1[j]], tmp[l1[j]+1],
+								tmp[l1[j]+w-1], tmp[l1[j]+w], tmp[l1[j]+w+1]);
+
+						yxw = l1[j] - 1;
+						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						yxw = l1[j] - w;
+						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						yxw = l1[j] + 1;
+						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						yxw = l1[j] + w;
+						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				rgc++;
+				if(rgc == 14) return 0;
+			}
+		}
+	}
+	printf("Numbers of regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
+
 
 static inline uint32 loc_max1(uint8 *img, uint32 yx, uint32 w, uint32 th)
 {
@@ -797,37 +914,6 @@ uint32 seg_select_reg(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vert
 		r[yx] = 255; g[yx] = 255; b[yx] = 255;
 	}
 */
-}
-
-static inline uint32 draw_line(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc)
-{
-	uint32 i, max , min = 0, n, x, y, dx, dy;
-	int sty, stx, yx;
-
-	x = v->x1; y = v->y1*w;
-	stx = v->x2 > v->x1 ? 1 : -1;
-	sty = v->y2 > v->y1 ? w : -w;
-
-	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-	if(dx >= dy){
-		n = dx - 0; max = dx;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			r[yx] = lc[0]; g[yx] = lc[1]; b[yx] = lc[2];
-			min += dy; x += stx;
-			if(min >= max) { max += dx; y += sty; }
-		}
-		return dx;
-	} else {
-		n = dy - 0; max = dy;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			r[yx] = lc[0]; g[yx] = lc[1]; b[yx] = lc[2];
-			min += dx; y += sty;
-			if(min >= max) { max += dy; x += stx; }
-		}
-		return dy;
-	}
 }
 
 static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc, uint8 *rc)
