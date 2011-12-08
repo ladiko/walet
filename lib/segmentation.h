@@ -55,6 +55,8 @@ void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th);
 uint32 seg_group_reg(uint8 *img, uint8 *grad, uint32 *buff, uint32 w, uint32 h);
 void seg_grad_max(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h);
+
 
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q,uint32 *buf);
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q);
