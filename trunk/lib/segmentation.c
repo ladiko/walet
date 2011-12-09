@@ -367,7 +367,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
 					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; //con[yx1] = 255;
+					con[yx1] = grad[yx1]; con[yx1] = 255;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
@@ -377,7 +377,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 255;
+						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 255;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
@@ -387,7 +387,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx2] = grad[yx2]; grad[yx2] = 254; //con[yx2] = 255;
+						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 255;
 						d2 = dir(grad, yx2, w, -d2);
 					}
 				}
@@ -398,19 +398,73 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 	printf("Numbers of intersection  = %d\n", npix);
 }
 
-static inline uint32 check_nei(uint8 *img, uint32 yx, uint32 w)
+static inline uint32 check_nei(uint8 *img, uint32 yx, int  d, uint32 w)
 {
-	uint32 cn = 0;
-	if(img[yx-1] > 1) cn++;
-	if(img[yx-w] > 1) cn++;
-	if(img[yx+1] > 1) cn++;
-	if(img[yx+w] > 1) cn++;
-	if(img[yx-1-w] > 1) cn++;
-	if(img[yx+1-w] > 1) cn++;
-	if(img[yx-1+w] > 1) cn++;
-	if(img[yx+1+w] > 1) cn++;
-	if(cn <= 1) return 1;
-	else return 0;
+// d=-1   |-w|	  d=-w   |  |
+//     |  |  | 1|     |-1|  | 1|
+//        | w|           | w|
+//
+	if		(d == -1){
+		if(img[yx-1] == 1 ){
+			if(img[yx-w] == 1){
+				if(img[yx-w-1] < 2 && img[yx-w+1] < 2 ) return 1;
+				else return 0;
+			} else {
+				if(img[yx+w-1] < 2 && img[yx+w+1] < 2 ) return 1;
+				else return 0;
+			}
+		}
+		else{
+			if(img[yx-w+1] < 2 && img[yx+w+1] < 2 ) return 1;
+			else return 0;
+		}
+	}
+	else if	(d == -w){
+		if(img[yx-w] == 1 ){
+			if(img[yx-1] == 1){
+				if(img[yx-w-1] < 2 && img[yx+w-1] < 2 ) return 1;
+				else return 0;
+			} else {
+				if(img[yx-w+1] < 2 && img[yx+w+1] < 2 ) return 1;
+				else return 0;
+			}
+		}
+		else{
+			if(img[yx+w-1] < 2 && img[yx+w+1] < 2 ) return 1;
+			else return 0;
+		}
+	}
+	else if	(d ==  1){
+		if(img[yx+1] == 1 ){
+			if(img[yx-w] == 1){
+				if(img[yx-w-1] < 2 && img[yx-w+1] < 2 ) return 1;
+				else return 0;
+			} else {
+				if(img[yx+w-1] < 2 && img[yx+w+1] < 2 ) return 1;
+				else return 0;
+			}
+		}
+		else{
+			if(img[yx-w-1] < 2 && img[yx+w-1] < 2 ) return 1;
+			else return 0;
+		}
+	}
+	else if	(d ==  w){
+		if(img[yx+w] == 1 ){
+			if(img[yx-1] == 1){
+				if(img[yx-w-1] < 2 && img[yx+w-1] < 2 ) return 1;
+				else return 0;
+			} else {
+				if(img[yx-w+1] < 2 && img[yx+w+1] < 2 ) return 1;
+				else return 0;
+			}
+		}
+		else{
+			if(img[yx-w-1] < 2 && img[yx-w+1] < 2 ) return 1;
+			else return 0;
+		}
+
+	}
 }
 
 uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
@@ -438,11 +492,11 @@ uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
 		for(x=1; x < w-1; x++){
 			yx = yw + x;
 			if(!con[yx]){
-				printf("yx = %d r = %d\n", yx, con[yx]);
+				//printf("yx = %d r = %d\n", yx, con[yx]);
 				con[yx] = 1; num = 1; l1[0] = yx; i = 0;
 				while(num){
 					for(j=0; j < num; j++){
-
+						/*
 						printf("x = %d y = %d\n", x, y);
 						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
 								con[l1[j]-w-1], con[l1[j]-w], con[l1[j]-w+1],
@@ -453,25 +507,25 @@ uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
 								tmp[l1[j]-w-1], tmp[l1[j]-w], tmp[l1[j]-w+1],
 								tmp[l1[j]-1], tmp[l1[j]], tmp[l1[j]+1],
 								tmp[l1[j]+w-1], tmp[l1[j]+w], tmp[l1[j]+w+1]);
-
+						*/
 						yxw = l1[j] - 1;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, -1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] - w;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, -w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] + 1;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw,  1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] + w;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw,  w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 					}
 					num = i; i = 0;
 					tm = l1; l1 = l2; l2 = tm;
 				}
 				rgc++;
-				if(rgc == 14) return 0;
+				//if(rgc == 20) return 0;
 			}
 		}
 	}
