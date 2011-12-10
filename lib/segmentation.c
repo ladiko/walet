@@ -398,6 +398,68 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 	printf("Numbers of intersection  = %d\n", npix);
 }
 
+
+static inline uint32 check_nei1(uint8 *img, uint32 yx, int  d, uint32 w)
+{
+// d=-1   |-w|	  d=-w   |  |
+//     |  |  | 1|     |-1|  | 1|
+//        | w|           | w|
+//
+	int yx1, yx2, yx3, yxw1, yxw2, yxw3, yxw4;
+	if(d == -1){
+		yx1 = yx-1; yx2 = yx-w; yx3 = yx+w;
+		yxw1 = yx-w-1; yxw2 = yx-w+1;
+		yxw3 = yx+w-1; yxw4 = yx+w+1;
+	}
+	else if (d == -w){
+		yx1 = yx-w; yx2 = yx-1; yx3 = yx+1;
+		yxw1 = yx-w-1; yxw2 = yx+w-1;
+		yxw3 = yx-w+1; yxw4 = yx+w+1;
+	}
+	else if (d == 1) {
+		yx1 = yx+1; yx2 = yx+w; yx3 = yx-w;
+		yxw1 = yx+w+1; yxw2 = yx+w-1;
+		yxw3 = yx-w+1; yxw4 = yx-w-1;
+	}
+	else if (d == w) {
+		yx1 = yx+w; yx2 = yx+1; yx3 = yx-1;
+		yxw1 = yx+w+1; yxw2 = yx-w+1;
+		yxw3 = yx-w+1; yxw4 = yx-w-1;
+	}
+
+	if(img[yx1] == 1 ){
+		if(img[yx2] == 1){
+			if(img[yxw1] < 2 && img[yxw2] < 2 ) {
+				if(img[yx3] > 1) return 1;
+				else {
+					if(img[yxw3] > 1 && img[yxw4] > 1) return 0;
+					else return 1;
+				}
+			}
+			else return 0;
+		} else {
+			if(img[yxw3] < 2 && img[yxw4] < 2 ) {
+				if(img[yx2] > 1) return 1;
+				else {
+					if(img[yxw1] > 1 && img[yxw2] > 1) return 0;
+					else return 1;
+				}
+			}
+			else return 0;
+		}
+	}
+	else{
+		if(img[yxw2] < 2 && img[yxw4] < 2 ) {
+			if(img[yx1] > 1) return 1;
+			else {
+				if(img[yxw1] > 1 && img[yxw3] > 1) return 0;
+				else return 1;
+			}
+		}
+		else return 0;
+	}
+}
+
 static inline uint32 check_nei(uint8 *img, uint32 yx, int  d, uint32 w)
 {
 // d=-1   |-w|	  d=-w   |  |
@@ -407,15 +469,24 @@ static inline uint32 check_nei(uint8 *img, uint32 yx, int  d, uint32 w)
 	if		(d == -1){
 		if(img[yx-1] == 1 ){
 			if(img[yx-w] == 1){
-				if(img[yx-w-1] < 2 && img[yx-w+1] < 2 ) return 1;
+				if(img[yx-w-1] < 2 && img[yx-w+1] < 2 ) {
+					if(img[yx+w] > 2) return 1;
+					else return 0;
+				}
 				else return 0;
 			} else {
-				if(img[yx+w-1] < 2 && img[yx+w+1] < 2 ) return 1;
+				if(img[yx+w-1] < 2 && img[yx+w+1] < 2 ) {
+					if(img[yx-w] > 2) return 1;
+					else return 0;
+				}
 				else return 0;
 			}
 		}
 		else{
-			if(img[yx-w+1] < 2 && img[yx+w+1] < 2 ) return 1;
+			if(img[yx-w+1] < 2 && img[yx+w+1] < 2 ) {
+				if(img[yx-1] > 2) return 1;
+				else return 0;
+			}
 			else return 0;
 		}
 	}
@@ -510,16 +581,16 @@ uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
 						*/
 						yxw = l1[j] - 1;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, -1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei1(con, yxw, -1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] - w;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw, -w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei1(con, yxw, -w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] + 1;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw,  1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei1(con, yxw,  1, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 						yxw = l1[j] + w;
 						if(!con[yxw]) { con[yxw] = 1; l2[i++] = yxw; }
-						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei(con, yxw,  w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
+						else if (con[yxw] > 1) { if(++tmp[yxw] > 2 && check_nei1(con, yxw,  w, w)) { con[yxw] = 1; l2[i++] = yxw; }}
 					}
 					num = i; i = 0;
 					tm = l1; l1 = l2; l2 = tm;
@@ -533,8 +604,6 @@ uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h)
 	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
 	return rgc;
 }
-
-
 
 static inline uint32 loc_max1(uint8 *img, uint32 yx, uint32 w, uint32 th)
 {
