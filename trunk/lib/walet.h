@@ -206,8 +206,9 @@ typedef struct Line Line;
 
 struct Line {
 	Vertex 	*vx[2];		//The pointer to vertex
-	uint8 	l[3];	//Left color 0 - red, 1 - gren, 2 - blue
-	uint8 	r[3];	//Right color 0 - red, 1 - gren, 2 - blue
+	uint8 	pow;		//The line power
+	//uint8 	l[3];	//Left color 0 - red, 1 - gren, 2 - blue
+	//uint8 	r[3];	//Right color 0 - red, 1 - gren, 2 - blue
 };
 
 struct Reg {

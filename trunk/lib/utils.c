@@ -164,6 +164,34 @@ uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n)
 	return rgb;
 }
 
+uint8* utils_contour_(Pic8u *p, uint8 *rgb, uint32 n)
+{
+	uint32 i, j, x, y, w = p[0].w, h = p[0].h;
+	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
+
+	p[n].pic = &p[n].pic[p[n].w];
+
+	for(y=0; y < p[n].h; y++){
+		yw = y*p[0].w*s;
+		for(x=0; x < p[n].w; x++){
+			//yx = yw + x*2;
+			//yx3 = yx*3;
+			for(i=0; i < s; i++){
+				yy = yw + i*p[0].w;
+				for(j=0; j < s; j++){
+					yx = yy + x*s + j;
+					yx3 = yx*3;
+					xy = y*p[n].w + x;
+					rgb[yx3  ] = p[n].pic[xy];
+					rgb[yx3+1] = p[n].pic[xy];
+					rgb[yx3+2] = p[n].pic[xy];
+				}
+			}
+		}
+	}
+	return rgb;
+}
+
 uint8* utils_contour_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 n)
 {
 	uint32 i, j, x, y, w = r[0].w, h = r[0].h;
