@@ -21,7 +21,7 @@ extern "C" {
 //New segmentation interface
 void seg_find_intersect	(uint8 *grad, uint8 *out, uint32 w, uint32 h);
 void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 w, uint32 h, uint32 th);
-uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h);
+uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h);
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
@@ -56,7 +56,7 @@ void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint
 uint32 seg_group_reg(uint8 *img, uint8 *grad, uint32 *buff, uint32 w, uint32 h);
 void seg_grad_max(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h);
-
+uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h);
 
 void seg_find_clusters(uint32 *i3d, uint16 *lut, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 rd,  uint32 bpp, p3d *q,uint32 *buf);
 void seg_quantization(uint16 *lut, uint8 *rgb, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp, p3d *q);

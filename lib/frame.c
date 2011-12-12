@@ -30,6 +30,24 @@ static void resize_init(Pic8u **p, uint32 w, uint32 h, uint32 steps)
 
 }
 
+static void resize_init_(Pic8u **p, uint32 w, uint32 h, uint32 steps)
+//With w+1 space befor and after image
+{
+	uint32 i;
+	*p = (Pic8u *)calloc(steps, sizeof(Pic8u));
+	(*p)[0].w = (w>>1);
+	(*p)[0].h = (h>>1);
+	(*p)[0].pic = (uint8 *)calloc((*p)[0].w*(*p)[0].h + ((*p)[0].w)*2, sizeof(uint8));
+	//(*p)[0].pic = &(*p)[0].pic[(*p)[0].w+1];
+	for(i=1; i < steps; i++) {
+		(*p)[i].w = ((*p)[i-1].w>>1);
+		(*p)[i].h = ((*p)[i-1].h>>1);
+		(*p)[i].pic = (uint8 *)calloc((*p)[i].w*(*p)[i].h + ((*p)[i].w)*2, sizeof(uint8));
+		//(*p)[i].pic = &(*p)[i].pic[(*p)[i].w+1];
+	}
+
+}
+
 /*	\brief	Frame initialization.
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
@@ -51,7 +69,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    resize_init(&f->B, w, h, wc->steps);
 	    resize_init(&f->dw, w, h, wc->steps);
 	    resize_init(&f->dg, w, h, wc->steps);
-	    resize_init(&f->dc, w, h, wc->steps);
+	    resize_init_(&f->dc, w, h, wc->steps);
 	    resize_init(&f->R1, w, h, wc->steps);
 	    resize_init(&f->G1, w, h, wc->steps);
 	    resize_init(&f->B1, w, h, wc->steps);
@@ -753,15 +771,21 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
 	for(i=3; i < 4; i++) {
-		//filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-		filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
+		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		//filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
 		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
-		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-		memset(f->dg[i].pic, 0, f->dg[i].w*f->dg[i].h);
-		seg_remove_line(f->dc[i].pic, f->dg[i].pic, (uint32*) g->buf, f->dg[i].w, f->dg[i].h);
+		seg_find_intersect(f->dg[i].pic, &f->dc[i].pic[f->dg[i].w], f->dg[i].w, f->dg[i].h);
+		seg_remove_line1(f->dc[i].pic, f->dg[i].w, f->dg[i].h);
+
+		vxc = seg_vertex(f->dg[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
+		//seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->dg[i].w, f->dg[i].h);
+
+
+		//memset(f->dg[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//seg_remove_line(f->dc[i].pic, f->dg[i].pic, (uint32*) g->buf, f->dg[i].w, f->dg[i].h);
 
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//seg_grad_max(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);

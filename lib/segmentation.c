@@ -346,8 +346,6 @@ static inline uint32 draw_line(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w
 	}
 }
 
-
-
 /*	\brief	Finf pixels with lines intersection.
 	\param	grad	The pointer to input gradient image.
 	\param	con		The pointer to output contour image.
@@ -359,6 +357,24 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
 	int d1, d2, npix = 0;
 
+	Vector v;
+	uint8 cs[3], cc[3];
+
+	cs[0] = 253; cs[1] = 253; cs[2] = 253;
+	cc[0] = 64; cc[1] = 64; cc[2] = 64;
+	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
+	draw_line(grad, grad, grad, &v, w, cs);
+	draw_line(con, con, con, &v, w, cc);
+	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
+	draw_line(grad, grad, grad, &v, w, cs);
+	draw_line(con, con, con, &v, w, cc);
+	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
+	draw_line(grad, grad, grad, &v, w, cs);
+	draw_line(con, con, con, &v, w, cc);
+	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
+	draw_line(grad, grad, grad, &v, w, cs);
+	draw_line(con, con, con, &v, w, cc);
+
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
@@ -367,28 +383,31 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
 					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; con[yx1] = 255;
+					con[yx1] = grad[yx1]; con[yx1] = 64;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
+						if(!d1){ con[yx1] = 128; break; }
 						yx1 = yx1 + d1;
 						if(con[yx1]) {
 							con[yx1] = 255; grad[yx1] = 255;
 							npix++;
 							break;
 						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 255;
+						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
+						if(!d2){ con[yx2] = 128; break; }
 						yx2 = yx2 + d2;
 						if(con[yx2]) {
 							con[yx2] = 255; grad[yx2] = 255;
 							npix++;
 							break;
 						}
-						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 255;
+						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 64;
 						d2 = dir(grad, yx2, w, -d2);
+
 					}
 				}
 				//break;
@@ -398,6 +417,55 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 	printf("Numbers of intersection  = %d\n", npix);
 }
 
+static inline uint32 check_nei2(uint8 *img, uint32 yx, uint32 w)
+{
+	uint32 cn = 0;
+
+	if(img[yx-1]) cn++;
+	if(img[yx-w]) cn++;
+	if(img[yx+1]) cn++;
+	if(img[yx+w]) cn++;
+	if(img[yx-1-w]) cn++;
+	if(img[yx+1-w]) cn++;
+	if(img[yx-1+w]) cn++;
+	if(img[yx+1+w]) cn++;
+
+	if(cn < 2) return 1;
+	else return 0;
+}
+
+uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
+{
+	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
+	int d, npix = 0;
+
+	for(y=2; y < h; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(con[yx] == 128){
+				//printf("x = %d y = %d\n", x, y);
+				yx1 = yx;
+				con[yx1] = 0;
+				d = dir(con, yx1, w, 0);
+				while(1){
+					//printf("yx = %d d = %d con = %d\n", yx1, d, con[yx1]);
+					yx1 = yx1 + d;
+					if(con[yx1] == 128) { con[yx1] = 0; break; }
+					else if(con[yx1] == 255) {
+						if(check_nei2(con, yx1, w)) d = 0;
+						else break;
+					}
+					con[yx1] = 0;
+					d = dir(con, yx1, w, -d);
+					if(!d)  break;
+				}
+				//break;
+			}
+		}
+	}
+	//printf("Numbers of intersection  = %d\n", npix);
+}
 
 static inline uint32 check_nei1(uint8 *img, uint32 yx, int  d, uint32 w)
 {
@@ -703,11 +771,10 @@ static inline uint32 new_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line **lp, 
 
 }
 
-static inline void new_line(Line *ln, Vertex *vx1, Vertex *vx2, uint32 nd1, uint32 nd2, uint32 *l, uint32 *r)
+static inline void new_line(Line *ln, Vertex *vx1, Vertex *vx2, uint32 nd1, uint32 nd2, uint8 pow)
 {
 	ln->vx[0] = vx1; ln->vx[1] = vx2;
-	ln->l[0] = l[0]; ln->l[1] = l[1]; ln->l[2] = l[1];
-	//ln->r[0] = r[0]; ln->r[1] = r[1]; ln->r[2] = r[2];
+	ln->pow = pow;
 	vx1->lp[nd1] = ln; vx2->lp[nd2] = ln;
 }
 
@@ -905,11 +972,12 @@ static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
 	\param  h		The image height.
 	\retval			The number of vertex.
 */
-uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h)
+uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h)
 {
 	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, w1 = w-1, h1 = h-1, nd1, nd2, yxd;
-	int vxc = 0, lnc = 0, linc = 0, lc[3], rc[3], cc;
+	int vxc = 0, lnc = 0, linc = 0, pow, cc;
 	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd;
+
 
 
 	for(y=1; y < h1; y++){
@@ -933,15 +1001,9 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 					// Variable for line construction.
 					fs = 0; sc = 0; cfs = 0; csc = 0; ll = 0;
 					//Find two perpendicular directions
-					/*
-					get_per_dir(dx + w*dy, w, &ld, &rd);
-					yxd = yx1 + ld;
-					lc[0] = r[yxd]; lc[1] = g[yxd]; lc[2] = b[yxd];
-					yxd = yx1 + rd;
-					rc[0] = r[yxd]; rc[1] = g[yxd]; rc[2] = b[yxd]; cc = 1;
-					*/
 
-					rc[0] = r[yx1]; rc[1] = g[yx1]; rc[2] = b[yx1]; cc = 1;
+					//rc[0] = r[yx1]; rc[1] = g[yx1]; rc[2] = b[yx1]; cc = 1;
+					pow = 0; cc = 0;
 					while(1){
 						x1 += dx; y1 += dy;
 						d = dx + w*dy;
@@ -951,14 +1013,8 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 							yx1 = yx; x1 = x; y1 = y;
 							break;
 						}
-						/*
-						get_per_dir(d, w, &ld, &rd);
-						yxd = yx1 + ld;
-						lc[0] += r[yxd]; lc[1] += g[yxd]; lc[2] += b[yxd];
-						yxd = yx1 + rd;
-						rc[0] += r[yxd]; rc[1] += g[yxd]; rc[2] += b[yxd]; cc++;
-						*/
-						rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
+						pow += con[yx1]; cc++;
+						//rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
 						//print_around(con, yx1, w);
 						//printf("y = %d x = %d d = %d w = %d\n", (yx1-d)/w, (yx1-d)%w, d, w);
 						if(con[yx1] == 255 || con[yx1] == 254) {
@@ -969,9 +1025,9 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 							} else {
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
 							}
-							//lc[0] = lc[0]/cc; lc[1] = lc[1]/cc; lc[2] = lc[2]/cc;
-							rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
-							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, rc, rc);
+							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
+							pow = pow/cc;
+							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, pow);
 							yx1 = yx; x1 = x; y1 = y;
 							break;
 						}
@@ -981,9 +1037,9 @@ uint32 seg_vertex(uint8 *con, uint8 *r, uint8 *g, uint8 *b, Vertex *vx, Vertex *
 							new_in_line_vertex(&vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, w, d, -d1);
 							nd1 = finish_dir(&vx[yx1], -d1, w);
 
-							//lc[0] = lc[0]/cc; lc[1] = lc[1]/cc; lc[2] = lc[2]/cc;
-							rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
-							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, rc, rc);
+							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
+							pow = pow/cc;
+							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, pow);
 							con[yx1] = 254;
 							break;
 						}
@@ -1098,7 +1154,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32
 			//if(tmp < 3) {
 			v.x1 =  vp[i]->lp[nd]->vx[0]->x; v.y1 =  vp[i]->lp[nd]->vx[0]->y;
 			v.x2 =  vp[i]->lp[nd]->vx[1]->x; v.y2 =  vp[i]->lp[nd]->vx[1]->y;
-			draw_three_lines(r, g, b, &v, w, vp[i]->lp[nd]->l, vp[i]->lp[nd]->r);
+			//draw_three_lines(r, g, b, &v, w, vp[i]->lp[nd]->l, vp[i]->lp[nd]->r);
 		}
 		//}
 		r[yx] = 255; g[yx] = 255; b[yx] = 255;
@@ -1134,8 +1190,8 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, 
 		//if(abs(v.x1-v.x2) > 2 || abs(v.y1-v.y2) > 2){
 			//if(ln[i].vx[0]->n > 1 || ln[i].vx[1]->n > 1) {
 				//draw_three_lines(r, g, b, &v, w, ln[i].l, ln[i].r);
-
-				draw_line(r, g, b, &v, w, ln[i].l);
+				c[0] = ln[i].pow; c[1] = ln[i].pow; c[2] = ln[i].pow;
+				draw_line(r, g, b, &v, w, c);
 				/*
 				yx = ln[i].vx[0]->y*w + ln[i].vx[0]->x;
 				r[yx] = 255; g[yx] = 255; b[yx] = 255;
