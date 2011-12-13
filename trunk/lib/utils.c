@@ -140,44 +140,16 @@ uint8* utils_resize_draw_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 st
 
 uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n)
 {
-	uint32 i, j, x, y, w = p[0].w, h = p[0].h;
+	uint32 i, j, x, y, w;
 	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
 
-	for(y=0; y < p[n].h; y++){
-		yw = y*p[0].w*s;
-		for(x=0; x < p[n].w; x++){
-			//yx = yw + x*2;
-			//yx3 = yx*3;
-			for(i=0; i < s; i++){
-				yy = yw + i*p[0].w;
-				for(j=0; j < s; j++){
-					yx = yy + x*s + j;
-					yx3 = yx*3;
-					xy = y*p[n].w + x;
-					rgb[yx3  ] = p[n].pic[xy];
-					rgb[yx3+1] = p[n].pic[xy];
-					rgb[yx3+2] = p[n].pic[xy];
-				}
-			}
-		}
-	}
-	return rgb;
-}
-
-uint8* utils_contour_(Pic8u *p, uint8 *rgb, uint32 n)
-{
-	uint32 i, j, x, y, w = p[0].w, h = p[0].h;
-	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
-
-	p[n].pic = &p[n].pic[p[n].w];
+	w = p[n].w*s;
 
 	for(y=0; y < p[n].h; y++){
-		yw = y*p[0].w*s;
+		yw = y*w*s;
 		for(x=0; x < p[n].w; x++){
-			//yx = yw + x*2;
-			//yx3 = yx*3;
 			for(i=0; i < s; i++){
-				yy = yw + i*p[0].w;
+				yy = yw + i*w;
 				for(j=0; j < s; j++){
 					yx = yy + x*s + j;
 					yx3 = yx*3;
@@ -194,16 +166,16 @@ uint8* utils_contour_(Pic8u *p, uint8 *rgb, uint32 n)
 
 uint8* utils_contour_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 n)
 {
-	uint32 i, j, x, y, w = r[0].w, h = r[0].h;
+	uint32 i, j, x, y, w;
 	uint32 yw, yx, yx3, yy, xy, s = 1<<n;
 
+	w = r[n].w*s;
+
 	for(y=0; y < r[n].h; y++){
-		yw = y*r[0].w*s;
+		yw = y*w*s;
 		for(x=0; x < r[n].w; x++){
-			//yx = yw + x*2;
-			//yx3 = yx*3;
 			for(i=0; i < s; i++){
-				yy = yw + i*r[0].w;
+				yy = yw + i*w;
 				for(j=0; j < s; j++){
 					yx = yy + x*s + j;
 					yx3 = yx*3;
@@ -410,6 +382,32 @@ void utils_bayer_to_RGB_fast(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w,
 		}
 	}
 }
+
+uint8* utils_bayer_to_Y_fast_(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh){
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = w>>1, h1 = h>>1;
+
+	for(y=0; y < h1; y++){
+		wy =(y+1)*(w1+2);;
+		wy1 = (y<<1)*w;
+		for(x=0; x < w1; x++){
+			yx 	= wy + x + 1;
+			yx1 = (x<<1) + wy1;
+			Y[yx] = ((img[yx1] + img[yx1 + 1] + img[yx1 + w] + img[yx1 + w + 1])>>2) + sh;
+		}
+	}
+	return Y;
+}
+
 
 uint8* utils_bayer_to_Y_fast(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh){
 /*

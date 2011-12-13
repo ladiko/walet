@@ -13,12 +13,13 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	/// | | | |      | ||| |      | | |/|      |\| | |
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
-	uint32 y, x, yx, sq = w*h-w, w1 = w-1, h1 = h-1;
-	uint8 max, in;
+	uint32 y, x, yx, yw, w1 = w-2, h1 = h-2;
+	uint8 max, in, col = 253;
 	uint32 g[4];
-	for(y=w; y < sq; y+=w){
-		for(x=1; x < w1; x++){
-			yx = y + x;
+	for(y=2; y < h1; y++){
+		yw = y*w;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
 			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
 			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
@@ -30,7 +31,12 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
 			//img1[yx] = max > 252 ? 252 : max;
 		}
+		img1[yw + 1] = col; img1[yw + w1] = col;
 	}
+	//The border
+	for(x=1; x < w1; x++) img1[w + x] = col; img1[w + x] = col;
+	yw = y*w;
+	for(x=1; x < w1; x++) img1[yw + x] = col; img1[yw + x] = col;
 }
 
 void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th)
@@ -354,26 +360,22 @@ static inline uint32 draw_line(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w
 */
 void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 {
-	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
+	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
 	int d1, d2, npix = 0;
-
+	/*
 	Vector v;
 	uint8 cs[3], cc[3];
 
-	cs[0] = 253; cs[1] = 253; cs[2] = 253;
 	cc[0] = 64; cc[1] = 64; cc[2] = 64;
-	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
-	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = 1; v.y1 = 1; v.x2 = w; v.y2 = 1;
 	draw_line(con, con, con, &v, w, cc);
-	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
-	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = w; v.y1 = 1; v.x2 = w; v.y2 = h;
 	draw_line(con, con, con, &v, w, cc);
-	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
-	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = w; v.y1 = h; v.x2 = 1; v.y2 = h;
 	draw_line(con, con, con, &v, w, cc);
-	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
-	draw_line(grad, grad, grad, &v, w, cs);
+	v.x1 = 1; v.y1 = 1; v.x2 = 1; v.y2 = h;
 	draw_line(con, con, con, &v, w, cc);
+	*/
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -439,7 +441,7 @@ uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
 	int d, npix = 0;
 
-	for(y=2; y < h; y++){
+	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
@@ -974,11 +976,9 @@ static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
 */
 uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h)
 {
-	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, w1 = w-1, h1 = h-1, nd1, nd2, yxd;
+	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, linc = 0, pow, cc;
 	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd;
-
-
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -996,7 +996,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 				yx1 = yx;
 
 				while(get_next_dir( &vx[yx1], &dx, &dy, &nd2)){
-					//printf("d = %d dx = %d dy = %d %o %o\n", d, dx, dy, vx[yx1].di,  vx[yx1].cn);
+					//printf("y = %d x = %d con = %d d = %d w = %d di = %o\n", (yx1)/w, (yx1)%w, con[yx1], d, w, vx[yx1].di);
 					yx2 = yx1; d2 = dx + w*dy; x2 = x1; y2 = y1;
 					// Variable for line construction.
 					fs = 0; sc = 0; cfs = 0; csc = 0; ll = 0;
@@ -1016,14 +1016,16 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						pow += con[yx1]; cc++;
 						//rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
 						//print_around(con, yx1, w);
-						//printf("y = %d x = %d d = %d w = %d\n", (yx1-d)/w, (yx1-d)%w, d, w);
+						//printf("y = %d x = %d con = %d d = %d w = %d yx1 = %d\n", (yx1)/w, (yx1)%w, con[yx1], d, w, yx1);
 						if(con[yx1] == 255 || con[yx1] == 254) {
 							if(con[yx1] == 255)  {
 								new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
 								con[yx1] = 254;
+								//printf("New vertex \n");
 							} else {
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
+								//printf("New direction \n");
 							}
 							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
 							pow = pow/cc;
@@ -1041,6 +1043,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 							pow = pow/cc;
 							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, pow);
 							con[yx1] = 254;
+							//printf("New line \n");
 							break;
 						}
 
@@ -1172,19 +1175,9 @@ void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, 
 	Vector v;
 	uint8 c[3];
 
-	c[0] = 255; c[1] = 255; c[2] = 255;
-	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
-	draw_line(r, g, b, &v, w, c);
-	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
-	draw_line(r, g, b, &v, w, c);
-	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
-	draw_line(r, g, b, &v, w, c);
-	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
-	draw_line(r, g, b, &v, w, c);
-
 	for(i=0; i < lc; i++){
-		v.x1 = ln[i].vx[0]->x; v.y1 = ln[i].vx[0]->y;
-		v.x2 = ln[i].vx[1]->x; v.y2 = ln[i].vx[1]->y;
+		v.x1 = ln[i].vx[0]->x-1; v.y1 = ln[i].vx[0]->y-1;
+		v.x2 = ln[i].vx[1]->x-1; v.y2 = ln[i].vx[1]->y-1;
 		//printf("%d x1 = %d y1 = %d x2 = %d y2 = %d\n", i, v.x1, v.y1, v.x2, v.y2);
 		//draw_line1(r, g, b, &v, w, vp[i]->ln[nd].l[0], vp[i]->ln[nd].l[1], vp[i]->ln[nd].l[2]);
 		//if(abs(v.x1-v.x2) > 2 || abs(v.y1-v.y2) > 2){

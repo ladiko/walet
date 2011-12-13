@@ -105,6 +105,27 @@ void resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
 	}
 }
 
+void resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
+{
+	int x, y, yw, yx, yw1, yw2, wn, hn;
+	int16 *l = (int16*)buff;
+
+	wn = ((w-2)>>1); hn = ((h-2)>>1);
+
+	for(y=0; y < hn; y++){
+		yw = (y+1)*(wn+2);
+		yw1 = (y<<1)*w + w;
+		for(x=0; x < wn; x++) l[x]  = in[yw1 + (x<<1)+1] + in[yw1 + (x<<1)+2];
+		yw1 = yw1 + w;
+		for(x=0; x < wn; x++) l[x] += in[yw1 + (x<<1)+1] + in[yw1 + (x<<1)+2];
+
+		for(x=0; x < wn; x++){
+			yx = yw + x+1;
+			out[yx] = l[x]>>2;
+		}
+	}
+}
+
 /*	\brief Resize image up to two times on x and y (bilinear interpolation).
 	\param in	 		The input image.
 	\param out	 		The output image.
