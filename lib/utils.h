@@ -14,7 +14,6 @@ uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps);
 uint8* utils_resize_draw(Pic8u *p, uint8 *rgb, uint32 steps, uint32 w);
 uint8* utils_resize_draw_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 steps, uint32 w);
 uint8* utils_contour(Pic8u *p, uint8 *rgb, uint32 n);
-uint8* utils_contour_(Pic8u *p, uint8 *rgb, uint32 n);
 uint8* utils_contour_rgb(Pic8u *r, Pic8u *g, Pic8u *b, uint8 *rgb, uint32 n);
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h);
@@ -41,6 +40,7 @@ uint8* 	utils_YUV420_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w
 
 void utils_bayer_to_RGB_fast(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, BayerGrid bay, uint32 sh);
 uint8* utils_bayer_to_Y_fast(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh);
+uint8* utils_bayer_to_Y_fast_(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh);
 
 int16* 	utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 bor);
 void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);

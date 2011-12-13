@@ -387,9 +387,15 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 				gtk_widget_queue_draw(gw->drawingarea[i+1]);
 			}
 		} else if(gw->wc.dec == VECTORIZE){
-			new_buffer (gw->orig[3], f0->b.w, f0->b.h);
-			utils_resize_draw(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps, f0->b.w);
+			new_buffer (gw->orig[3], f0->dw[1].w<<1, f0->dw[1].h<<1);
+			utils_contour(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
+			//new_buffer (gw->orig[3], f0->dw[3].w, f0->dw[3].h);
+			//utils_grey_draw8( f0->dw[3].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->dw[3].w, f0->dw[3].h, 0);
 			gtk_widget_queue_draw(gw->drawingarea[3]);
+
+			//new_buffer (gw->orig[3], f0->b.w, f0->b.h);
+			//utils_resize_draw(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps, f0->b.w);
+			//gtk_widget_queue_draw(gw->drawingarea[3]);
 
 			new_buffer (gw->orig[0], f0->b.w, f0->b.h);
 			utils_resize_draw_rgb(f0->R, f0->G, f0->B, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.steps, f0->b.w);
@@ -603,11 +609,11 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
 	for(i=0; i < 4; i++){
-		new_buffer (gw->orig[i], fr->dc[0].w, fr->dc[0].h);
-		utils_contour_(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
-		//utils_contour(fr->dg, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		//new_buffer (gw->orig[i], fr->dc[i].w<<i, fr->dc[i].h<<i);
+		//utils_contour(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		//utils_contour_rgb(fr->R, fr->G, fr->B, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
-		//utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		new_buffer (gw->orig[i], fr->R1[i].w<<i, fr->R1[i].h<<i);
+		utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		gtk_widget_queue_draw(gw->drawingarea[i]);
 	}
 
