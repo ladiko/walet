@@ -129,17 +129,18 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	//|-----|-----|-----|
 	//|     |     |     |
 	//|-----|-----|-----|
-	uint32 y, x, yx, i, sq = w*h - w, w1 = w-1;
+	uint32 y, x, yx, yw, i, h1 = h-2, w1 = w-2;
 	uint8 s[3][3];
 
-	for(y=w; y < sq; y+=w){
-		x = 1; i = 2;
-		yx = y + x;
+	for(y=2; y < h1; y++){
+		i = 2; x = 2;
+		yw = y*w;
+		yx = yw + x;
 		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
 		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
 		sort_3(s[0]); sort_3(s[1]);
-		for(; x < w1; x++){
-			yx = y + x;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
 			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
 			sort_3(s[i]);
 			img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
@@ -149,7 +150,42 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 		}
 	}
 	//Copy one pixel border
-	utils_copy_border(img, img1, 1, w, h);
+	//utils_copy_border(img, img1, 1, w, h);
+}
+
+void filter_contrast(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+	// s[0]  s[1]  s[2]
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	//|     | yx  |     |
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	uint32 y, x, yx, yw, i, h1 = h-2, w1 = w-2, med, min, max;
+	uint8 s[3][3];
+
+	for(y=2; y < h1; y++){
+		i = 2; x = 2;
+		yw = y*w;
+		yx = yw + x;
+		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
+		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
+		sort_3(s[0]); sort_3(s[1]);
+		for(x=2; x < w1; x++){
+			yx = yw + x;
+			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
+			sort_3(s[i]);
+			max = max_3   (s[0][0], s[1][0], s[2][0]);
+			min = min_3   (s[0][2], s[1][2], s[2][2]);
+			med = median_3(max, median_3(s[0][1], s[1][1], s[2][1]), min);
+			img1[yx] = abs(max-img[yx]) < abs(min-img[yx]) ? max : min;
+			i = (i == 2) ? 0 : i+1;
+		}
+	}
+	//Copy one pixel border
+	//utils_copy_border(img, img1, 1, w, h);
 }
 
 void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h)
@@ -221,6 +257,21 @@ void filter_average(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 thresh)
 			img1[yx] = filter(img, yx, w, thresh);
 			//if(img[yx]) img1[yx] = filter(img, yx, w, thresh);
 			//else img1[yx] = 0;
+		}
+	}
+}
+
+void filter_noise(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, yw,  h1 = h-2, w1 = w-2, av;
+	for(y=2; y < h1; y++){
+		yw = w*y;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
+			av = (	img[yx-w-1] + img[yx-w  ] + img[yx-w+1] +
+					img[yx-1  ] + img[yx+1  ] +
+					img[yx+w-1] + img[yx+w  ] + img[yx+w+1])>>3;
+			 img1[yx] = (av +  img[yx])>>1;
 		}
 	}
 }

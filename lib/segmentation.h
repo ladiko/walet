@@ -23,6 +23,7 @@ void seg_find_intersect	(uint8 *grad, uint8 *out, uint32 w, uint32 h);
 void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 w, uint32 h, uint32 th);
 uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h);
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
+void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th);
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
 void seg_draw_line(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, uint32 h);

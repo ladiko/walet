@@ -609,11 +609,10 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
 
 	for(i=0; i < 4; i++){
-		//new_buffer (gw->orig[i], fr->dc[i].w<<i, fr->dc[i].h<<i);
-		//utils_contour(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
-		//utils_contour_rgb(fr->R, fr->G, fr->B, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
-		new_buffer (gw->orig[i], fr->R1[i].w<<i, fr->R1[i].h<<i);
-		utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		new_buffer (gw->orig[i], fr->dc[i].w<<i, fr->dc[i].h<<i);
+		utils_contour(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		//new_buffer (gw->orig[i], fr->R1[i].w<<i, fr->R1[i].h<<i);
+		//utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		gtk_widget_queue_draw(gw->drawingarea[i]);
 	}
 

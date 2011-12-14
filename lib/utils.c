@@ -383,7 +383,7 @@ void utils_bayer_to_RGB_fast(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w,
 	}
 }
 
-uint8* utils_bayer_to_Y_fast_(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh){
+void utils_bayer_to_RGB_fast_(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, BayerGrid bay, uint32 sh){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -396,8 +396,49 @@ uint8* utils_bayer_to_Y_fast_(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 s
  */
 	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = w>>1, h1 = h>>1;
 
+	switch(bay){
+		case(BGGR):{
+			break;
+		}
+		case(GRBG):{
+			break;
+		}
+		case(GBRG):{
+			break;
+		}
+		case(RGGB):{
+			for(y=0; y < h1; y++){
+				wy =(y+1)*(w1+2);
+				wy1 = (y<<1)*w;
+				for(x=0; x < w1; x++){
+					yx 	= wy + x + 1;
+					yx1 = (x<<1) + wy1;
+					r[yx] = img[yx1] + sh;
+					g[yx] = ((img[yx1 + 1] + img[yx1 + w])>>1) + sh;
+					b[yx] = img[yx1 + w + 1] + sh;
+				}
+			}
+			break;
+		}
+	}
+}
+
+uint8* utils_bayer_to_Y_fast_(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh)
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+{
+	int x, y, x1, y1, wy, wy1, yx, yx1, w1 = w>>1, h1 = h>>1;
+
 	for(y=0; y < h1; y++){
-		wy =(y+1)*(w1+2);;
+		wy =(y+1)*(w1+2);
 		wy1 = (y<<1)*w;
 		for(x=0; x < w1; x++){
 			yx 	= wy + x + 1;
