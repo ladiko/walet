@@ -39,6 +39,36 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	for(x=1; x < w1; x++) img1[yw + x] = col; img1[yw + x] = col;
 }
 
+void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th)
+{
+	uint32 y, x, yx, yw, w1 = w-2, h1 = h-2;
+	uint8 in, col = 253;
+	uint32 max;
+	for(y=2; y < h1; y++){
+		yw = y*w;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
+			max = 	abs(R[yx-1  ] - R[yx+1  ]);
+			max += 	abs(R[yx-w  ] - R[yx+w  ]);
+			max += 	abs(G[yx-1  ] - G[yx+1  ]);
+			max += 	abs(G[yx-w  ] - G[yx+w  ]);
+			max += 	abs(B[yx-1  ] - B[yx+1  ]);
+			max += 	abs(B[yx-w  ] - B[yx+w  ]);
+
+			max = max>>3;
+			grad[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			//img1[yx] = max>>th;
+			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+			//img1[yx] = max > 252 ? 252 : max;
+		}
+		grad[yw + 1] = col; grad[yw + w1] = col;
+	}
+	//The border
+	for(x=1; x < w1; x++) grad[w + x] = col; grad[w + x] = col;
+	yw = y*w;
+	for(x=1; x < w1; x++) grad[yw + x] = col; grad[yw + x] = col;
+}
+
 void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
@@ -396,7 +426,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
+						con[yx1] = grad[yx1]; con[yx1] = 64; grad[yx1] = 254;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
@@ -407,7 +437,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 							npix++;
 							break;
 						}
-						con[yx2] = grad[yx2]; grad[yx2] = 254; con[yx2] = 64;
+						con[yx2] = grad[yx2]; con[yx2] = 64; grad[yx2] = 254;
 						d2 = dir(grad, yx2, w, -d2);
 
 					}
@@ -1013,7 +1043,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 							yx1 = yx; x1 = x; y1 = y;
 							break;
 						}
-						pow += con[yx1]; cc++;
+						 cc++;
 						//rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
 						//print_around(con, yx1, w);
 						//printf("y = %d x = %d con = %d d = %d w = %d yx1 = %d\n", (yx1)/w, (yx1)%w, con[yx1], d, w, yx1);
@@ -1033,6 +1063,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 							yx1 = yx; x1 = x; y1 = y;
 							break;
 						}
+						pow += con[yx1];
 						//if(is_new_line2(d, &cn, &fs, &sc)){
 						if(is_new_line3(d, &fs, &sc, &cfs, &csc, &ll)){
 							yx1 -= d; x1 -= dx; y1 -= dy;

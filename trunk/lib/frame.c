@@ -62,15 +62,15 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 
-	    resize_init(&f->R, w, h, wc->steps);
-	    resize_init(&f->G, w, h, wc->steps);
-	    resize_init(&f->B, w, h, wc->steps);
+	    resize_init_(&f->R, w, h, wc->steps);
+	    resize_init_(&f->G, w, h, wc->steps);
+	    resize_init_(&f->B, w, h, wc->steps);
 	    resize_init_(&f->dw, w, h, wc->steps);
 	    resize_init_(&f->dg, w, h, wc->steps);
 	    resize_init_(&f->dc, w, h, wc->steps);
-	    resize_init(&f->R1, w, h, wc->steps);
-	    resize_init(&f->G1, w, h, wc->steps);
-	    resize_init(&f->B1, w, h, wc->steps);
+	    resize_init_(&f->R1, w, h, wc->steps);
+	    resize_init_(&f->G1, w, h, wc->steps);
+	    resize_init_(&f->B1, w, h, wc->steps);
 
 	}
 
@@ -170,7 +170,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == RGB){
 			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		} else if(wc->ccol == RGBY){
-			utils_bayer_to_RGB_fast(f->b.pic, f->R[0].pic, f->G[0].pic, f->B[0].pic, f->b.w, f->b.h, wc->bg, 128);
+			utils_bayer_to_RGB_fast_(f->b.pic, f->R[0].pic, f->G[0].pic, f->B[0].pic, f->b.w, f->b.h, wc->bg, 128);
 			utils_bayer_to_Y_fast_(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS420){
@@ -769,17 +769,39 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
 	for(i=0; i < 4; i++) {
+		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
+		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
+		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-		//filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
-		seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
-		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
-		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
-		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
+		//filter_contrast(f->dc[i].pic, f->dw[i].pic, f->dw[i].w, f->dw[i].h);
+
+		//filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
+		//filter_noise(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h, 0);
+		//filter_noise(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h, 0);
+		//filter_noise(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h, 0);
+		//filter_noise(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h, 0);
+
+		seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		//seg_grad_RGB(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
+		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//memset(f->R1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//memset(f->G1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//memset(f->B1[i].pic, 0, f->dg[i].w*f->dg[i].h);
+
+		//seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
 		//seg_remove_line1(f->dc[i].pic, f->dg[i].w, f->dg[i].h);
 
-		vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
-		seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
+		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
+		//seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
+
+		seg_fall_forest(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		rgc =  seg_group_reg(f->dc[i].pic, f->dg[i].pic, (uint32*)g->buf, f->dw[i].w, f->dw[i].h);
+		//rgc = seg_group_pixels(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dc[i].pic, f->dg[i].pic,
+		//		(uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], g->buf,
+		//		(uint32*)&g->buf[f->dg[i].w*f->dg[i].h], (uint32*)&g->buf[f->dg[i].w*f->dg[i].h*2], f->dg[i].w, f->dg[i].h);
+
 
 
 		//memset(f->dg[i].pic, 0, f->dg[i].w*f->dg[i].h);
