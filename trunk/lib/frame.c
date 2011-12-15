@@ -768,11 +768,11 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=0; i < 4; i++) {
+	for(i=3; i < 4; i++) {
 		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
-		//filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
 
 		//filter_contrast(f->dc[i].pic, f->dw[i].pic, f->dw[i].w, f->dw[i].h);
 
@@ -782,7 +782,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//filter_noise(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 		//filter_noise(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 
-		seg_grad(f->dw[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_RGB(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -797,6 +797,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
 
 		seg_fall_forest(f->dg[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		memset(f->dg[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		rgc =  seg_group_reg(f->dc[i].pic, f->dg[i].pic, (uint32*)g->buf, f->dw[i].w, f->dw[i].h);
 		//rgc = seg_group_pixels(f->R[i].pic, f->G[i].pic, f->B[i].pic, f->dc[i].pic, f->dg[i].pic,
 		//		(uint32*)&g->buf[f->dg[i].w*f->dg[i].h*3], g->buf,

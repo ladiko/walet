@@ -54,7 +54,7 @@ void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 
 
 void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th);
-uint32 seg_group_reg(uint8 *img, uint8 *grad, uint32 *buff, uint32 w, uint32 h);
+uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h);
 void seg_grad_max(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h);
 uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h);
