@@ -1835,23 +1835,25 @@ static inline void check_max(uint8 *img, uint8 *con, uint32 yx, uint32 w, uint32
 	}
 }
 
-static inline uint32 get_next(uint8 *img, uint32 yx, uint32 yxp, uint32 w, uint32 reg)
+static inline uint32 get_next(uint8 *img, uint32 yx, uint32 *yxp, uint32 w, uint32 reg)
 {
 	uint32 yx1;
+	//printf("yx = %d yx1 = %d\n", yx, *yxp);
 	//One pixel
 	if(	img[yx-1] != reg &&
 		img[yx-w] != reg &&
 		img[yx+1] != reg &&
 		img[yx+w] != reg )  return yx;
 
-	if		(yxp == yx-1-w) goto m2;
-	else if	(yxp == yx-w  ) goto m3;
-	else if	(yxp == yx-w+1) goto m4;
-	else if	(yxp == yx+1  ) goto m5;
-	else if	(yxp == yx+1+w) goto m6;
-	else if	(yxp == yx+w  ) goto m7;
-	else if	(yxp == yx+w-1) goto m8;
-	else if	(yxp == yx-1  ) goto m1;
+	if		(*yxp == yx-1  ) { *yxp = yx; goto m1;}
+	else if	(*yxp == yx-1-w) { *yxp = yx; goto m2;}
+	else if	(*yxp == yx-w  ) { *yxp = yx; goto m3;}
+	else if	(*yxp == yx-w+1) { *yxp = yx; goto m4;}
+	else if	(*yxp == yx+1  ) { *yxp = yx; goto m5;}
+	else if	(*yxp == yx+1+w) { *yxp = yx; goto m6;}
+	else if	(*yxp == yx+w  ) { *yxp = yx; goto m7;}
+	else if	(*yxp == yx+w-1) { *yxp = yx; goto m8;}
+
 	while(1){
 		m1:
 		yx1 = yx-1-w;
@@ -1878,6 +1880,32 @@ static inline uint32 get_next(uint8 *img, uint32 yx, uint32 yxp, uint32 w, uint3
 		yx1 = yx-1;
 		if(img[yx1+w] != reg && img[yx1] == reg) return yx1;
 	}
+	/*
+	yx1 = yx-1-w;
+	if(img[yx1+w] != reg && img[yx1] == reg) { printf("m1\n"); return yx1;}
+	else printf("m1\n");
+	yx1 = yx-w;
+	if(img[yx1-1] != reg && img[yx1] == reg) { printf("m2\n"); return yx1;}
+	else printf("m2\n");
+	yx1 = yx-w+1;
+	if(img[yx1-1] != reg && img[yx1] == reg) { printf("m3\n"); return yx1;}
+	else printf("m3\n");
+	yx1 = yx+1;
+	if(img[yx1-w] != reg && img[yx1] == reg) { printf("m4\n"); return yx1;}
+	else printf("m4\n");
+	yx1 = yx+1+w;
+	if(img[yx1-w] != reg && img[yx1] == reg) { printf("m5\n"); return yx1;}
+	else printf("m5\n");
+	yx1 = yx+w;
+	if(img[yx1+1] != reg && img[yx1] == reg) { printf("m6\n"); return yx1;}
+	else printf("m6\n");
+	yx1 = yx+w-1;
+	if(img[yx1+1] != reg && img[yx1] == reg) { printf("m7\n"); return yx1;}
+	else printf("m7\n");
+	yx1 = yx-1;
+	if(img[yx1+w] != reg && img[yx1] == reg) { printf("m8\n"); return yx1;}
+	else printf("m8\n");
+	*/
 }
 
 uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
@@ -1921,10 +1949,10 @@ uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
 					tm = l1; l1 = l2; l2 = tm;
 				}
 				//Find border of region
-				yxw = l2[0];
+				yxw = l2[0]; yxw1 = l2[0];
 				do{
 
-					printf("yx = %d yx1 = %d\n", yxw, yxw1);
+					//printf("yx = %d yx1 = %d\n", yxw, yxw1);
 					printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
 							img[yxw-w-1], img[yxw-w], img[yxw-w+1],
 							img[yxw-1], img[yxw], img[yxw+1],
@@ -1935,11 +1963,11 @@ uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
 							con[yxw+w-1], con[yxw+w], con[yxw+w+1]);
 
 					check_max(img, con, yxw, w, rgc);
-					yxw1 = yxw;
-					yxw = get_next(img, yxw, yxw1, w, rgc);
+					//yxw1 = yxw;
+					yxw = get_next(img, yxw, &yxw1, w, rgc);
 				}while(yxw != l2[0]);
 				rgc++;
-				if(rgc == 20) return 0;
+				if(rgc == 255) return 0;
 			}
 		}
 	}
