@@ -43,7 +43,7 @@ uint32 seg_fill_regs(uint8 *r, uint8 *g, uint8 *b, uint8 *r1, uint16 *rg, uint32
 void seg_max_rise(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void seg_max_con(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 
-void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+void seg_fall_forest(uint8 *img, uint32 *img1, uint32 w, uint32 h);
 uint32 seg_group_pixels(uint8 *r, uint8 *g, uint8 *b, uint8 *r1,  uint8 *con, uint32 *rg, uint8 *col, uint32 *l1, uint32 *l2, uint32 w, uint32 h);
 void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w, uint32 h);
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h);
@@ -54,7 +54,7 @@ void seg_grad_sub(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 
 
 void seg_grad_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h, uint32 th);
-uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h);
+uint32 seg_group_reg(uint32 *reg, uint32 *buff, uint32 w, uint32 h);
 void seg_grad_max(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 uint32 seg_remove_line(uint8 *con, uint8 *tmp, uint32 *buff, uint32 w, uint32 h);
 uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h);
@@ -84,7 +84,7 @@ uint32 seg_points(uint8 *img, uint32 w, uint32 h);
 
 
 void seg_quant(uint8 *img1, uint8 *img2, uint32 w, uint32 h, uint32 q);
-void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h);
+//void seg_fall_forest(uint8 *img, uint32 *img1, uint32 w, uint32 h);
 void seg_fall_forest1(uint8 *img, uint8 *img1, uint8 *img2, uint32 w, uint32 h);
 void seg_grad1(uint8 *img, uint8 *img1,uint8 *img2, uint32 w, uint32 h, uint32 th);
 

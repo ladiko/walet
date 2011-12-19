@@ -1775,15 +1775,15 @@ static inline uint32 get_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
 
 }
 
-static inline uint32 chk_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
+static inline uint32 chk_dir(uint32 *img, uint32 yx, uint32 yx1, uint32 w)
 {
-	if(img[yx] > 5) return yx1 + 1;
+	if(img[yx] > 4) return yx1 + 1;
 	if(img[yx] == 0) return yx1;
 	if(img[yx] == 1) return yx - 1;
 	if(img[yx] == 2) return yx - w;
 	if(img[yx] == 3) return yx + 1;
 	if(img[yx] == 4) return yx + w;
-	if(img[yx] == 5) { img[yx] = 6; return yx1+1; }
+	//if(img[yx] == 5) { img[yx] = 6; return yx1+1; }
 	//if(img[yx] == 5) { img[yx] = 6; (*i)++; return yx1+1; }
 	/*
 	if(img[yx] == 5) return yx-1-w;
@@ -1793,15 +1793,16 @@ static inline uint32 chk_dir(uint8 *img, uint32 yx, uint32 yx1, uint32 w)
 
 }
 
-void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+void seg_fall_forest(uint8 *img, uint32 *img1, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, sq = w*h, dir, w1 = w-2, h1 = h-2, min;
 	//The one pixel border
-	for(x=1; x < w-1; x++) img1[w+x] = 5;
+	for(x=0; x < w; x++) img1[x] = 5;
+	img1[w] = 5; for(x=1; x < w-1; x++) img1[w+x] = 4; img1[w+x] = 5;
 
 	for(y=2; y < h1; y++){
 		yw = y*w;
-		img1[yw+1] = 5;
+		img1[yw] = 5; img1[yw+1] = 3;
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			if(img[yx]) {
@@ -1812,26 +1813,30 @@ void seg_fall_forest(uint8 *img, uint8 *img1, uint32 w, uint32 h)
                 if(img[yx  +w] < min) { min = img[yx  +w]; img1[yx] = 4; }
  			} else img1[yx] = 0;
 		}
-		img1[yx+1] = 5;
+		img1[yx+1] = 1; img1[yx+2] = 5;
 	}
 	yw = y*w;
-	for(x=1; x < w-1; x++) img1[yw+x] = 5;
+	img1[yw] = 5; for(x=1; x < w-1; x++) img1[yw+x] = 2; img1[yw+x] = 5;
+	yw = yw+w;
+	for(x=0; x < w; x++) img1[yw+x] = 5;
 }
 
 static inline void check_max(uint8 *img, uint8 *con, uint32 yx, uint32 w, uint32 reg)
 {
 	uint32 yx1, cn = 0;
-	if(img[yx-1] != reg) { cn++; yx1 = yx-1; }
-	if(img[yx-w] != reg) { cn++; yx1 = yx-w; }
-	if(img[yx+1] != reg) { cn++; yx1 = yx+1; }
-	if(img[yx+w] != reg) { cn++; yx1 = yx+w; }
+	if(!con[yx]){
+		if(img[yx-1] != reg) { cn++; yx1 = yx-1; }
+		if(img[yx-w] != reg) { cn++; yx1 = yx-w; }
+		if(img[yx+1] != reg) { cn++; yx1 = yx+1; }
+		if(img[yx+w] != reg) { cn++; yx1 = yx+w; }
 
-	if(cn == 1) { con[yx1] = 255;
+		if(cn == 1) { con[yx1] = 255;
 		//if(img[yx] > img[yx1]) con[yx] = 255;
 		//else con[yx1] = 255;
-	}
-	else if(cn == 2 || cn == 3){
-		con[yx] = 255;
+		}
+		else {//if(cn == 2 || cn == 3){
+			con[yx] = 255;
+		}
 	}
 }
 
@@ -1880,35 +1885,9 @@ static inline uint32 get_next(uint8 *img, uint32 yx, uint32 *yxp, uint32 w, uint
 		yx1 = yx-1;
 		if(img[yx1+w] != reg && img[yx1] == reg) return yx1;
 	}
-	/*
-	yx1 = yx-1-w;
-	if(img[yx1+w] != reg && img[yx1] == reg) { printf("m1\n"); return yx1;}
-	else printf("m1\n");
-	yx1 = yx-w;
-	if(img[yx1-1] != reg && img[yx1] == reg) { printf("m2\n"); return yx1;}
-	else printf("m2\n");
-	yx1 = yx-w+1;
-	if(img[yx1-1] != reg && img[yx1] == reg) { printf("m3\n"); return yx1;}
-	else printf("m3\n");
-	yx1 = yx+1;
-	if(img[yx1-w] != reg && img[yx1] == reg) { printf("m4\n"); return yx1;}
-	else printf("m4\n");
-	yx1 = yx+1+w;
-	if(img[yx1-w] != reg && img[yx1] == reg) { printf("m5\n"); return yx1;}
-	else printf("m5\n");
-	yx1 = yx+w;
-	if(img[yx1+1] != reg && img[yx1] == reg) { printf("m6\n"); return yx1;}
-	else printf("m6\n");
-	yx1 = yx+w-1;
-	if(img[yx1+1] != reg && img[yx1] == reg) { printf("m7\n"); return yx1;}
-	else printf("m7\n");
-	yx1 = yx-1;
-	if(img[yx1+w] != reg && img[yx1] == reg) { printf("m8\n"); return yx1;}
-	else printf("m8\n");
-	*/
 }
 
-uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
+uint32 seg_group_reg(uint32 *reg, uint32 *buff, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yxw, yxw1, yw, h1 = h-1, w1 = w-1;
 	uint32 in, rgc = 6, tmp,  num;
@@ -1918,37 +1897,41 @@ uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-			if(!img[yx]){
+			if(!reg[yx]){
 				//printf("x = %d y = %d img = %d\n", x, y, img[yx]);
-				img[yx] = rgc; num = 1; l1[0] = yx; i = 0;
+				reg[yx] = rgc; num = 1; l1[0] = yx; i = 0;
 				//printf("reg = %d\n", rgc);
 				while(num){
 					for(j=0; j < num; j++){
-						//printf("j = %d\n", j);
-						//printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n",
-						//		img[yx-w-1], img[yx-w], img[yx-w+1],
-						//		img[yx-1], img[yx], img[yx+1],
-						//		img[yx+w-1], img[yx+w], img[yx+w+1]);
+						/*
+						printf("num = %d reg = %d x = %d y = %d\n", num, reg[yx], l1[j]%w, l1[j]/w);
+						printf("%4d %4d %4d\n%4d %4d %4d\n%4d %4d %4d\n\n",
+								reg[l1[j]-w-1], reg[l1[j]-w], reg[l1[j]-w+1],
+								reg[l1[j]-1], reg[l1[j]], reg[l1[j]+1],
+								reg[l1[j]+w-1], reg[l1[j]+w], reg[l1[j]+w+1]);
+						*/
 						yxw = l1[j] - 1;
-						tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { img[yxw] = rgc; l2[i++] = yxw; }
+						//tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == chk_dir(reg, yxw, l1[j], w)) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] - w;
-						tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { img[yxw] = rgc; l2[i++] = yxw; }
+						//tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == chk_dir(reg, yxw, l1[j], w)) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] + 1;
-						tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { img[yxw] = rgc; l2[i++] = yxw; }
+						//tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == chk_dir(reg, yxw, l1[j], w)) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] + w;
-						tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
-						if(l1[j] == tmp) { img[yxw] = rgc; l2[i++] = yxw; }
+						//tmp = chk_dir(img, yxw, l1[j], w); //printf("%3d %3d\n", yxw, tmp);
+						if(l1[j] == chk_dir(reg, yxw, l1[j], w)) { reg[yxw] = rgc; l2[i++] = yxw; }
 						//if(i > fs || c ) grad[l1[j]] = 0;
-						//rg[l1[j]] = rgc;
+						//reg[l1[j]] = rgc;
 						//printf("i = %d\n", i);
 					}
 					num = i; i = 0;
 					tm = l1; l1 = l2; l2 = tm;
 				}
+				rgc++;
 				//Find border of region
+				/*
 				yxw = l2[0]; yxw1 = l2[0];
 				do{
 
@@ -1966,8 +1949,8 @@ uint32 seg_group_reg(uint8 *img, uint8 *con, uint32 *buff, uint32 w, uint32 h)
 					//yxw1 = yxw;
 					yxw = get_next(img, yxw, &yxw1, w, rgc);
 				}while(yxw != l2[0]);
-				rgc++;
-				if(rgc == 255) return 0;
+				*/
+				//if(rgc == 1) return 0;
 			}
 		}
 	}
@@ -2217,53 +2200,19 @@ uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w,
 
 void seg_draw_grad(uint8 *grad, uint8 *out, uint32 *rg, uint32 w, uint32 h)
 {
-	uint32 y, x, yx, yxw, yw, sq = w*h, dir, w1 = w-1, h1 = h-1, min, in, cn, max;
-	int d;
-	Vector v;
-	uint8 cs[3];
-
-	cs[0] = 0; cs[1] = 0; cs[2] = 0;
-	v.x1 = 0; v.y1 = 0; v.x2 = w-1; v.y2 = 0;
-	draw_line(out, out, out, &v, w, cs);
-	v.x1 = w-1; v.y1 = 0; v.x2 = w-1; v.y2 = h-1;
-	draw_line(out, out, out, &v, w, cs);
-	v.x1 = w-1; v.y1 = h-1; v.x2 = 0; v.y2 = h-1;
-	draw_line(out, out, out, &v, w, cs);
-	v.x1 = 0; v.y1 = 0; v.x2 = 0; v.y2 = h-1;
-	draw_line(out, out, out, &v, w, cs);
+	uint32 y, x, yx, yxw, yw, w1 = w-1, h1 = h-1;
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-            if		(rg[yx-1] != rg[yx]) out[yx+w] = 255; //{ out[yx] = grad[yx+w];}
-            else if	(rg[yx-w] != rg[yx]) out[yx+1] = 255; //{ out[yx] = grad[yx+1];}
-            else if	(rg[yx+1] != rg[yx]) out[yx+1] = 255; //{ out[yx] = grad[yx+1];}
-            else if	(rg[yx+w] != rg[yx]) out[yx+w] = 255; //{ out[yx] = grad[yx+w];}
+            if		(rg[yx-1] != rg[yx]) out[yx] = grad[yx];
+            else if	(rg[yx-w] != rg[yx]) out[yx] = grad[yx];
+            else if	(rg[yx+1] != rg[yx]) out[yx] = grad[yx];
+            else if	(rg[yx+w] != rg[yx]) out[yx] = grad[yx];
             else { out[yx] = 0;}
 		}
-            /*
- 			cn = 0;
-            if		(rg[yx-1] != rg[yx]) cn++;
-            else if	(rg[yx-w] != rg[yx]) cn++;
-            else if	(rg[yx+1] != rg[yx]) cn++;
-            else if	(rg[yx+w] != rg[yx]) cn++;
-            if(cn){
-            	max = grad[yx]; d = yx;
-            	yxw = yx - 1;
-            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
-            	yxw = yx - w;
-            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
-            	yxw = yx + 1;
-            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
-            	yxw = yx + w;
-            	if(grad[yxw] > max) { max = grad[yxw]; d = yxw;}
-            	grad[d] = 255;
-            }*/
-
-            //else { out[yx] = 0;}
-
-	}
+ 	}
 }
 
 void seg_max_rise(uint8 *img, uint8 *img1, uint32 w, uint32 h)
