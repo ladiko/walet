@@ -129,17 +129,17 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	//|-----|-----|-----|
 	//|     |     |     |
 	//|-----|-----|-----|
-	uint32 y, x, yx, yw, i, h1 = h-2, w1 = w-2;
+	uint32 y, x, yx, yw, i, h1 = h-1, w1 = w-1;
 	uint8 s[3][3];
 
-	for(y=2; y < h1; y++){
+	for(y=1; y < h1; y++){
 		i = 2; x = 2;
 		yw = y*w;
 		yx = yw + x;
 		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
 		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
 		sort_3(s[0]); sort_3(s[1]);
-		for(x=2; x < w1; x++){
+		for(x=1; x < w1; x++){
 			yx = yw + x;
 			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
 			sort_3(s[i]);
