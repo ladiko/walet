@@ -14,10 +14,15 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
 	uint32 y, x, yx, yw, w1 = w-2, h1 = h-2;
-	uint8 max, in, col = 253;
+	uint8 max, in, col = 253, col1 = 1;
 	uint32 g[4];
+
+	for(x=0; x < w; x++) img1[x] = col1;
+	img1[w] = col1; for(x=1; x < w1; x++) img1[w + x] = col; img1[w + x] = col; img1[w + x+1] = col1;
+
 	for(y=2; y < h1; y++){
 		yw = y*w;
+		img1[yw ] = col1; img1[yw + 1] = col;
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
@@ -31,12 +36,13 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
 			//img1[yx] = max > 252 ? 252 : max;
 		}
-		img1[yw + 1] = col; img1[yw + w1] = col;
+		 img1[yx + 1] = col; img1[yx + 2] = col1;
 	}
 	//The border
-	for(x=1; x < w1; x++) img1[w + x] = col; img1[w + x] = col;
 	yw = y*w;
-	for(x=1; x < w1; x++) img1[yw + x] = col; img1[yw + x] = col;
+	img1[yw] = col1; for(x=1; x < w1; x++) img1[yw + x] = col; img1[yw + x] = col; img1[yw + x+1] = col1;
+	yw = yw+w;
+	for(x=0; x < w; x++) img1[yw + x] = col1;
 }
 
 void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th)
@@ -253,7 +259,7 @@ static inline void direction(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
 */
 static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 {
-	uint32 max = 0;
+	uint32 max = 1;
 	int in = 0;
 	if(in1 == 0   ){
 		if(img[yx-1  ] > max) { max = img[yx-1  ]; in = -1  ; }
@@ -392,20 +398,6 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
 	int d1, d2, npix = 0;
-	/*
-	Vector v;
-	uint8 cs[3], cc[3];
-
-	cc[0] = 64; cc[1] = 64; cc[2] = 64;
-	v.x1 = 1; v.y1 = 1; v.x2 = w; v.y2 = 1;
-	draw_line(con, con, con, &v, w, cc);
-	v.x1 = w; v.y1 = 1; v.x2 = w; v.y2 = h;
-	draw_line(con, con, con, &v, w, cc);
-	v.x1 = w; v.y1 = h; v.x2 = 1; v.y2 = h;
-	draw_line(con, con, con, &v, w, cc);
-	v.x1 = 1; v.y1 = 1; v.x2 = 1; v.y2 = h;
-	draw_line(con, con, con, &v, w, cc);
-	*/
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -496,6 +488,55 @@ uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 			}
 		}
 	}
+	//printf("Numbers of intersection  = %d\n", npix);
+}
+
+uint32 seg_remove_line2(uint8 *con, uint32 *reg, uint32 *buff, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yw, yxw, h1 = h-2, w1 = w-2;
+	uint32 num, rgc = 256;
+	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+
+	for(y=2; y < h-1; y++){
+		yw = y*w;
+		for(x=2; x < w-1; x++){
+			yx = yw + x;
+			if(!con[yx]){
+				printf("x = %d y = %d con = %d\n", yx%w, y/w,  con[yx]);
+				con[yx] = 254; reg[yx] = rgc; num = 1; l1[0] = yx; i = 0;
+				while(num){
+					for(j=0; j < num; j++){
+						printf("x = %d y = %d con = %d \n", l1[j]%w, l1[j]/w, con[l1[j]]);
+						printf("%3d %3d %3d\n%3d %3d %3d\n%3d %3d %3d\n\n",
+								con[l1[j]-w-1], con[l1[j]-w], con[l1[j]-w+1],
+								con[l1[j]-1], con[l1[j]], con[l1[j]+1],
+								con[l1[j]+w-1], con[l1[j]+w], con[l1[j]+w+1]);
+
+						printf("%5d %5d %5d\n%5d %5d %5d\n%5d %5d %5d\n\n",
+								reg[l1[j]-w-1], reg[l1[j]-w], reg[l1[j]-w+1],
+								reg[l1[j]-1], reg[l1[j]], reg[l1[j]+1],
+								reg[l1[j]+w-1], reg[l1[j]+w], reg[l1[j]+w+1]);
+
+						yxw = l1[j] - 1;
+						if(!con[yxw]) { con[yxw] = 254; reg[yxw] = rgc; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						if(!con[yxw]) { con[yxw] = 254; reg[yxw] = rgc; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						if(!con[yxw]) { con[yxw] = 254; reg[yxw] = rgc; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						if(!con[yxw]) { con[yxw] = 254; reg[yxw] = rgc; l2[i++] = yxw; }
+
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	rgc-=256;
+	printf("Numbers of regions  = %d\n", rgc);
 	//printf("Numbers of intersection  = %d\n", npix);
 }
 
