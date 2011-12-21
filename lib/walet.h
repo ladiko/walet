@@ -346,6 +346,12 @@ typedef struct {	// Unsigned picture 16bit
 	short unsigned int *pic;
 } Pic16u;
 
+typedef struct {	// Unsigned picture 16bit
+	uint16 w;
+	uint16 h;
+	unsigned int *pic;
+} Pic32u;
+
 typedef struct {	//One DWT decomposition level
 	Pic8s s[4];		//Subband array s[0] - LL, s[1] - HL, s[2] - LH, s[3] - HH
 } Level8;
