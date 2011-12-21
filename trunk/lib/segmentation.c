@@ -594,29 +594,36 @@ uint32 seg_remove_line2(uint8 *con, uint32 *reg, uint32 w, uint32 h)
 			cn = 0;
 			if(con[yx] > 1){
 				if(reg[yx-1]) {
-					if(!cn) cn =  reg[yx-1];
-					else if(cn != reg[yx-1]) goto m1;
-				}
-				if(reg[yx-w]){
-
-				}
-				if(reg[yx+1]){
-
-				}
-				if(reg[yx+w]){
-
-				}
-				if(reg[yx-1-w]){
-
-				}
-				if(reg[yx+1-w]){
-
-				}
-				if(reg[yx-1+w]){
-
-				}
-				if(reg[yx+1+w]){
-
+					cn =  reg[yx-1];
+				} else {
+					if(reg[yx-w] && !cn && cn != reg[yx-w]){
+					} else {
+						cn = reg[yx-w];
+						if(reg[yx+1] && !cn && cn != reg[yx+1]){
+						} else {
+							cn = reg[yx+1];
+							if(reg[yx+w] && !cn && cn != reg[yx+w]){
+							} else {
+								cn = reg[yx+w];
+								if(reg[yx-1-w] && !cn && cn != reg[yx-1-w]){
+								} else {
+									cn = reg[yx-1-w];
+									if(reg[yx+1-w] && !cn && cn != reg[yx+1-w]){
+									} else {
+										cn = reg[yx+1-w];
+										if(reg[yx-1+w] && !cn && cn != reg[yx-1+w]){
+										} else {
+											cn = reg[yx-1+w];
+											if(reg[yx+1+w] && !cn && cn != reg[yx+1+w]){
+											} else {
+												con[yx] = 1;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
