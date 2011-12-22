@@ -786,7 +786,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=0; i < 4; i++) {
+	for(i=3; i < 4; i++) {
 		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
@@ -826,6 +826,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
 		seg_fill_reg(f->dc[i].pic, f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
+		seg_remove_line2(f->dc[i].pic, f->rg[i].pic, f->dg[i].w, f->dg[i].h);
 
 
 		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);

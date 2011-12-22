@@ -585,52 +585,63 @@ uint32 seg_fill_reg(uint8 *con, uint32 *reg, uint32 *buff, uint32 w, uint32 h)
 uint32 seg_remove_line2(uint8 *con, uint32 *reg, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yw, yxw, h1 = h-1, w1 = w-1;
-	uint32 num, rgc = 1, col = 1, cn;
+	uint32 rgc = 1, col = 1, cn;
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
 			cn = 0;
-			if(con[yx] > 1){
-				if(reg[yx-1]) {
-					cn =  reg[yx-1];
-				} else {
-					if(reg[yx-w] && !cn && cn != reg[yx-w]){
-					} else {
-						cn = reg[yx-w];
-						if(reg[yx+1] && !cn && cn != reg[yx+1]){
-						} else {
-							cn = reg[yx+1];
-							if(reg[yx+w] && !cn && cn != reg[yx+w]){
-							} else {
-								cn = reg[yx+w];
-								if(reg[yx-1-w] && !cn && cn != reg[yx-1-w]){
-								} else {
-									cn = reg[yx-1-w];
-									if(reg[yx+1-w] && !cn && cn != reg[yx+1-w]){
-									} else {
-										cn = reg[yx+1-w];
-										if(reg[yx-1+w] && !cn && cn != reg[yx-1+w]){
-										} else {
-											cn = reg[yx-1+w];
-											if(reg[yx+1+w] && !cn && cn != reg[yx+1+w]){
-											} else {
-												con[yx] = 1;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
+			if(con[yx] == 255){
+				printf("%5d %5d %5d\n%5d %5d %5d\n%5d %5d %5d\n\n",
+						reg[yx-w-1], reg[yx-w], reg[yx-w+1],
+						reg[yx-1], reg[yx], reg[yx+1],
+						reg[yx+w-1], reg[yx+w], reg[yx+w+1]);
+				i = 0;
+				if(reg[yx-1]  ) if(!i++) cn = reg[yx-1];
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx-1-w]) {
+					if(!i++) cn = reg[yx-1-w];
+					else if (cn != reg[yx-1-w])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx-w]) {
+					if(!i++) cn = reg[yx-w];
+					else if (cn != reg[yx-w])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx-w+1]) {
+					if(!i++) cn = reg[yx-w+1];
+					else if (cn != reg[yx-w+1])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx+1]) {
+					if(!i++) cn = reg[yx+1];
+					else if (cn != reg[yx+1])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx+1+w]) {
+					if(!i++) cn = reg[yx+1+w];
+					else if (cn != reg[yx+1+w])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx+w]) {
+					if(!i++) cn = reg[yx+w];
+					else if (cn != reg[yx+w])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(reg[yx+w-1]) {
+					if(!i++) cn = reg[yx+w-1];
+					else if (cn != reg[yx+w-1])  cn = 1;
+				}
+				printf("cn = %d i = %d\n", cn, i);
+				if(cn != 1) {
+					con[yx] = 1;
+					printf("remove point  = %d\n", yx);
 				}
 			}
 		}
 	}
-	m1:
-	rgc--;
-	printf("Numbers of regions  = %d\n", rgc);
 	//printf("Numbers of intersection  = %d\n", npix);
 }
 
