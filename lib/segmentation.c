@@ -2,6 +2,20 @@
 #include <stdio.h>
 #include <math.h>
 
+void print_around(uint8 *con, uint32 yx, uint32 w)
+{
+	printf("%3d ",con[yx-1-w]);
+	printf("%3d ",con[yx  -w]);
+	printf("%3d\n",con[yx+1-w]);
+	printf("%3d ",con[yx-1  ]);
+	printf("%3d ",con[yx    ]);
+	printf("%3d\n",con[yx+1  ]);
+	printf("%3d ",con[yx-1+w]);
+	printf("%3d ",con[yx  +w]);
+	printf("%3d\n\n",con[yx+1+w]);
+}
+
+
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
@@ -254,22 +268,20 @@ static inline void direction(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
 	//printf("direction dx = %d dy = %d\n", *dx, *dy);
 }
 
-static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
+static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy, int d)
 {
 	uint32 max = 0;
-	int dx1 = *dx, dy1 = *dy;
-	*dx = 0; *dy = 0;
-	//printf("direction dx = %d dy = %d\n", *dx, *dy);
-	if(dx1 == 0 && dy1 == 0  ){
-		if(img[yx-1  ] > max && (*dx != -1 && *dy != 0 )) { max = img[yx-1  ]; *dx = -1; *dy =  0;}
-		if(img[yx-1-w] > max && (*dx != -1 && *dy != -1)) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
-		if(img[yx  -w] > max && (*dx !=  0 && *dy != -1)) { max = img[yx  -w]; *dx =  0; *dy = -1;}
-		if(img[yx+1-w] > max && (*dx !=  1 && *dy != -1)) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
-		if(img[yx+1  ] > max && (*dx !=  1 && *dy !=  0)) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
-		if(img[yx+1+w] > max && (*dx !=  1 && *dy !=  1)) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
-		if(img[yx  +w] > max && (*dx !=  0 && *dy !=  1)) { max = img[yx  +w]; *dx =  0; *dy =  1;}
-		if(img[yx-1+w] > max && (*dx != -1 && *dy !=  1)) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
-	}
+	printf("direction dx = %d dy = %d dx = %d dy = %d x = %d y = %d\n", *dx, *dy, d%w, d/w, yx%w, yx/w);
+	if(img[yx-1  ] > max && d != yx-1  ) { max = img[yx-1  ]; *dx = -1; *dy =  0;}
+	if(img[yx-1-w] > max && d != yx-1-w) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
+	if(img[yx  -w] > max && d != yx  -w) { max = img[yx  -w]; *dx =  0; *dy = -1;}
+	if(img[yx+1-w] > max && d != yx+1-w) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
+	if(img[yx+1  ] > max && d != yx+1  ) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
+	if(img[yx+1+w] > max && d != yx+1+w) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
+	if(img[yx  +w] > max && d != yx  +w) { max = img[yx  +w]; *dx =  0; *dy =  1;}
+	if(img[yx-1+w] > max && d != yx-1+w) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
+	print_around(img, yx, w);
+	printf("max = %d dx = %d dy = %d\n", max, *dx, *dy);
 }
 
 /*	\brief	Find the maximum around the pixel.
@@ -874,19 +886,6 @@ static inline uint32 new_in_line_vertex(Vertex *vx, Vertex **vp, Line **lp, uint
 }
 
 
-void print_around(uint8 *con, uint32 yx, uint32 w)
-{
-	printf("%3d ",con[yx-1-w]);
-	printf("%3d ",con[yx  -w]);
-	printf("%3d\n",con[yx+1-w]);
-	printf("%3d ",con[yx-1  ]);
-	printf("%3d ",con[yx    ]);
-	printf("%3d\n",con[yx+1  ]);
-	printf("%3d ",con[yx-1+w]);
-	printf("%3d ",con[yx  +w]);
-	printf("%3d\n\n",con[yx+1+w]);
-}
-
 static inline uint32 is_new_line3(int d, int *fs, int *sc, int *cfs, int *csc, int *ll)
 {
 	if(!*fs) { *fs = d; (*cfs)++; return 0; }
@@ -971,6 +970,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, linc = 0, pow, cc;
 	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd;
+	int dx1, dy1;
 
 	for(y=1; y < h1; y++){
 		yw = y*w;
@@ -1041,13 +1041,15 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 							break;
 						}
 
-						d1 = d;
+						d1 = d; dx1 = -dx; dy1 = -dy;
 						dx = -dx; dy = -dy;
 						direction(con, w, yx1, &dx, &dy);
 						//if(!dx && !dy) {
-							//direction1(con, w, yx1, &dx, &dy);
+						//	printf("dx = %d dy = %d\n", dx1, dy1);
+						//	direction1(con, w, yx1, &dx, &dy, -d1);
+						//	return 0;
 						//}
-						con[yx1] = 0;
+						//con[yx1] = 0;
 					}
 				}
 			}
