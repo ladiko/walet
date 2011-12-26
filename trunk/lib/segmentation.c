@@ -941,14 +941,14 @@ uint32 seg_remove_vertex(uint8 *con, uint32 *reg, uint32 w, uint32 h)
 			yx = yw + x;
 			if(con[yx] == 255){
 				if(true_vertex(con, reg, yx, w, h)){
-					if(con[yx-1  ]) true_vertex(con, reg, yx-1  , w, h);
-					if(con[yx-w-1]) true_vertex(con, reg, yx-w-1, w, h);
-					if(con[yx-w  ]) true_vertex(con, reg, yx-w  , w, h);
-					if(con[yx-w+1]) true_vertex(con, reg, yx-w+1, w, h);
-					if(con[yx+1  ]) true_vertex(con, reg, yx+1  , w, h);
-					if(con[yx+w+1]) true_vertex(con, reg, yx+w+1, w, h);
-					if(con[yx+w  ]) true_vertex(con, reg, yx+w  , w, h);
-					if(con[yx+w-1]) true_vertex(con, reg, yx+w-1, w, h);
+					if(con[yx-1  ] && con[yx-1  ] != 255) true_vertex(con, reg, yx-1  , w, h);
+					if(con[yx-w-1] && con[yx-w-1] != 255) true_vertex(con, reg, yx-w-1, w, h);
+					if(con[yx-w  ] && con[yx-w  ] != 255) true_vertex(con, reg, yx-w  , w, h);
+					if(con[yx-w+1] && con[yx-w+1] != 255) true_vertex(con, reg, yx-w+1, w, h);
+					if(con[yx+1  ] && con[yx+1  ] != 255) true_vertex(con, reg, yx+1  , w, h);
+					if(con[yx+w+1] && con[yx+w+1] != 255) true_vertex(con, reg, yx+w+1, w, h);
+					if(con[yx+w  ] && con[yx+w  ] != 255) true_vertex(con, reg, yx+w  , w, h);
+					if(con[yx+w-1] && con[yx+w-1] != 255) true_vertex(con, reg, yx+w-1, w, h);
 				}
 			}
 		}
@@ -1001,12 +1001,12 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						d = dx + w*dy;
 						yx1 = yx1 + d;
 						cc++;
-						/*
+
 						if(!con[yx1]){ //Too sharp turn
 							remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
 							yx1 = yx; x1 = x; y1 = y;
 							break;
-						}*/
+						}
 						//rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
 						//print_around(con, yx1, w);
 						//printf("y = %d x = %d con = %d d = %d w = %d yx1 = %d\n", (yx1)/w, (yx1)%w, con[yx1], d, w, yx1);
@@ -1016,9 +1016,13 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
 								con[yx1] = 254;
 								//printf("New vertex \n");
-							} else {
+							} else if (con[yx1] == 254){
 								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
 								//printf("New direction \n");
+							} else {
+								new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
+								nd1 = add_finish_dir(&vx[yx1], -d1, w); vx[yx1].n++;
+								con[yx1] = 254;
 							}
 							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
 							pow = pow/cc;
@@ -1049,7 +1053,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						//	direction1(con, w, yx1, &dx, &dy, -d1);
 						//	return 0;
 						//}
-						//con[yx1] = 0;
+						con[yx1] = 0;
 					}
 				}
 			}
