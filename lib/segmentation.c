@@ -316,9 +316,9 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 == -1-w){
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
 		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
 		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
 		return in;
 	}
@@ -332,9 +332,9 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 ==  1-w){
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
 		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
 		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
 		return in;
 	}
@@ -348,9 +348,9 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 ==  1+w){
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
 		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
 		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
 		return in;
 	}
@@ -364,9 +364,9 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 == -1+w){
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
 		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
 		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in =  1+w; }
 		return in;
 	}
@@ -1003,9 +1003,12 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						cc++;
 
 						if(!con[yx1]){ //Too sharp turn
-							remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
-							yx1 = yx; x1 = x; y1 = y;
-							break;
+							new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
+							nd1 = add_finish_dir(&vx[yx1], -d1, w); vx[yx1].n++;
+							con[yx1] = 254;
+							//remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
+							//yx1 = yx; x1 = x; y1 = y;
+							//break;
 						}
 						//rc[0] += r[yx1]; rc[1] += g[yx1]; rc[2] += b[yx1]; cc++;
 						//print_around(con, yx1, w);
@@ -1013,7 +1016,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						if(con[yx1] == 255 || con[yx1] == 254) {
 							if(con[yx1] == 255)  {
 								new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
-								nd1 = add_finish_dir(&vx[yx1], -d, w); vx[yx1].n++;
+								nd1 = add_finish_dir(&vx[yx1], -d1, w); vx[yx1].n++;
 								con[yx1] = 254;
 								//printf("New vertex \n");
 							} else if (con[yx1] == 254){
