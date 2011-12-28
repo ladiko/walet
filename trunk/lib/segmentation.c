@@ -293,7 +293,7 @@ static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy,
 */
 static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 {
-	uint32 max = 1;
+	uint32 max = 0, cn = 0;
 	int in = 0;
 	if(in1 == 0   ){
 		if(img[yx-1  ] > max) { max = img[yx-1  ]; in = -1  ; }
@@ -308,66 +308,74 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 == -1  ){
 		//if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; cn = 0;}
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; cn++;}
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; cn++;}
 		//if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 == -1-w){
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; cn = 0;}
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; cn++;}
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; cn++;}
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 ==   -w){
 		//if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; cn = 0;}
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; cn++;}
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; cn++;}
 		//if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 ==  1-w){
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+		if(img[yx-1+w] >= max) { max = img[yx-1+w]; in = -1+w; cn = 0;}
+		if(img[yx  +w] >= max) { max = img[yx  +w]; in =   +w; cn++;}
+		if(img[yx  -1] >= max) { max = img[yx  -1]; in =   -1; cn++;}
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 ==  1  ){
 		//if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; cn = 0;}
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; cn++; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; cn++; }
 		//if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 ==  1+w){
 		//if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; cn = 0;}
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; cn++; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; cn++; }
 		//if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 ==    w){
 		//if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; cn = 0;}
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; cn++;}
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; cn++;}
 		//if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 	else if(in1 == -1+w){
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; cn = 0;}
+		if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; cn++;}
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; cn++;}
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in =  1+w; }
+		//return cn == 2 ? 0 : in;
 		return in;
 	}
 }
@@ -481,24 +489,24 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
 					while(1){
-						if(!d1){ con[yx1] = 128; break; }
 						yx1 = yx1 + d1;
 						if(con[yx1]) {
 							con[yx1] = 255; grad[yx1] = 255;
 							npix++;
 							break;
 						}
+						//if(!d1){ con[yx1] = 128; break; }
 						con[yx1] = grad[yx1]; con[yx1] = 64; grad[yx1] = 254;
 						d1 = dir(grad, yx1, w, -d1);
 					}
 					while(1){
-						if(!d2){ con[yx2] = 128; break; }
 						yx2 = yx2 + d2;
 						if(con[yx2]) {
 							con[yx2] = 255; grad[yx2] = 255;
 							npix++;
 							break;
 						}
+						//if(!d2){ con[yx2] = 128; break; }
 						con[yx2] = grad[yx2]; con[yx2] = 64; grad[yx2] = 254;
 						d2 = dir(grad, yx2, w, -d2);
 
@@ -941,14 +949,14 @@ uint32 seg_remove_vertex(uint8 *con, uint32 *reg, uint32 w, uint32 h)
 			yx = yw + x;
 			if(con[yx] == 255){
 				if(true_vertex(con, reg, yx, w, h)){
-					if(con[yx-1  ] && con[yx-1  ] != 255) true_vertex(con, reg, yx-1  , w, h);
-					if(con[yx-w-1] && con[yx-w-1] != 255) true_vertex(con, reg, yx-w-1, w, h);
-					if(con[yx-w  ] && con[yx-w  ] != 255) true_vertex(con, reg, yx-w  , w, h);
-					if(con[yx-w+1] && con[yx-w+1] != 255) true_vertex(con, reg, yx-w+1, w, h);
-					if(con[yx+1  ] && con[yx+1  ] != 255) true_vertex(con, reg, yx+1  , w, h);
-					if(con[yx+w+1] && con[yx+w+1] != 255) true_vertex(con, reg, yx+w+1, w, h);
-					if(con[yx+w  ] && con[yx+w  ] != 255) true_vertex(con, reg, yx+w  , w, h);
-					if(con[yx+w-1] && con[yx+w-1] != 255) true_vertex(con, reg, yx+w-1, w, h);
+					if(con[yx-1  ]) true_vertex(con, reg, yx-1  , w, h);
+					if(con[yx-w-1]) true_vertex(con, reg, yx-w-1, w, h);
+					if(con[yx-w  ]) true_vertex(con, reg, yx-w  , w, h);
+					if(con[yx-w+1]) true_vertex(con, reg, yx-w+1, w, h);
+					if(con[yx+1  ]) true_vertex(con, reg, yx+1  , w, h);
+					if(con[yx+w+1]) true_vertex(con, reg, yx+w+1, w, h);
+					if(con[yx+w  ]) true_vertex(con, reg, yx+w  , w, h);
+					if(con[yx+w-1]) true_vertex(con, reg, yx+w-1, w, h);
 				}
 			}
 		}
