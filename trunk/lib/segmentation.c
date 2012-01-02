@@ -268,6 +268,47 @@ static inline void direction(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
 	//printf("direction dx = %d dy = %d\n", *dx, *dy);
 }
 
+static inline void direction2(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy)
+{
+	uint32 max = 0;
+	int dx1 = *dx, dy1 = *dy;
+	*dx = 0; *dy = 0;
+	//printf("direction dx = %d dy = %d\n", *dx, *dy);
+	if(dx1 == -1 && dy1 == 0){
+		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
+		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
+	}
+	else if(dx1 == -1 && dy1 == -1){
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
+	}
+	else if(dx1 ==  0 && dy1 == -1){
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
+		if(img[yx  -1] > max) { max = img[yx  -1]; *dx = -1; *dy =  0;}
+	}
+	else if(dx1 ==  1 && dy1 == -1){
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
+	}
+	else if(dx1 ==  1 && dy1 ==  0){
+		if(img[yx  +w] > max) { max = img[yx  +w]; *dx =  0; *dy =  1;}
+		if(img[yx  -w] > max) { max = img[yx  -w]; *dx =  0; *dy = -1;}
+	}
+	else if(dx1 ==  1 && dy1 ==  1){
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; *dx = -1; *dy =  1;}
+		if(img[yx+1-w] > max) { max = img[yx+1-w]; *dx =  1; *dy = -1;}
+	}
+	else if(dx1 ==  0 && dy1 ==  1){
+		if(img[yx  -1] > max) { max = img[yx  -1]; *dx = -1; *dy =  0;}
+		if(img[yx+1  ] > max) { max = img[yx+1  ]; *dx =  1; *dy =  0;}
+	}
+	else if(dx1 == -1 && dy1 ==  1){
+		if(img[yx-1-w] > max) { max = img[yx-1-w]; *dx = -1; *dy = -1;}
+		if(img[yx+1+w] > max) { max = img[yx+1+w]; *dx =  1; *dy =  1;}
+	} else
+	printf("direction dx = %d dy = %d\n", *dx, *dy);
+}
+
 static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy, int d)
 {
 	uint32 max = 0;
@@ -1011,9 +1052,20 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 						cc++;
 
 						if(!con[yx1]){ //Too sharp turn
-							new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
-							nd1 = add_finish_dir(&vx[yx1], -d1, w); vx[yx1].n++;
+							direction2(con, w, yx1, &dx1, &dy1);
+							d = dy1*w + dx1;
+							new_in_line_vertex(&vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, w, d, -d1);
+							nd1 = finish_dir(&vx[yx1], -d1, w);
+
+							pow = pow/cc;
+							new_line(&ln[linc++], &vx[yx2], &vx[yx1], nd2, nd1, pow);
 							con[yx1] = 254;
+							break;
+
+							//new_vertex(con, &vx[yx1], &vp[vxc++], &lp[lnc+=8], x1, y1, yx1, w);
+							//nd1 = add_finish_dir(&vx[yx1], -d1, w); vx[yx1].n++;
+							//con[yx1] = 254;
+
 							//remove_dir(&vx[yx2], d2, w); vx[yx2].n--;
 							//yx1 = yx; x1 = x; y1 = y;
 							//break;
