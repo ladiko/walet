@@ -10,6 +10,7 @@ typedef struct{
 	Pic8u		*dw;	//The down sampling Y images for resize only
 	Pic8u		*dg;	//The gradients of down sampling images.
 	Pic8u		*dc;	//The contour of down sampling images.
+	Pic8u		*di;	//The map of directions
 	Pic32u		*rg;	//For region counting
 	Pic8u 		*R1;		//Red color image for test only.
 	Pic8u 		*G1;		//Green color image for test only.

@@ -85,6 +85,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    resize_init_(&f->dw, w, h, wc->steps);
 	    resize_init_(&f->dg, w, h, wc->steps);
 	    resize_init_(&f->dc, w, h, wc->steps);
+	    resize_init_(&f->di, w, h, wc->steps);
 	    resize_init_(&f->R1, w, h, wc->steps);
 	    resize_init_(&f->G1, w, h, wc->steps);
 	    resize_init_(&f->B1, w, h, wc->steps);
@@ -824,12 +825,14 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//memset(g->buf, 0, f->dg[i].w*f->dg[i].h*sizeof(uint32));
 
-		seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-		seg_fill_reg(f->dc[i].pic, f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
-		seg_remove_vertex(f->dc[i].pic, f->rg[i].pic, f->dg[i].w, f->dg[i].h);
+		seg_find_intersect2(f->dg[i].pic, f->dc[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
 
+		//seg_fill_reg(f->dc[i].pic, f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
+		//seg_remove_vertex(f->dc[i].pic, f->rg[i].pic, f->dg[i].w, f->dg[i].h);
 
-		vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex1(f->dc[i].pic, f->di[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
+
+		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
 		//seg_draw_line_color(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
 
 		/*
