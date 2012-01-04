@@ -376,9 +376,9 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 	}
 	else if(in1 ==  1-w){
 		//if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-		if(img[yx-1+w] >= max) { max = img[yx-1+w]; in = -1+w; cn = 0;}
-		if(img[yx  +w] >= max) { max = img[yx  +w]; in =   +w; cn++;}
-		if(img[yx  -1] >= max) { max = img[yx  -1]; in =   -1; cn++;}
+		if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; cn = 0;}
+		if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; cn++;}
+		if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; cn++;}
 		//if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
 		//return cn == 2 ? 0 : in;
 		return in;
