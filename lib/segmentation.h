@@ -26,6 +26,7 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 uint32 seg_vertex1(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uint32 h);
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
 void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th);
+uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w);
 void seg_draw_line_color(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, uint32 h);
