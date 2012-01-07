@@ -445,11 +445,18 @@ static inline uint32 draw_line_3(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32
 	uint32 i, max , min = 0, n, x, y, dx, dy;
 	int sty, stx, yx;
 
-	x = v->x1; y = v->y1*w;
-	stx = v->x2 > v->x1 ? 1 : -1;
-	sty = v->y2 > v->y1 ? w : -w;
+	//stx = v->x2 > v->x1 ? 1 : -1;
+	stx = 1;
+	if(v->x2 > v->x1){
+		x = v->x1; y = v->y1*w;
+		sty = v->y2 > v->y1 ? w : -w;
+	} else {
+		x = v->x2; y = v->y2*w;
+		sty = v->y1 > v->y2 ? w : -w;
+	}
 
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
+	//printf("x = %d y = %d x1 = %d y1 = %d x2 = %d y2 = %d dx = %d dy = %d\n", x, y/w, v->x1, v->y1, v->x2, v->y2, dx, dy);
 	if(dx >= dy){
 		n = dx - 0; max = dx;
 		for(i=0; i < n; i++){
@@ -476,9 +483,17 @@ static inline uint32 draw_line_1(uint32 *rg, Vector *v, uint32 w, uint8 col)
 	uint32 i, max , min = 0, n, x, y, dx, dy;
 	int sty, stx, yx;
 
-	x = v->x1; y = v->y1*w;
-	stx = v->x2 > v->x1 ? 1 : -1;
-	sty = v->y2 > v->y1 ? w : -w;
+	//x = v->x1; y = v->y1*w;
+	//stx = v->x2 > v->x1 ? 1 : -1;
+	//sty = v->y2 > v->y1 ? w : -w;
+	stx = 1;
+	if(v->x2 > v->x1){
+		x = v->x1; y = v->y1*w;
+		sty = v->y2 > v->y1 ? w : -w;
+	} else {
+		x = v->x2; y = v->y2*w;
+		sty = v->y1 > v->y2 ? w : -w;
+	}
 
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
 	if(dx >= dy){
@@ -1356,25 +1371,46 @@ uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint
 	return linc;
 }
 */
-static inline uint32  check_in_line(uint8 dir)
+
+static inline uint32 check_in_line(Vertex *vx, uint8 *d1, uint8 *d2)
 {
-	if      (!(dir^0x88)) return 1;
-	else if (!(dir^0x44)) return 1;
-	else if (!(dir^0x22)) return 1;
-	else if (!(dir^0x11)) return 1;
+	if      (!(vx->di^0x88)) { *d1 = 0; *d2 = 4; return 1; }
+	else if (!(vx->di^0x44)) { *d1 = 1; *d2 = 5; return 1; }
+	else if (!(vx->di^0x22)) { *d1 = 2; *d2 = 6; return 1; }
+	else if (!(vx->di^0x11)) { *d1 = 3; *d2 = 7; return 1; }
 	return 0;
 }
 
-uint32 seg_remove_virtex(Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 vxc, uint32 w, uint32 h)
+static inline Vertex**  find_pointer(Vertex *vx1, Vertex *vx2)
 {
-	uint32 j, d1, d2;
-	for(j=0; j < vxc; j++) {
-		if(check_in_line(vp[j]->di)) {
-			vp[j]->x = 0; vp[j]->y = 0;
-			//get_two_dir(vp[j]->di, &d1, &d2);
+	if		(vx1->vp[0] == vx2) return &vx1->vp[0];
+	else if	(vx1->vp[1] == vx2) return &vx1->vp[1];
+	else if	(vx1->vp[2] == vx2) return &vx1->vp[2];
+	else if	(vx1->vp[3] == vx2) return &vx1->vp[3];
+	else if	(vx1->vp[4] == vx2) return &vx1->vp[4];
+	else if	(vx1->vp[5] == vx2) return &vx1->vp[5];
+	else if	(vx1->vp[6] == vx2) return &vx1->vp[6];
+	else if	(vx1->vp[7] == vx2) return &vx1->vp[7];
+}
 
+uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
+{
+	uint32 j, rmvxc = 0;
+	uint8 d1, d2;
+	Vertex **vp1, **vp2;
+	for(j=0; j < vxc; j++) {
+		if(check_in_line(vp[j], &d1, &d2)) {
+			vp[j]->x = 0; vp[j]->y = 0;
+			vp1 = find_pointer(vp[j]->vp[d1], vp[j]);
+			vp2 = find_pointer(vp[j]->vp[d2], vp[j]);
+			*vp1 = vp[j]->vp[d2];
+			*vp2 = vp[j]->vp[d1];
+			vp[j]->x = 0; vp[j]->y = 0; vp[j]->di = 0;
+			rmvxc++;
 		}
 	}
+	printf("Numbers of removed vertexs  = %d\n", rmvxc);
+
 }
 
 static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc, uint8 *rc)
@@ -1433,16 +1469,16 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 	//printf("Number of vertex = %d", vxc);
 	for(i=0; i < vxc; i++){
 		//vp[i]->cn = 0;
-		yx = vp[i]->y*w + vp[i]->x;
 		while(get_next_dir( vp[i], &dx, &dy, &nd)){
 			v.x1 =  vp[i]->vp[nd]->x; v.y1 =  vp[i]->vp[nd]->y;
 			v.x2 =  vp[i]->x; v.y2 =  vp[i]->y;
 
 			c[0] = 128; c[1] = 128; c[2] = 128;
 			draw_line_3(r, g, b, &v, w, c);
-
+			yx = v.y1*w + v.x1;
+			r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		}
-		//}
+		yx = vp[i]->y*w + vp[i]->x;
 		r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		//r[yx] = vp[i]->ln[0].l[0]; g[yx] = vp[i]->ln[0].l[1]; b[yx] = vp[i]->ln[0].l[2];
 		//r[yx] = (vp[i]->lp[nd]->l[0] + vp[i]->lp[nd]->r[0])>>1;
