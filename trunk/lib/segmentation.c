@@ -1409,6 +1409,20 @@ static inline uint32 get_dir2(Vertex *vx, uint8 *nd)
 	return 0;
 }
 
+static inline uint32 get_dir3(Vertex *vx, uint8 *nd)
+{
+	//printf("dx = %d dy = %d di = %o cn = %o\n", *dx, *dy, vx->di, vx->cn);
+	if		((vx->di&128) && !(vx->cn&128)) { *nd = 0; return 1; }
+	else if	((vx->di&64 ) && !(vx->cn&64 )) { *nd = 1; return 1; }
+	else if	((vx->di&32 ) && !(vx->cn&32 )) { *nd = 2; return 1; }
+	else if ((vx->di&16 ) && !(vx->cn&16 )) { *nd = 3; return 1; }
+	else if ((vx->di&8  ) && !(vx->cn&8  )) { *nd = 4; return 1; }
+	else if ((vx->di&4  ) && !(vx->cn&4  )) { *nd = 5; return 1; }
+	else if ((vx->di&2  ) && !(vx->cn&2  )) { *nd = 6; return 1; }
+	else if ((vx->di&1  ) && !(vx->cn&1  )) { *nd = 7; return 1; }
+	return 0;
+}
+
 static inline void remove_dir1(Vertex *vx, uint8 nd)
 {
 	vx->n--;
@@ -1420,6 +1434,19 @@ static inline void remove_dir1(Vertex *vx, uint8 nd)
 	else if (nd == 5) { vx->di ^= 4;      vx->cn ^= 4;   }
 	else if (nd == 6) { vx->di ^= 2;      vx->cn ^= 2;   }
 	else if (nd == 7) { vx->di ^= 1;      vx->cn ^= 1;   }
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+static inline void finish_dir1(Vertex *vx, uint8 nd)
+{
+	if      (nd == 0) { vx->cn |= 128; }
+	else if (nd == 1) { vx->cn |= 64;  }
+	else if (nd == 2) { vx->cn |= 32;  }
+	else if (nd == 3) { vx->cn |= 16;  }
+	else if (nd == 4) { vx->cn |= 8;   }
+	else if (nd == 5) { vx->cn |= 4;   }
+	else if (nd == 6) { vx->cn |= 2;   }
+	else if (nd == 7) { vx->cn |= 1;   }
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
@@ -1526,27 +1553,62 @@ static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, u
 	}
 }
 
+static inline uint32 check_is_in_line(Vertex *vx1, Vertex *vx2, Vertex *vx3)
+{
+	int dx1 = vx2->x - vx1->x, dx2 = vx3->x - vx2->x;
+	int dy1 = vx2->y - vx1->y, dy2 = vx3->y - vx2->y;
+	if		(dx1 == 0 && dx2 == 0) return 1;
+	else if	(dy1 == 0 && dy2 == 0) return 1;
+	return 0;
+}
+
+
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
 {
-	uint32 i, yx, nd;
-	int dx , dy;
+	uint32 i, yx;
 	Vector v;
-	uint8 c[3];
+	uint8 c[3], nd, nd1, nd2;
+	Vertex *vx, *vx1, *vx2;
 
 	for(i=0; i < vxc; i++) vp[i]->cn = 0;
-	//printf("Number of vertex = %d", vxc);
-	for(i=0; i < vxc; i++){
-		//vp[i]->cn = 0;
-		while(get_next_dir( vp[i], &dx, &dy, &nd)){
-			v.x1 =  vp[i]->vp[nd]->x; v.y1 =  vp[i]->vp[nd]->y;
-			v.x2 =  vp[i]->x; v.y2 =  vp[i]->y;
 
-			c[0] = 128; c[1] = 128; c[2] = 128;
-			draw_line_3(r, g, b, &v, w, c);
-			yx = v.y1*w + v.x1;
-			r[yx] = 255; g[yx] = 255; b[yx] = 255;
-		}
+	for(i=0; i < vxc; i++){
 		if(vp[i]->di){
+			vx = vp[i];
+			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+			while(get_dir2(vx, &nd)){
+				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+				vx1 = vx->vp[nd];
+				while(vx1->n == 2) {
+					//Check is next point lie on the line
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
+					finish_dir1(vx1, find_pointer1(vx1, vx));
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
+					if(!get_dir3(vx1, &nd1)) break;
+					vx2 = vx1->vp[nd1];
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
+					if(check_is_in_line(vx, vx1, vx2)){
+						//printf("INLINE \n", nd, vp[i]->n);
+						nd2 = find_pointer1(vx2, vx1);
+						finish_dir1(vx2, nd2);
+						vx1->n = 0; vx1->di = 0;
+						vx->vp[nd] = vx2;
+						vx2->vp[nd2] = vx;
+						vx1 = vx2;
+					} else break;
+
+				}
+				finish_dir1(vx1, find_pointer1(vx1, vx));
+
+				v.x1 =  vx->x; v.y1 =  vx->y;
+				v.x2 =  vx1->x; v.y2 =  vx1->y;
+
+				c[0] = 128; c[1] = 128; c[2] = 128;
+				draw_line_3(r, g, b, &v, w, c);
+				yx = v.y1*w + v.x1;
+				r[yx] = 255; g[yx] = 255; b[yx] = 255;
+			}
+
 			yx = vp[i]->y*w + vp[i]->x;
 			r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		}
