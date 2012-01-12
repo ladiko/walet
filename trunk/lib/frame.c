@@ -833,10 +833,11 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 		seg_fill_reg(f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
 		seg_remove_contour(f->rg[i].pic, f->dg[i].w, f->dg[i].h);
-		vxc = seg_vertex2(f->rg[i].pic, f->di[i].pic, f->vx, f->vp,  f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex2(f->rg[i].pic, f->di[i].pic, f->vx, f->vp, f->dg[i].w, f->dg[i].h);
+
 		//vxc = seg_vertex1(f->dc[i].pic, f->di[i].pic, f->vx, f->vp,  f->dg[i].w, f->dg[i].h);
 		//seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
-		//seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
+		seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
 
 		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
 		//seg_draw_line_color(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);

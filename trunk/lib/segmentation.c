@@ -1376,7 +1376,7 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 			yx = yw + x;
 			if(con[yx]&0xFF == 255 || con[yx]&0xFF == 254) { //New vertex
 				x1 = x; y1 = y;
-				if(con[yx]&0xFF == 255) {
+				if(con[yx] == 255) {
 					new_vertex1(di[yx], &vx[yx], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
 					con[yx] = 254;
 					printf("New vertex dir = %d yx = %d \n", di[yx], yx);
@@ -1391,8 +1391,9 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 				yx1 = yx;
 
 				while(get_next_dir(&vx[yx1], &dx, &dy, &nd2)){
+					d2 = dx + w*dy;
 					printf("get_next_dir x = %d y = %d dx = %d dy = %d nd2 = %d di = %o cn = %o\n", vx[yx1].x, vx[yx1].y, dx, dy, nd2, vx[yx1].di, vx[yx1].cn);
-					yx2 = yx1; yx3 = yx1; d2 = dx + w*dy;  x2 = x1; y2 = y1;
+					yx2 = yx1; yx3 = yx1;  x2 = x1; y2 = y1;
 					lc = 0;
 					//print_around(con, yx1, w);
 					//print_around(di, yx1, w);
@@ -1407,12 +1408,13 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 						x1 += dx; y1 += dy;
 						d = dx + w*dy;
 						yx1 = yx1 + d;
+						if(con[yx1]>>8) break;
 						cc++;
 
 						print_around32(con, yx1, w);
 						print_around(di, yx1, w);
 						printf("y = %d x = %d con = %d d = %d w = %d yx1 = %d\n", (yx1)/w, (yx1)%w, con[yx1], -d, w, yx1);
-						if(con[yx1]&0xFF == 128){ //Not connected virtex
+						if(con[yx1] == 128){ //Not connected virtex
 							remove_dir(&vx[yx3], d2, w);
 							//linc =  linc - lc;
 							vxc = vxc - lc;
@@ -1431,8 +1433,8 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 							break;
 							//return 0;
 						}
-						if(con[yx1]&0xFF > 253) {
-							if(con[yx1]&0xFF == 255)  {
+						if(con[yx1] > 253) {
+							if(con[yx1] == 255)  {
 								new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
 								nd1 = add_finish_dir(&vx[yx1], -d, w); //vx[yx1].n++;
 								con[yx1] = 254;
@@ -3305,7 +3307,7 @@ void mean_print_2d(uint8 *img, int16 *out, uint32 w, uint32 h, int *ox, int *oy,
 	if(im - dc < 0){ bc = 0; ec = im<<1; }
 	else if(im + dc > (z - 1)) { bc = (im<<1) - z +1; ec = z - 1; }
 	else { bc = im - dc; ec = im + dc; }
-	/*
+	/*seg_remove_line1
 	bx = (*ox - ds) < 0 ? 0 : *ox - ds;
 	ex = (*ox + ds) > (w - 1) ? w - 1 : *ox + ds;
 	by = (*oy - ds) < 0 ? 0 : *oy - ds;
