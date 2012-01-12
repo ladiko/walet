@@ -15,6 +15,19 @@ void print_around(uint8 *con, uint32 yx, uint32 w)
 	printf("%3d\n\n",con[yx+1+w]);
 }
 
+void print_around32(uint32 *con, uint32 yx, uint32 w)
+{
+	printf("%4d ",con[yx-1-w]);
+	printf("%4d ",con[yx  -w]);
+	printf("%4d\n",con[yx+1-w]);
+	printf("%4d ",con[yx-1  ]);
+	printf("%4d ",con[yx    ]);
+	printf("%4d\n",con[yx+1  ]);
+	printf("%4d ",con[yx-1+w]);
+	printf("%4d ",con[yx  +w]);
+	printf("%4d\n\n",con[yx+1+w]);
+}
+
 
 void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 {
@@ -625,27 +638,18 @@ uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 	//printf("Numbers of intersection  = %d\n", npix);
 }
 
-uint32 seg_fill_reg(uint8 *con, uint32 *reg, uint32 *buff, uint32 w, uint32 h)
+uint32 seg_fill_reg(uint32 *reg, uint32 *buff, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yw, yxw, h1 = h-2, w1 = w-2;
-	uint32 num, rgc = 2, col = 1;
+	uint32 num, rgc = 1<<8;
 	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
-
-	//Top border
-	for(x=0; x < w; x++) reg[x] = col;
-	reg[w] = col; reg[(w<<1)-1] = col;
-
 
 	for(y=2; y < h1; y++){
 		yw = y*w;
-
-		//Left border
-		reg[yw ] = col;
 		for(x=2; x < w1; x++){
 			yx = yw + x;
-			if(!con[yx] && !reg[yx]){
+			if(!reg[yx]){
 				//printf("Start x = %d y = %d con = %d\n", yx%w, yx/w,  con[yx]);
-				//if(rgc == 294) { con[yx] = 200; col = 200;}
 				reg[yx] = rgc; num = 1; l1[0] = yx; i = 0;
 				while(num){
 					for(j=0; j < num; j++){
@@ -662,33 +666,89 @@ uint32 seg_fill_reg(uint8 *con, uint32 *reg, uint32 *buff, uint32 w, uint32 h)
 								reg[l1[j]+w-1], reg[l1[j]+w], reg[l1[j]+w+1]);*/
 
 						yxw = l1[j] - 1;
-						if(!con[yxw] && !reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
+						if(!reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] - w;
-						if(!con[yxw] && !reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
+						if(!reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] + 1;
-						if(!con[yxw] && !reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
+						if(!reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
 						yxw = l1[j] + w;
-						if(!con[yxw] && !reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
+						if(!reg[yxw]) { reg[yxw] = rgc; l2[i++] = yxw; }
 
 					}
 					num = i; i = 0;
 					tm = l1; l1 = l2; l2 = tm;
 				}
-				rgc++;
-				//if(rgc == 5) return 0;
+				rgc+=256;
 			}
 		}
-		//Right border
-		reg[yx + 2] = col;
 	}
-	rgc-=2;
-	//Botom border
-	yw = (h-1)*w;
-	reg[yw-w] = col; reg[yw-1] = col;
-	for(x=0; x < w; x++) reg[yw + x] = col;
+	rgc = (rgc>>8) - 1;
 
 	printf("Numbers of regions  = %d\n", rgc);
 	//printf("Numbers of intersection  = %d\n", npix);
+}
+
+static inline void remove_pixel(uint32 *reg, uint32 yx, uint32 w)
+{
+	uint32 cn = 0;
+	if(reg[yx-1]>>8  ) if(!cn) cn = reg[yx-1];
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx-1-w]>>8) {
+		if(!cn) cn = reg[yx-1-w];
+		else if (cn != reg[yx-1-w])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx-w]>>8) {
+		if(!cn) cn = reg[yx-w];
+		else if (cn != reg[yx-w])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx-w+1]>>8) {
+		if(!cn) cn = reg[yx-w+1];
+		else if (cn != reg[yx-w+1])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx+1]>>8) {
+		if(!cn) cn = reg[yx+1];
+		else if (cn != reg[yx+1])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx+1+w]>>8) {
+		if(!cn) cn = reg[yx+1+w];
+		else if (cn != reg[yx+1+w])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx+w]>>8) {
+		if(!cn) cn = reg[yx+w];
+		else if (cn != reg[yx+w])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	if(reg[yx+w-1]>>8) {
+		if(!cn) cn = reg[yx+w-1];
+		else if (cn != reg[yx+w-1])  goto m1;
+	}
+	//printf("cn = %d i = %d\n", cn, i);
+	//if(cn != 1) {
+	reg[yx] = cn;
+	return;
+m1:
+	return;
+}
+
+void seg_remove_contour(uint32 *reg, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yw, yxw, h1 = h-2, w1 = w-2, rg = 0;
+
+	for(y=2; y < h1; y++){
+		yw = y*w;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
+			if(reg[yx]&0xFF){
+				remove_pixel(reg, yx, w);
+			}
+		}
+	}
+	//printf("Numbers of regions  = %d\n", rgc);
 }
 
 static inline uint32 true_vertex(uint8 *con, uint32 *reg, uint32 yx, uint32 w, uint32 h)
@@ -737,6 +797,7 @@ static inline uint32 true_vertex(uint8 *con, uint32 *reg, uint32 yx, uint32 w, u
 	m1:
 	return 1;
 }
+
 
 static inline uint32 loc_max1(uint8 *img, uint32 yx, uint32 w, uint32 th)
 {
@@ -1069,6 +1130,62 @@ void seg_find_intersect2(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 	printf("Numbers of intersection  = %d\n", npix);
 }
 
+void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h)
+{
+	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
+	int d1, d2, npix = 0;
+	//Make border
+	//con[w+1] = 255; con[(w<<1)-2] = 255;
+	//con[w*(h-2)+1] = 255; con[w*(h-1)-2] = 255;
+	yw = w*(h-2);
+	for(x=2; x < w1-1; x++) con[yw + x] = 64;
+	for(x=2; x < w1; x++) di[yw + x] = 128;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(grad[yx] && !con[yx]){
+				if(loc_max(grad, yx, w)){
+					//printf("x = %d y = %d\n", x, y);
+					yx1 = yx; yx2 = yx;
+					con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
+					d1 = dir(grad, yx1, w, 0);
+					d2 = dir(grad, yx1, w, d1);
+					while(1){
+						if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
+						add_dir1(&di[yx1], d1, w);
+						//printf("d1 = %d di = %d \n", d1, di[yx1]);
+						yx1 = yx1 + d1;
+						if(con[yx1]) {
+							con[yx1] = 255; grad[yx1] = 255;
+							npix++;
+							break;
+						}
+						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
+						d1 = dir(grad, yx1, w, -d1);
+					}
+					while(1){
+						if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
+						yx2 = yx2 + d2;
+						add_dir1(&di[yx2], -d2, w);
+						if(con[yx2]) {
+							con[yx2] = 255; grad[yx2] = 255;
+							npix++;
+							break;
+						}
+						con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
+						d2 = dir(grad, yx2, w, -d2);
+
+					}
+				}
+				//break;
+			}
+		}
+	}
+	printf("Numbers of intersection  = %d\n", npix);
+}
+
 uint32 seg_remove_vertex(uint8 *con, uint32 *reg, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yw, yxw, h1 = h-1, w1 = w-1;
@@ -1176,6 +1293,146 @@ uint32 seg_vertex1(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uin
 						}
 						if(con[yx1] > 253) {
 							if(con[yx1] == 255)  {
+								new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
+								nd1 = add_finish_dir(&vx[yx1], -d, w); //vx[yx1].n++;
+								con[yx1] = 254;
+								//printf("New vertex \n");
+							} else {
+								nd1 = add_finish_dir(&vx[yx1], -d, w); //vx[yx1].n++;
+								//printf("New direction \n");
+								//print_around(di, yx1, w);
+							}
+							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
+							pow = pow/cc;
+							//printf("yx1 = %d yx2 = %d  nd2 = %d nd1 = %d pow = %d\n", yx1, yx2, nd2, nd1, pow);
+							//printf(" vx[yx2].lp = %p vx[yx1].lp = %p \n", vx[yx2].lp, vx[yx1].lp);
+							new_line(&vx[yx2], &vx[yx1], nd2, nd1, pow);
+							//printf("New line \n");
+							yx1 = yx; x1 = x; y1 = y;
+							break;
+						}
+						//if(is_new_line2(d, &cn, &fs, &sc)){
+						if(is_new_line3(d, &fs, &sc, &cfs, &csc, &ll)){
+							lc++;
+							yx1 -= d; x1 -= dx; y1 -= dy;
+							new_in_line_vertex(&vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w, d, -d1);
+							nd1 = add_finish_dir(&vx[yx1], -d1, w);
+							//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
+							pow = pow/cc;
+							new_line(&vx[yx2], &vx[yx1], nd2, nd1, pow);
+
+							nd2 = add_finish_dir(&vx[yx1], d, w);
+							con[yx1] = 254; yx2 = yx1;
+							fs = 0; sc = 0; cfs = 0; csc = 0; ll = 0;
+							pow = 0; cc = 0;
+							//printf("New line \n");
+							//break;
+						}
+						pow += con[yx1];
+						d1 = d; //dx1 = -dx; dy1 = -dy;
+						dx = -dx; dy = -dy;
+						get_next_dir1(di[yx1], &dx, &dy);
+						//direction(con, w, yx1, &dx, &dy);
+						//if(!dx && !dy) {
+						//	printf("dx = %d dy = %d\n", dx1, dy1);
+						//	direction1(con, w, yx1, &dx, &dy, -d1);
+						//	return 0;
+						//}
+						//con[yx1] = 0;
+					}
+				}
+			}
+		}
+	}
+
+	printf("Numbers of vertexs  = %d\n", vxc);
+	//printf("Numbers of lines    = %d\n", linc);
+
+	for(j=0; j < vxc; j++) {
+		//printf("%d %p \n", j, vp[j]);
+		if(vp[j]->di != vp[j]->cn ) {
+			printf("%d  x = %d y = %d %o %o %o n = %d\n", j, vp[j]->x,  vp[j]->y, vp[j]->di, vp[j]->cn, vp[j]->cn^vp[j]->di, vp[j]->n);
+			//printf("%d n = %d %o %o %o\n", j, vp[j]->n, vp[j]->di, vp[j]->cn, vp[j]->cn^vp[j]->di);
+			con[vp[j]->y*w + vp[j]->x-w] = 255;
+			con[vp[j]->y*w + vp[j]->x-1] = 255;
+			con[vp[j]->y*w + vp[j]->x+w] = 255;
+			con[vp[j]->y*w + vp[j]->x+1] = 255;
+		}
+	}
+	return vxc;
+}
+
+uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uint32 h)
+{
+	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
+	int vxc = 0, lnc = 0, pow, cc, lc;
+	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd;
+	Vertex **vp1 = &vp[w*h>>4];
+	//int dx1, dy1;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(con[yx]&0xFF == 255 || con[yx]&0xFF == 254) { //New vertex
+				x1 = x; y1 = y;
+				if(con[yx]&0xFF == 255) {
+					new_vertex1(di[yx], &vx[yx], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
+					con[yx] = 254;
+					printf("New vertex dir = %d yx = %d \n", di[yx], yx);
+					/*
+					if(new_vertex1(di[yx], &vx[yx], &vp[vxc++], &lp[lnc+=8], x1, y1, w)){
+						printf("New vertex dir = %d\n", di[yx]);
+						con[yx] = 254;
+					} else {	// Remove  not connected vertex
+						vxc--; con[yx] = 0;
+					}*/
+				}
+				yx1 = yx;
+
+				while(get_next_dir(&vx[yx1], &dx, &dy, &nd2)){
+					printf("get_next_dir x = %d y = %d dx = %d dy = %d nd2 = %d di = %o cn = %o\n", vx[yx1].x, vx[yx1].y, dx, dy, nd2, vx[yx1].di, vx[yx1].cn);
+					yx2 = yx1; yx3 = yx1; d2 = dx + w*dy;  x2 = x1; y2 = y1;
+					lc = 0;
+					//print_around(con, yx1, w);
+					//print_around(di, yx1, w);
+					//printf("y = %d x = %d con = %d d = %d w = %d di = %o\n", (yx1)/w, (yx1)%w, con[yx1], dx + w*dy, w, vx[yx1].di);
+					// Variable for line construction.
+					fs = 0; sc = 0; cfs = 0; csc = 0; ll = 0;
+					//Find two perpendicular directions
+
+					//rc[0] = r[yx1]; rc[1] = g[yx1]; rc[2] = b[yx1]; cc = 1;
+					pow = 0; cc = 0;
+					while(1){
+						x1 += dx; y1 += dy;
+						d = dx + w*dy;
+						yx1 = yx1 + d;
+						cc++;
+
+						print_around32(con, yx1, w);
+						print_around(di, yx1, w);
+						printf("y = %d x = %d con = %d d = %d w = %d yx1 = %d\n", (yx1)/w, (yx1)%w, con[yx1], -d, w, yx1);
+						if(con[yx1]&0xFF == 128){ //Not connected virtex
+							remove_dir(&vx[yx3], d2, w);
+							//linc =  linc - lc;
+							vxc = vxc - lc;
+
+							printf("Remove dir d2 = %d di = %o cn = %o\n", d2, vx[yx3].di, vx[yx3].cn);
+							/*
+							printf("x = %d y = %d d = %o lc = %d linc = %d vxc = %d \n",vx[yx3].x, vx[yx3].y, di[yx3], lc, linc, vxc);
+							printf("x = %d y = %d \n",yx1%w, yx1/w);
+							print_around(con, yx1, w);
+							print_around(di, yx1, w);
+							print_around(con, yx3, w);
+							print_around(di, yx3, w);
+							*/
+							yx1 = yx; x1 = x; y1 = y;
+							//return lc;
+							break;
+							//return 0;
+						}
+						if(con[yx1]&0xFF > 253) {
+							if(con[yx1]&0xFF == 255)  {
 								new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
 								nd1 = add_finish_dir(&vx[yx1], -d, w); //vx[yx1].n++;
 								con[yx1] = 254;
