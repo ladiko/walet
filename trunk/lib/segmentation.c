@@ -743,7 +743,7 @@ void seg_remove_contour(uint32 *reg, uint32 w, uint32 h)
 		yw = y*w;
 		for(x=2; x < w1; x++){
 			yx = yw + x;
-			if(reg[yx]&0xFF){
+			if(reg[yx]&0xFF == 64){
 				remove_pixel(reg, yx, w);
 			}
 		}
@@ -1410,7 +1410,7 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 						yx1 = yx1 + d;
 						cc++;
 
-						if(con[yx1]>>8) {
+						if(con[yx1]>>8) { // Remove dor
 							yx1 = yx1 - d;
 							if(con[yx1] == 254){
 								remove_dir(&vx[yx1], d, w);
@@ -1854,6 +1854,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 			while(get_dir2(vx, &nd)){
 				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 				vx1 = vx->vp[nd];
+				/*
 				while(vx1->n == 2) {
 					//Check is next point lie on the line
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
@@ -1872,7 +1873,8 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 						vx1 = vx2;
 					} else break;
 
-				}
+				}*/
+				finish_dir1(vx, nd);
 				finish_dir1(vx1, find_pointer1(vx1, vx));
 
 				v.x1 =  vx->x; v.y1 =  vx->y;
@@ -1880,18 +1882,29 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 
 				c[0] = 128; c[1] = 128; c[2] = 128;
 				draw_line_3(r, g, b, &v, w, c);
-				yx = v.y1*w + v.x1;
+				yx = v.y2*w + v.x2;
 				r[yx] = 255; g[yx] = 255; b[yx] = 255;
 			}
 
 			yx = vp[i]->y*w + vp[i]->x;
 			r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		}
-		//r[yx] = vp[i]->ln[0].l[0]; g[yx] = vp[i]->ln[0].l[1]; b[yx] = vp[i]->ln[0].l[2];
-		//r[yx] = (vp[i]->lp[nd]->l[0] + vp[i]->lp[nd]->r[0])>>1;
-		//g[yx] = (vp[i]->lp[nd]->l[1] + vp[i]->lp[nd]->r[1])>>1;
-		//b[yx] = (vp[i]->lp[nd]->l[2] + vp[i]->lp[nd]->r[2])>>1;
 	}
+
+	for(i=0; i < vxc; i++) {
+		//printf("%d %p \n", j, vp[j]);
+		//if(vp[i]->di != vp[i]->cn ) {
+		if(vp[i]->n < 2 ) {
+			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
+			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+			r[vp[i]->y*w + vp[i]->x-w] = 255;
+			r[vp[i]->y*w + vp[i]->x-1] = 255;
+			r[vp[i]->y*w + vp[i]->x+w] = 255;
+			r[vp[i]->y*w + vp[i]->x+1] = 255;
+		}
+	}
+
+
 }
 
 void seg_draw_line_color(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, uint32 h)
