@@ -73,7 +73,7 @@ void seg_corner(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 void seg_point(uint8 *con, uint32 w, uint32 h);
 
 void seg_grad16(int16 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
-void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
+void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, int th);
 void seg_local_max( Pixel *pix,  uint32 *npix, uint8 *img, uint32 w, uint32 h);
 uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h);
 void seg_draw_lines(Pixel *pix, uint8 *img, uint32 w, uint32 h);

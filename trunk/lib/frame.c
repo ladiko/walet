@@ -787,7 +787,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=1; i < 2; i++) {
+	for(i=0; i < 1; i++) {
 		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
@@ -801,7 +801,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//filter_noise(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 		//filter_noise(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 
-		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 2);
 		//seg_grad_RGB(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -822,18 +822,22 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 		//seg_draw_grad(f->dg[i].pic, f->dc[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
 
-		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//memset(g->buf, 0, f->dg[i].w*f->dg[i].h*sizeof(uint32));
 
 		//seg_find_intersect2(f->dg[i].pic, f->dc[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
-		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
 
 		//seg_fill_reg(f->dc[i].pic, f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
 		//seg_remove_vertex(f->dc[i].pic, f->rg[i].pic, f->dg[i].w, f->dg[i].h);
 
+		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
+
 		seg_fill_reg(f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
+
 		seg_remove_contour(f->rg[i].pic, f->dg[i].w, f->dg[i].h);
+
 		vxc = seg_vertex2(f->rg[i].pic, f->di[i].pic, f->vx, f->vp, f->dg[i].w, f->dg[i].h);
+
 		seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
 		seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
 
