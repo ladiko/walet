@@ -29,7 +29,7 @@ void print_around32(uint32 *con, uint32 yx, uint32 w)
 }
 
 
-void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
+void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, int th)
 {
 	/// | |x| |      | | | |      |x| | |      | | |x|
 	/// | |x| |      |x|x|x|      | |x| |      | |x| |
@@ -41,8 +41,9 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	/// |-|-|-|      | ||| |      | |/| |      | |\| |
 	/// | | | |      | ||| |      |/| | |      | | |\|
 	uint32 y, x, yx, yw, w1 = w-2, h1 = h-2;
-	uint8 max, in, col = 253;
+	uint8 in, col = 253;
 	uint32 g[4];
+	int max;
 
 	//for(x=0; x < w; x++) img1[x] = col1;
 	//img1[w] = col1; img1[w + x+1] = col1;
@@ -60,7 +61,8 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
 			max = (g[0] + g[1] + g[2] + g[3])>>2;
-			img1[yx] = (max>>th) ? (max > 252 ? 252 : max) : 0;
+			img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
+			//printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
 			//img1[yx] = max>>th;
 			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
 			//img1[yx] = max > 252 ? 252 : max;
@@ -1368,9 +1370,10 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, pow, cc, lc;
 	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd;
-	Vertex **vp1 = &vp[w*h>>4];
+	Vertex **vp1 = &vp[w*h>>3];
 	//int dx1, dy1;
 
+	//printf("w = %d h = %d w*h>>4 = %d\n", w, h, w*h>>4 );
 	for(y=1; y < h1; y++){
 		yw = y*w;
 		for(x=1; x < w1; x++){
@@ -1855,6 +1858,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 
 				v.x1 =  vx->x; v.y1 =  vx->y;
 				v.x2 =  vx1->x; v.y2 =  vx1->y;
+				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				c[0] = 128; c[1] = 128; c[2] = 128;
 				draw_line_3(r, g, b, &v, w, c);
