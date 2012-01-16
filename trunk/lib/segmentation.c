@@ -1707,7 +1707,36 @@ static inline uint8  find_pointer1(Vertex *vx1, Vertex *vx2)
 	else if	(vx1->vp[7] == vx2) return 7;
 }
 
+static inline uint8 get_left_dir(Vertex *vx, uint8 nd, uint8 *nd1)
+{
+	if      (nd == 0) { vx->cn |= 128; goto m1; }
+	else if (nd == 1) { vx->cn |= 64;  goto m8; }
+	else if (nd == 2) { vx->cn |= 32;  goto m7; }
+	else if (nd == 3) { vx->cn |= 16;  goto m6; }
+	else if (nd == 4) { vx->cn |= 8;   goto m5; }
+	else if (nd == 5) { vx->cn |= 4;   goto m4; }
+	else if (nd == 6) { vx->cn |= 2;   goto m3; }
+	else if (nd == 7) { vx->cn |= 1;   goto m2; }
+	//return 0;
 
+m1:	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; return 1; }
+m2:	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; return 1; }
+m3:	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; return 1; }
+m4:	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; return 1; }
+m5:	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; return 1; }
+m6:	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; return 1; }
+m7:	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; return 1; }
+m8:	if ((vx->di&128) && !(vx->cn&128)) { *nd1 = 0; vx->cn |= 128; return 1; }
+	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; return 1; }
+	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; return 1; }
+	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; return 1; }
+	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; return 1; }
+	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; return 1; }
+	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; return 1; }
+	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; return 1; }
+	return 0;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
 
 uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 {
@@ -1901,7 +1930,7 @@ void seg_vertex_draw1(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uin
 			vx = vp[i];
 			vx1 = vx->vp[nd];
 			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
-			while(get_dir_left(vx, vx1, &nd1)){
+			while(get_left_dir(vx1, nd, &nd1)){
 				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 
 				while(vx1->n == 2) {
