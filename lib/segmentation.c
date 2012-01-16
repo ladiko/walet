@@ -1723,7 +1723,7 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 			get_dir2(vx, &nd);
 			remove_dir1(vx->vp[nd], find_pointer1(vx->vp[nd], vx));
 			//vx = vx->vp[nd];
-			vx->di = 0; vx->cn = 0;
+			vx->di = 0; vx->cn = 0; vp[j]->n = 0;
 
 			//printf("%4d vx->n = %d vx->di = %o vx->cn = %o p = %p\n", j, vx->n, vx->di, vx->cn, vx);
 			/*
@@ -1814,7 +1814,6 @@ static inline uint32 check_is_in_line(Vertex *vx1, Vertex *vx2, Vertex *vx3)
 	return 0;
 }
 
-
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
 {
 	uint32 i, yx, vc = 0;
@@ -1838,14 +1837,14 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
 					finish_dir1(vx1, find_pointer1(vx1, vx));
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
-					if(!get_dir3(vx1, &nd1)) break;
+					//if(!get_dir3(vx1, &nd1)) break;
 					vx2 = vx1->vp[nd1];
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
 					if(check_is_in_line(vx, vx1, vx2)){
 						//printf("INLINE \n", nd, vp[i]->n);
 						nd2 = find_pointer1(vx2, vx1);
 						finish_dir1(vx2, nd2);
-						vx1->n = 0; vx1->di = 0;
+						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
 						vx->vp[nd] = vx2;
 						vx2->vp[nd2] = vx;
 						vx1 = vx2;
@@ -1870,11 +1869,11 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 			r[yx] = 255; g[yx] = 255; b[yx] = 255;
 		}
 	}
-	/*
+
 	for(i=0; i < vxc; i++) {
 		//printf("%d %p \n", j, vp[j]);
-		//if(vp[i]->di != vp[i]->cn ) {
-		if(vp[i]->n == 1 ) {
+		if(vp[i]->di != vp[i]->cn ) {
+		//if(vp[i]->n == 1 ) {
 			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
 			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
 			r[vp[i]->y*w + vp[i]->x-w] = 255;
@@ -1883,7 +1882,79 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 			r[vp[i]->y*w + vp[i]->x+1] = 255;
 		}
 	}
-	*/
+
+	printf("Numbers of drawing vertexs  = %d\n", vc);
+}
+
+void seg_vertex_draw1(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
+{
+	uint32 i, yx, vc = 0;
+	Vector v;
+	uint8 c[3], nd, nd1, nd2;
+	Vertex *vx, *vx1, *vx2;
+
+	for(i=0; i < vxc; i++) vp[i]->cn = 0;
+
+	for(i=0; i < vxc; i++){
+		if(vp[i]->di > 2 && get_dir2(vx, &nd)){
+			vc++;
+			vx = vp[i];
+			vx1 = vx->vp[nd];
+			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+			while(get_dir_left(vx, vx1, &nd1)){
+				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+
+				while(vx1->n == 2) {
+					//Check is next point lie on the line
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
+					finish_dir1(vx1, find_pointer1(vx1, vx));
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
+					//if(!get_dir3(vx1, &nd1)) break;
+					vx2 = vx1->vp[nd1];
+					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
+					if(check_is_in_line(vx, vx1, vx2)){
+						//printf("INLINE \n", nd, vp[i]->n);
+						nd2 = find_pointer1(vx2, vx1);
+						finish_dir1(vx2, nd2);
+						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+						vx->vp[nd] = vx2;
+						vx2->vp[nd2] = vx;
+						vx1 = vx2;
+						vc--;
+					} else break;
+
+				}
+				finish_dir1(vx, nd);
+				//finish_dir1(vx1, find_pointer1(vx1, vx));
+
+				v.x1 =  vx->x; v.y1 =  vx->y;
+				v.x2 =  vx1->x; v.y2 =  vx1->y;
+				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
+
+				c[0] = 128; c[1] = 128; c[2] = 128;
+				draw_line_3(r, g, b, &v, w, c);
+				yx = v.y2*w + v.x2;
+				r[yx] = 255; g[yx] = 255; b[yx] = 255;
+			}
+
+			yx = vp[i]->y*w + vp[i]->x;
+			r[yx] = 255; g[yx] = 255; b[yx] = 255;
+		}
+	}
+
+	for(i=0; i < vxc; i++) {
+		//printf("%d %p \n", j, vp[j]);
+		if(vp[i]->di != vp[i]->cn ) {
+		//if(vp[i]->n == 1 ) {
+			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
+			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+			r[vp[i]->y*w + vp[i]->x-w] = 255;
+			r[vp[i]->y*w + vp[i]->x-1] = 255;
+			r[vp[i]->y*w + vp[i]->x+w] = 255;
+			r[vp[i]->y*w + vp[i]->x+1] = 255;
+		}
+	}
+
 	printf("Numbers of drawing vertexs  = %d\n", vc);
 }
 
