@@ -1189,35 +1189,6 @@ void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h
 	printf("Numbers of intersection  = %d\n", npix);
 }
 
-uint32 seg_remove_vertex(uint8 *con, uint32 *reg, uint32 w, uint32 h)
-{
-	uint32 i, j, y, x, yx, yw, yxw, h1 = h-1, w1 = w-1;
-
-	for(y=1; y < h1; y++){
-		yw = y*w;
-		for(x=1; x < w1; x++){
-			yx = yw + x;
-			//if(con[yx]) true_vertex(con, reg, yx, w, h);
-
-			if(con[yx] == 255){
-				if(true_vertex(con, reg, yx, w, h)){
-					if(con[yx-1  ]) true_vertex(con, reg, yx-1  , w, h);
-					if(con[yx-w-1]) true_vertex(con, reg, yx-w-1, w, h);
-					if(con[yx-w  ]) true_vertex(con, reg, yx-w  , w, h);
-					if(con[yx-w+1]) true_vertex(con, reg, yx-w+1, w, h);
-					if(con[yx+1  ]) true_vertex(con, reg, yx+1  , w, h);
-					if(con[yx+w+1]) true_vertex(con, reg, yx+w+1, w, h);
-					if(con[yx+w  ]) true_vertex(con, reg, yx+w  , w, h);
-					if(con[yx+w-1]) true_vertex(con, reg, yx+w-1, w, h);
-				}
-			}
-
-		}
-	}
-	//printf("Numbers of intersection  = %d\n", npix);
-}
-
-
 /*	\brief	Create vertexes and lines arrays
 	\param	con		The pointer to contour image.
 	\param	vx		The pointer to Vertex array.
@@ -1750,9 +1721,11 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 			vx->cn = 0;
 			rmvxc++;
 			get_dir2(vx, &nd);
+			remove_dir1(vx, nd);
 			remove_dir1(vx->vp[nd], find_pointer1(vx->vp[nd], vx));
 			//vx = vx->vp[nd];
-			vx->di = 0; vx->cn = 0; vp[j]->n = 0;
+			//vx->di = 0; vx->cn = 0; vp[j]->n = 0;
+
 
 			//printf("%4d vx->n = %d vx->di = %o vx->cn = %o p = %p\n", j, vx->n, vx->di, vx->cn, vx);
 			/*
@@ -1789,51 +1762,6 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 
 }
 
-static inline uint32 draw_three_lines(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc, uint8 *rc)
-{
-	uint32 i, max , min = 0, n, x, y, dx, dy;
-	int sty, stx, yx, yxs, lfx, lfy;
-
-	x = v->x1; y = v->y1*w;
-	stx = v->x2 > v->x1 ? 1 : -1;
-	sty = v->y2 > v->y1 ? w : -w;
-	lfx = v->x2 > v->x1 ? w : -w;
-	lfy = v->y2 > v->y1 ? 1 : -1;
-
-	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-	if(dx >= dy){
-		n = dx - 0; max = dx;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			yxs = yx - lfx;
-			if(!r[yxs])  r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
-			r[yx] = (lc[0] + rc[0])>>1;
-			g[yx] = (lc[1] + rc[1])>>1;
-			b[yx] = (lc[2] + rc[2])>>1;
-			yxs = yx + lfx;
-			if(!r[yxs])  r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
-			min += dy; x += stx;
-			if(min >= max) { max += dx; y += sty; }
-		}
-		return dx;
-	} else {
-		n = dy - 0; max = dy;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			yxs = yx + lfy;
-			if(!r[yxs])  r[yxs] = lc[0]; g[yxs] = lc[1]; b[yxs] = lc[2];
-			r[yx] = (lc[0] + rc[0])>>1;
-			g[yx] = (lc[1] + rc[1])>>1;
-			b[yx] = (lc[2] + rc[2])>>1;
-			yxs = yx - lfy;
-			if(!r[yxs])  r[yxs] = rc[0]; g[yxs] = rc[1]; b[yxs] = rc[2];
-			min += dx; y += sty;
-			if(min >= max) { max += dy; x += stx; }
-		}
-		return dy;
-	}
-}
-
 static inline uint32 check_is_in_line(Vertex *vx1, Vertex *vx2, Vertex *vx3)
 {
 	int dx1 = vx2->x - vx1->x, dx2 = vx3->x - vx2->x;
@@ -1853,20 +1781,20 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 	for(i=0; i < vxc; i++) vp[i]->cn = 0;
 
 	for(i=0; i < vxc; i++){
-		if(vp[i]->di > 1){
+		if(vp[i]->n > 1){
 			vc++;
 			vx = vp[i];
 			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 			while(get_dir2(vx, &nd)){
 				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 				vx1 = vx->vp[nd];
-
+				/*
 				while(vx1->n == 2) {
 					//Check is next point lie on the line
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
 					finish_dir1(vx1, find_pointer1(vx1, vx));
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
-					//if(!get_dir3(vx1, &nd1)) break;
+					if(!get_dir3(vx1, &nd1)) break;
 					vx2 = vx1->vp[nd1];
 					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
 					if(check_is_in_line(vx, vx1, vx2)){
@@ -1880,9 +1808,9 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 						vc--;
 					} else break;
 
-				}
+				}*/
 				finish_dir1(vx, nd);
-				//finish_dir1(vx1, find_pointer1(vx1, vx));
+				finish_dir1(vx1, find_pointer1(vx1, vx));
 
 				v.x1 =  vx->x; v.y1 =  vx->y;
 				v.x2 =  vx1->x; v.y2 =  vx1->y;
@@ -1915,77 +1843,6 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 	printf("Numbers of drawing vertexs  = %d\n", vc);
 }
 
-void seg_vertex_draw1(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
-{
-	uint32 i, yx, vc = 0;
-	Vector v;
-	uint8 c[3], nd, nd1, nd2;
-	Vertex *vx, *vx1, *vx2;
-
-	for(i=0; i < vxc; i++) vp[i]->cn = 0;
-
-	for(i=0; i < vxc; i++){
-		if(vp[i]->di > 2 && get_dir2(vx, &nd)){
-			vc++;
-			vx = vp[i];
-			vx1 = vx->vp[nd];
-			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
-			while(get_left_dir(vx1, nd, &nd1)){
-				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
-
-				while(vx1->n == 2) {
-					//Check is next point lie on the line
-					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y, vx1->di, vx1->cn, nd1, vx1->n);
-					finish_dir1(vx1, find_pointer1(vx1, vx));
-					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
-					//if(!get_dir3(vx1, &nd1)) break;
-					vx2 = vx1->vp[nd1];
-					//printf("N2  x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx1->x, vx1->y,vx1->di, vx1->cn, nd1, vx1->n);
-					if(check_is_in_line(vx, vx1, vx2)){
-						//printf("INLINE \n", nd, vp[i]->n);
-						nd2 = find_pointer1(vx2, vx1);
-						finish_dir1(vx2, nd2);
-						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
-						vx->vp[nd] = vx2;
-						vx2->vp[nd2] = vx;
-						vx1 = vx2;
-						vc--;
-					} else break;
-
-				}
-				finish_dir1(vx, nd);
-				//finish_dir1(vx1, find_pointer1(vx1, vx));
-
-				v.x1 =  vx->x; v.y1 =  vx->y;
-				v.x2 =  vx1->x; v.y2 =  vx1->y;
-				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
-
-				c[0] = 128; c[1] = 128; c[2] = 128;
-				draw_line_3(r, g, b, &v, w, c);
-				yx = v.y2*w + v.x2;
-				r[yx] = 255; g[yx] = 255; b[yx] = 255;
-			}
-
-			yx = vp[i]->y*w + vp[i]->x;
-			r[yx] = 255; g[yx] = 255; b[yx] = 255;
-		}
-	}
-
-	for(i=0; i < vxc; i++) {
-		//printf("%d %p \n", j, vp[j]);
-		if(vp[i]->di != vp[i]->cn ) {
-		//if(vp[i]->n == 1 ) {
-			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
-			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
-			r[vp[i]->y*w + vp[i]->x-w] = 255;
-			r[vp[i]->y*w + vp[i]->x-1] = 255;
-			r[vp[i]->y*w + vp[i]->x+w] = 255;
-			r[vp[i]->y*w + vp[i]->x+1] = 255;
-		}
-	}
-
-	printf("Numbers of drawing vertexs  = %d\n", vc);
-}
 
 void seg_draw_line_color(uint8 *r, uint8 *g, uint8 *b, Line *ln, uint32 lc, uint32 w, uint32 h)
 {
