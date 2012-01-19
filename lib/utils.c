@@ -2552,7 +2552,7 @@ void utils_subtract(uint8 *img1, uint8 *img2, uint8 *sub, uint32 w, uint32 h)
 	\param h 	The image height.
 	\retval 	The entropy (bits per pixel).
  */
-double entropy(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
+double entropy(uint8 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
 {
 	double s = 0., s0 = log2(w*h);
 	uint32  half = 1<<(bpp-1), size = 1<<bpp, sz = w*h;

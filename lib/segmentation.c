@@ -60,7 +60,7 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, int th)
 			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
 			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
-			max = (g[0] + g[1] + g[2] + g[3])>>2;
+			max = (g[0] + g[1] + g[2] + g[3])>>1;
 			img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
 			//printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
 			//img1[yx] = max>>th;
