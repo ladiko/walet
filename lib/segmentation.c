@@ -1613,7 +1613,6 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 			}
 		}
 	}
-
 	//Remove inline vertexes
 	for(i=0; i < vxc; i++) {
 		if(vp[i]->n == 2){
@@ -1638,7 +1637,6 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 	printf("Numbers of removed vertexs  = %d\n", vc);
 
 }
-
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
 {
@@ -1701,15 +1699,15 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w)
 	for(i=0; i < vxc; i++) vp[i]->cn = 0;
 
 	for(i=0; i < vxc; i++){
-		if(vp[i]->n == 3 && get_dir2(vx, &nd)){
-			vc++;
+		//If any problem may change if to while
+		while(vp[i]->n > 1 && get_dir2(vp[i], &nd)){
 			vx = vp[i];
-			vp1 = vp[i];
+			//vp1 = vp[i];
 
 			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
-			while(vx != vp1){
+			do{
+				vc++;
 				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
-
 				vx1 = vx->vp[nd];
 				finish_dir1(vx, nd);
 				nd1 =  find_pointer1(vx1, vx);
@@ -1720,15 +1718,15 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w)
 				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				//c[0] = 128; c[1] = 128; c[2] = 128;
-				draw_line_1(img, &v, w, 128);
-				yx = v.y2*w + v.x2;
-				img[yx] = 255;
+				draw_line_1(img, &v, w, 255);
+				//yx = v.y2*w + v.x2;
+				//img[yx] = 255;
 				if(!get_left_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
-			}
+			}while(vx != vp[i]);
 
-			yx = vp[i]->y*w + vp[i]->x;
-			img[yx] = 255;
+			//yx = vp[i]->y*w + vp[i]->x;
+			//img[yx] = 255;
 		}
 	}
 
@@ -1748,33 +1746,33 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w)
 	printf("Numbers of drawing vertexs  = %d\n", vc);
 }
 
-uint32 seg_get_one_color(uint8 *in,  uint8 *out, uint8 *col, uint32 *buff, uint32 w, uint32 h)
+uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint32 w, uint32 h)
 {
-	uint32 i, j, y, x, yx, yxw, yw,  h1 = h-1, w1 = w-1;
+	uint32 i, j, y, x, yx, yxw, yw,  h1 = h-2, w1 = w-2;
 	uint32 rgc = 0;
-	uint32 num, c, cn;
+	uint32 num, c, cn, cl;
 	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
 
-	for(y=1; y < h1; y++){
+	for(y=2; y < h1; y++){
 		yw = y*w;
-		for(x=1; x < w1; x++){
+		for(x=2; x < w1; x++){
 			yx = yw + x;
-			if(!out[yx]){
-				//printf("yx = %d r = %d\n", yx, out[yx]);
+			if(!con[yx]){
+				//printf("yx = %d r = %d\n", yx, con[yx]);
 				c = 0;  cn = 0;
-				out[yx] = 254; num = 1; l1[0] = yx; i = 0;
+				cl = 254; con[yx] = cl; num = 1; l1[0] = yx; i = 0;
 				while(num){
 					for(j=0; j < num; j++){
 						yxw = l1[j] - 1;
-						if(!out[yxw]) { out[yxw] = 254; l2[i++] = yxw; }
+						if(!con[yxw]) { con[yxw] = cl; l2[i++] = yxw; }
 						yxw = l1[j] - w;
-						if(!out[yxw]) { out[yxw] = 254; l2[i++] = yxw; }
+						if(!con[yxw]) { con[yxw] = cl; l2[i++] = yxw; }
 						yxw = l1[j] + 1;
-						if(!out[yxw]) { out[yxw] = 254; l2[i++] = yxw; }
+						if(!con[yxw]) { con[yxw] = cl; l2[i++] = yxw; }
 						yxw = l1[j] + w;
-						if(!out[yxw]) { out[yxw] = 254; l2[i++] = yxw; }
+						if(!con[yxw]) { con[yxw] = cl; l2[i++] = yxw; }
 
-						c += in[l1[j]]; cn++;
+						c += img[l1[j]]; cn++;
 					}
 					num = i; i = 0;
 					tm = l1; l1 = l2; l2 = tm;
@@ -1785,9 +1783,75 @@ uint32 seg_get_one_color(uint8 *in,  uint8 *out, uint8 *col, uint32 *buff, uint3
 			}
 		}
 	}
-	printf("Numbers of regions  = %d\n", rgc);
+	printf("Numbers of geted regions  = %d\n", rgc);
 	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
 	return rgc;
+}
+
+uint32 seg_draw_color_one(uint8 *img, uint8 *col, uint32 *buff, uint32 w, uint32 h)
+{
+	uint32 i, j, y, x, yx, yxw, yw,  h1 = h-2, w1 = w-2;
+	uint32 rgc = 0;
+	uint32 num, c, cn, cl;
+	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+
+	for(y=2; y < h1; y++){
+		yw = y*w;
+		for(x=2; x < w1; x++){
+			yx = yw + x;
+			if(!img[yx]){
+				//printf("yx = %d r = %d\n", yx, img[yx]);
+				c = 0;  cn = 0;
+				cl = col[rgc]; img[yx] = cl; num = 1; l1[0] = yx; i = 0;
+				while(num){
+					for(j=0; j < num; j++){
+						yxw = l1[j] - 1;
+						if(!img[yxw]) { img[yxw] = cl; l2[i++] = yxw; }
+						yxw = l1[j] - w;
+						if(!img[yxw]) { img[yxw] = cl; l2[i++] = yxw; }
+						yxw = l1[j] + 1;
+						if(!img[yxw]) { img[yxw] = cl; l2[i++] = yxw; }
+						yxw = l1[j] + w;
+						if(!img[yxw]) { img[yxw] = cl; l2[i++] = yxw; }
+
+						c += img[l1[j]]; cn++;
+					}
+					num = i; i = 0;
+					tm = l1; l1 = l2; l2 = tm;
+				}
+				//col[rgc] = c/cn;
+				rgc++;
+				//if(rgc == 1) return 0;
+			}
+		}
+	}
+	printf("Numbers of drawing regions  = %d\n", rgc);
+	//for(i=0; i < rgc; i++)  printf("%5d  %3d %3d %3d\n", i, col[i*3], col[i*3+1], col[i*3+1]);
+	return rgc;
+}
+
+void seg_draw_line_one(uint8 *img, uint32 w, uint32 h)
+{
+	uint32 y, x, yx, yxw, yw,  h1 = h-1, w1 = w-1, sum, cn;
+
+	for(y=1; y < h1; y++){
+		yw = y*w;
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			if(img[yx] == 255){
+				sum = 0; cn = 0;
+				if(img[yx-1  ] && img[yx-1  ] != 255) { sum += img[yx-1  ]; cn++; }
+				if(img[yx-1-w] && img[yx-1-w] != 255) { sum += img[yx-1-w]; cn++; }
+				if(img[yx  -w] && img[yx  -w] != 255) { sum += img[yx  -w]; cn++; }
+				if(img[yx+1-w] && img[yx+1-w] != 255) { sum += img[yx+1-w]; cn++; }
+				if(img[yx+1  ] && img[yx+1  ] != 255) { sum += img[yx+1  ]; cn++; }
+				if(img[yx+1+w] && img[yx+1+w] != 255) { sum += img[yx+1+w]; cn++; }
+				if(img[yx  +w] && img[yx  +w] != 255) { sum += img[yx  +w]; cn++; }
+				if(img[yx-1+w] && img[yx-1+w] != 255) { sum += img[yx-1+w]; cn++; }
+				img[yx] = sum/cn;
+			}
+		}
+	}
 }
 
 
