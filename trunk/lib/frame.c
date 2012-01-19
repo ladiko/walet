@@ -801,7 +801,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//filter_noise(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 		//filter_noise(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h, 0);
 
-		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 2);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		//seg_grad_RGB(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -825,10 +825,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//memset(g->buf, 0, f->dg[i].w*f->dg[i].h*sizeof(uint32));
 
-		//seg_find_intersect2(f->dg[i].pic, f->dc[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
 
-		//seg_fill_reg(f->dc[i].pic, f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
-		//seg_remove_vertex(f->dc[i].pic, f->rg[i].pic, f->dg[i].w, f->dg[i].h);
 
 		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
 		seg_fill_reg(f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
@@ -842,11 +839,25 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_vertex_draw1(f->R1[i].pic, f->vp, vxc, f->R1[i].w);
 		seg_draw_color_one(f->R1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_draw_line_one(f->R1[i].pic, f->dg[i].w, f->dg[i].h);
+		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
 
-		//vxc = seg_vertex1(f->dc[i].pic, f->di[i].pic, f->vx, f->vp,  f->dg[i].w, f->dg[i].h);
-		//seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
-		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
-		//seg_draw_line_color(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
+		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->R1[i].w);
+		seg_get_one_color(f->G[i].pic,  f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		seg_vertex_draw1(f->G1[i].pic, f->vp, vxc, f->R1[i].w);
+		seg_draw_color_one(f->G1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		seg_draw_line_one(f->G1[i].pic, f->dg[i].w, f->dg[i].h);
+		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+
+		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->R1[i].w);
+		seg_get_one_color(f->B[i].pic,  f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		seg_vertex_draw1(f->B1[i].pic, f->vp, vxc, f->R1[i].w);
+		seg_draw_color_one(f->B1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		seg_draw_line_one(f->B1[i].pic, f->dg[i].w, f->dg[i].h);
+		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+
+
 
 		/*
 		seg_remove_line1(f->dg[i].pic, f->dg[i].w, f->dg[i].h);
