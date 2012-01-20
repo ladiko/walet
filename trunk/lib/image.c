@@ -1143,7 +1143,7 @@ uint32 image_range(Image *im, uint32 steps, uint32 bpp, uint8 *buf, int *ibuf, R
 	for(j=0; j < sz; j++) q[j] = j-half;
 
 	sq = im->w*im->h;
-	e = entropy(im->p, (uint32*)buf, im->w, im->h, bpp+1);
+	//e = entropy(im->p, (uint32*)buf, im->w, im->h, bpp+1);
 	dist = (uint32*)buf;
 	buf = &buf[(1<<(bpp+1))*sizeof(uint32)];
 	//printf("l[%d].s[%d] a_bits = %d q_bits = %d\n",i, j, im->l[i].s[j].a_bits,  im->l[i].s[j].q_bits);

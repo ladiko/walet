@@ -539,14 +539,14 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), f0->img[0].w, f0->img[0].h, 128);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	printf("Bits per pixel = %f\n", entropy((int16*)gw->gop.buf, (uint32*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h, gw->wc.bpp));
+	printf("Bits per pixel = %f\n", entropy16((int16*)gw->gop.buf, (uint32*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h, gw->wc.bpp));
 	//prediction_encoder((int16*)gw->gop.buf, f0->img[0].d.pic, (int16*)&gw->gop.buf[f0->img[0].w*f0->img[0].h*4], f0->img[0].w, f0->img[0].h);
 	//seg_grad16(f0->img[0].p, f0->img[0].d.pic, f0->img[0].w, f0->img[0].h, 0);
 
 	new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
 	utils_grey_draw(f0->img[0].d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->img[0].w, f0->img[0].h, 0);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
-	printf("Bits per pixel = %f\n", entropy(f0->img[0].d.pic, (uint32*)gw->gop.buf, f0->img[0].w, f0->img[0].h, gw->wc.bpp));
+	printf("Bits per pixel = %f\n", entropy16(f0->img[0].d.pic, (uint32*)gw->gop.buf, f0->img[0].w, f0->img[0].h, gw->wc.bpp));
 
 	//prediction_decoder(f0->img[0].d.pic, (int16*)gw->gop.buf, f0->img[0].w, f0->img[0].h);
 

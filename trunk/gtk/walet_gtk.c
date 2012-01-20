@@ -149,14 +149,14 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
 			utils_grey_draw(f0->img[i].p, gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), f0->img[i].w, f0->img[i].h, 128);
 			gtk_widget_queue_draw(gw->drawingarea[i+1]);
-			printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
+			printf("Bits per pixel = %f\n", entropy16(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
 		}
 	} else if (!strncmp("video/x-raw-bayer", gst_caps_to_string(caps),17)){
 		clock_t start, end;
 		struct timeval tv;
 		//Copy frame 0 to decoder pipeline
 		gw->wc.icol			= BAYER;	/// Input color space
-		gw->wc.ccol			= RGBY;		/// Compression color space
+		gw->wc.ccol			= CS420;		/// Compression color space
 		//gw->wc.dec			= WAVELET;	/// Decorrelation method
 		gw->wc.dec			= VECTORIZE;	/// Decorrelation method
 		//gw->wc.ocol			= RGB;		/// Output color space
@@ -188,12 +188,26 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			utils_grey_draw8( f0->dw[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->dw[0].w, f0->dw[0].h, 0);
 			gtk_widget_queue_draw(gw->drawingarea[2]);
 				//printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
+		} else if(gw->wc.ccol == CS420){
+
+			new_buffer (gw->orig[1], f0->y[0].w, f0->y[0].h);
+			utils_grey_draw8( f0->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->y[0].w, f0->y[0].h, 0);
+			gtk_widget_queue_draw(gw->drawingarea[1]);
+
+			new_buffer (gw->orig[2], f0->u[0].w, f0->u[0].h);
+			utils_grey_draw8( f0->u[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->u[0].w, f0->u[0].h, 0);
+			gtk_widget_queue_draw(gw->drawingarea[2]);
+
+			new_buffer (gw->orig[3], f0->v[0].w, f0->v[0].h);
+			utils_grey_draw8( f0->u[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->v[0].w, f0->v[0].h, 0);
+			gtk_widget_queue_draw(gw->drawingarea[3]);
+
 		} else {
 			for(i=0; i < 3; i++){
 				new_buffer (gw->orig[i+1], f0->img[i].w, f0->img[i].h);
 				utils_grey_draw(f0->img[i].p, gdk_pixbuf_get_pixels(gw->orig[i+1]->pxb), f0->img[i].w, f0->img[i].h, 128);
 				gtk_widget_queue_draw(gw->drawingarea[i+1]);
-				printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
+				printf("Bits per pixel = %f\n", entropy16(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
 			}
 
 		}
