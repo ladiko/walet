@@ -46,6 +46,23 @@ static void resize_init_(Pic8u **p, uint32 w, uint32 h, uint32 steps)
 	}
 }
 
+static void resize_init1(Pic8u **p, uint32 w, uint32 h, uint32 steps)
+//With w+1 space befor and after image and one more pixel before each row
+{
+	uint32 i;
+	*p = (Pic8u *)calloc(steps, sizeof(Pic8u));
+	(*p)[0].w = w+2;
+	(*p)[0].h = h+2;
+	(*p)[0].pic = (uint8 *)calloc((*p)[0].w*(*p)[0].h, sizeof(uint8));
+	//(*p)[0].pic = &(*p)[0].pic[(*p)[0].w+1];
+	for(i=1; i < steps; i++) {
+		(*p)[i].w = (((*p)[i-1].w-2)>>1)+2;
+		(*p)[i].h = (((*p)[i-1].h-2)>>1)+2;
+		(*p)[i].pic = (uint8 *)calloc((*p)[i].w*(*p)[i].h, sizeof(uint8));
+		//(*p)[i].pic = &(*p)[i].pic[(*p)[i].w+1];
+	}
+}
+
 static void resize_init32(Pic32u **p, uint32 w, uint32 h, uint32 steps)
 //With w+1 space befor and after image and one more pixel before each row
 {
@@ -82,13 +99,21 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    resize_init_(&f->R, w, h, wc->steps);
 	    resize_init_(&f->G, w, h, wc->steps);
 	    resize_init_(&f->B, w, h, wc->steps);
+	    resize_init_(&f->R1, w, h, wc->steps);
+	    resize_init_(&f->G1, w, h, wc->steps);
+	    resize_init_(&f->B1, w, h, wc->steps);
+
+	    resize_init1(&f->y, w, h, wc->steps);
+	    resize_init_(&f->u, w, h, wc->steps);
+	    resize_init_(&f->v, w, h, wc->steps);
+	    resize_init1(&f->y1, w, h, wc->steps);
+	    resize_init_(&f->u1, w, h, wc->steps);
+	    resize_init_(&f->v1, w, h, wc->steps);
+
 	    resize_init_(&f->dw, w, h, wc->steps);
 	    resize_init_(&f->dg, w, h, wc->steps);
 	    resize_init_(&f->dc, w, h, wc->steps);
 	    resize_init_(&f->di, w, h, wc->steps);
-	    resize_init_(&f->R1, w, h, wc->steps);
-	    resize_init_(&f->G1, w, h, wc->steps);
-	    resize_init_(&f->B1, w, h, wc->steps);
 	    resize_init32(&f->rg, w, h, wc->steps);
 
 	}
@@ -181,7 +206,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 		} else if(wc->ccol == CS444) {
 			utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		} else if(wc->ccol == CS420) {
-			utils_bayer_to_YUV420(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+			utils_bayer_to_YUV420(f->b.pic, f->y[0].pic, f->u[0].pic, f->v[0].pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 			//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 			//prediction_encoder(f->img[0].p, f->img[0].p, (int16*)g->buf, f->img[0].w, f->img[0].h);
 			//prediction_encoder(f->img[1].p, f->img[1].p, (int16*)g->buf, f->img[1].w, f->img[1].h);
@@ -839,7 +864,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_vertex_draw1(f->R1[i].pic, f->vp, vxc, f->R1[i].w);
 		seg_draw_color_one(f->R1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_draw_line_one(f->R1[i].pic, f->dg[i].w, f->dg[i].h);
-		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+		printf("Entropy = %f\n", entropy8(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
 
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->R1[i].w);
@@ -847,7 +872,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_vertex_draw1(f->G1[i].pic, f->vp, vxc, f->R1[i].w);
 		seg_draw_color_one(f->G1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_draw_line_one(f->G1[i].pic, f->dg[i].w, f->dg[i].h);
-		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+		printf("Entropy = %f\n", entropy8(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
 
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->R1[i].w);
@@ -855,7 +880,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_vertex_draw1(f->B1[i].pic, f->vp, vxc, f->R1[i].w);
 		seg_draw_color_one(f->B1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_draw_line_one(f->B1[i].pic, f->dg[i].w, f->dg[i].h);
-		printf("Entropy = %f\n", entropy(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+		printf("Entropy = %f\n", entropy8(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
 
 
 
