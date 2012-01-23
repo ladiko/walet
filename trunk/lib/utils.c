@@ -723,7 +723,7 @@ void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w<<1,  w3 = w>>1, yw, h1, w1, h2;
+	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w+2,  w3 = (w>>1) + 2, yw, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
 	int r, g, b;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
@@ -746,32 +746,35 @@ void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff
 		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
 
 		for(x=xs, x1=0; x < w1; x++, x1++){
-			wy = x1 + yw;
+			//wy = x1 + yw;
+			//wy1 = (y1>>1)*w3 +(x1>>1);
+			wy = w2*y1 + w2 + x1 + 1;
 			x2 = x1 + 1;
-			wy1 = (x1>>1) + (y1>>1)*w3;
+			wy1 = (y1>>1)*w3 + w3 + (x1>>1) +1;
 
 			if(!(y&1) && !(x&1)){
 				r = l1[x2];
 				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
 				b = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
-				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
-				V[wy1] = 730*(r - Y[wy])>>10;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
+				//printf("r = %d g = %d b = %d y = %d %d\n", r, g, b, Y[wy], ((306*(r - g) + 117*(b - g))>>10) + g);
+				V[wy1] = (730*(r - Y[wy])>>10) + 128;
 			}else if (!(y&1) && (x&1)){
 				r = (l1[x2-1] + l1[x2+1])>>1;
 				g = l1[x2];
 				b =	(l0[x2] + l2[x2])>>1;
-				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
 			}else if ((y&1) && !(x&1)){
 				r = (l0[x2] + l2[x2])>>1;
 				g = l1[x2];
 				b =	(l1[x2-1] + l1[x2+1])>>1;
-				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
 			}else {
 				r = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
 				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
 				b = l1[x2];
-				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
-				U[wy1] = 578*(b - Y[wy])>>10;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
+				U[wy1] = lb1((578*(b - Y[wy])>>10) + 128);
 			}
 		}
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
