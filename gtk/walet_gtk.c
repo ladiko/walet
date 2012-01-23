@@ -189,18 +189,19 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			gtk_widget_queue_draw(gw->drawingarea[2]);
 				//printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
 		} else if(gw->wc.ccol == CS420){
+			//printf("y x = %d y = %d %p u x = %d y = %d\n", f0->y[0].w, f0->y[0].h, f0->y[0].pic, f0->u[0].w, f0->u[0].h);
 
-			new_buffer (gw->orig[1], f0->y[0].w, f0->y[0].h);
-			utils_grey_draw8( f0->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->y[0].w, f0->y[0].h, 0);
+			new_buffer (gw->orig[3], f0->y[0].w, f0->y[0].h);
+			utils_grey_draw8( f0->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->y[0].w, f0->y[0].h, 0);
+			gtk_widget_queue_draw(gw->drawingarea[3]);
+
+			new_buffer (gw->orig[1], f0->u[0].w, f0->u[0].h);
+			utils_grey_draw8( f0->u[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->u[0].w, f0->u[0].h, 0);
 			gtk_widget_queue_draw(gw->drawingarea[1]);
 
-			new_buffer (gw->orig[2], f0->u[0].w, f0->u[0].h);
-			utils_grey_draw8( f0->u[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->u[0].w, f0->u[0].h, 0);
+			new_buffer (gw->orig[2], f0->v[0].w, f0->v[0].h);
+			utils_grey_draw8( f0->v[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->v[0].w, f0->v[0].h, 0);
 			gtk_widget_queue_draw(gw->drawingarea[2]);
-
-			new_buffer (gw->orig[3], f0->v[0].w, f0->v[0].h);
-			utils_grey_draw8( f0->u[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->v[0].w, f0->v[0].h, 0);
-			gtk_widget_queue_draw(gw->drawingarea[3]);
 
 		} else {
 			for(i=0; i < 3; i++){

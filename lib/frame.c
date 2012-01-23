@@ -55,7 +55,7 @@ static void resize_init1(Pic8u **p, uint32 w, uint32 h, uint32 steps)
 	(*p)[0].h = h+2;
 	(*p)[0].pic = (uint8 *)calloc((*p)[0].w*(*p)[0].h, sizeof(uint8));
 	//(*p)[0].pic = &(*p)[0].pic[(*p)[0].w+1];
-	for(i=1; i < steps; i++) {
+	for(i=1; i < steps+1; i++) {
 		(*p)[i].w = (((*p)[i-1].w-2)>>1)+2;
 		(*p)[i].h = (((*p)[i-1].h-2)>>1)+2;
 		(*p)[i].pic = (uint8 *)calloc((*p)[i].w*(*p)[i].h, sizeof(uint8));
@@ -336,17 +336,35 @@ uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 		else if(wc->ccol == BAYER) for(i=0; i < 4; i++)  image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
 		else  for(i=0; i < 3; i++) image_resize_down_2x(&f->img[i], (int16*)g->buf, wc->steps);
 	} else if(wc->dec == VECTORIZE){
-		for(i=1; i < wc->steps; i++) {
-			resize_down_2x(f->R[i-1].pic, f->R[i].pic, g->buf, f->R[i-1].w, f->R[i-1].h);
+		if(wc->ccol == RGBY){
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x(f->R[i-1].pic, f->R[i].pic, g->buf, f->R[i-1].w, f->R[i-1].h);
+			}
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x(f->G[i-1].pic, f->G[i].pic, g->buf, f->G[i-1].w, f->G[i-1].h);
+			}
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x(f->B[i-1].pic, f->B[i].pic, g->buf, f->B[i-1].w, f->B[i-1].h);
+			}
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+			}
 		}
-		for(i=1; i < wc->steps; i++) {
-			resize_down_2x(f->G[i-1].pic, f->G[i].pic, g->buf, f->G[i-1].w, f->G[i-1].h);
-		}
-		for(i=1; i < wc->steps; i++) {
-			resize_down_2x(f->B[i-1].pic, f->B[i].pic, g->buf, f->B[i-1].w, f->B[i-1].h);
-		}
-		for(i=1; i < wc->steps; i++) {
-			resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+		else if(wc->ccol == CS420){
+			//for(i=1; i < wc->steps+1; i++) {
+			//	resize_down_2x_(f->y[i-1].pic, f->y[i].pic, g->buf, f->y[i-1].w, f->y[i-1].h);
+			//}
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x_(f->u[i-1].pic, f->u[i].pic, g->buf, f->u[i-1].w, f->u[i-1].h);
+			}
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x_(f->v[i-1].pic, f->v[i].pic, g->buf, f->v[i-1].w, f->v[i-1].h);
+			}
+			resize_down_2x_(f->y[0].pic, f->dw[0].pic, g->buf, f->y[0].w, f->y[0].h);
+			for(i=1; i < wc->steps; i++) {
+				resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+			}
+
 		}
 	}
 	f->state = DWT;
@@ -816,17 +834,6 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
-		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
-
-		//filter_contrast(f->dc[i].pic, f->dw[i].pic, f->dw[i].w, f->dw[i].h);
-
-		//filter_median_buf(f->dw[i].pic, f->dc[i].pic, g->buf, f->dw[i].w, f->dw[i].h);
-		//filter_noise(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h, 0);
-		//filter_noise(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h, 0);
-		//filter_noise(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h, 0);
-		//filter_noise(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h, 0);
-
-		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		//seg_grad_RGB(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 1);
 		//seg_grad_buf(f->dc[i].pic, f->dg[i].pic, g->buf, f->dw[i].w, f->dw[i].h, 1);
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -834,22 +841,31 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//memset(f->G1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//memset(f->B1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
-		//seg_find_intersect(f->dg[i].pic, f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-		//seg_remove_line1(f->dc[i].pic, f->dg[i].w, f->dg[i].h);
-
-		//vxc = seg_vertex(f->dc[i].pic, f->vx, f->vp, f->ln, f->lp, f->dg[i].w, f->dg[i].h);
-		//seg_draw_line(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->ln, vxc, f->R1[i].w, f->R1[i].h);
-
-		//seg_fall_forest(f->dg[i].pic, (uint32*)g->buf, f->dw[i].w, f->dw[i].h);
-		//memset(g->buf, 0, f->dg[i].w*f->dg[i].h*sizeof(uint32));
-
-		//rgc =  seg_group_reg((uint32*)g->buf, (uint32*)&g->buf[f->dw[i].w*f->dw[i].h], f->dw[i].w, f->dw[i].h);
-
-		//seg_draw_grad(f->dg[i].pic, f->dc[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
-
+		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
-		//memset(g->buf, 0, f->dg[i].w*f->dg[i].h*sizeof(uint32));
 
+
+		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
+		seg_fill_reg(f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
+		seg_remove_contour(f->rg[i].pic, f->dg[i].w, f->dg[i].h);
+		vxc = seg_vertex2(f->rg[i].pic, f->di[i].pic, f->vx, f->vp, f->dg[i].w, f->dg[i].h);
+		seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
+		//seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
+
+		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->dc[i].w);
+		seg_get_one_color(f->dw[i].pic,  f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
+		seg_vertex_draw1(f->dc[i].pic, f->vp, vxc, f->y1[i+1].w);
+		seg_draw_color_one(f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
+		seg_draw_line_one(f->dc[i].pic, f->dg[i].w, f->dg[i].h);
+		printf("Entropy = %f\n", entropy8(f->dc[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
+
+
+		/*
+		filter_median(f->dw[i].pic, f->dc[i].pic, f->dw[i].w, f->dw[i].h);
+		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
+		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
 
 		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
@@ -881,7 +897,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_draw_color_one(f->B1[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_draw_line_one(f->B1[i].pic, f->dg[i].w, f->dg[i].h);
 		printf("Entropy = %f\n", entropy8(f->R1[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
-
+		*/
 
 
 		/*

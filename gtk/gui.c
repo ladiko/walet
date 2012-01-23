@@ -387,20 +387,30 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 				gtk_widget_queue_draw(gw->drawingarea[i+1]);
 			}
 		} else if(gw->wc.dec == VECTORIZE){
-			new_buffer (gw->orig[3], f0->dw[1].w<<1, f0->dw[1].h<<1);
-			utils_contour(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
-			//new_buffer (gw->orig[3], f0->dw[3].w, f0->dw[3].h);
-			//utils_grey_draw8( f0->dw[3].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->dw[3].w, f0->dw[3].h, 0);
-			gtk_widget_queue_draw(gw->drawingarea[3]);
+			if(gw->wc.ccol == RGBY){
+				new_buffer (gw->orig[3], f0->dw[1].w<<1, f0->dw[1].h<<1);
+				utils_contour(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
+				gtk_widget_queue_draw(gw->drawingarea[3]);
 
-			//new_buffer (gw->orig[3], f0->b.w, f0->b.h);
-			//utils_resize_draw(f0->dw, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps, f0->b.w);
-			//gtk_widget_queue_draw(gw->drawingarea[3]);
 
-			new_buffer (gw->orig[0], f0->b.w, f0->b.h);
-			utils_resize_draw_rgb(f0->R, f0->G, f0->B, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.steps, f0->b.w);
-			gtk_widget_queue_draw(gw->drawingarea[0]);
+				new_buffer (gw->orig[0], f0->b.w, f0->b.h);
+				utils_resize_draw_rgb(f0->R, f0->G, f0->B, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), gw->wc.steps, f0->b.w);
+				gtk_widget_queue_draw(gw->drawingarea[0]);
+			}
+			else if(gw->wc.ccol == CS420){
+				new_buffer (gw->orig[3], f0->y[0].w<<1, f0->y[0].h<<1);
+				utils_resize_draw(f0->y, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->wc.steps, f0->y[0].w<<1);
+				gtk_widget_queue_draw(gw->drawingarea[3]);
 
+				new_buffer (gw->orig[1], f0->u[0].w<<1, f0->u[0].h<<1);
+				utils_resize_draw(f0->u, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), gw->wc.steps, f0->u[0].w<<1);
+				gtk_widget_queue_draw(gw->drawingarea[1]);
+
+				new_buffer (gw->orig[2], f0->v[0].w<<1, f0->v[0].h<<1);
+				utils_resize_draw(f0->v, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), gw->wc.steps, f0->v[0].w<<1);
+				gtk_widget_queue_draw(gw->drawingarea[2]);
+
+			}
 		}
 
 		//new_buffer (gw->orig[1], f0->img[0].w, f0->img[0].h);
@@ -610,10 +620,10 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	for(i=0; i < 4; i++){
 		new_buffer (gw->orig[i], fr->dc[i].w<<i, fr->dc[i].h<<i);
-		//utils_contour(fr->dg, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		utils_contour(fr->dc, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		//utils_contour32(fr->rg, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		//new_buffer (gw->orig[i], fr->R1[i].w<<i, fr->R1[i].h<<i);
-		utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
+		//utils_contour_rgb(fr->R1, fr->G1, fr->B1, gdk_pixbuf_get_pixels(gw->orig[i]->pxb), i);
 		gtk_widget_queue_draw(gw->drawingarea[i]);
 	}
 
