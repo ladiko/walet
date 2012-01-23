@@ -1689,7 +1689,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 	printf("Numbers of drawing vertexs  = %d\n", vc);
 }
 
-void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w)
+void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 k)
 {
 	uint32 i, yx, vc = 0;
 	Vector v;
@@ -1713,8 +1713,8 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w)
 				nd1 =  find_pointer1(vx1, vx);
 				finish_dir1(vx1, nd1);
 
-				v.x1 =  vx->x; v.y1 =  vx->y;
-				v.x2 =  vx1->x; v.y2 =  vx1->y;
+				v.x1 =  ((vx->x-1)<<k)+1; v.y1 =  ((vx->y-1)<<k)+1;
+				v.x2 =  ((vx1->x-1)<<k)+1; v.y2 =  ((vx1->y-1)<<k)+1;
 				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				//c[0] = 128; c[1] = 128; c[2] = 128;
