@@ -31,7 +31,7 @@ void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h,
 uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
 uint32 seg_fill_reg(uint32 *reg, uint32 *buff, uint32 w, uint32 h);
 void seg_remove_contour(uint32 *reg, uint32 w, uint32 h);
-void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w);
+void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 k);
 uint32 seg_draw_color_one(uint8 *img, uint8 *col, uint32 *buff, uint32 w, uint32 h);
 void seg_draw_line_one(uint8 *img, uint32 w, uint32 h);
 
