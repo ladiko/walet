@@ -701,18 +701,7 @@ void utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff
 	}
 }
 
-/**	\brief Transform bayer image to YUV420 format.
-    \param img	 	The input Bayer image.
-    \param Y		The output Y image.
-	\param U		The output U image.
-	\param V		The output V image.
- 	\param buff		The temporary 3 rows buffer.
-	\param w		The image width.
-	\param h		The image height.
-	\param bay		The Bayer grids pattern.
-*/
-
-void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
+void utils_bayer_to_YUV420_16(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
 /*
    All RGB cameras use one of these Bayer grids:
 
@@ -723,7 +712,7 @@ void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w+2,  w3 = (w>>1) + 2, yw, h1, w1, h2;
+	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w<<1,  w3 = w>>1, yw, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
 	int r, g, b;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
@@ -746,35 +735,114 @@ void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff
 		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
 
 		for(x=xs, x1=0; x < w1; x++, x1++){
-			//wy = x1 + yw;
-			//wy1 = (y1>>1)*w3 +(x1>>1);
-			wy = w2*y1 + w2 + x1 + 1;
+			wy = x1 + yw;
 			x2 = x1 + 1;
-			wy1 = (y1>>1)*w3 + w3 + (x1>>1) +1;
+			wy1 = (x1>>1) + (y1>>1)*w3;
 
 			if(!(y&1) && !(x&1)){
 				r = l1[x2];
 				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
 				b = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
-				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
-				//printf("r = %d g = %d b = %d y = %d %d\n", r, g, b, Y[wy], ((306*(r - g) + 117*(b - g))>>10) + g);
-				V[wy1] = (730*(r - Y[wy])>>10) + 128;
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				V[wy1] = 730*(r - Y[wy])>>10;
 			}else if (!(y&1) && (x&1)){
 				r = (l1[x2-1] + l1[x2+1])>>1;
 				g = l1[x2];
 				b =	(l0[x2] + l2[x2])>>1;
-				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
 			}else if ((y&1) && !(x&1)){
 				r = (l0[x2] + l2[x2])>>1;
 				g = l1[x2];
 				b =	(l1[x2-1] + l1[x2+1])>>1;
-				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
 			}else {
 				r = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
 				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
 				b = l1[x2];
-				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + 128);
-				U[wy1] = lb1((578*(b - Y[wy])>>10) + 128);
+				Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
+				U[wy1] = 578*(b - Y[wy])>>10;
+			}
+		}
+		tm = l0; l0 = l1; l1 = l2; l2 = tm;
+	}
+}
+
+/**	\brief Transform bayer image to YUV420 format.
+    \param img	 	The input Bayer image.
+    \param Y		The output Y image.
+	\param U		The output U image.
+	\param V		The output V image.
+ 	\param buff		The temporary 3 rows buffer.
+	\param w		The image width.
+	\param h		The image height.
+	\param bay		The Bayer grids pattern.
+*/
+
+void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
+/*
+   All RGB cameras use one of these Bayer grids:
+
+	BGGR  0         GRBG 1          GBRG  2         RGGB 3
+	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w<<1,  w3 = w>>1, yw, h1, w1, h2;
+	int16 *l0, *l1, *l2, *tm;
+	int r, g, b, sh = 128;
+	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+
+	switch(bay){
+		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+	}
+	h2 = h1-1;
+	//Create 3 rows buffer for transform
+
+	l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
+	l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
+
+	for(y=ys, y1=0; y < h1; y++, y1++){
+		yw = y1*w;
+		wy = (y == h2) ? yw - w : yw + w;
+		//yw = (y1+1)*(w+2);
+		//wy = (y == h2) ? yw - (w+2) : yw + (w+2);
+		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
+
+		for(x=xs, x1=0; x < w1; x++, x1++){
+			//wy = x1 + yw;
+			//x2 = x1 + 1;
+			//wy1 = (x1>>1) + (y1>>1)*w3;
+			wy = x1 + (y1+1)*(w+2) +1;
+			x2 = x1 + 1;
+			wy1 = (x1>>1) + ((y1>>1)+1)*(w3+2) + 1;
+
+			if(!(y&1) && !(x&1)){
+				r = l1[x2];
+				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+				b = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + sh);
+				V[wy1] = lb1((730*(r - Y[wy])>>10) + sh);
+			}else if (!(y&1) && (x&1)){
+				r = (l1[x2-1] + l1[x2+1])>>1;
+				g = l1[x2];
+				b =	(l0[x2] + l2[x2])>>1;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + sh);
+			}else if ((y&1) && !(x&1)){
+				r = (l0[x2] + l2[x2])>>1;
+				g = l1[x2];
+				b =	(l1[x2-1] + l1[x2+1])>>1;
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + sh);
+			}else {
+				r = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+				g = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+				b = l1[x2];
+				Y[wy] = lb1(((306*(r - g) + 117*(b - g))>>10) + g + sh);
+				U[wy1] = lb1((578*(b - Y[wy])>>10) + sh);
 			}
 		}
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
