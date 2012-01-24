@@ -1691,7 +1691,7 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 
 void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, uint32 k)
 {
-	uint32 i, yx, vc = 0, w2 = w-2, h2 = h-2;
+	uint32 i, yx, vc = 0, w2 = (w-2)>>k, h2 = (h-2)>>k;
 	Vector v;
 	uint8  nd, nd1, nd2;
 	Vertex *vx, *vx1, *vx2, *vp1;
@@ -1713,13 +1713,18 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 				nd1 =  find_pointer1(vx1, vx);
 				finish_dir1(vx1, nd1);
 
-				//v.x1 =  ((vx->x-1)<<k)+1; v.y1 =  ((vx->y-1)<<k)+1;
-				//v.x2 =  ((vx1->x-1)<<k)+1; v.y2 =  ((vx1->y-1)<<k)+1;
+				v.x1 = ((vx->x-1)<<k); 	v.y1 = ((vx->y-1)<<k);
+				v.x2 = ((vx1->x-1)<<k); v.y2 = ((vx1->y-1)<<k);
 
-				v.x1 = (vx->x) == w2 ?((vx->x-1)<<k)+2 : ((vx->x-1)<<k)+1;
-				v.y1 = (vx->y) == h2 ? ((vx->y-1)<<k)+2 : ((vx->y-1)<<k)+1;
-				v.x2 = (vx1->x) == w2 ?((vx1->x-1)<<k)+2 : ((vx1->x-1)<<k)+1;
-				v.y2 = (vx1->y) == h2 ? ((vx1->y-1)<<k)+2 : ((vx1->y-1)<<k)+1;
+				if(!k){
+					v.x1 = v.x1+1; 	v.y1 = v.y1+1;
+					v.x2 = v.x2+1; 	v.y2 = v.y2+1;
+				} else {
+					v.x1 = (vx->x) == w2 ? (w&1 ? v.x1+3 : v.x1+2): v.x1+1;
+					v.y1 = (vx->y) == h2 ? (h&1 ? v.y1+3 : v.y1+2): v.y1+1;
+					v.x2 = (vx1->x) == w2 ? (w&1 ? v.x2+3 : v.x2+2): v.x2+1;
+					v.y2 = (vx1->y) == h2 ? (h&1 ? v.y2+3 : v.y2+2): v.y2+1;
+				}
 				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				//c[0] = 128; c[1] = 128; c[2] = 128;
@@ -1734,6 +1739,10 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 			//img[yx] = 255;
 		}
 	}
+	//img[(h-2)*w + w-2] = 255;
+	//img[h2*w + w2] = 255;
+	//printf("w2 = %d h2 = %d\n", w2, h2);
+	//printf("w = %d h = %d\n", w, h);
 
 	for(i=0; i < vxc; i++) {
 		//printf("%d %p \n", j, vp[j]);
