@@ -1689,9 +1689,9 @@ void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint
 	printf("Numbers of drawing vertexs  = %d\n", vc);
 }
 
-void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 k)
+void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, uint32 k)
 {
-	uint32 i, yx, vc = 0;
+	uint32 i, yx, vc = 0, w2 = w-2, h2 = h-2;
 	Vector v;
 	uint8  nd, nd1, nd2;
 	Vertex *vx, *vx1, *vx2, *vp1;
@@ -1713,8 +1713,13 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 k)
 				nd1 =  find_pointer1(vx1, vx);
 				finish_dir1(vx1, nd1);
 
-				v.x1 =  ((vx->x-1)<<k)+1; v.y1 =  ((vx->y-1)<<k)+1;
-				v.x2 =  ((vx1->x-1)<<k)+1; v.y2 =  ((vx1->y-1)<<k)+1;
+				//v.x1 =  ((vx->x-1)<<k)+1; v.y1 =  ((vx->y-1)<<k)+1;
+				//v.x2 =  ((vx1->x-1)<<k)+1; v.y2 =  ((vx1->y-1)<<k)+1;
+
+				v.x1 = (vx->x) == w2 ?((vx->x-1)<<k)+2 : ((vx->x-1)<<k)+1;
+				v.y1 = (vx->y) == h2 ? ((vx->y-1)<<k)+2 : ((vx->y-1)<<k)+1;
+				v.x2 = (vx1->x) == w2 ?((vx1->x-1)<<k)+2 : ((vx1->x-1)<<k)+1;
+				v.y2 = (vx1->y) == h2 ? ((vx1->y-1)<<k)+2 : ((vx1->y-1)<<k)+1;
 				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				//c[0] = 128; c[1] = 128; c[2] = 128;
@@ -1750,7 +1755,7 @@ uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint
 {
 	uint32 i, j, y, x, yx, yxw, yw,  h1 = h-2, w1 = w-2;
 	uint32 rgc = 0;
-	uint32 num, c, cn, cl;
+	uint32 num, c, cn, cl = 254;
 	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
 
 	for(y=2; y < h1; y++){
@@ -1758,9 +1763,10 @@ uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			if(!con[yx]){
-				//printf("yx = %d r = %d\n", yx, con[yx]);
+				printf("%d x = %d  %d y = %d con = %d\n", w, yx%w, h, yx/w, con[yx]);
+				if(yx == (712 + 1298*w) || yx == (2 + 1302*w)) break;
 				c = 0;  cn = 0;
-				cl = 254; con[yx] = cl; num = 1; l1[0] = yx; i = 0;
+				con[yx] = cl; num = 1; l1[0] = yx; i = 0;
 				while(num){
 					for(j=0; j < num; j++){
 						yxw = l1[j] - 1;
@@ -1800,7 +1806,7 @@ uint32 seg_draw_color_one(uint8 *img, uint8 *col, uint32 *buff, uint32 w, uint32
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			if(!img[yx]){
-				//printf("yx = %d r = %d\n", yx, img[yx]);
+				//printf("yx = %d img = %d\n", yx, img[yx]);
 				c = 0;  cn = 0;
 				cl = col[rgc]; img[yx] = cl; num = 1; l1[0] = yx; i = 0;
 				while(num){
