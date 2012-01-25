@@ -1728,9 +1728,11 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 				//printf("x1 = %4d x2 = %4d  y1 = %d y2 = %d \n", vx->x, vx1->y,vx->y, vx1->y);
 
 				//c[0] = 128; c[1] = 128; c[2] = 128;
-				draw_line_1(img, &v, w, 255);
-				//yx = v.y2*w + v.x2;
-				//img[yx] = 255;
+				draw_line_1(img, &v, w, 128);
+				yx = v.y2*w + v.x2;
+				img[yx] = 255;
+				yx = v.y1*w + v.x1;
+				img[yx] = 255;
 				if(!get_left_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			}while(vx != vp[i]);
@@ -1772,7 +1774,7 @@ uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			if(!con[yx]){
-				printf("%d x = %d  %d y = %d con = %d\n", w, yx%w, h, yx/w, con[yx]);
+				//printf("%d x = %d  %d y = %d con = %d\n", w, yx%w, h, yx/w, con[yx]);
 				if(yx == (712 + 1298*w) || yx == (2 + 1302*w)) break;
 				c = 0;  cn = 0;
 				con[yx] = cl; num = 1; l1[0] = yx; i = 0;
