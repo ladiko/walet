@@ -853,6 +853,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
 		//seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
 
+		memset(f->rg[i].pic, 0, f->rg[i].w*f->rg[i].h*sizeof(uint32));
 		seg_vertex_draw2(f->dc[i].pic, f->vp, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
 		//seg_get_one_color(f->dw[i].pic,  f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		/*
