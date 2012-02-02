@@ -496,11 +496,61 @@ static inline uint32 draw_line_3(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32
 static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
-	int sty, stx, yx;
+	int sty, stx = 1, yx;
+	int d, d1, st1, st2;
+	/*
+	if(v->x2 > v->x1){
+		x = v->x1; y = v->y1*w;
+		sty = v->y2 > v->y1 ? w : -w;
+	} else {
+		x = v->x2; y = v->y2*w;
+		sty = v->y1 > v->y2 ? w : -w;
+	}
 
-	//x = v->x1; y = v->y1*w;
-	//stx = v->x2 > v->x1 ? 1 : -1;
-	//sty = v->y2 > v->y1 ? w : -w;
+	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
+
+	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
+	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
+	n = d - 0; max = d;
+
+	for(i=0; i < n; i++){
+		yx = y + x;
+		rg[yx] = col;
+		min += d1; x += st1;
+		if(min >= max) { max += d; y += st2; }
+	}
+	return d;*/
+
+
+	x = v->x1; y = v->y1*w;
+	sty = v->y2 > v->y1 ? w : -w;
+	stx = v->x2 > v->x1 ? 1 : -1;
+	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
+	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
+	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
+
+	if(v->x2 > v->x1){
+		min = 0;  max = d; n = d;
+	} else {
+		min = d1; max = d + d1; n = d;
+	}
+
+
+	for(i=0; i < n; i++){
+		yx = y + x;
+		rg[yx] = col;
+		min += d1; x += st1;
+		if(min >= max) { max += d; y += st2; }
+	}
+	return d;
+}
+
+static inline uint32 draw_two_lines(uint8 *rg, Vector *v, uint32 w, uint8 col)
+{
+	uint32 i, max , min = 0, n, x, y, dx, dy;
+	int sty, stx, yx;
+	int d, d1, st1, st2;
+
 	stx = 1;
 	if(v->x2 > v->x1){
 		x = v->x1; y = v->y1*w;
@@ -511,25 +561,18 @@ static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 	}
 
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-	if(dx >= dy){
-		n = dx - 0; max = dx;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			rg[yx] = col;
-			min += dy; x += stx;
-			if(min >= max) { max += dx; y += sty; }
-		}
-		return dx;
-	} else {
-		n = dy - 0; max = dy;
-		for(i=0; i < n; i++){
-			yx = y + x;
-			rg[yx] = col;
-			min += dx; y += sty;
-			if(min >= max) { max += dy; x += stx; }
-		}
-		return dy;
+
+	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
+	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
+	n = d - 0; max = d;
+
+	for(i=0; i < n; i++){
+		yx = y + x;
+		rg[yx] = col;
+		min += d1; x += st1;
+		if(min >= max) { max += d; y += st2; }
 	}
+	return d;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
@@ -1562,7 +1605,7 @@ static inline Vertex**  find_pointer(Vertex *vx1, Vertex *vx2)
 
 static inline uint32 get_dir2(Vertex *vx, uint8 *nd)
 {
-	//printf("dx = %d dy = %d di = %o cn = %o\n", *dx, *dy, vx->di, vx->cn);
+	if(!(vx->di - vx->cn)) return 0;
 	if		((vx->di&128) && !(vx->cn&128)) { vx->cn |= 128;	*nd = 0; 	return 1; }
 	else if	((vx->di&64 ) && !(vx->cn&64 )) { vx->cn |= 64;		*nd = 1;  	return 1; }
 	else if	((vx->di&32 ) && !(vx->cn&32 )) { vx->cn |= 32;		*nd = 2;  	return 1; }
@@ -1576,7 +1619,7 @@ static inline uint32 get_dir2(Vertex *vx, uint8 *nd)
 
 static inline uint32 get_dir3(Vertex *vx, uint8 *nd)
 {
-	//printf("dx = %d dy = %d di = %o cn = %o\n", *dx, *dy, vx->di, vx->cn);
+	if(!(vx->di - vx->cn)) return 0;
 	if		((vx->di&128) && !(vx->cn&128)) { *nd = 0; return 1; }
 	else if	((vx->di&64 ) && !(vx->cn&64 )) { *nd = 1; return 1; }
 	else if	((vx->di&32 ) && !(vx->cn&32 )) { *nd = 2; return 1; }
@@ -1629,6 +1672,9 @@ static inline uint8  find_pointer1(Vertex *vx1, Vertex *vx2)
 
 static inline uint8 get_clockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
 {
+	uint8 tm, i = 0;
+	if(!(vx->di - vx->cn)) return 0;
+
 	if      (nd == 0) { vx->cn |= 128; goto m1; }
 	else if (nd == 1) { vx->cn |= 64;  goto m8; }
 	else if (nd == 2) { vx->cn |= 32;  goto m7; }
@@ -1639,21 +1685,56 @@ static inline uint8 get_clockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
 	else if (nd == 7) { vx->cn |= 1;   goto m2; }
 	//return 0;
 
-m1:	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; vx->cn |= 1;		return 1; }
-m2:	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; vx->cn |= 2;		return 1; }
-m3:	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; vx->cn |= 4;		return 1; }
-m4:	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; vx->cn |= 8;		return 1; }
-m5:	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; vx->cn |= 16;	return 1; }
-m6:	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; vx->cn |= 32;	return 1; }
-m7:	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; vx->cn |= 64;	return 1; }
-m8:	if ((vx->di&128) && !(vx->cn&128)) { *nd1 = 0; vx->cn |= 128; 	return 1; }
-	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; vx->cn |= 1;		return 1; }
-	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; vx->cn |= 2;		return 1; }
-	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; vx->cn |= 4;		return 1; }
-	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; vx->cn |= 8;		return 1; }
-	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; vx->cn |= 16;	return 1; }
-	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; vx->cn |= 32;	return 1; }
-	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; vx->cn |= 64;	return 1; }
+	m1:	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; vx->cn |= 1;		return 1; }
+	m2:	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; vx->cn |= 2;		return 1; }
+	m3:	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; vx->cn |= 4;		return 1; }
+	m4:	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; vx->cn |= 8;		return 1; }
+	m5:	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; vx->cn |= 16;	return 1; }
+	m6:	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; vx->cn |= 32;	return 1; }
+	m7:	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; vx->cn |= 64;	return 1; }
+	m8:	if ((vx->di&128) && !(vx->cn&128)) { *nd1 = 0; vx->cn |= 128; 	return 1; }
+		if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 7; vx->cn |= 1;		return 1; }
+		if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 6; vx->cn |= 2;		return 1; }
+		if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 5; vx->cn |= 4;		return 1; }
+		if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 4; vx->cn |= 8;		return 1; }
+		if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 3; vx->cn |= 16;	return 1; }
+		if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 2; vx->cn |= 32;	return 1; }
+		if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 1; vx->cn |= 64;	return 1; }
+	return 0;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
+{
+	uint8 tm, i = 0;
+	if(!(vx->di - vx->cn)) return 0;
+
+	if      (nd == 0) goto m1;
+	else if (nd == 1) goto m2;
+	else if (nd == 2) goto m3;
+	else if (nd == 3) goto m4;
+	else if (nd == 4) goto m5;
+	else if (nd == 5) goto m6;
+	else if (nd == 6) goto m7;
+	else if (nd == 7) goto m8;
+	//return 0;
+
+	m1:	if (vx->di&64 ) { *nd1 = 1; return 1; }
+	m2:	if (vx->di&32 ) { *nd1 = 2; return 1; }
+	m3:	if (vx->di&16 ) { *nd1 = 3; return 1; }
+	m4:	if (vx->di&8  ) { *nd1 = 4; return 1; }
+	m5:	if (vx->di&4  ) { *nd1 = 5; return 1; }
+	m6:	if (vx->di&2  ) { *nd1 = 6; return 1; }
+	m7:	if (vx->di&1  ) { *nd1 = 7; return 1; }
+	m8:	if (vx->di&128) { *nd1 = 0; return 1; }
+		if (vx->di&64 ) { *nd1 = 1; return 1; }
+		if (vx->di&32 ) { *nd1 = 2; return 1; }
+		if (vx->di&16 ) { *nd1 = 3; return 1; }
+		if (vx->di&8  ) { *nd1 = 4; return 1; }
+		if (vx->di&4  ) { *nd1 = 5; return 1; }
+		if (vx->di&2  ) { *nd1 = 6; return 1; }
+		if (vx->di&1  ) { *nd1 = 7; return 1; }
+
 	return 0;
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
@@ -1811,7 +1892,7 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
 				img[yx] = 255;
-				if(!get_left_dir(vx1, nd1, &nd)) break;
+				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			}while(vx != vp[i]);
 
@@ -1884,7 +1965,7 @@ void seg_vertex_draw2(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
 				img[yx] = 255;
-				if(!get_left_dir(vx1, nd1, &nd)) break;
+				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			}while(vx != vp[i]);
 
@@ -1915,7 +1996,7 @@ void seg_vertex_draw2(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 static inline uint32 get_pix(uint8 *img, uint32 yx, uint32 w, uint8 nd1)
 {
 	uint8 nd = nd1+1 > 7 ? 0 : nd1+1;
-	if(nd != nd2 ){
+	//if(nd != nd2 ){
 		if		(nd == 0) { return yx-1  ; }
 		else if	(nd == 1) { return yx-1-w; }
 		else if	(nd == 2) { return yx  -w; }
@@ -1924,7 +2005,7 @@ static inline uint32 get_pix(uint8 *img, uint32 yx, uint32 w, uint8 nd1)
 		else if	(nd == 5) { return yx+1+w; }
 		else if	(nd == 6) { return yx+  w; }
 		else if	(nd == 7) { return yx-1+w; }
-	}
+	//}
 	return 0;
 }
 
@@ -1958,7 +2039,8 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
 
 				draw_line_1(img, &v, w, 64);
-				//draw_line_dir(img, &v, w)
+				//draw_line_dir(img, &v, w);
+
 				yx = v.y2*w + v.x2;
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
@@ -1968,12 +2050,13 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			} //;while(vx != vp[i]);
-			//get_counterclockwise_dir(vp[i], nd1, &nd);
-			inp[rc] = get_pix(vp[i]->y*w + vp[i]->y, w, nd2);
+			//get_counterclockwise_dir(vp[i], nd2, &nd);
+
+			//inp[rc] = get_pix(vp[i]->y*w + vp[i]->y, w, nd2);
 			//if(img[inp[rc]]) inp[rc] = 0;
 
-			printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
-			img[inp[rc]] = 128;
+			//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
+			//img[inp[rc]] = 128;
 			rc++;
 		}
 	}
