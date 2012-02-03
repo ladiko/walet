@@ -498,28 +498,6 @@ static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 	uint32 i, max , min = 0, n, x, y, dx, dy;
 	int sty, stx = 1, yx;
 	int d, d1, st1, st2;
-	/*
-	if(v->x2 > v->x1){
-		x = v->x1; y = v->y1*w;
-		sty = v->y2 > v->y1 ? w : -w;
-	} else {
-		x = v->x2; y = v->y2*w;
-		sty = v->y1 > v->y2 ? w : -w;
-	}
-
-	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-
-	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
-	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
-	n = d - 0; max = d;
-
-	for(i=0; i < n; i++){
-		yx = y + x;
-		rg[yx] = col;
-		min += d1; x += st1;
-		if(min >= max) { max += d; y += st2; }
-	}
-	return d;*/
 
 	x = v->x1; y = v->y1*w;
 	sty = v->y2 > v->y1 ? w : -w;
@@ -528,13 +506,8 @@ static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
 	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
 
-	if(v->x2 > v->x1){
-		min = 0; max = d; n = d;
-		return 0;
-	} else {
-		//min = d1; max = d + d1; n = d;
-		min = min*max; max = min; n = d; d1 = -d1; d = -d;
-	}
+	min = 0; max = d; n = d;
+	if(v->x2 <= v->x1 && (d1&1 || d&1)) min = d1-1;
 
 	for(i=0; i < n; i++){
 		yx = y + x;
@@ -593,63 +566,27 @@ static inline uint32 draw_line_dir(uint8 *rg, Vector *v, uint32 w)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
 	int sty, stx, yx, yx1;
+	int d, d1, st1, st2;
 
-	stx = 1;
+	x = v->x1; y = v->y1*w;
+	sty = v->y2 > v->y1 ? w : -w;
+	stx = v->x2 > v->x1 ? 1 : -1;
 	dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-	if(v->x2 > v->x1){
-		x = v->x1; y = v->y1*w;
-		sty = v->y2 > v->y1 ? w : -w;
-		if(dx >= dy){
-			n = dx - 0; max = dx;
-			for(i=0; i < n; i++){
-				yx = y + x;
-				if(i > 0) add_dir2(rg, yx1, yx, w);
-				//rg[yx] = col;
-				min += dy; x += stx;
-				if(min >= max) { max += dx; y += sty; }
-				yx1 = yx;
-			}
-			return dx;
-		} else {
-			n = dy - 0; max = dy;
-			for(i=0; i < n; i++){
-				yx = y + x;
-				if(i > 0) add_dir2(rg, yx1, yx, w);
-				//rg[yx] = col;
-				min += dx; y += sty;
-				if(min >= max) { max += dy; x += stx; }
-				yx1 = yx;
-			}
-			return dy;
-		}
-	} else {
-		x = v->x2; y = v->y2*w;
-		sty = v->y1 > v->y2 ? w : -w;
-		if(dx >= dy){
-			n = dx - 0; max = dx;
-			for(i=0; i < n; i++){
-				yx = y + x;
-				if(i > 0) add_dir2(rg, yx, yx1, w);
-				//rg[yx] = col;
-				min += dy; x += stx;
-				if(min >= max) { max += dx; y += sty; }
-				yx1 = yx;
-			}
-			return dx;
-		} else {
-			n = dy - 0; max = dy;
-			for(i=0; i < n; i++){
-				yx = y + x;
-				if(i > 0) add_dir2(rg, yx, yx1, w);
-				//rg[yx] = col;
-				min += dx; y += sty;
-				if(min >= max) { max += dy; x += stx; }
-				yx1 = yx;
-			}
-			return dy;
-		}
-	}
+	if(dx >= dy){ d = dx; d1 = dy; st1 = stx; st2 = sty; }
+	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
 
+	min = 0; max = d; n = d;
+	if(v->x2 <= v->x1 && (d1&1 || d&1)) min = d1-1;
+
+	for(i=0; i < n; i++){
+		yx = y + x;
+		//rg[yx] = col;
+		if(i > 0) add_dir2(rg, yx1, yx, w);
+		min += d1; x += st1;
+		if(min >= max) { max += d; y += st2; }
+		yx1 = yx;
+	}
+	return d;
 }
 
 /*	\brief	Finf pixels with lines intersection.
@@ -2038,14 +1975,14 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 				v.x2 = ((vx1->x-1)*kx>>sh); v.x2 = (v.x2 == w-2) ? v.x2 : v.x2 + 1;
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
 
-				draw_line_1(img, &v, w, 64);
-				//draw_line_dir(img, &v, w);
-/*
+				//draw_line_1(img, &v, w, 64);
+				draw_line_dir(img, &v, w);
+				/*
 				yx = v.y2*w + v.x2;
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
 				img[yx] = 255;
-*/
+				*/
 				vc++;
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
