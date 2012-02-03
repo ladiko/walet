@@ -521,7 +521,6 @@ static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 	}
 	return d;*/
 
-
 	x = v->x1; y = v->y1*w;
 	sty = v->y2 > v->y1 ? w : -w;
 	stx = v->x2 > v->x1 ? 1 : -1;
@@ -530,11 +529,12 @@ static inline uint32 draw_line_1(uint8 *rg, Vector *v, uint32 w, uint8 col)
 	else 		{ d = dy; d1 = dx; st1 = sty; st2 = stx; }
 
 	if(v->x2 > v->x1){
-		min = 0;  max = d; n = d;
+		min = 0; max = d; n = d;
+		return 0;
 	} else {
-		min = d1; max = d + d1; n = d;
+		//min = d1; max = d + d1; n = d;
+		min = min*max; max = min; n = d; d1 = -d1; d = -d;
 	}
-
 
 	for(i=0; i < n; i++){
 		yx = y + x;
@@ -2040,12 +2040,12 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 
 				draw_line_1(img, &v, w, 64);
 				//draw_line_dir(img, &v, w);
-
+/*
 				yx = v.y2*w + v.x2;
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
 				img[yx] = 255;
-
+*/
 				vc++;
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;

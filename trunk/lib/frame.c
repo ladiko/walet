@@ -845,7 +845,6 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_grad(f->dc[i].pic, f->dg[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
-
 		seg_find_intersect3(f->dg[i].pic, f->rg[i].pic, f->di[i].pic, f->dg[i].w, f->dg[i].h);
 		seg_fill_reg(f->rg[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h);
 		seg_remove_contour(f->rg[i].pic, f->dg[i].w, f->dg[i].h);
