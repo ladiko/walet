@@ -830,7 +830,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
 	//for(i=1; i < wc->steps; i++) {
-	for(i=3; i < 4; i++) {
+	for(i=0; i < 1; i++) {
 		//filter_median(f->R[i].pic, f->R1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->G[i].pic, f->G1[i].pic, f->dw[i].w, f->dw[i].h);
 		//filter_median(f->B[i].pic, f->B1[i].pic, f->dw[i].w, f->dw[i].h);
