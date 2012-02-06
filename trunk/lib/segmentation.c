@@ -515,32 +515,54 @@ static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
 		if(min >= max) { max += dma; y += stma; }
 	}
 	return dma;
-
 }
 
-static inline uint32 draw_two_lines(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint8 col)
+static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 {
-	uint32 i, max , min = 0, n, x, y, dx, dy;
-	int stx, sty, yx;
-	int dma, dmi, stmi, stma;
+	if      (yx2-yx1  == -1 ) return yx1-w-1;
+	else if (yx2-yx1 == -w-1) return yx1-w  ;
+	else if (yx2-yx1 == -w  ) return yx1-w+1;
+	else if (yx2-yx1 == -w+1) return yx1  +1;
+	else if (yx2-yx1 ==  1  ) return yx1+w+1;
+	else if (yx2-yx1 ==  w+1) return yx1+w  ;
+	else if (yx2-yx1 ==  w  ) return yx1+w-1;
+	else if (yx2-yx1 ==  w-1) return yx1  -1;
+}
+
+static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint8 col)
+{
+	uint32 i, x, y, yx, dx, dy, yxn;
+	int  x1, y1, n1, max1, min1, stx1, sty1, yx1;
+	int dma1, dmi1, stmi1, stma1;
+
+	int  x2, y2, n2, max2, min2, stx2, sty2, yx2;
+	int dma2, dmi2, stmi2, stma2;
 
 	x = v->x; y = v->y*w;
 
-	sty = v1->y > v->y ? w : -w;
-	stx = v1->x > v->x ? 1 : -1;
+	sty1 = v1->y > v->y ? w : -w;
+	stx1 = v1->x > v->x ? 1 : -1;
 	dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
-	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
-	else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
-	min = 0; max = dma; n = dma;
-	if(v1->x <= v->x && (dma&1 || dmi&1)) min = dmi-1;
+	if(dx >= dy){ dma1 = dx; dmi1 = dy; stmi1 = stx1; stma1 = sty1; }
+	else 		{ dma1 = dy; dmi1 = dx; stmi1 = sty1; stma1 = stx1; }
+	min1 = 0; max1 = dma1; n1 = dma1;
+	if(v1->x <= v->x && (dma1&1 || dmi1&1)) min1 = dmi1-1;
 
-	for(i=0; i < n; i++){
-		yx = y + x;
-		img[yx] = col;
-		min += dmi; x += stmi;
-		if(min >= max) { max += dma; y += stma; }
+	yx = y + x;
+	x1 = x; y1 = y;
+	for(i=0; i < n1; i++){
+		yx1 = y1 + x1;
+		img[yx1] = col;
+		min1 += dmi1; x1 += stmi1;
+		if(min1 >= max1) { max1 += dma1; y1 += stma1; }
 	}
-	return dma;
+
+	yxn = get_next_pixel(yx1, yx2, w);
+	if(yx1 != yx2 && yxn != yx2){
+		return yxn;
+	} else {
+
+	}
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
