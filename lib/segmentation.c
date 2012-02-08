@@ -529,40 +529,47 @@ static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 	else if (yx2-yx1 ==  w-1) return yx1  -1;
 }
 
-static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint8 col)
+static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w)
 {
-	uint32 i, x, y, yx, dx, dy, yxn;
-	int  x1, y1, n1, max1, min1, stx1, sty1, yx1;
-	int dma1, dmi1, stmi1, stma1;
+	uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn;
+	int max, min, stx, sty;
+	int dma, dmi, stmi, stma;
 
-	int  x2, y2, n2, max2, min2, stx2, sty2, yx2;
-	int dma2, dmi2, stmi2, stma2;
+
+	sty = v1->y > v->y ? w : -w;
+	stx = v1->x > v->x ? 1 : -1;
+	dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
+	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
+	else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
+	min = 0; max = dma;
+	if(v1->x <= v->x && (dma&1 || dmi&1)) min = dmi-1;
 
 	x = v->x; y = v->y*w;
-
-	sty1 = v1->y > v->y ? w : -w;
-	stx1 = v1->x > v->x ? 1 : -1;
-	dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
-	if(dx >= dy){ dma1 = dx; dmi1 = dy; stmi1 = stx1; stma1 = sty1; }
-	else 		{ dma1 = dy; dmi1 = dx; stmi1 = sty1; stma1 = stx1; }
-	min1 = 0; max1 = dma1; n1 = dma1;
-	if(v1->x <= v->x && (dma1&1 || dmi1&1)) min1 = dmi1-1;
-
 	yx = y + x;
-	x1 = x; y1 = y;
-	for(i=0; i < n1; i++){
-		yx1 = y1 + x1;
-		img[yx1] = col;
-		min1 += dmi1; x1 += stmi1;
-		if(min1 >= max1) { max1 += dma1; y1 += stma1; }
-	}
 
-	yxn = get_next_pixel(yx1, yx2, w);
+	min += dmi; x += stmi;
+	if(min >= max) { max += dma; y += stma; }
+	yx1 = y + x;
+
+	sty = v2->y > v->y ? w : -w;
+	stx = v2->x > v->x ? 1 : -1;
+	dx = abs(v2->x - v->x)+1; dy = abs(v2->y - v->y)+1;
+	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
+	else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
+	min = 0; max = dma;
+	if(v2->x <= v->x && (dma&1 || dmi&1)) min = dmi-1;
+
+	x = v->x; y = v->y*w;
+	min += dmi; x += stmi;
+	if(min >= max) { max += dma; y += stma; }
+	yx2 = y + x;
+
+
+	yxn = get_next_pixel(yx, yx1, w);
 	if(yx1 != yx2 && yxn != yx2){
 		return yxn;
-	} else {
-
 	}
+	return 0;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
@@ -1655,11 +1662,38 @@ static inline uint8 get_clockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
-static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
+static inline uint8 get_clockwise_dir1(Vertex *vx, uint8 nd)
 {
-	uint8 tm, i = 0;
-	if(!(vx->di - vx->cn)) return 0;
+	if      (nd == 0) goto m1;
+	else if (nd == 1) goto m8;
+	else if (nd == 2) goto m7;
+	else if (nd == 3) goto m6;
+	else if (nd == 4) goto m5;
+	else if (nd == 5) goto m4;
+	else if (nd == 6) goto m3;
+	else if (nd == 7) goto m2;
+	//return 0;
 
+	m1:	if (vx->di&1  ) return 7;
+	m2:	if (vx->di&2  ) return 6;
+	m3:	if (vx->di&4  ) return 5;
+	m4:	if (vx->di&8  ) return 4;
+	m5:	if (vx->di&16 ) return 3;
+	m6:	if (vx->di&32 ) return 2;
+	m7:	if (vx->di&64 ) return 1;
+	m8:	if (vx->di&128) return 0;
+		if (vx->di&1  ) return 7;
+		if (vx->di&2  ) return 6;
+		if (vx->di&4  ) return 5;
+		if (vx->di&8  ) return 4;
+		if (vx->di&16 ) return 3;
+		if (vx->di&32 ) return 2;
+		if (vx->di&64 ) return 1;
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd)
+{
 	if      (nd == 0) goto m1;
 	else if (nd == 1) goto m2;
 	else if (nd == 2) goto m3;
@@ -1670,24 +1704,21 @@ static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
 	else if (nd == 7) goto m8;
 	//return 0;
 
-	m1:	if (vx->di&64 ) { *nd1 = 1; return 1; }
-	m2:	if (vx->di&32 ) { *nd1 = 2; return 1; }
-	m3:	if (vx->di&16 ) { *nd1 = 3; return 1; }
-	m4:	if (vx->di&8  ) { *nd1 = 4; return 1; }
-	m5:	if (vx->di&4  ) { *nd1 = 5; return 1; }
-	m6:	if (vx->di&2  ) { *nd1 = 6; return 1; }
-	m7:	if (vx->di&1  ) { *nd1 = 7; return 1; }
-	m8:	if (vx->di&128) { *nd1 = 0; return 1; }
-		if (vx->di&64 ) { *nd1 = 1; return 1; }
-		if (vx->di&32 ) { *nd1 = 2; return 1; }
-		if (vx->di&16 ) { *nd1 = 3; return 1; }
-		if (vx->di&8  ) { *nd1 = 4; return 1; }
-		if (vx->di&4  ) { *nd1 = 5; return 1; }
-		if (vx->di&2  ) { *nd1 = 6; return 1; }
-		if (vx->di&1  ) { *nd1 = 7; return 1; }
-
-	return 0;
-        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+	m1:	if (vx->di&64 ) return 1;
+	m2:	if (vx->di&32 ) return 2;
+	m3:	if (vx->di&16 ) return 3;
+	m4:	if (vx->di&8  ) return 4;
+	m5:	if (vx->di&4  ) return 5;
+	m6:	if (vx->di&2  ) return 6;
+	m7:	if (vx->di&1  ) return 7;
+	m8:	if (vx->di&128) return 0;
+		if (vx->di&64 ) return 1;
+		if (vx->di&32 ) return 2;
+		if (vx->di&16 ) return 3;
+		if (vx->di&8  ) return 4;
+		if (vx->di&4  ) return 5;
+		if (vx->di&2  ) return 6;
+		if (vx->di&1  ) return 7;
 }
 
 static inline uint32 check_is_in_line(Vertex *vx1, Vertex *vx2, Vertex *vx3)
@@ -1962,7 +1993,7 @@ static inline uint32 get_pix(uint8 *img, uint32 yx, uint32 w, uint8 nd1)
 
 void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
-	uint32 i, yx, vc = 0, rc = 0;
+	uint32 i, yx, yxc, vc = 0, rc = 0;
 	Vector v;
 	uint8  nd, nd1, nd2, sh = 15;
 	Vertex *vx, *vx1, *vx2, *vp1;
@@ -2001,12 +2032,24 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			} //;while(vx != vp[i]);
-			//get_counterclockwise_dir(vp[i], nd2, &nd);
 
-			//inp[rc] = get_pix(vp[i]->y*w + vp[i]->y, w, nd2);
+			//Finding first pixel for scan average color
+			vx = vp[i];
+			nd = get_counterclockwise_dir(vx, nd2);
+			do{
+				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w);
+				if(yxc && !img[yxc]) break;
+
+				nd =  find_pointer1(vx->vp[nd2], vx);
+				vx = vx->vp[nd2];
+				nd2 = get_clockwise_dir1(vx, nd);
+
+			} while (vx != vp[i]);
+
+			inp[rc] = yxc;
 			//if(img[inp[rc]]) inp[rc] = 0;
 
-			//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
+			printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 			//img[inp[rc]] = 128;
 			rc++;
 		}
