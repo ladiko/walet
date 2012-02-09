@@ -519,7 +519,7 @@ static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
 
 static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 {
-	if      (yx2-yx1  == -1 ) return yx1-w-1;
+	if      (yx2-yx1 ==   -1) return yx1-w-1;
 	else if (yx2-yx1 == -w-1) return yx1-w  ;
 	else if (yx2-yx1 == -w  ) return yx1-w+1;
 	else if (yx2-yx1 == -w+1) return yx1  +1;
@@ -529,7 +529,14 @@ static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 	else if (yx2-yx1 ==  w-1) return yx1  -1;
 }
 
-static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w)
+static inline uint32 scale(uint32  x, uint32  w, uint32 k, uint32 sh)
+{
+	uint32 x1;
+	x1 = ((x-1)*k>>sh);
+	return (x1 == w-2) ? x1 : x1 + 1;
+}
+
+static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
 {
 	uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn;
 	int max, min, stx, sty;
@@ -538,32 +545,40 @@ static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32
 
 	sty = v1->y > v->y ? w : -w;
 	stx = v1->x > v->x ? 1 : -1;
-	dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
+	//dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
+	dx = abs(scale(v1->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
+	dy = abs(scale(v1->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
 	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
 	else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
-	min = 0; max = dma;
 	if(v1->x <= v->x && (dma&1 || dmi&1)) min = dmi-1;
 
-	x = v->x; y = v->y*w;
+	//x = v->x; y = v->y*w;
+	x = scale(v->x, w, kx, sh);
+	y = scale(v->y, h, ky, sh)*w;
 	yx = y + x;
 
-	min += dmi; x += stmi;
-	if(min >= max) { max += dma; y += stma; }
-	yx1 = y + x;
+	//min += dmi; x += stmi;
+	//if(min >= max) { max += dma; y += stma; }
+	//yx1 = y + x;
+	yx1 = yx + stmi;
+	if(dmi >= dma) yx1 += stma;
 
 	sty = v2->y > v->y ? w : -w;
 	stx = v2->x > v->x ? 1 : -1;
-	dx = abs(v2->x - v->x)+1; dy = abs(v2->y - v->y)+1;
+	//dx = abs(v2->x - v->x)+1; dy = abs(v2->y - v->y)+1;
+	dx = abs(scale(v2->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
+	dy = abs(scale(v2->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
 	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
 	else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
-	min = 0; max = dma;
 	if(v2->x <= v->x && (dma&1 || dmi&1)) min = dmi-1;
 
-	x = v->x; y = v->y*w;
-	min += dmi; x += stmi;
-	if(min >= max) { max += dma; y += stma; }
-	yx2 = y + x;
+	//x = v->x; y = v->y*w;
+	//min += dmi; x += stmi;
+	//if(min >= max) { max += dma; y += stma; }
+	//yx2 = y + x;
 
+	yx2 = yx + stmi;
+	if(dmi >= dma) yx2 += stma;
 
 	yxn = get_next_pixel(yx, yx1, w);
 	if(yx1 != yx2 && yxn != yx2){
@@ -2015,41 +2030,71 @@ void seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w
 				nd1 =  find_pointer1(vx1, vx);
 				finish_dir1(vx1, nd1);
 
+				v.x1 = scale(vx->x, w, kx, sh);
+				v.y1 = scale(vx->y, h, ky, sh);
+				v.x2 = scale(vx1->x, w, kx, sh);
+				v.y2 = scale(vx1->y, h, ky, sh);
+				/*
 				v.x1 = ((vx->x-1)*kx>>sh); 	v.x1 = (v.x1 == w-2) ? v.x1 : v.x1 + 1;
 				v.y1 = ((vx->y-1)*ky>>sh);	v.y1 = (v.y1 == h-2) ? v.y1 : v.y1 + 1;
 				v.x2 = ((vx1->x-1)*kx>>sh); v.x2 = (v.x2 == w-2) ? v.x2 : v.x2 + 1;
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
+				*/
 
-				//draw_line_1(img, &v, w, 64);
-				draw_line_dir(img, &v, w);
+				draw_line_1(img, &v, w, 64);
+				//draw_line_dir(img, &v, w);
 				/*
 				yx = v.y2*w + v.x2;
 				img[yx] = 255;
 				yx = v.y1*w + v.x1;
 				img[yx] = 255;
 				*/
-				vc++;
+
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			} //;while(vx != vp[i]);
 
 			//Finding first pixel for scan average color
-			vx = vp[i];
+			vx = vp[i];  vc = 0;
 			nd = get_counterclockwise_dir(vx, nd2);
 			do{
-				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w);
+				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh);
+				if(yxc == 29029){
+					printf("%d inp = %d vc = %d img = %d\n", rc, yxc, vc, img[yxc]);
+					img[scale(vx->x, w, kx, sh) + scale(vx->y, h, ky, sh)*w] = 128;
+					//img[vx->x + vx->y*w-w] = 128;
+					//img[vx->x + vx->y*w+w] = 128;
+					//img[vx->x + vx->y*w+1] = 128;
+
+					img[ scale(vx->vp[nd2]->x, w, kx, sh) +  scale(vx->vp[nd2]->y, h, ky, sh)*w] = 128;
+					//img[ vx->vp[nd2]->x +  vx->vp[nd2]->y*w-w] = 128;
+					//img[ vx->vp[nd2]->x +  vx->vp[nd2]->y*w+w] = 128;
+					//img[ vx->vp[nd2]->x +  vx->vp[nd2]->y*w+1] = 128;
+
+					img[ scale(vx->vp[nd]->x, w, kx, sh) +  scale(vx->vp[nd]->y, h, ky, sh)*w] = 128;
+					//img[ vx->vp[nd]->x +  vx->vp[nd]->y*w-w] = 128;
+					//img[ vx->vp[nd]->x +  vx->vp[nd]->y*w+w] = 128;
+					//img[ vx->vp[nd]->x +  vx->vp[nd]->y*w+1] = 128;
+				}
 				if(yxc && !img[yxc]) break;
 
 				nd =  find_pointer1(vx->vp[nd2], vx);
 				vx = vx->vp[nd2];
 				nd2 = get_clockwise_dir1(vx, nd);
+				vc++;
 
 			} while (vx != vp[i]);
 
 			inp[rc] = yxc;
 			//if(img[inp[rc]]) inp[rc] = 0;
 
-			printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
+			if(img[yxc]){
+				printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
+				img[yxc] = 255;
+				//img[yxc-w] = 255;
+				//img[yxc+w] = 255;
+				//img[yxc+1] = 255;
+			}
 			//img[inp[rc]] = 128;
 			rc++;
 		}
