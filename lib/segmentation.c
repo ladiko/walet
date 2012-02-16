@@ -47,6 +47,8 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, int th)
 
 	//for(x=0; x < w; x++) img1[x] = col1;
 	//img1[w] = col1; img1[w + x+1] = col1;
+
+	//Make the up border
 	for(x=1; x < w1; x++) img1[w + x] = col; img1[w + x] = col;
 
 	for(y=2; y < h1; y++){
@@ -70,7 +72,7 @@ void seg_grad(uint8 *img, uint8 *img1, uint32 w, uint32 h, int th)
 		 img1[yx + 1] = col;
 		 //img1[yx + 2] = col1;
 	}
-	//The border
+	//Make the bottom border
 	yw = y*w;
 	for(x=1; x < w1; x++) img1[yw + x] = col; img1[yw + x] = col;
 	//img1[yw] = col1; img1[yw + x+1] = col1;
@@ -1239,8 +1241,7 @@ void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
 	int d1, d2, npix = 0;
 	//Make border
-	//con[w+1] = 255; con[(w<<1)-2] = 255;
-	//con[w*(h-2)+1] = 255; con[w*(h-1)-2] = 255;
+	//The right direction for last row
 	yw = w*(h-2);
 	for(x=2; x < w1-1; x++) con[yw + x] = 64;
 	for(x=2; x < w1; x++) di[yw + x] = 128;
@@ -1598,6 +1599,20 @@ static inline uint32 get_dir2(Vertex *vx, uint8 *nd)
 	return 0;
 }
 
+static inline uint32 get_dir_clock(Vertex *vx, uint8 *nd)
+{
+	if(!(vx->di - vx->cn)) return 0;
+	if		((vx->di&128) && !(vx->cn&128)) { vx->cn |= 128;	*nd = 0; 	return 1; }
+	else if ((vx->di&1  ) && !(vx->cn&1  )) { vx->cn |= 1;		*nd = 7;  	return 1; }
+	else if ((vx->di&2  ) && !(vx->cn&2  )) { vx->cn |= 2;		*nd = 6;  	return 1; }
+	else if ((vx->di&4  ) && !(vx->cn&4  )) { vx->cn |= 4;		*nd = 5;  	return 1; }
+	else if ((vx->di&8  ) && !(vx->cn&8  )) { vx->cn |= 8;		*nd = 4;  	return 1; }
+	else if ((vx->di&16 ) && !(vx->cn&16 )) { vx->cn |= 16;		*nd = 3;  	return 1; }
+	else if	((vx->di&32 ) && !(vx->cn&32 )) { vx->cn |= 32;		*nd = 2;  	return 1; }
+	else if	((vx->di&64 ) && !(vx->cn&64 )) { vx->cn |= 64;		*nd = 1;  	return 1; }
+	return 0;
+}
+
 static inline uint32 get_dir3(Vertex *vx, uint8 *nd)
 {
 	if(!(vx->di - vx->cn)) return 0;
@@ -1610,6 +1625,26 @@ static inline uint32 get_dir3(Vertex *vx, uint8 *nd)
 	else if ((vx->di&2  ) && !(vx->cn&2  )) { *nd = 6; return 1; }
 	else if ((vx->di&1  ) && !(vx->cn&1  )) { *nd = 7; return 1; }
 	return 0;
+}
+
+static inline uint8 get_same_dir(Vertex *vx, uint8 nd)
+{
+	if (nd == 0) {
+		if(vx->di&128) { vx->cn |= 128; return nd; }
+		else { vx->cn |= 2; return 6;}
+	}
+	if (nd == 2) {
+		if(vx->di&32) { vx->cn |= 32; return nd; }
+		else { vx->cn |= 128; return 0; }
+	}
+	if (nd == 4) {
+		if(vx->di&8) { vx->cn |= 8;  return nd; }
+		else { vx->cn |= 32; return 2; }
+	}
+	if (nd == 6) {
+		if(vx->di&2) { vx->cn |= 2; return nd; }
+		else { vx->cn |= 8; return 4; }
+	}
 }
 
 static inline void remove_dir1(Vertex *vx, uint8 nd)
@@ -2137,6 +2172,96 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 	return rc;
 }
 
+uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
+{
+	uint32 i, yx, yxc, vc = 0, rc = 0;
+	Vector v;
+	uint8  nd, nd1, nd2, sh = 15;
+	Vertex *vx, *vx1, *vx2, *vp1;
+	uint32 kx = ((w-2)<<sh)/(w1-3);
+	uint32 ky = ((h-2)<<sh)/(h1-3);
+
+	for(i=0; i < vxc; i++) vp[i]->cn = 0;
+
+	//Remove the outer contour
+	vx = vp[0];
+	get_dir_clock(vx, &nd);
+	do{
+		vx = vx->vp[nd];
+		nd = get_same_dir(vx, nd);
+	} while(vx != vp[0]);
+
+	//Start main cycle
+	for(i=0; i < vxc; i++){
+		while(vp[i]->n > 1 && get_dir2(vp[i], &nd)){
+			vx = vp[i]; nd2 = nd; //vc = 0;
+			//vp1 = vp[i];
+			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+			do{
+				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+				vx1 = vx->vp[nd];
+				//finish_dir1(vx, nd);
+				nd1 =  find_pointer1(vx1, vx);
+				//finish_dir1(vx1, nd1);
+
+				v.x1 = scale(vx->x, w, kx, sh);
+				v.y1 = scale(vx->y, h, ky, sh);
+				v.x2 = scale(vx1->x, w, kx, sh);
+				v.y2 = scale(vx1->y, h, ky, sh);
+
+				//draw_line_1(img, &v, w, 64);
+				draw_line_dir(img, &v, w);
+				vc++;
+				/*
+				yx = v.y2*w + v.x2;
+				img[yx] = 128;
+				yx = v.y1*w + v.x1;
+				img[yx] = 128;
+				*/
+
+				//if(!get_clockwise_dir(vx1, nd1, &nd)) break;
+				nd = get_clockwise_dir1(vx1, nd1);
+				finish_dir1(vx1, nd);
+				vx = vx1;
+			} while(vx != vp[i]);
+
+			//Finding first pixel for scan average color
+			vx = vp[i];  //vc = 0;
+			nd = get_counterclockwise_dir(vx, nd2);
+			do{
+				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh, i);
+				if(yxc && !img[yxc]) break;
+
+				nd =  find_pointer1(vx->vp[nd2], vx);
+				vx = vx->vp[nd2];
+				nd2 = get_clockwise_dir1(vx, nd);
+
+			} while (vx != vp[i]);
+
+			inp[rc] = yxc;
+			if(img[yxc]){
+				printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
+				img[yxc] = 255;
+			}
+			rc++;
+
+		}
+	}
+
+	for(i=0; i < vxc; i++) {
+		if(vp[i]->n == 1 || vp[i]->di != vp[i]->cn) {
+			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
+			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+			img[vp[i]->y*w + vp[i]->x-w] = 255;
+			img[vp[i]->y*w + vp[i]->x-1] = 255;
+			img[vp[i]->y*w + vp[i]->x+w] = 255;
+			img[vp[i]->y*w + vp[i]->x+1] = 255;
+		}
+	}
+	printf("Numbers of drawing vertexs  = %d regions  = %d\n", vc, rc);
+	return rc;
+}
+
 uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint32 w, uint32 h)
 {
 	uint32 i, j, y, x, yx, yxw, yw,  h1 = h-2, w1 = w-2;
@@ -2221,7 +2346,6 @@ uint32 seg_get_one_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, uint
 		for(x=2; x < w1; x++){
 			yx = yw + x;
 			if(!con[yx]){
-				//if(yx == (712 + 1298*w) || yx == (2 + 1302*w)) break;
 				c = 0;  cn = 0;
 				con[yx] = cl; num = 1; l1[0] = yx; i = 0;
 				//printf("%d x = %d  %d y = %d con = %d\n", w, yx%w, h, yx/w, con[yx]);
