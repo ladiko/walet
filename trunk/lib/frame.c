@@ -856,7 +856,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//seg_get_one_color(f->dw[i].pic,  f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 
 		memset(g->buf, 0, f->rg[i].w*f->rg[i].h*sizeof(uint32)>>4);
-		rgc = seg_vertex_draw3(f->dc[i].pic, f->vp, (uint32*)g->buf, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
+		rgc = seg_vertex_draw4(f->dc[i].pic, f->vp, (uint32*)g->buf, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
 		//seg_vertex_draw2(f->dc[i].pic, f->vp, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
 		//seg_get_one_color1(f->dw[i].pic, f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>2], f->dg[i].w, f->dg[i].h);
 		seg_get_one_color2(f->dw[i].pic, f->dc[i].pic, &g->buf[f->dg[i].w*f->dg[i].h>>2], (uint32*)g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>1], rgc, f->dg[i].w, f->dg[i].h);
