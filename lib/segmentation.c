@@ -584,13 +584,13 @@ static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32
 
 	yxn = get_next_pixel(yx, yx1, w);
 	/*
-	if(j == 1450){
+	if(j == 70){
 		printf("x  = %d y  = %d\n", yx%w, yx/w);
 		printf("x1 = %d y1 = %d\n", yx1%w, yx1/w);
 		printf("x2 = %d y2 = %d\n", yx2%w, yx2/w);
 		printf("xn = %d yn = %d\n", yxn%w, yxn/w);
-	}*/
-
+	}
+	*/
 	if(yx1 != yx2 && yxn != yx2){
 		return yxn;
 	}
@@ -2174,7 +2174,7 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 
 uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
-	uint32 i, yx, yxc, vc = 0, rc = 0;
+	uint32 i, j, yx, yxc, vc = 0, rc = 0;
 	Vector v;
 	uint8  nd, nd1, nd2, sh = 15;
 	Vertex *vx, *vx1, *vx2, *vp1;
@@ -2194,7 +2194,7 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 	//Start main cycle
 	for(i=0; i < vxc; i++){
 		while(vp[i]->n > 1 && get_dir2(vp[i], &nd)){
-			vx = vp[i]; nd2 = nd; //vc = 0;
+			vx = vp[i]; nd2 = nd; vc = 0;
 			//vp1 = vp[i];
 			//printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 			do{
@@ -2218,7 +2218,6 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 				yx = v.y1*w + v.x1;
 				img[yx] = 128;
 				*/
-
 				//if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				nd = get_clockwise_dir1(vx1, nd1);
 				finish_dir1(vx1, nd);
@@ -2229,7 +2228,7 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 			vx = vp[i];  //vc = 0;
 			nd = get_counterclockwise_dir(vx, nd2);
 			do{
-				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh, i);
+				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh, rc);
 				if(yxc && !img[yxc]) break;
 
 				nd =  find_pointer1(vx->vp[nd2], vx);
@@ -2239,12 +2238,32 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 			} while (vx != vp[i]);
 
 			inp[rc] = yxc;
-			if(img[yxc]){
+			//if(img[yxc])
+			if(img[yxc] || yxc == 0){
 				printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
-				img[yxc] = 255;
+				printf("x = %d y = %d \n", vp[i]->x, vp[i]->y);
+				//img[vp[i]->x + w*vp[i]->y] = 255;
+			}
+			//Remove direction or vertex
+			if(yxc == 0 && vc == 2){
+				//Remove degenerate loop
+				printf("vx %p\n", vx);
+				for(j=0; j<8; j++) {
+					printf("%d %p\n", j, vx->vp[j]);
+					if(vx->vp[j]) printf("x = %d y = %d\n", vx->vp[j]->x, vx->vp[j]->y);
+				}
+				printf("vx->vp[nd2] %p\n", vx->vp[nd2]);
+				for(j=0; j<8; j++) {
+					printf("%d %p\n", j, vx->vp[nd2]->vp[j]);
+					if(vx->vp[nd2]->vp[j]) printf("x = %d y = %d\n", vx->vp[nd2]->vp[j]->x, vx->vp[nd2]->vp[j]->y);
+				}
+				remove_dir1(vx, nd2);
+				printf("%p nd = %d \n", vx, find_pointer1(vx->vp[nd2], vx));
+				remove_dir1(vx->vp[nd2], find_pointer1(vx->vp[nd2], vx));
+				printf("di = %d\n", vx->vp[nd2]->di);
+				rc--;
 			}
 			rc++;
-
 		}
 	}
 
