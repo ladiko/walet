@@ -2225,15 +2225,15 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 			} while(vx != vp[i]);
 
 			//Finding first pixel for scan average color
-			vx = vp[i];  //vc = 0;
-			nd = get_counterclockwise_dir(vx, nd2);
+			vx = vp[i];  nd1 = nd2;//vc = 0;
+			nd = get_counterclockwise_dir(vx, nd1);
 			do{
-				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh, rc);
+				yxc = get_first_pixel(vx, vx->vp[nd1], vx->vp[nd], w, h, kx, ky, sh, rc);
 				if(yxc && !img[yxc]) break;
 
-				nd =  find_pointer1(vx->vp[nd2], vx);
-				vx = vx->vp[nd2];
-				nd2 = get_clockwise_dir1(vx, nd);
+				nd =  find_pointer1(vx->vp[nd1], vx);
+				vx = vx->vp[nd1];
+				nd1 = get_clockwise_dir1(vx, nd);
 
 			} while (vx != vp[i]);
 
@@ -2247,21 +2247,24 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 			//Remove direction or vertex
 			if(yxc == 0 && vc == 2){
 				//Remove degenerate loop
-				printf("vx %p\n", vx);
+				remove_dir1(vx, nd2);
+				remove_dir1(vx->vp[nd2], find_pointer1(vx->vp[nd2], vx));
+				rc--;
+				/*
+				printf("di = %d\n", vx->di);
+				printf("di = %d\n", vx->vp[nd2]->di);
+
+				printf("\nvx %p x = %d y = %d\n", vx, vx->x, vx->y);
 				for(j=0; j<8; j++) {
 					printf("%d %p\n", j, vx->vp[j]);
 					if(vx->vp[j]) printf("x = %d y = %d\n", vx->vp[j]->x, vx->vp[j]->y);
 				}
-				printf("vx->vp[nd2] %p\n", vx->vp[nd2]);
+				printf("\nvx->vp[nd2] %p x = %d y = %d\n", vx->vp[nd2], vx->vp[nd2]->x, vx->vp[nd2]->y);
 				for(j=0; j<8; j++) {
 					printf("%d %p\n", j, vx->vp[nd2]->vp[j]);
 					if(vx->vp[nd2]->vp[j]) printf("x = %d y = %d\n", vx->vp[nd2]->vp[j]->x, vx->vp[nd2]->vp[j]->y);
 				}
-				remove_dir1(vx, nd2);
-				printf("%p nd = %d \n", vx, find_pointer1(vx->vp[nd2], vx));
-				remove_dir1(vx->vp[nd2], find_pointer1(vx->vp[nd2], vx));
-				printf("di = %d\n", vx->vp[nd2]->di);
-				rc--;
+				*/
 			}
 			rc++;
 		}
@@ -2414,7 +2417,7 @@ uint32 seg_get_one_color2(uint8 *img, uint8 *con, uint8 *col, uint32 *inp, uint3
 		c = 0;  cn = 0;
 		yx = inp[rc];
 		con[yx] = cl; num = 1; l1[0] = yx; i = 0;
-		printf("%d w = %d x = %d  %d y = %d con = %d\n", rc, w, yx%w, h, yx/w, con[yx]);
+		//printf("%d w = %d x = %d  %d y = %d con = %d\n", rc, w, yx%w, h, yx/w, con[yx]);
 
 		while(num){
 			for(j=0; j < num; j++){
