@@ -538,7 +538,7 @@ static inline uint32 scale(uint32  x, uint32  w, uint32 k, uint32 sh)
 	return (x1 == w-2) ? x1 : x1 + 1;
 }
 
-static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh, uint32 j)
+static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh, uint32 j)
 {
 	uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn;
 	int stx, sty;
@@ -583,15 +583,8 @@ static inline uint32 get_first_pixel(Vertex *v,  Vertex *v1,  Vertex *v2, uint32
 	if(dmi >= dma) yx2 += stma;
 
 	yxn = get_next_pixel(yx, yx1, w);
-	/*
-	if(j == 70){
-		printf("x  = %d y  = %d\n", yx%w, yx/w);
-		printf("x1 = %d y1 = %d\n", yx1%w, yx1/w);
-		printf("x2 = %d y2 = %d\n", yx2%w, yx2/w);
-		printf("xn = %d yn = %d\n", yxn%w, yxn/w);
-	}
-	*/
-	if(yx1 != yx2 && yxn != yx2){
+
+	if(yx1 != yx2 && yxn != yx2 && !img[yxn]){
 		return yxn;
 	}
 	return 0;
@@ -2157,7 +2150,7 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 
 uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
-	uint32 i, j, yx, yxw, vc = 0, rc = 0;
+	uint32 i, j, yx, yxw, vc = 0, rc = 0, vc1;
 	Vector v;
 	uint8  nd, nd1, nd2, sh = 15, cl = 255;
 	Vertex *vx, *vx1, *vx2, *vp1;
@@ -2180,7 +2173,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 	//Start main cycle
 	for(i=0; i < vxc; i++){
 		while(vp[i]->n > 1 && get_dir2(vp[i], &nd)){
-			vx = vp[i]; nd2 = nd; vc = 0;
+			vx = vp[i]; nd2 = nd; vc = 0; vc1 = 0;
 			//nd = get_counterclockwise_dir(vx, nd1);
 
 			do{
@@ -2205,12 +2198,15 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 				//if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				nd = get_clockwise_dir1(vx1, nd1);
 				finish_dir1(vx1, nd);
-				yxw  = get_first_pixel(vx1, vx1->vp[nd1], vx1->vp[nd], w, h, kx, ky, sh, rc);
-				if(yxw) {
+				yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, kx, ky, sh, rc);
+				printf("%d  yxw = %d con[yxw] = %d\n", vc1, yxw, con[yxw]);
+				if(yxw && !con[yxw]) {
 					l1[vc++] = yxw;
 					con[yxw] = cl;
+					//c += img[yxw]; cn++;
 				}
 				vx = vx1;
+				vc1++;
 			} while(vx != vp[i]);
 			/*
 			//Finding first pixel for scan average color
@@ -2230,8 +2226,8 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 			//if(img[yxc])
 			if(!vc){
 				//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
-				printf("x = %d y = %d \n", vp[i]->x, vp[i]->y);
-				//img[vp[i]->x + w*vp[i]->y] = 255;
+				printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d\n", vp[i]->x, vp[i]->y, vc1);
+				con[vp[i]->x + w*vp[i]->y] = 128;
 			}
 			//Remove direction or vertex
 			//if(yxc == 0 && vc == 2){
@@ -2240,11 +2236,11 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 				//remove_dir1(vx->vp[nd2], find_pointer1(vx->vp[nd2], vx));
 				//rc--;
 			//}
-			c = 0;  cn = 0; i = 0; num = vc;
 			//yx = inp[rc];
 			//num = vc; l1[0] = yx;
 			//printf("%d w = %d x = %d  %d y = %d con = %d\n", rc, w, yx%w, h, yx/w, con[yx]);
-			/*
+			c = 0;  cn = 0; i = 0; num = vc;
+
 			while(num){
 				for(j=0; j < num; j++){
 					yxw = l1[j] - 1; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
@@ -2269,9 +2265,10 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 				num = i; i = 0;
 				tm = l1; l1 = l2; l2 = tm;
 			}
-			col[rc] = c/cn;
-			rc++;
-			*/
+			if(num){
+				col[rc] = c/cn;
+				rc++;
+			}
 		}
 	}
 
