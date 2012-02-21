@@ -868,7 +868,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//printf("Entropy = %f\n", entropy8(f->dc[i].pic, (uint32*)g->buf, f->dg[i].w, f->dg[i].h, 8));
 		*/
 		j = i-1;
-		//rgc = seg_vertex_draw4(f->dc[j].pic, f->vp, (uint32*)g->buf, vxc, f->dc[j].w, f->dc[j].h, f->dc[i].w, f->dc[i].h);
+		rgc = seg_vertex_draw3(f->dc[j].pic, f->vp, (uint32*)g->buf, vxc, f->dc[j].w, f->dc[j].h, f->dc[i].w, f->dc[i].h);
+		seg_vertex_draw4(f->dw[j].pic, f->dc[j].pic, g->buf, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>1], f->vp, vxc, f->dg[j].w, f->dg[j].h, f->dg[i].w, f->dg[i].h);
 		//seg_get_one_color2(f->dw[j].pic, f->dc[j].pic, &g->buf[f->dg[j].w*f->dg[j].h>>2], (uint32*)g->buf, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>1], rgc, f->dg[j].w, f->dg[j].h);
 		//seg_vertex_draw2(f->dc[j].pic, f->vp, vxc, f->dc[j].w, f->dc[j].h, f->dc[i].w, f->dc[i].h);
 		//seg_get_one_color1(f->dw[j].pic,  f->dc[j].pic, g->buf, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>2], f->dg[j].w, f->dg[j].h);
