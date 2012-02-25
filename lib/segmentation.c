@@ -586,7 +586,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 		}
 	} while(yxn != yx2);
 
-	return 1;
+	return 0;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
@@ -1869,7 +1869,6 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 			}
 		}
 
-
 	//Remove closed loop
 	//for(i=0; i < vxc; i++) {
 		if(vp[i]->n > 1){
@@ -1878,14 +1877,7 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 				if(vp[i]->di&(1<<(7-j)) && vp[i]->vp[j]) {
 					if(tmp){
 						if (vp[i]->vp[j] == vp[i]->vp[tmp]){
-							//printf("1 Remove closed loop j = %d tmp = %d n = %d\n", j, tmp, vp[i]->n);
-							//printf("x = %d y = %d di = %d\n", vp[i]->x, vp[i]->y, vp[i]->di);
-							//for(k=0; k<8; k++) printf("%d  %p\n", k, vp[i]->vp[k]);
-							//remove_dir1(vp[i], j);
-							//remove_dir1(vp[i]->vp[j], find_pointer1(vp[i]->vkp[j], vp[i]));
 							remove_dir2(vp[i], j);
-							//printf("x = %d y = %d di = %d\n", vp[i]->x, vp[i]->y, vp[i]->di);
-							//for(k=0; k<8; k++) printf("%d  %p\n", k, vp[i]->vp[k]);
 							vc++;
 						}
 					}
@@ -1895,11 +1887,6 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 			for(j=0; j < 8; j++){
 				if(vp[i]->vp[j]) {
 					if (vp[i]->di&(1<<(7-j)) && vp[i]->vp[j] == vp[i]->vp[tmp]){
-						//printf("2 Remove closed loop j = %d tmp = %d n = %d\n", j, tmp, vp[i]->n);
-						//printf("x = %d y = %d di = %d\n", vp[i]->x, vp[i]->y, vp[i]->di);
-						//for(k=0; k<8; k++) printf("%d  %p\n", k, vp[i]->vp[k]);
-						//remove_dir1(vp[i], j);
-						//remove_dir1(vp[i]->vp[j], find_pointer1(vp[i]->vp[j], vp[i]));
 						remove_dir2(vp[i], j);
 						vc++;
 					}
@@ -1907,6 +1894,22 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 				}
 			}
 		}
+	//Remove one direction near narrow angle
+		/*
+		if(vp[i]->di&(1<<(7)) && vp[i]->vp[7]) tmp = 7;
+		else tmp = 0;
+
+		for(j=0; j < 8; j++){
+			if(vp[i]->di&(1<<(7-j)) && vp[i]->vp[j]) {
+				if(tmp){
+					if(abs(tmp-j) == 1 || abs(tmp-j) == 7) {
+						//get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, 1, 1, 1);
+					}
+				}
+				tmp = j;
+			}
+		}
+		*/
 	}
 	printf("Numbers of removed vertexs  = %d\n", vc);
 }
@@ -2283,11 +2286,12 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 
 						yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, kx, ky, sh);
 						//printf("%d  yxw = %d con[yxw] = %d\n", vc1, yxw, con[yxw]);
-						if(last && yxw > 1) {
+						if(yxw) {
+						//if(last && yxw > 1) {
 							l1[vc++] = yxw;
 							con[yxw] = cl;
 						}
-						last = yxw ? 1 : 0;
+						//last = yxw ? 1 : 0;
 
 						vx = vx1;
 						vc1++;
