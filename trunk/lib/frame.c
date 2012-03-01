@@ -851,7 +851,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//seg_remove_contour(f->rg[i].pic, f->dg[i].w, f->dg[i].h);
 		//vxc = seg_vertex2(f->rg[i].pic, f->di[i].pic, f->vx, f->vp, f->dg[i].w, f->dg[i].h);
 		vxc = seg_vertex3(f->dc[i].pic, f->di[i].pic, f->vx, f->vp, f->dg[i].w, f->dg[i].h);
-		seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
+		//seg_remove_virtex(f->vp, vxc, f->dg[i].w, f->dg[i].h);
 		//seg_vertex_draw(f->R1[i].pic, f->G1[i].pic, f->B1[i].pic, f->vp, vxc, f->R1[i].w);
 
 		//seg_vertex_draw2(f->dc[i].pic, f->vp, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
@@ -859,7 +859,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 		memset(g->buf, 0, f->rg[i].w*f->rg[i].h*sizeof(uint32)>>4);
 		memset(f->di[i].pic, 0, f->dg[i].w*f->dg[i].h);
-		rgc = seg_vertex_draw3(f->di[i].pic, f->vp, (uint32*)g->buf, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
+		//rgc = seg_vertex_draw3(f->di[i].pic, f->vp, (uint32*)g->buf, vxc, f->dc[i].w,f->dc[i].h, f->dc[i].w, f->dc[i].h);
 		//seg_vertex_draw4(f->dw[i].pic, f->dc[i].pic, g->buf, (uint32*)&g->buf[f->dg[i].w*f->dg[i].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
 		//		vxc, f->dg[i].w, f->dg[i].h, f->dg[i].w, f->dg[i].h);
 		/*
