@@ -1663,7 +1663,7 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 	return vxc;
 }
 
-static inline uint8 find_vertex(uint8 *con, uint8 *di, int dx, int dy, int *d, int *d1, uint32 *x, uint32 *y, uint32 *cc, uint32 *pow, uint32 w)
+static inline uint8 find_vertex(uint8 *con, uint8 *di, uint8 *buf, int dx, int dy, int *d, int *d1, uint32 *x, uint32 *y, uint32 *cc, uint32 *pow, uint32 w)
 {
 	Vector v;
 	uint32 x1 = *x, y1 = *y, yx = *x + (*y)*w, yx1 = *x + dx + (*y + dy)*w;
@@ -1682,13 +1682,39 @@ static inline uint8 find_vertex(uint8 *con, uint8 *di, int dx, int dy, int *d, i
 
 		*pow += con[yx];
 		*d1 = *d; //dx1 = -dx; dy1 = -dy;
-		dx = -dx; dy = -dy;
+		//dx = -dx; dy = -dy;
 		get_next_dir1(di[yx], &dx, &dy);
+		*(buf++) = di[yx - *d];
+	}
+}
+
+static inline uint8 find_vertex_back(uint8 *con, uint8 *buf, int dx, int dy, int *d, int *d1, uint32 *x, uint32 *y, uint32 *cc, uint32 *pow, uint32 w)
+{
+	Vector v;
+	uint32 x1 = *x, y1 = *y, yx = *x + (*y)*w, yx1 = *x + dx + (*y + dy)*w, i = 0;
+	*cc = 0, *pow = 0;
+
+	while(1){
+		*x += dx; *y += dy;
+		*d = dx + w*dy;
+		yx = yx + *d;
+		(*cc)++;
+		if(con[yx] == 255) return 255;
+		if(con[yx] == 254) return 254;
+		v.x1 = x1; v.y1 = y1;
+		v.x2 = *x; v.y2 = *y;
+		if(yx1 != check_next_pixel(&v, w)) return 0;
+
+		*pow += con[yx];
+		*d1 = *d; //dx1 = -dx; dy1 = -dy;
+		//dx = -dx; dy = -dy;
+
+		get_next_dir1(*(buf--), &dx, &dy);
 
 	}
 }
 
-uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uint32 h)
+uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint8 *buf, uint32 w, uint32 h)
 {
 	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yxn, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, pow, cc, lc, bl;//, lcn;
@@ -1718,7 +1744,8 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uin
 					//lcn = get_next_vertex(con, di, yx1, nd2);
 
 					while (1){
-						chk = find_vertex(con, di, dx, dy, &d, &d1, &x1, &y1, &cc, &pow, w);
+						chk = find_vertex(con, di, &buf[bl], dx, dy, &d, &d1, &x1, &y1, &cc, &pow, w);
+						bl += cc;
 						printf("chk = %d x = %d y = %d\n", chk, x1, y1);
 						yx1 = x1 + y1*w;
 						if(chk > 253){
@@ -1743,7 +1770,7 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uin
 								} else {
 									pow = 0; cc = 0;
 									dx = -dx; dy = -dy;
-									chk = find_vertex(con, di, dx, dy, &d, &d1, &x1, &y1, &cc, &pow, w);
+									chk = find_vertex_back(con, buf, dx, dy, &d, &d1, &x1, &y1, &cc, &pow, w);
 									yx1 = x1 + y1*w;
 									if(chk > 253){
 										break;
@@ -1773,7 +1800,9 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uin
 								break;
 							}
 						} else {
-							yx3 = yx1;
+							//yx3 = yx1;
+							//bl+=cc;
+							lc++;
 							yx1 -= d; x1 -= dx; y1 -= dy;
 							//new_in_line_vertex(&vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
 							new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
@@ -1784,7 +1813,7 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uin
 
 							nd2 = add_finish_dir(&vx[yx1], d, w);
 							con[yx1] = 254;
-							bl+=cc;
+
 							yx2 = yx1; x2 = x1; y2 = y1;
 							pow = 0; cc = 0;
 						}
