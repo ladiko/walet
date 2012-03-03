@@ -1716,7 +1716,7 @@ static inline uint8 find_vertex_back(uint8 *con, uint8 *buf, int dx, int dy, int
 
 uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint8 *buf, uint32 w, uint32 h)
 {
-	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yxn, yw, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
+	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yxn, yw, nd, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, pow, cc, lc, bl;//, lcn;
 	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd, tmp, chk;
 	Vertex **vp1 = &vp[w*h>>3];
@@ -1764,27 +1764,32 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint8 *buf, u
 							tmp = check_next_pixel(&v, w);
 							if(yx1-d != tmp){
 								printf("lc = %d\n", lc);
-								yx2 = yx1;
+								yx3 = yx1;
 								if(lc){
 									break;
 								} else {
 									pow = 0; cc = 0;
 									dx = -dx; dy = -dy;
 									chk = find_vertex_back(con, buf, dx, dy, &d, &d1, &x1, &y1, &cc, &pow, w);
+									printf("back chk = %d x = %d y = %d\n", chk, x1, y1);
 									yx1 = x1 + y1*w;
 									if(chk > 253){
 										break;
 									} else {
+										yx1 -= d; x1 -= dx; y1 -= dy;
 										new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
-										nd1 = add_finish_dir(&vx[yx1], -d1, w);
+										nd = add_finish_dir(&vx[yx1], -d1, w);
 										//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
 										pow = pow/cc;
-										new_line(&vx[yx2], &vx[yx1], nd2, nd1, pow);
+										new_line(&vx[yx3], &vx[yx1], nd1, nd, pow);
 
-										nd2 = add_finish_dir(&vx[yx1], d, w);
+										nd = add_finish_dir(&vx[yx1], d, w);
+										new_line(&vx[yx2], &vx[yx1], nd2, nd, pow);
+
 										con[yx1] = 254;
-										bl+=cc;
+										//bl+=cc;
 										yx1 = yx; x1 = x; y1 = y;
+										return 0;
 										break;
 										//yx2 = yx1; x2 = x1; y2 = y1;
 										//pow = 0; cc = 0;
