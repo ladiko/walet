@@ -600,7 +600,11 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 	yx2 = yx + stmi;
 	if(dmi >= dma) yx2 += stma;
 
-	if(yx1 == yx2) return 0;
+	if(yx1 == yx2) {
+		printf("yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
+		img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
+		return 0;
+	}
 
 	yxn = yx1;
 	do{
@@ -1780,9 +1784,12 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, int8 *buf, ui
 							if(yx1-d != tmp){
 								//printf("lc = %d\n", lc);
 								yx3 = yx1;
-								//if(lc){
-								//	printf("Many lines\n");
-								//	break;
+								if(!lc){
+									if(y1 == 1 || y2 == 1 || x1 == 1 || x2 == 1){
+									printf("tmp x = %d y = %d x1 = %d y1 = %d x2 = %d y2 = %d\n", tmp%w, tmp/w, x1, y1, x2, y2);
+									}
+									//break;
+								}
 								//} else {
 									pow = 0; cc = 0;
 									dx = -dx; dy = -dy;
@@ -2665,7 +2672,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 			while(pn1 < pn){
 				vpx = vp1[pn1++];
 				//printf("pn = %d\n", pn1);
-				if(pn1 == 95) return 0;
+				//if(pn1 == 95) return 0;
 				while(get_dir2(vpx, &nd)){
 					vx = vpx; vc = 0; vc1 = 0; last = 0;//nd2 = nd;
 					do{
@@ -2703,7 +2710,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 					if(!vc){
 						//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d \n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1);
-						con[vpx->x + w*vpx->y] = 255;
+						//con[vpx->x + w*vpx->y] = 255;
 					}
 
 
@@ -2809,22 +2816,22 @@ static inline uint32 check_reg_pix(uint8 *dir, uint32 yx, uint32 w, uint32 d)
 {
 	if(d == 0){
 		if(dir[yx+w] == 255 || dir[yx+1] == 255 ) return 0;
-		if(!(dir[yx+w] & 16)&& !(dir[yx+1] & 1) ) return 1;
+		if(!(dir[yx+w] & 17)&& !(dir[yx+1] & 17) ) return 1;
 		return 0;
 	}
 	else if(d == 1){
 		if(dir[yx+w] == 255 || dir[yx-1] == 255 ) return 0;
-		if(!(dir[yx+w] & 64)&& !(dir[yx-1] & 4) ) return 1;
+		if(!(dir[yx+w] & 68)&& !(dir[yx-1] & 68) ) return 1;
 		return 0;
 	}
 	else if(d == 2){
 		if(dir[yx-w] == 255 || dir[yx-1] == 255 ) return 0;
-		if(!(dir[yx-w] & 1) && !(dir[yx-1] & 16)) return 1;
+		if(!(dir[yx-w] & 17) && !(dir[yx-1] & 17)) return 1;
 		return 0;
 	}
 	else if(d == 3){
 		if(dir[yx-w] == 255 || dir[yx+1] == 255 ) return 0;
-		if(!(dir[yx-w] & 4) && !(dir[yx+1] & 64)) return 1;
+		if(!(dir[yx-w] & 68) && !(dir[yx+1] & 68)) return 1;
 		return 0;
 	}
 }
