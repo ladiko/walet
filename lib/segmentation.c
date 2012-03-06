@@ -2638,7 +2638,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 {
 	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, last;
 	Vector v;
-	uint8  nd, nd1, nd2, sh = 15, cl = 255;
+	uint8  nd, nd1, nd2, sh = 15, cl = 100;
 	Vertex *vx, *vx1, *vx2;
 	uint32 kx = ((w-2)<<sh)/(w1-3);
 	uint32 ky = ((h-2)<<sh)/(h1-3);
@@ -2665,7 +2665,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 			while(pn1 < pn){
 				vpx = vp1[pn1++];
 				//printf("pn = %d\n", pn1);
-				//if(pn1 == 1202) return 0;
+				if(pn1 == 95) return 0;
 				while(get_dir2(vpx, &nd)){
 					vx = vpx; vc = 0; vc1 = 0; last = 0;//nd2 = nd;
 					do{
@@ -2703,7 +2703,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 					if(!vc){
 						//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d \n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1);
-						con[vpx->x + w*vpx->y] = 128;
+						con[vpx->x + w*vpx->y] = 255;
 					}
 
 
