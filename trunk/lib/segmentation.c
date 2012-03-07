@@ -1681,12 +1681,12 @@ static inline uint8 find_vertex(uint8 *con, uint8 *di, int8 *buf, int *dx, int *
 		yx = yx + *d;
 		(*cc)++;
 		//printf("in  buf = %d\n", *buf);
-		if(con[yx] == 255) return 255;
-		if(con[yx] == 254) return 254;
 		v.x1 = x1; v.y1 = y1;
 		v.x2 = *x; v.y2 = *y;
 		//printf("dx = %d dy = %d\n", *dx, *dy);
 		if(yx1 != check_next_pixel(&v, w)) return 0;
+		if(con[yx] == 255) return 255;
+		if(con[yx] == 254) return 254;
 
 		*pow += con[yx];
 		*d1 = *d; //dx1 = -dx; dy1 = -dy;
@@ -1734,7 +1734,7 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, int8 *buf, ui
 {
 	uint32 j, y, x, x1, y1, x2, y2, yx, yx1, yx2, yx3, yxn, yw, nd, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
 	int vxc = 0, lnc = 0, pow, cc, lc, bl;//, lcn;
-	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd, tmp, chk;
+	int d, d1, d2, dx, dy, fs, sc, cfs, csc, ll, ld, rd, tmp, tmp1, chk;
 	Vertex **vp1 = &vp[w*h>>3];
 	Vector v;
 
@@ -1776,6 +1776,14 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, int8 *buf, ui
 								//printf("New direction \n");
 								//print_around(di, yx1, w);
 							}
+							/*
+							v.x1 = x2; v.y1 = y2;
+							v.x2 = x1; v.y2 = y1;
+							tmp = check_next_pixel(&v, w);
+							if(yx3 != tmp){
+								printf("fist tmp x = %d y = %d x1 = %d y1 = %d x2 = %d y2 = %d lc = %d nd2 = %d d2 = %d w = %d\n",
+										tmp%w, tmp/w, x2, y2, x1, y1, lc, nd2, d2, w);
+							}*/
 
 							v.x1 = x1; v.y1 = y1;
 							v.x2 = x2; v.y2 = y2;
@@ -1784,19 +1792,20 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, int8 *buf, ui
 							if(yx1-d != tmp){
 								//printf("lc = %d\n", lc);
 								yx3 = yx1;
-								if(!lc){
-									if(y1 == 1 || y2 == 1 || x1 == 1 || x2 == 1){
-									printf("tmp x = %d y = %d x1 = %d y1 = %d x2 = %d y2 = %d\n", tmp%w, tmp/w, x1, y1, x2, y2);
-									}
-									//break;
-								}
+								//printf("second  tmp x = %d y = %d x1 = %d y1 = %d x2 = %d y2 = %d lc = %d nd2 = %d d2 = %d w = %d\n",
+								//		tmp%w, tmp/w, x2, y2, x1, y1, lc, nd2, d2, w);
 								//} else {
 									pow = 0; cc = 0;
 									dx = -dx; dy = -dy;
+
+									tmp1 = x1 + dx + (y1 + dy)*w;
 									//printf("back start chk = %d x = %d y = %d\n", chk, x1, y1);
+									v.x1 = x1; v.y1 = y1;
 									chk = find_vertex_back(con, &buf[bl-3], &dx, &dy, &d, &d1, &x1, &y1, &cc, &pow, w);
+
 									//printf("back end chk = %d x = %d y = %d\n", chk, x1, y1);
 									yx1 = x1 + y1*w;
+
 									if(chk > 253){
 										printf("Back to vertecs\n");
 										printf("yx1 = %d yx2 = %d yx3 = %d cc = %d\n", yx1, yx2, yx3, cc);
@@ -1819,6 +1828,15 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, int8 *buf, ui
 										break;
 									} else {
 										yx1 -= d; x1 -= dx; y1 -= dy;
+										//---------------Test-------------------
+										v.x2 = x1; v.y2 = y1;
+										tmp = check_next_pixel(&v, w);
+										if(tmp != tmp1){
+											printf("Not right line x1 = %d y1 = %d x2 = %d y2 = %d \n", tmp%w, tmp/w, tmp1%w, tmp1/w);
+
+										}
+
+
 										new_vertex1(di[yx1], &vx[yx1], &vp[vxc++], &vp1[lnc+=8], x1, y1, w);
 										nd = add_finish_dir(&vx[yx1], -d1, w);
 										//rc[0] = rc[0]/cc; rc[1] = rc[1]/cc; rc[2] = rc[2]/cc;
