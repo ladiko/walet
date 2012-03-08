@@ -1671,6 +1671,7 @@ static inline uint8 find_vertex(uint8 *con, uint8 *di, int8 *buf, int *dx, int *
 {
 	Vector v;
 	uint32 x1 = *x, y1 = *y, yx = *x + (*y)*w, yx1 = *x + *dx + (*y + *dy)*w;
+	int fs = 0, sc = 0, cfs = 0, csc = 0, ll = 0;
 	*cc = 0, *pow = 0;
 
 	while(1){
@@ -1687,6 +1688,8 @@ static inline uint8 find_vertex(uint8 *con, uint8 *di, int8 *buf, int *dx, int *
 		if(yx1 != check_next_pixel(&v, w)) return 0;
 		if(con[yx] == 255) return 255;
 		if(con[yx] == 254) return 254;
+		if(is_new_line3(*d, &fs, &sc, &cfs, &csc, &ll)) return 0;
+
 
 		*pow += con[yx];
 		*d1 = *d; //dx1 = -dx; dy1 = -dy;
