@@ -562,6 +562,29 @@ static inline uint32 scale(uint32  x, uint32  w, uint32 k, uint32 sh)
 	return (x1 == w-2) ? x1 : x1 + 1;
 }
 
+static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
+// Check is a pixel in thue region
+// d  = 0   d = 1    d = 2    d = 3
+// |x|c|*|  |*|c|x|  |*|*|*|  |*|*|*|
+// |c|*|*|  |*|*|c|  |*|*|c|  |c|*|*|
+// |*|*|*|  |*|*|*|  |*|c|x|  |x|c|*|
+{
+	if(yxn - yx == -w-1){
+		if(!(img[yx+w] & 17) || !(img[yx+1] & 17) ) return 0;
+	}
+	else if(yxn - yx == -w+1){
+		if(!(img[yx+w] & 68) || !(img[yx-1] & 68) ) return 0;
+	}
+	else if(yxn - yx == w+1){
+		if(!(img[yx-w] & 17) || !(img[yx-1] & 17)) return 0;
+	}
+	else if(yxn - yx == w-1){
+		if(!(img[yx-w] & 68) || !(img[yx+1] & 68)) return 0;
+	}
+	 return 1;
+}
+
+
 static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
 {
 	uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn;
@@ -609,7 +632,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 	yxn = yx1;
 	do{
 		yxn = get_next_pixel(yx, yxn, w);
-		if(yxn != yx2 && !img[yxn]){
+		if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)){
 			return yxn;
 		}
 	} while(yxn != yx2);
@@ -2731,7 +2754,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 					if(!vc){
 						//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d \n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1);
-						//con[vpx->x + w*vpx->y] = 255;
+						con[vpx->x + w*vpx->y] = 255;
 					}
 
 
