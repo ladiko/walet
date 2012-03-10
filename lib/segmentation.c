@@ -570,16 +570,16 @@ static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
 // |*|*|*|  |*|*|*|  |*|c|x|  |x|c|*|
 {
 	if(yxn - yx == -w-1){
-		if(!(img[yx+w] & 17) || !(img[yx+1] & 17) ) return 0;
+		if((img[yx-w] & 17) || (img[yx-1] & 17) ) return 0;
 	}
 	else if(yxn - yx == -w+1){
-		if(!(img[yx+w] & 68) || !(img[yx-1] & 68) ) return 0;
+		if((img[yx-w] & 68) || (img[yx+1] & 68) ) return 0;
 	}
 	else if(yxn - yx == w+1){
-		if(!(img[yx-w] & 17) || !(img[yx-1] & 17)) return 0;
+		if((img[yx+w] & 17) || (img[yx+1] & 17)) return 0;
 	}
 	else if(yxn - yx == w-1){
-		if(!(img[yx-w] & 68) || !(img[yx+1] & 68)) return 0;
+		if((img[yx+w] & 68) || (img[yx-1] & 68)) return 0;
 	}
 	 return 1;
 }
@@ -632,7 +632,8 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 	yxn = yx1;
 	do{
 		yxn = get_next_pixel(yx, yxn, w);
-		if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)){
+		if(yxn != yx2 && !img[yxn]){
+		//if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)){
 			return yxn;
 		}
 	} while(yxn != yx2);
@@ -2716,7 +2717,6 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 			while(pn1 < pn){
 				vpx = vp1[pn1++];
 				//printf("pn = %d\n", pn1);
-				//if(pn1 == 95) return 0;
 				while(get_dir2(vpx, &nd)){
 					vx = vpx; vc = 0; vc1 = 0; last = 0;//nd2 = nd;
 					do{
@@ -2742,7 +2742,8 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 						if(yxw) {
 						//if(last && yxw > 1) {
 							l1[vc++] = yxw;
-							con[yxw] = cl;
+							//con[yxw] = cl;
+							con[yxw] = 255;
 						}
 						//last = yxw ? 1 : 0;
 
@@ -2752,11 +2753,12 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 					//vptt = vp11; vp11 = vp2; vp2 = vpt;
 
 					if(!vc){
+						//return
 						//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d \n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1);
 						con[vpx->x + w*vpx->y] = 255;
 					}
-
+					if(pn1 == 227) return 0;
 
 					c = 0;  cn = 0; k = 0; num = vc;
 
