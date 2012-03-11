@@ -20,6 +20,7 @@ typedef struct{
 	Pic8u 		*v1;		//V color image
 
 	Pic8u		*dw;	//The down sampling Y images for resize only
+	Pic8u		*dm;	//The image after median filter.
 	Pic8u		*dg;	//The gradients of down sampling images.
 	Pic8u		*dc;	//The contour of down sampling images.
 	Pic8u		*di;	//The map of directions
