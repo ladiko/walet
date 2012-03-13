@@ -622,7 +622,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 
 	if(yx1 == yx2) {
 		printf("it's a problem yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
-		img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
+		//img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
 		return 0;
 	}
 
@@ -1361,7 +1361,7 @@ void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-2, w1 = w-2;
-	int d1, d2, npix = 0;
+	int d1, d2, npix = 0, cr;
 	//Make border
 	//The right direction for last row
 	//yw = w*(h-2);
@@ -1375,7 +1375,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 			if(grad[yx] && !con[yx]){
 				if(loc_max(grad, yx, w)){
 					//printf("x = %d y = %d\n", x, y);
-					yx1 = yx; yx2 = yx;
+					yx1 = yx; yx2 = yx; cr = 0;
 					con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
 					d1 = dir(grad, yx1, w, 0);
 					d2 = dir(grad, yx1, w, d1);
@@ -1387,23 +1387,27 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 						if(con[yx1]) {
 							con[yx1] = 255; grad[yx1] = 255;
 							npix++;
+							//Check for circle
+							if(yx == yx1) cr = 1;
 							break;
 						}
 						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
 						d1 = dir(grad, yx1, w, -d1);
 					}
-					while(1){
-						//if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
-						yx2 = yx2 + d2;
-						add_dir1(&di[yx2], -d2, w);
-						if(con[yx2]) {
-							con[yx2] = 255; grad[yx2] = 255;
-							npix++;
-							break;
-						}
-						con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
-						d2 = dir(grad, yx2, w, -d2);
+					if(!cr){
+						while(1){
+							//if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
+							yx2 = yx2 + d2;
+							add_dir1(&di[yx2], -d2, w);
+							if(con[yx2]) {
+								con[yx2] = 255; grad[yx2] = 255;
+								npix++;
+								break;
+							}
+							con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
+							d2 = dir(grad, yx2, w, -d2);
 
+						}
 					}
 				}
 				//break;
@@ -2344,6 +2348,7 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 		}
 	}
 	//Remove closed loop
+	/*
 	for(i=0; i < vxc; i++) {
 		if(vp[i]->n > 1){
 			tmp = 0;
@@ -2368,23 +2373,7 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 				}
 			}
 		}
-	//Remove one direction near narrow angle
-		/*
-		if(vp[i]->di&(1<<(7)) && vp[i]->vp[7]) tmp = 7;
-		else tmp = 0;
-
-		for(j=0; j < 8; j++){
-			if(vp[i]->di&(1<<(7-j)) && vp[i]->vp[j]) {
-				if(tmp){
-					if(abs(tmp-j) == 1 || abs(tmp-j) == 7) {
-						//get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, 1, 1, 1);
-					}
-				}
-				tmp = j;
-			}
-		}
-		*/
-	}
+	}*/
 	printf("Numbers of removed vertexs  = %d\n", vc);
 }
 
@@ -2636,53 +2625,23 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
 				*/
 
-				draw_line_1(img, &v, w, 64);
+				draw_line_1(img, &v, w, 1);
 				//draw_line_dir(img, &v, w);
 				lc++;
 
-				yx = v.y2*w + v.x2;
-				img[yx] = 128;
-				yx = v.y1*w + v.x1;
-				img[yx] = 128;
+				//yx = v.y2*w + v.x2;
+				//img[yx] = 128;
+				//yx = v.y1*w + v.x1;
+				//img[yx] = 128;
 
 
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
 			} //;while(vx != vp[i]);
 
-			//Finding first pixel for scan average color
-			/*
-			vx = vp[i];  //vc = 0;
-			nd = get_counterclockwise_dir(vx, nd2);
-			do{
-				yxc = get_first_pixel(vx, vx->vp[nd2], vx->vp[nd], w, h, kx, ky, sh, i);
-				if(yxc && !img[yxc]) break;
-
-				nd =  find_pointer1(vx->vp[nd2], vx);
-				vx = vx->vp[nd2];
-				nd2 = get_clockwise_dir1(vx, nd);
-
-			} while (vx != vp[i]);
-
-			inp[rc] = yxc;
-			//if(img[inp[rc]]) inp[rc] = 0;
-
-			if(img[yxc]){
-				printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
-				img[yxc] = 255;
-				//img[yxc-w] = 255;
-				//img[yxc+w] = 255;
-				//img[yxc+1] = 255;
-			}
-			//img[inp[rc]] = 128;
-			 */
 			rc++;
 		}
 	}
-	//img[(h-2)*w + w-2] = 255;
-	//img[h2*w + w2] = 255;
-	//printf("w2 = %d h2 = %d\n", w2, h2);
-	//printf("w = %d h = %d\n", w, h);
 
 	for(i=0; i < vxc; i++) {
 		//printf("%d %p \n", j, vp[j]);
@@ -2697,27 +2656,57 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 		}
 	}
 	printf("Numbers of drawing lines  = %d vertexes = %d regions  = %d\n", lc, vc, rc);
-	/*
-	printf("con = %d con = %d\n", img[w-2 + w], img[w-2 + w*(h-2)]);
-	print_around(img, w-2 + w, w);
-	printf("con = %d con = %d\n", img[w-2 + w], img[w-2 + w*(h-2)]);
-	print_around(img, w-2 + w*(h-2), w);
-	printf("di = %d cn = %d n = %d  di = %d cn = %d n = %d\n", vxn[w-2 + w].di, vxn[w-2 + w].cn, vxn[w-2 + w].n,
-			vxn[w-2 + w*(h-2)].di, vxn[w-2 + w*(h-2)].cn, vxn[w-2 + w*(h-2)].n);
-	*/
 	return rc;
 }
 
-uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, Vertex **vp1, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
+static inline uint8 get_region_color(uint8 *img, uint8 *con, uint32 *l1, uint32 num, uint32 w)
 {
-	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, last, fd;
+	uint32 cl = 128, c = 0, cn = 0, k = 0, yx, j;
+	uint32 *l2 = &l1[num];
+
+	while(num){
+		for(j=0; j < num; j++){
+			yx = l1[j] - 1;  if(!con[yx]) { con[yx] = cl; l2[k++] = yx; }
+			yx = l1[j] - w;  if(!con[yx]) { con[yx] = cl; l2[k++] = yx; }
+			yx = l1[j] + 1;  if(!con[yx]) { con[yx] = cl; l2[k++] = yx; }
+			yx = l1[j] + w;  if(!con[yx]) { con[yx] = cl; l2[k++] = yx; }
+			c += img[l1[j]]; cn++;
+		}
+		num = k; k = 0;
+		l1 = l2; l2 = &l1[num];
+	}
+	return  c/cn;
+}
+
+static inline void fill_region_color(uint8 *con, uint32 *l1, uint32 num, uint8 col, uint32 w)
+{
+	uint32 k = 0, yx, j;
+	uint32 *l2 = &l1[num];
+
+	while(num){
+		for(j=0; j < num; j++){
+			yx = l1[j] - 1;  if(!con[yx]) { con[yx] = col; l2[k++] = yx; }
+			yx = l1[j] - w;  if(!con[yx]) { con[yx] = col; l2[k++] = yx; }
+			yx = l1[j] + 1;  if(!con[yx]) { con[yx] = col; l2[k++] = yx; }
+			yx = l1[j] + w;  if(!con[yx]) { con[yx] = col; l2[k++] = yx; }
+		}
+		num = k; k = 0;
+		l1 = l2; l2 = &l1[num];
+	}
+}
+
+uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, Vertex **vp1, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get)
+{
+	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, fd;
 	Vector v;
 	uint8  nd, nd1, nd2, sh = 15, cl = 100;
 	Vertex *vx, *vx1, *vx2;
 	uint32 kx = ((w-2)<<sh)/(w1-3);
 	uint32 ky = ((h-2)<<sh)/(h1-3);
-	uint32 num, c, cn;
-	uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+	//uint32 num, c, cn;
+	//uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+	uint32 *l1 = buff, *l2 ;
+
 	Vertex *vpx;
 	int sq;
 
@@ -2741,84 +2730,38 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 				vpx = vp1[pn1++];
 				//printf("pn = %d\n", pn1);
 				while(get_dir2(vpx, &nd)){
-					vx = vpx; vc = 0; vc1 = 0; last = 0; sq = 0;//nd2 = nd;
+					vx = vpx; vc = 0; vc1 = 0; sq = 0;//nd2 = nd;
+					if(!get) cl = col[rc];
 					do{
 						vx1 = vx->vp[nd];
 						//Calculate square of region
 						sq += (vx1->y + vx->y)*(vx1->x - vx->x)>>1;
 
-						//printf("nd = %d\n", nd);
-						//for(j=0; j<8; j++) printf("%d  %p\n", j, vx->vp[j]);
-						//printf("nd1 = %d  %p\n", nd1, vx);
-						//for(j=0; j<8; j++) printf("%d  %p\n", j, vx1->vp[j]);
 						nd1 =  find_pointer1(vx1, vx);
-						//printf("nd1 = %d\n", nd1);
-
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
 						//Store in the buffer
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
-						//printf("i = %d vc = %d pn = %d pn1 = %d vx1 = %p vx2 = %p vx3 = %p di = %d cn = %d\n",
-						//		i, vc1, pn, pn1, vx1, vx1->vp[nd], vx1->vp[nd1], vx1->di, vx1->cn);
-						//printf("nd = %d nd1 = %d x1 = %d y1 = %d x2 = %d y2 = %d x3 = %d y3 = %d\n", nd, nd1, vx1->x, vx1->y, vx1->vp[nd]->x, vx1->vp[nd]->y, vx1->vp[nd]->x, vx1->vp[nd]->y);
-						//new_a = abs(nd1-nd) != 1 ? 1 : 0;
 
 						yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, kx, ky, sh);
-						//printf("%d  yxw = %d con[yxw] = %d\n", vc1, yxw, con[yxw]);
-						if(yxw) {
-						//if(last && yxw > 1) {
-							l1[vc++] = yxw;
-							con[yxw] = cl;
-							//con[yxw] = 255;
-						}
+						if(yxw) { l1[vc++] = yxw; con[yxw] = cl; }
 						//last = yxw ? 1 : 0;
 						vx = vx1;
 						vc1++;
 						if(vx == vpx && fd) break;
 					} while(1);
 					//} while(vx != vpx && df);
-					//vptt = vp11; vp11 = vp2; vp2 = vpt;
 
 					if(!vc){
-						//return
-						//printf("%d inp = %d vc = %d img = %d\n", rc, inp[rc], vc, img[inp[rc]]);
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1, sq);
-						con[vpx->x + w*vpx->y] = 255;
+						//con[vpx->x + w*vpx->y] = 255;
 					}
-					//if(pn1 == 227) return 0;
 
-					c = 0;  cn = 0; k = 0; num = vc;
-
-					while(num){
-						for(j=0; j < num; j++){
-							yxw = l1[j] - 1; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							if(!con[yxw]) { con[yxw] = cl; l2[k++] = yxw; }
-							//yxw = l1[j] - 1 - w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							//if(!con[yxw] && check_reg_pix(con, yxw, w, 0)) { con[yxw] = cl; l2[i++] = yxw; }
-							yxw = l1[j] - w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							if(!con[yxw]) { con[yxw] = cl; l2[k++] = yxw; }
-							//yxw = l1[j] + 1 - w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							//if(!con[yxw] && check_reg_pix(con, yxw, w, 1)) { con[yxw] = cl; l2[i++] = yxw; }
-							yxw = l1[j] + 1; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							if(!con[yxw]) { con[yxw] = cl; l2[k++] = yxw; }
-							//yxw = l1[j] + 1 + w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							//if(!con[yxw] && check_reg_pix(con, yxw, w, 2)) { con[yxw] = cl; l2[i++] = yxw; }
-							yxw = l1[j] + w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							if(!con[yxw]) { con[yxw] = cl; l2[k++] = yxw; }
-							//yxw = l1[j] - 1 + w; //printf("%d x = %d  %d y = %d con = %d\n", w, yxw%w, h, yxw/w, con[yxw]);
-							//if(!con[yxw] && check_reg_pix(con, yxw, w, 3)) { con[yxw] = cl; l2[i++] = yxw; }
-
-							c += img[l1[j]]; cn++;
-						}
-						num = k; k = 0;
-						tm = l1; l1 = l2; l2 = tm;
-					}
 					if(vc){
-						col[rc++] = c/cn;
+						if(get) col[rc++] = get_region_color(img, con, l1, vc, w);
+						else fill_region_color(con, l1, vc, col[rc++], w);
 					}
-
 				}
-				//} while(get_dir2(vpx, &nd));
 			}
 		}
 	}
@@ -2836,6 +2779,7 @@ uint32  seg_vertex_draw4(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Verte
 	printf("Numbers of drawing regions  = %d\n", rc);
 	return rc;
 }
+
 
 uint32 seg_get_one_color(uint8 *img,  uint8 *con, uint8 *col, uint32 *buff, uint32 w, uint32 h)
 {
@@ -3055,16 +2999,16 @@ void seg_draw_line_one(uint8 *img, uint32 w, uint32 h)
 		yw = y*w;
 		for(x=1; x < w1; x++){
 			yx = yw + x;
-			if(img[yx] == 255){
+			if(img[yx] < 2){
 				sum = 0; cn = 0;
-				if(img[yx-1  ] && img[yx-1  ] != 255) { sum += img[yx-1  ]; cn++; }
-				if(img[yx-1-w] && img[yx-1-w] != 255) { sum += img[yx-1-w]; cn++; }
-				if(img[yx  -w] && img[yx  -w] != 255) { sum += img[yx  -w]; cn++; }
-				if(img[yx+1-w] && img[yx+1-w] != 255) { sum += img[yx+1-w]; cn++; }
-				if(img[yx+1  ] && img[yx+1  ] != 255) { sum += img[yx+1  ]; cn++; }
-				if(img[yx+1+w] && img[yx+1+w] != 255) { sum += img[yx+1+w]; cn++; }
-				if(img[yx  +w] && img[yx  +w] != 255) { sum += img[yx  +w]; cn++; }
-				if(img[yx-1+w] && img[yx-1+w] != 255) { sum += img[yx-1+w]; cn++; }
+				if(img[yx-1  ] > 1) { sum += img[yx-1  ]; cn++; }
+				if(img[yx-1-w] > 1) { sum += img[yx-1-w]; cn++; }
+				if(img[yx  -w] > 1) { sum += img[yx  -w]; cn++; }
+				if(img[yx+1-w] > 1) { sum += img[yx+1-w]; cn++; }
+				if(img[yx+1  ] > 1) { sum += img[yx+1  ]; cn++; }
+				if(img[yx+1+w] > 1) { sum += img[yx+1+w]; cn++; }
+				if(img[yx  +w] > 1) { sum += img[yx  +w]; cn++; }
+				if(img[yx-1+w] > 1) { sum += img[yx-1+w]; cn++; }
 				img[yx] = sum/cn;
 			}
 		}
