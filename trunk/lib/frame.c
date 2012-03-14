@@ -835,6 +835,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_find_intersect4(f->dg[0].pic, f->dc[0].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
 		vxc = seg_vertex3(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, g->buf, f->y[1].w, f->y[1].h);
 		seg_remove_virtex(f->vp, vxc, f->y[1].w, f->y[1].h);
+		memset(f->di[0].pic, 0, f->dg[0].w*f->dg[0].h);
+		seg_vertex_draw3(f->di[0].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 		seg_get_or_fill_color(f->dw[0].pic, f->di[0].pic, f->dm[0].pic, (uint32*)&g->buf[f->dg[0].w*f->dg[0].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
 				vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
 
@@ -842,6 +844,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_get_or_fill_color(NULL, f->y1[0].pic, f->dm[0].pic, (uint32*)&g->buf[f->dg[0].w*f->dg[0].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
 						vxc, f->y[0].w, f->y[0].h, f->y[1].w, f->y[1].h, 0);
 		seg_draw_line_one(f->y1[0].pic, f->y[0].w, f->y[0].h);
+		/*
+		seg_vertex_draw3(f->y1[1].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+		seg_get_or_fill_color(NULL, f->y1[1].pic, f->dm[0].pic, (uint32*)&g->buf[f->dg[0].w*f->dg[0].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
+						vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
+		seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
+		*/
 	}
 
 	//image_gradient(&f->img[0], g->buf, wc->steps, 3);
@@ -857,7 +865,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//memset(f->G1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 		//memset(f->B1[i].pic, 0, f->dg[i].w*f->dg[i].h);
 
-
+		/*
 		filter_median(f->dw[i].pic, f->dm[i].pic, f->dw[i].w, f->dw[i].h);
 		seg_grad(f->dm[i].pic, f->dg[i].pic, f->dc[i].pic, f->di[i].pic, f->dw[i].w, f->dw[i].h, 3);
 		//memset(f->dc[i].pic, 0, f->dg[i].w*f->dg[i].h);
@@ -898,7 +906,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_get_or_fill_color(f->dw[j].pic, f->di[j].pic, f->dm[i].pic, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
 						vxc, f->dg[j].w, f->dg[j].h, f->dg[i].w, f->dg[i].h, 0);
 		seg_draw_line_one(f->di[j].pic, f->dg[j].w, f->dg[j].h);
-
+		*/
 		//seg_get_one_color2(f->dw[j].pic, f->dc[j].pic, &g->buf[f->dg[j].w*f->dg[j].h>>2], (uint32*)g->buf, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>1], rgc, f->dg[j].w, f->dg[j].h);
 		//seg_vertex_draw2(f->dc[j].pic, f->vp, vxc, f->dc[j].w, f->dc[j].h, f->dc[i].w, f->dc[i].h);
 		//seg_get_one_color1(f->dw[j].pic,  f->dc[j].pic, g->buf, (uint32*)&g->buf[f->dg[j].w*f->dg[j].h>>2], f->dg[j].w, f->dg[j].h);
