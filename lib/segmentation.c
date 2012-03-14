@@ -621,7 +621,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex
 	if(dmi >= dma) yx2 += stma;
 
 	if(yx1 == yx2) {
-		printf("it's a problem yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
+		//printf("it's a problem yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
 		//img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
 		return 0;
 	}
@@ -2709,6 +2709,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 
 	Vertex *vpx;
 	int sq;
+	uint32 cloop = 0, dloop = 0;
 
 	for(i=0; i < vxc; i++) vp[i]->cn = 0;
 
@@ -2724,6 +2725,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 	for(i=0; i < vxc; i++){
 		if(vp[i]->n > 1 && is_dir(vp[i])){
 			printf("New closed region\n");
+			cloop++;
 			pn = 1; pn1 = 0;
 			vp1[0] = vp[i];
 			while(pn1 < pn){
@@ -2755,11 +2757,18 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 					if(!vc){
 						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1, sq);
 						//con[vpx->x + w*vpx->y] = 255;
+						dloop++;
 					}
 
 					if(vc){
 						if(get) col[rc++] = get_region_color(img, con, l1, vc, w);
-						else fill_region_color(con, l1, vc, col[rc++], w);
+						else {
+							if(col[rc]) fill_region_color(con, l1, vc, col[rc++], w);
+							else rc++;
+						}
+					} else {
+						if(get) col[rc++] = 0;
+						else rc++;
 					}
 				}
 			}
@@ -2776,7 +2785,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 			img[vp[i]->y*w + vp[i]->x+1] = 255;
 		}
 	}
-	printf("Numbers of drawing regions  = %d\n", rc);
+	printf("Numbers of drawing regions  = %d closed loops = %d deg loop = %d\n", rc, cloop, dloop - cloop);
 	return rc;
 }
 
