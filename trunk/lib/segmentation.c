@@ -2151,7 +2151,7 @@ static inline void remove_dir2(Vertex *vx, uint8 nd)
 
 static inline uint32 finish_dir1(Vertex *vx, uint8 nd)
 {
-	if      (nd == 0) {
+	if (nd == 0) {
 		if(vx->cn&128) return 1;
 		else { vx->cn |= 128; return 0;}
 	}
@@ -2724,7 +2724,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 	//Start main cycle
 	for(i=0; i < vxc; i++){
 		if(vp[i]->n > 1 && is_dir(vp[i])){
-			printf("New closed region\n");
+			//printf("New closed region\n");
 			cloop++;
 			pn = 1; pn1 = 0;
 			vp1[0] = vp[i];
@@ -2755,7 +2755,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 					//} while(vx != vpx && df);
 
 					if(!vc){
-						printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1, sq);
+						//printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vpx->x, vpx->y, vc1, vpx->di, vpx->cn, pn1, sq);
 						//con[vpx->x + w*vpx->y] = 255;
 						dloop++;
 					}
