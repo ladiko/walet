@@ -229,7 +229,7 @@ struct Vertex {
 	uint8		cn;		//The counter of the directions
 	//Line		**lp;	//The pointer to the lines array
 	Vertex		**vp;	//The pointer to Virtex array
-	uint16		*reg;	//The pointer to region
+	uint16		reg;	//The region number for n=2 vertex
 };
 
 struct Vector {
