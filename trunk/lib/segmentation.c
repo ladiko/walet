@@ -2706,28 +2706,31 @@ static inline void fill_region_color(uint8 *con, uint32 *l1, uint32 num, uint8 c
 	}
 }
 
-uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, uint32 vxc, uint32 w, uint32 h)
+uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, uint32 vxc, uint32 w, uint32 h)
 {
-	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, fd;
+	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, fd, num;
 	Vector v;
-	uint8  nd, nd1, nd2 = 0, rm = 0;
+	uint8  nd, nd1, nd2 = 0, cn ;
 	Vertex *vx, *vx1, *vx2;
 	//uint32 *l1 = buff, *l2 ;
 
 	Vertex *vpx;
 	int sq;
-	uint32 regc = 0, cloop = 0, dloop = 0;
+	uint32 regc = 2, cloop = 0, dloop = 0;
 
-	for(i=0; i < vxc; i++) vp[i]->cn = 0;
+	for(i=0; i < vxc; i++) {
+		vp[i]->cn = 0;
+		//vp[i]->reg = &buf[k += (vp[i]->n+1)];
+	}
 
 	//Remove the outer contour
 	vx = vp[0];
 	get_dir_clock(vx, &nd);
-	if(vx->n == 2) vx->reg = regc;
+	vx->reg = regc;
 	do{
 		vx = vx->vp[nd];
 		nd = get_same_dir(vx, nd);
-		if(vx->n == 2) vx->reg = regc;
+		vx->reg = regc;
 	} while(vx != vp[0]);
 
 	//Start main cycle
@@ -2742,7 +2745,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, uint32 vxc, uint
 				//printf("pn = %d\n", pn1);
 				while(get_dir2(vpx, &nd)){
 					regc++;
-					vx = vpx; vc = 0; vc1 = 0; sq = 0;
+					vx = vpx; vc = 0; vc1 = 0; sq = 0; j = 0;
 					do{
 						vx1 = vx->vp[nd];
 						//Calculate square of region
@@ -2751,6 +2754,18 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, uint32 vxc, uint
 						nd1 =  find_pointer1(vx1, vx);
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
+
+						if(vx1->reg == regc && vx1->reg != 1){
+							vp2[j++] = vx1;
+							vx1->reg = 1;
+							if(vx1->n == 2) vx1->n = 0;
+							//img[vx1->y*w + vx1->x-w] = 255;
+							//img[vx1->y*w + vx1->x+w] = 255;
+							//img[vx1->y*w + vx1->x-1] = 255;
+							//img[vx1->y*w + vx1->x+1] = 255;
+						} else vx1->reg = regc;
+
+						/*
 						//Remove direction to
 						if(nd2) {
 							remove_dir1(vx1, nd2);
@@ -2782,6 +2797,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, uint32 vxc, uint
 							}
 						}
 						rm = 0;
+						*/
 						//Store in the buffer
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
@@ -2790,10 +2806,31 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, uint32 vxc, uint
 						//last = yxw ? 1 : 0;
 						vx = vx1;
 						vc1++;
-						printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
+						//printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
 						//if(vx->n > 8) return 0;
 						if(vx == vpx && fd) break;
 					} while(1);
+					num = j;
+					//Remove direction
+					for(j=0; j < num; j++){
+						if(vp2[j]->n > 2){
+							vx = vp2[j];
+							//for(k=0; k<8; k++) {
+							//	if(vx->vp[k]) printf("%2d ", vx->vp[k]->reg);
+							//	else  printf(" 0 ");
+							//}
+							printf("\n");
+							if ((vx->di&128) && (vx->cn&128)) if(vx->vp[0]->reg == 1) remove_dir1(vx, 0);
+							if ((vx->di&64 ) && (vx->cn&64 )) if(vx->vp[1]->reg == 1) remove_dir1(vx, 1);
+							if ((vx->di&32 ) && (vx->cn&32 )) if(vx->vp[2]->reg == 1) remove_dir1(vx, 2);
+							if ((vx->di&16 ) && (vx->cn&16 )) if(vx->vp[3]->reg == 1) remove_dir1(vx, 3);
+							if ((vx->di&8  ) && (vx->cn&8  )) if(vx->vp[4]->reg == 1) remove_dir1(vx, 4);
+							if ((vx->di&4  ) && (vx->cn&4  )) if(vx->vp[5]->reg == 1) remove_dir1(vx, 5);
+							if ((vx->di&2  ) && (vx->cn&2  )) if(vx->vp[6]->reg == 1) remove_dir1(vx, 6);
+							if ((vx->di&1  ) && (vx->cn&1  )) if(vx->vp[7]->reg == 1) remove_dir1(vx, 7);
+
+						}
+					}
 					//} while(vx != vpx && df);
 
 				}
