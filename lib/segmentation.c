@@ -2186,6 +2186,19 @@ static inline uint32 finish_dir1(Vertex *vx, uint8 nd)
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
+static inline void finish_dir2(Vertex *vx, uint8 nd)
+{
+	if 		(nd == 0) { vx->cn |= 128; 	if(!(vx->di&128)) 	{ vx->di |= 128; 	vx->n++; } }
+	else if (nd == 1) { vx->cn |= 64; 	if(!(vx->di&64)) 	{ vx->di |= 64; 	vx->n++; } }
+	else if (nd == 2) { vx->cn |= 32; 	if(!(vx->di&32)) 	{ vx->di |= 32; 	vx->n++; } }
+	else if (nd == 3) { vx->cn |= 16; 	if(!(vx->di&16)) 	{ vx->di |= 16; 	vx->n++; } }
+	else if (nd == 4) { vx->cn |= 8; 	if(!(vx->di&8)) 	{ vx->di |= 8; 		vx->n++; } }
+	else if (nd == 5) { vx->cn |= 4; 	if(!(vx->di&4)) 	{ vx->di |= 4; 		vx->n++; } }
+	else if (nd == 6) { vx->cn |= 2; 	if(!(vx->di&2)) 	{ vx->di |= 2; 		vx->n++; } }
+	else if (nd == 7) { vx->cn |= 1; 	if(!(vx->di&1)) 	{ vx->di |= 1; 		vx->n++; } }
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
 static inline uint8  find_pointer1(Vertex *vx1, Vertex *vx2)
 {
 	/*
@@ -2621,8 +2634,10 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 *inp, uint32 vxc, uint3
 				//printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
 				vx1 = vx->vp[nd];
 				finish_dir1(vx, nd);
+				//finish_dir2(vx, nd);
 				nd1 =  find_pointer1(vx1, vx);
 				finish_dir1(vx1, nd1);
+				//finish_dir2(vx1, nd1);
 
 				v.x1 = scale(vx->x, w, kx, sh);
 				v.y1 = scale(vx->y, h, ky, sh);
@@ -2718,10 +2733,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 	int sq;
 	uint32 regc = 2, cloop = 0, dloop = 0;
 
-	for(i=0; i < vxc; i++) {
-		vp[i]->cn = 0;
-		//vp[i]->reg = &buf[k += (vp[i]->n+1)];
-	}
+	for(i=0; i < vxc; i++) vp[i]->cn = 0;
 
 	//Remove the outer contour
 	vx = vp[0];
@@ -2755,84 +2767,67 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
 
-						if(vx1->reg == regc && vx1->reg != 1){
-							vp2[j++] = vx1;
-							vx1->reg = 1;
-							if(vx1->n == 2) vx1->n = 0;
-							//img[vx1->y*w + vx1->x-w] = 255;
-							//img[vx1->y*w + vx1->x+w] = 255;
-							//img[vx1->y*w + vx1->x-1] = 255;
-							//img[vx1->y*w + vx1->x+1] = 255;
-						} else vx1->reg = regc;
+						if(vx1->reg != 1){
+							if(vx1->reg == regc){
+								vp2[j++] = vx1;
+								vx1->reg = 1;
+								//if(vx1->n == 2) { vx1->n = 0; } //vx1->di = 0; }
+								//img[vx1->y*w + vx1->x-w] = 255;
+								//img[vx1->y*w + vx1->x+w] = 255;
+								//img[vx1->y*w + vx1->x-1] = 255;
+								//img[vx1->y*w + vx1->x+1] = 255;
+							} else vx1->reg = regc;
+						}
 
-						/*
-						//Remove direction to
-						if(nd2) {
-							remove_dir1(vx1, nd2);
-							nd2 = 0;
-							rm = 1;
-						}
-						//Check if vertex have used two times for one pass
-						if(vx1->n == 2 && !rm){
-							if(!vx1->reg) vx->reg = regc;
-							else{
-								//if(vx1->reg == regc && vx1 != vpx){
-								if(vx1->reg == regc){
-									//Remove vertex
-									//vx1->n = 0;
-									//printf("x = %d y = %d n = %d ", vx1->x, vx1->y, vx1->n );
-									if(vx1->vp[nd1]->n > 2) remove_dir1(vx1->vp[nd1], find_pointer1(vx1->vp[nd1], vx1));
-									nd2 = vx1->vp[nd ]->n > 2 ? find_pointer1(vx1->vp[nd ], vx1) : 0;
-									//if(vx1->vp[nd ]->n > 2) remove_dir1(vx1->vp[nd ], find_pointer1(vx1->vp[nd ], vx1));
-									//remove_dir2(vx1, nd );
-									vx1->n = 0; //vx1->di = 0; vx1->cn = 0;
-									//img[vx1->y*w + vx1->x-w] = 255;
-									//img[vx1->y*w + vx1->x+w] = 255;
-									//img[vx1->y*w + vx1->x-1] = 255;
-									//img[vx1->y*w + vx1->x+1] = 255;
-									//printf("n = %d \n", vx1->n );
-									//if(vx1->vp[nd1]->n > 2) remove_dir2(vx1, nd1);
-									//if(vx1->vp[nd ]->n > 2) remove_dir2(vx1, nd );
-								}
-							}
-						}
-						rm = 0;
-						*/
 						//Store in the buffer
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
-
-						//yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx1->vp[nd1], w, h, kx, ky, sh);
-						//if(yxw) { l1[vc++] = yxw; con[yxw] = cl; }
-						//last = yxw ? 1 : 0;
 						vx = vx1;
 						vc1++;
 						//printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
-						//if(vx->n > 8) return 0;
 						if(vx == vpx && fd) break;
 					} while(1);
 					num = j;
 					//Remove direction
 					for(j=0; j < num; j++){
-						if(vp2[j]->n > 2){
+						if(vp2[j]->n == 2){
 							vx = vp2[j];
-							//for(k=0; k<8; k++) {
-							//	if(vx->vp[k]) printf("%2d ", vx->vp[k]->reg);
-							//	else  printf(" 0 ");
-							//}
-							printf("\n");
-							if ((vx->di&128) && (vx->cn&128)) if(vx->vp[0]->reg == 1) remove_dir1(vx, 0);
-							if ((vx->di&64 ) && (vx->cn&64 )) if(vx->vp[1]->reg == 1) remove_dir1(vx, 1);
-							if ((vx->di&32 ) && (vx->cn&32 )) if(vx->vp[2]->reg == 1) remove_dir1(vx, 2);
-							if ((vx->di&16 ) && (vx->cn&16 )) if(vx->vp[3]->reg == 1) remove_dir1(vx, 3);
-							if ((vx->di&8  ) && (vx->cn&8  )) if(vx->vp[4]->reg == 1) remove_dir1(vx, 4);
-							if ((vx->di&4  ) && (vx->cn&4  )) if(vx->vp[5]->reg == 1) remove_dir1(vx, 5);
-							if ((vx->di&2  ) && (vx->cn&2  )) if(vx->vp[6]->reg == 1) remove_dir1(vx, 6);
-							if ((vx->di&1  ) && (vx->cn&1  )) if(vx->vp[7]->reg == 1) remove_dir1(vx, 7);
-
+							if ((vx->di&128) && (vx->cn&128) && vx->vp[0]->reg == 1) { vx->di ^= 128; 	vx->cn ^= 128; 	vx->n--; }
+							if ((vx->di&64 ) && (vx->cn&64 ) && vx->vp[1]->reg == 1) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
+							if ((vx->di&32 ) && (vx->cn&32 ) && vx->vp[2]->reg == 1) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
+							if ((vx->di&16 ) && (vx->cn&16 ) && vx->vp[3]->reg == 1) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
+							if ((vx->di&8  ) && (vx->cn&8  ) && vx->vp[4]->reg == 1) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
+							if ((vx->di&4  ) && (vx->cn&4  ) && vx->vp[5]->reg == 1) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
+							if ((vx->di&2  ) && (vx->cn&2  ) && vx->vp[6]->reg == 1) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
+							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->reg == 1) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
 						}
 					}
-					//} while(vx != vpx && df);
-
+					for(j=0; j < num; j++){
+						if(vp2[j]->n > 2){
+							vx = vp2[j];
+							if ((vx->di&128) && (vx->cn&128) && vx->vp[0]->n == 0) { vx->di ^= 128; vx->cn ^= 128; 	vx->n--; }
+							if ((vx->di&64 ) && (vx->cn&64 ) && vx->vp[1]->n == 0) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
+							if ((vx->di&32 ) && (vx->cn&32 ) && vx->vp[2]->n == 0) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
+							if ((vx->di&16 ) && (vx->cn&16 ) && vx->vp[3]->n == 0) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
+							if ((vx->di&8  ) && (vx->cn&8  ) && vx->vp[4]->n == 0) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
+							if ((vx->di&4  ) && (vx->cn&4  ) && vx->vp[5]->n == 0) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
+							if ((vx->di&2  ) && (vx->cn&2  ) && vx->vp[6]->n == 0) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
+							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->n == 0) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
+						}
+					}
+					/*
+					for(j=0; j < num; j++){
+						if(vp2[j]->n > 2){
+							vx = vp2[j];
+							if ((vx->di&128) && (vx->cn&128) && vx->vp[0]->n > 2) { vx->di ^= 128; vx->cn ^= 128; 	vx->n--; }
+							if ((vx->di&64 ) && (vx->cn&64 ) && vx->vp[1]->n == 0) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
+							if ((vx->di&32 ) && (vx->cn&32 ) && vx->vp[2]->n == 0) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
+							if ((vx->di&16 ) && (vx->cn&16 ) && vx->vp[3]->n == 0) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
+							if ((vx->di&8  ) && (vx->cn&8  ) && vx->vp[4]->n == 0) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
+							if ((vx->di&4  ) && (vx->cn&4  ) && vx->vp[5]->n == 0) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
+							if ((vx->di&2  ) && (vx->cn&2  ) && vx->vp[6]->n == 0) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
+							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->n == 0) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
+						}
+					}*/
 				}
 			}
 		}
