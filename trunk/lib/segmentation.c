@@ -2124,7 +2124,7 @@ static inline void remove_dir1(Vertex *vx, uint8 nd)
 static inline void remove_dir2(Vertex *vx, uint8 nd)
 {
 	Vertex *vx1 = vx->vp[nd];
-    //printf("1finish nd = %d %o %o\n", nd, vx->di, vx->cn);
+    //printf("1finish nd = %d %o %o n = %d %p\n", nd, vx->di, vx->cn, vx->n, vx);
 	vx->n--; vx1->n--;
 	if      (nd == 0) { vx->di ^= 128;    vx->cn ^= 128; }
 	else if (nd == 1) { vx->di ^= 64;	  vx->cn ^= 64;  }
@@ -2135,14 +2135,14 @@ static inline void remove_dir2(Vertex *vx, uint8 nd)
 	else if (nd == 6) { vx->di ^= 2;      vx->cn ^= 2; 	 }
 	else if (nd == 7) { vx->di ^= 1;      vx->cn ^= 1; 	 }
 
-	if		(vx1->vp[0] == vx) { vx1->di ^= 128;   vx1->cn ^= 128;}// 	vx1->vp[0] = NULL; }
-	else if	(vx1->vp[1] == vx) { vx1->di ^= 64;	   vx1->cn ^= 64; }//	vx1->vp[1] = NULL; }
-	else if	(vx1->vp[2] == vx) { vx1->di ^= 32;    vx1->cn ^= 32; }//	vx1->vp[2] = NULL; }
-	else if	(vx1->vp[3] == vx) { vx1->di ^= 16;    vx1->cn ^= 16; }//	vx1->vp[3] = NULL; }
-	else if	(vx1->vp[4] == vx) { vx1->di ^= 8;     vx1->cn ^= 8; }//	vx1->vp[4] = NULL; }
-	else if	(vx1->vp[5] == vx) { vx1->di ^= 4;     vx1->cn ^= 4;}// 	vx1->vp[5] = NULL; }
-	else if	(vx1->vp[6] == vx) { vx1->di ^= 2;     vx1->cn ^= 2; }//	vx1->vp[6] = NULL; }
-	else if	(vx1->vp[7] == vx) { vx1->di ^= 1;     vx1->cn ^= 1; }//	vx1->vp[7] = NULL; }
+	if		(vx1->vp[0] == vx) { vx1->di ^= 128;   vx1->cn ^= 128;	}// 	vx1->vp[0] = NULL; }
+	else if	(vx1->vp[1] == vx) { vx1->di ^= 64;	   vx1->cn ^= 64; 	}//	vx1->vp[1] = NULL; }
+	else if	(vx1->vp[2] == vx) { vx1->di ^= 32;    vx1->cn ^= 32; 	}//	vx1->vp[2] = NULL; }
+	else if	(vx1->vp[3] == vx) { vx1->di ^= 16;    vx1->cn ^= 16; 	}//	vx1->vp[3] = NULL; }
+	else if	(vx1->vp[4] == vx) { vx1->di ^= 8;     vx1->cn ^= 8; 	}//	vx1->vp[4] = NULL; }
+	else if	(vx1->vp[5] == vx) { vx1->di ^= 4;     vx1->cn ^= 4; 	}// 	vx1->vp[5] = NULL; }
+	else if	(vx1->vp[6] == vx) { vx1->di ^= 2;     vx1->cn ^= 2; 	}//	vx1->vp[6] = NULL; }
+	else if	(vx1->vp[7] == vx) { vx1->di ^= 1;     vx1->cn ^= 1; 	}//	vx1->vp[7] = NULL; }
 
 	//vx->vp[nd] = vx->vp[2];
 
@@ -2725,7 +2725,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 {
 	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, fd, num;
 	Vector v;
-	uint8  nd, nd1, nd2 = 0, cn ;
+	uint8  nd, nd1, nd2, cn ;
 	Vertex *vx, *vx1, *vx2;
 	//uint32 *l1 = buff, *l2 ;
 
@@ -2760,13 +2760,26 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 					vx = vpx; vc = 0; vc1 = 0; sq = 0; j = 0;
 					do{
 						vx1 = vx->vp[nd];
+						nd2 = nd;
 						//Calculate square of region
 						//sq += (vx1->y + vx->y)*(vx1->x - vx->x)>>1;
-
 						nd1 =  find_pointer1(vx1, vx);
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
+						//fd = finish_dir1(vx1, get_clockwise_dir1(vx1, nd1));
 
+						if(vx1->reg == regc){
+							if(!vx1->rc) vp2[j++] = vx1;
+							vx1->rc++;
+
+							//if(vx1->n == 2) { vx1->n = 0; } //vx1->di = 0; }
+							//img[vx1->y*w + vx1->x-w] = 255;
+							//img[vx1->y*w + vx1->x+w] = 255;
+							//img[vx1->y*w + vx1->x-1] = 255;
+							//img[vx1->y*w + vx1->x+1] = 255;
+						} else vx1->reg = regc;
+
+						/*
 						if(vx1->reg != 1){
 							if(vx1->reg == regc){
 								vp2[j++] = vx1;
@@ -2778,27 +2791,42 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 								//img[vx1->y*w + vx1->x+1] = 255;
 							} else vx1->reg = regc;
 						}
+						*/
+						//if(vx1->reg == 1 && vx->reg == 1){
+							//printf("vx = %p vx[nd2] = %p vx1 = %p vx1[nd1] = %p\n", vx, vx->vp[nd2], vx1, vx1->vp[nd1]);
+						//	remove_dir2(vx, nd2);
+						//}
+						//printf("vx = %p vx1 = %p\n", vx, vx1);
 
 						//Store in the buffer
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 						vx = vx1;
 						vc1++;
 						//printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
+						/*
+						if(vx1->vp[nd] == NULL){
+							img[vx1->y*w + vx1->x-w] = 255;
+							img[vx1->y*w + vx1->x+w] = 255;
+							img[vx1->y*w + vx1->x-1] = 255;
+							img[vx1->y*w + vx1->x+1] = 255;
+							return 0;
+						}*/
 						if(vx == vpx && fd) break;
 					} while(1);
+
 					num = j;
 					//Remove direction
 					for(j=0; j < num; j++){
-						if(vp2[j]->n == 2){
+						if(vp2[j]->n == vp2[j]->rc+1){
 							vx = vp2[j];
-							if ((vx->di&128) && (vx->cn&128) && vx->vp[0]->reg == 1) { vx->di ^= 128; 	vx->cn ^= 128; 	vx->n--; }
-							if ((vx->di&64 ) && (vx->cn&64 ) && vx->vp[1]->reg == 1) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
-							if ((vx->di&32 ) && (vx->cn&32 ) && vx->vp[2]->reg == 1) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
-							if ((vx->di&16 ) && (vx->cn&16 ) && vx->vp[3]->reg == 1) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
-							if ((vx->di&8  ) && (vx->cn&8  ) && vx->vp[4]->reg == 1) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
-							if ((vx->di&4  ) && (vx->cn&4  ) && vx->vp[5]->reg == 1) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
-							if ((vx->di&2  ) && (vx->cn&2  ) && vx->vp[6]->reg == 1) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
-							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->reg == 1) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
+							if ((vx->di&128) && (vx->cn&128)) { vx->di ^= 128; 	vx->cn ^= 128; 	vx->n--; }
+							if ((vx->di&64 ) && (vx->cn&64 )) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
+							if ((vx->di&32 ) && (vx->cn&32 )) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
+							if ((vx->di&16 ) && (vx->cn&16 )) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
+							if ((vx->di&8  ) && (vx->cn&8  )) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
+							if ((vx->di&4  ) && (vx->cn&4  )) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
+							if ((vx->di&2  ) && (vx->cn&2  )) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
+							if ((vx->di&1  ) && (vx->cn&1  )) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
 						}
 					}
 					for(j=0; j < num; j++){
@@ -2814,20 +2842,20 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->n == 0) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
 						}
 					}
-					/*
 					for(j=0; j < num; j++){
 						if(vp2[j]->n > 2){
 							vx = vp2[j];
-							if ((vx->di&128) && (vx->cn&128) && vx->vp[0]->n > 2) { vx->di ^= 128; vx->cn ^= 128; 	vx->n--; }
-							if ((vx->di&64 ) && (vx->cn&64 ) && vx->vp[1]->n == 0) { vx->di ^= 64; 	vx->cn ^= 64; 	vx->n--; }
-							if ((vx->di&32 ) && (vx->cn&32 ) && vx->vp[2]->n == 0) { vx->di ^= 32; 	vx->cn ^= 32; 	vx->n--; }
-							if ((vx->di&16 ) && (vx->cn&16 ) && vx->vp[3]->n == 0) { vx->di ^= 16; 	vx->cn ^= 16; 	vx->n--; }
-							if ((vx->di&8  ) && (vx->cn&8  ) && vx->vp[4]->n == 0) { vx->di ^= 8; 	vx->cn ^= 8; 	vx->n--; }
-							if ((vx->di&4  ) && (vx->cn&4  ) && vx->vp[5]->n == 0) { vx->di ^= 4; 	vx->cn ^= 4; 	vx->n--; }
-							if ((vx->di&2  ) && (vx->cn&2  ) && vx->vp[6]->n == 0) { vx->di ^= 2; 	vx->cn ^= 2; 	vx->n--; }
-							if ((vx->di&1  ) && (vx->cn&1  ) && vx->vp[7]->n == 0) { vx->di ^= 1; 	vx->cn ^= 1; 	vx->n--; }
+							if ((vx->di&128) &&  vx->vp[0]->n > 2) remove_dir2(vx, 0);
+							if ((vx->di&64 ) &&  vx->vp[1]->n > 2) remove_dir2(vx, 1);
+							if ((vx->di&32 ) &&  vx->vp[2]->n > 2) remove_dir2(vx, 2);
+							if ((vx->di&16 ) &&  vx->vp[3]->n > 2) remove_dir2(vx, 3);
+							if ((vx->di&8  ) &&  vx->vp[4]->n > 2) remove_dir2(vx, 4);
+							if ((vx->di&4  ) &&  vx->vp[5]->n > 2) remove_dir2(vx, 5);
+							if ((vx->di&2  ) &&  vx->vp[6]->n > 2) remove_dir2(vx, 6);
+							if ((vx->di&1  ) &&  vx->vp[7]->n > 2) remove_dir2(vx, 7);
 						}
-					}*/
+					}
+
 				}
 			}
 		}

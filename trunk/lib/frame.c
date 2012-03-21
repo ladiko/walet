@@ -153,7 +153,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->look = (uint16 *)calloc((1<<wc->bpp)*3, sizeof(uint16));
 
 	//Init new sermentation
-	//f->ln = (Line *)calloc((w>>1)*(h>>1), sizeof(Line));
+	f->ln = (Line *)calloc((w>>1)*(h>>1), sizeof(Line));
 	//f->lp = (Line **)calloc(w*h, sizeof(Line*));
 	f->vx = (Vertex *)calloc(w*h, sizeof(Vertex));
 	f->vp = (Vertex **)calloc(w*h, sizeof(Vertex*));
