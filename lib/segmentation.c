@@ -2721,11 +2721,19 @@ static inline void fill_region_color(uint8 *con, uint32 *l1, uint32 num, uint8 c
 	}
 }
 
-uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, uint32 vxc, uint32 w, uint32 h)
+static inline void new_line1(Line *ln, Vertex *vx1, Vertex *vx2, uint8 nd1, uint8 nd2)
+{
+	ln->vx[0] = vx1; ln->vx[1] = vx2;
+	ln->nd[0] = nd1; ln->nd[1] = nd2;
+	ln->lc = 1;
+	vx1->lp[nd1] = ln; vx2->lp[nd2] = ln;
+}
+
+uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line **lp, uint32 vxc, uint32 w, uint32 h)
 {
 	uint32 i, j, k, yx, yxw, vc = 0, rc = 0, vc1, pn=1, pn1, fd, num;
 	Vector v;
-	uint8  nd, nd1, nd2, cn ;
+	uint8  nd, nd1, nd2, cn, lc = 0;
 	Vertex *vx, *vx1, *vx2;
 	//uint32 *l1 = buff, *l2 ;
 
@@ -2757,7 +2765,10 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 				//printf("pn = %d\n", pn1);
 				while(get_dir2(vpx, &nd)){
 					regc++;
-					vx = vpx; vc = 0; vc1 = 0; sq = 0; j = 0;
+					vx = vpx; vc = 0; vc1 = 0; sq = 0; k = 0, lc = 0;
+
+					for(j=0; j < 8; j++) lp[j] = NULL;
+					vx->lp = &lp[lc+=8];
 					do{
 						vx1 = vx->vp[nd];
 						nd2 = nd;
@@ -2766,8 +2777,11 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 						nd1 =  find_pointer1(vx1, vx);
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
-						//fd = finish_dir1(vx1, get_clockwise_dir1(vx1, nd1));
 
+						//printf("vx->lp[nd2] = %p\n", vx1->lp[nd1]);
+
+						//fd = finish_dir1(vx1, get_clockwise_dir1(vx1, nd1));
+						/*
 						if(vx1->reg == regc){
 							if(!vx1->rc) vp2[j++] = vx1;
 							vx1->rc++;
@@ -2778,6 +2792,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 							//img[vx1->y*w + vx1->x-1] = 255;
 							//img[vx1->y*w + vx1->x+1] = 255;
 						} else vx1->reg = regc;
+						*/
 
 						/*
 						if(vx1->reg != 1){
@@ -2799,9 +2814,34 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 						//printf("vx = %p vx1 = %p\n", vx, vx1);
 
 						//Store in the buffer
+						if(!(vx1 == vpx && fd)){
+							for(j=0; j < 8; j++) lp[lc+j] = NULL;
+							vx1->lp = &lp[lc+=8];
+						} else {
+							printf("Break regc = %d\n", regc);
+							break;
+						}
+						if(vx1->lp[nd1] == NULL) {
+							new_line1(&ln[k++], vx, vx1, nd2, nd1);
+							//printf("New line %p %p\n", vx, vx1);
+							printf("lc[%d] = %d\n", k, vx1->lp[nd1]->lc);
+						}
+						else {
+							vx1->lp[nd1]->lc++;
+							printf("lc = %d\n", vx1->lp[nd1]->lc);
+						}
+
+						img[vx1->y*w + vx1->x] = 255;
+						//img[vx1->y*w + vx1->x+w] = 255;
+						//img[vx1->y*w + vx1->x-1] = 255;
+						//img[vx1->y*w + vx1->x+1] = 255;
+
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
-						vx = vx1;
 						vc1++;
+						vx = vx1;
+						if(vx == vpx && fd) break;
+
+
 						//printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
 						/*
 						if(vx1->vp[nd] == NULL){
@@ -2811,9 +2851,29 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 							img[vx1->y*w + vx1->x+1] = 255;
 							return 0;
 						}*/
-						if(vx == vpx && fd) break;
+						//if(vx == vpx && fd) break;
 					} while(1);
 
+					for(j=0; j < k; j++){
+						//Remove all lines with count more than one
+						if(ln[j].lc > 1){
+
+							remove_dir1(ln[j].vx[0], ln[j].nd[0]);
+							remove_dir1(ln[j].vx[1], ln[j].nd[1]);
+							printf("k = %d  j = %d x = %d y = %d\n", k, j, ln[j].vx[0]->x, ln[j].vx[0]->y);
+							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x-w] = 255;
+							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x+w] = 255;
+							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x-1] = 255;
+							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x+1] = 255;
+							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x-w] = 255;
+							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x+w] = 255;
+							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x-1] = 255;
+							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x+1] = 255;
+							return 0;
+						}
+					}
+					//if(k) return 0;
+					/*
 					num = j;
 					//Remove direction
 					for(j=0; j < num; j++){
@@ -2855,7 +2915,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1,  Vertex **vp2, u
 							if ((vx->di&1  ) &&  vx->vp[7]->n > 2) remove_dir2(vx, 7);
 						}
 					}
-
+					*/
 				}
 			}
 		}
