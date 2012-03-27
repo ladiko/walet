@@ -2824,11 +2824,11 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 						if(vx1->lp[nd1] == NULL) {
 							new_line1(&ln[k++], vx, vx1, nd2, nd1);
 							//printf("New line %p %p\n", vx, vx1);
-							printf("lc[%d] = %d\n", k, vx1->lp[nd1]->lc);
+							printf("new lc[%d] = %d\n", k, vx1->lp[nd1]->lc);
 						}
 						else {
 							vx1->lp[nd1]->lc++;
-							printf("lc = %d\n", vx1->lp[nd1]->lc);
+							printf("old lc = %d\n", vx1->lp[nd1]->lc);
 						}
 
 						img[vx1->y*w + vx1->x] = 255;

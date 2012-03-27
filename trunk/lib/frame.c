@@ -96,6 +96,20 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->d.w = w; f->d.h = h;
 	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 
+	    f->Y16.w = w; f->Y16.h = h;
+	    f->Y16.pic = (int16 *)calloc(f->Y16.w*f->Y16.h, sizeof(int16));
+	    f->U16.w = w; f->U16.h = h;
+	    f->U16.pic = (int16 *)calloc(f->U16.w*f->U16.h, sizeof(int16));
+	    f->V16.w = w; f->V16.h = h;
+	    f->V16.pic = (int16 *)calloc(f->V16.w*f->V16.h, sizeof(int16));
+
+	    f->R16.w = w; f->R16.h = h;
+	    f->R16.pic = (int16 *)calloc(f->R16.w*f->R16.h, sizeof(int16));
+	    f->G16.w = w; f->G16.h = h;
+	    f->G16.pic = (int16 *)calloc(f->G16.w*f->G16.h, sizeof(int16));
+	    f->B16.w = w; f->B16.h = h;
+	    f->B16.pic = (int16 *)calloc(f->B16.w*f->B16.h, sizeof(int16));
+
 	    resize_init_(&f->R, w, h, wc->steps);
 	    resize_init_(&f->G, w, h, wc->steps);
 	    resize_init_(&f->B, w, h, wc->steps);
@@ -149,7 +163,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	}
 
 	//For white balancing
-	f->hist = (uint32 *)calloc((1<<wc->bpp)*3, sizeof(uint32));
+	f->hist = (uint32 *)calloc((1<<wc->bpp)*4, sizeof(uint32));
 	f->look = (uint16 *)calloc((1<<wc->bpp)*3, sizeof(uint16));
 
 	//Init new sermentation
@@ -159,7 +173,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->vp = (Vertex **)calloc(w*h, sizeof(Vertex*));
 
 	//Old init
-	f->size = w*h;
+	//f->size = w*h;
 
 	//f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
 	//f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
@@ -167,22 +181,22 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	//f->rgb.w  = w;
 	//f->rgb.h = h;
 	//f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
-	f->Y.w  = w;
-	f->Y.h = h;
+	//f->Y.w  = w;
+	//f->Y.h = h;
 	//f->Y.pic = (uint8 *)calloc(f->Y.w*f->Y.h*3, sizeof(uint8));
-	f->grad.w  = w;
-	f->grad.h = h;
+	//f->grad.w  = w;
+	//f->grad.h = h;
 	//f->grad.pic = (uint8 *)calloc(f->grad.w*f->grad.h*3, sizeof(uint8));
 
 
-	f->line.w  = w;
-	f->line.h = h;
+	//f->line.w  = w;
+	//f->line.h = h;
 	//f->line.pic = (uint8 *)calloc(f->line.w*f->line.h, sizeof(uint8));
-	f->edge.w  = w;
-	f->edge.h = h;
+	//f->edge.w  = w;
+	//f->edge.h = h;
 	//f->edge.pic = (uint8 *)calloc(f->edge.w*f->edge.h, sizeof(uint8));
-	f->vec.w  = w;
-	f->vec.h = h;
+	//f->vec.w  = w;
+	//f->vec.h = h;
 	//f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
 	f->state = 0;
 }
@@ -197,26 +211,30 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 */
 void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *v)
 {
-	uint32 i, size = wc->w*wc->h, size3 = size*3, shift = 1<<(wc->bpp-1);
+	//uint32 i, size = wc->w*wc->h, size3 = size*3, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
 
 	if(wc->icol == BAYER) {
 		utils_image_copy(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
-		if(wc->ccol == BAYER){
-			dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
-		} else if(wc->ccol == CS444) {
-			utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-		} else if(wc->ccol == CS420) {
-			utils_bayer_to_YUV420(f->b.pic, f->y[0].pic, f->u[0].pic, f->v[0].pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-			//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-			//prediction_encoder(f->img[0].p, f->img[0].p, (int16*)g->buf, f->img[0].w, f->img[0].h);
-			//prediction_encoder(f->img[1].p, f->img[1].p, (int16*)g->buf, f->img[1].w, f->img[1].h);
-			//prediction_encoder(f->img[2].p, f->img[2].p, (int16*)g->buf, f->img[2].w, f->img[2].h);
-		} else if(wc->ccol == RGB){
-			utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
-		} else if(wc->ccol == RGBY){
-			utils_bayer_to_RGB_fast_(f->b.pic, f->R[0].pic, f->G[0].pic, f->B[0].pic, f->b.w, f->b.h, wc->bg, 128);
-			utils_bayer_to_Y_fast_(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
+		if(wc->bpp == 8){
+			if(wc->ccol == BAYER){
+				dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
+			} else if(wc->ccol == CS444) {
+				utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+			} else if(wc->ccol == CS420) {
+				utils_bayer_to_YUV420(f->b.pic, f->y[0].pic, f->u[0].pic, f->v[0].pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+				//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+				//prediction_encoder(f->img[0].p, f->img[0].p, (int16*)g->buf, f->img[0].w, f->img[0].h);
+				//prediction_encoder(f->img[1].p, f->img[1].p, (int16*)g->buf, f->img[1].w, f->img[1].h);
+				//prediction_encoder(f->img[2].p, f->img[2].p, (int16*)g->buf, f->img[2].w, f->img[2].h);
+			} else if(wc->ccol == RGB){
+				utils_bayer_to_RGB(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+			} else if(wc->ccol == RGBY){
+				utils_bayer_to_RGB_fast_(f->b.pic, f->R[0].pic, f->G[0].pic, f->B[0].pic, f->b.w, f->b.h, wc->bg, 128);
+				utils_bayer_to_Y_fast_(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
+			}
+		} else {
+
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);

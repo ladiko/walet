@@ -46,6 +46,7 @@ void 	utils_bayer_to_YUV420	(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *bu
 
 int16* 	utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 bor);
 void 	utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);
+void utils_turn_on_180(int16 *img, uint16 *buff, uint32 w, uint32 h);
 
 void shift_b_to_w(uint8 *in,  int8 *out, int shift, uint32 size);
 void shift_w_to_b( int8 *in, uint8 *out, int shift, uint32 size);
