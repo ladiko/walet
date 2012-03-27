@@ -21,22 +21,22 @@ typedef struct {
 	//Subband			*sub[3];	//Subband location and size structure
 	//int 			*q;			//Quantization value array
 	//Segmentation
-	uint8		mvs;			// Motion vector search from -mvs to mvs in x and y
-	Row 			*row;		//The rows array
-	Corner 			*cor;		//The corners  array
-	Region			*region;	//The region array
-	Object			*obj;		//Object array
-	Row				**prow;		//The array of pointers to Rows
-	Region			**preg;		//The array of pointers to Regions
+	//uint8		mvs;			// Motion vector search from -mvs to mvs in x and y
+	//Row 			*row;		//The rows array
+	//Corner 			*cor;		//The corners  array
+	//Region			*region;	//The region array
+	//Object			*obj;		//Object array
+	//Row				**prow;		//The array of pointers to Rows
+	//Region			**preg;		//The array of pointers to Regions
 
-	Pic8u			subs;		//Images Substruction
-	Pic8u			grad;		//Images gradient of substruction
-	Pic8u			con;		//Images contur of substruction
+	//Pic8u			subs;		//Images Substruction
+	//Pic8u			grad;		//Images gradient of substruction
+	//Pic8u			con;		//Images contur of substruction
 
-	Edge			*edg;		//The array of edges
+	//Edge			*edg;		//The array of edges
 	//Pixel			*pix;		//The array of pixeles
-	Edge			**pedg;		//The array of pointers to Edge
-	Edgelet			*edgel;
+	//Edge			**pedg;		//The array of pointers to Edge
+	//Edgelet			*edgel;
 }	GOP;
 
 #ifdef __cplusplus

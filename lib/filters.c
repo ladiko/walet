@@ -315,7 +315,7 @@ static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_b
 
 void filters_white_balance(int16 *in, int16 *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
-	uint32 i, x, y, size = h*w;
+	uint32 i, x, y, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1);
 	uint16 *c[4];
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
 
@@ -331,11 +331,11 @@ void filters_white_balance(int16 *in, int16 *out, uint32 w, uint32 h,  BayerGrid
 	for(i=0, x=0, y=0; i < size; i++, x++){
 		if(x == w) { x=0; y++;}
 		if(y&1)
-			if(x&1) out[i] = c[0][in[i]];
-			else 	out[i] = c[1][in[i]];
+			if(x&1) out[i] = c[0][in[i]+shift] - shift1;
+			else 	out[i] = c[1][in[i]+shift] - shift1;
 		else
-			if(x&1)	out[i] = c[2][in[i]];
-			else 	out[i] = c[3][in[i]];
+			if(x&1)	out[i] = c[2][in[i]+shift] - shift1;
+			else 	out[i] = c[3][in[i]+shift] - shift1;
 	}
 }
 

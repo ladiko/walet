@@ -326,6 +326,35 @@ uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
 	return rgb;
 }
 
+void utils_turn_on_180(int16 *img, uint16 *buff, uint32 w, uint32 h)
+{
+	uint32 x, y, yw, yw1, h2 = h>>1;
+
+	for(y=0; y < h2; y++){
+		yw = y*w;
+		for(x=0; x < w; x++){
+			buff[x] = img[yw + x];
+		}
+		yw1 = (h-y)*w-1;
+		for(x=0; x < w; x++){
+			img[yw + x] = img[yw1 - x];
+		}
+		for(x=0; x < w; x++){
+			img[yw1 - x] = buff[x];
+		}
+	}
+	if(h2%2){
+		yw = h2*w;
+		for(x=0; x < w; x++){
+			buff[x] = img[yw + x];
+		}
+		yw = (h2+1)*w-1;
+		for(x=0; x < w; x++){
+			img[yw - x] = buff[x];
+		}
+	}
+}
+
 
 //#define lb(x) (x&0xFF)
 
@@ -523,9 +552,10 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1);;
+	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8;
 	int16 *l0, *l1, *l2, *tm;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+	//printf("bpp = %d shift = %d\n", bpp, shift);
 
 	switch(bay){
 		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
@@ -545,24 +575,24 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 		for(x=xs, x1=0; x < w1; x++, x1++){
 			wy 	= x1 + yw;
 			x2 = x1 + 1;
-			xwy3 = wy + wy + wy;
+			xwy3 = wy*3;
 
 			if(!(y&1) && !(x&1)){
-				rgb[xwy3] 	= 	lb1(l1[x2] + shift);
-				rgb[xwy3+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
-				rgb[xwy3+2] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
+				rgb[xwy3] 	= 	lb1((l1[x2] + shift)>>sh);
+				rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
+				rgb[xwy3+2] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
 			}else if (!(y&1) && (x&1)){
-				rgb[xwy3] = 	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
-				rgb[xwy3+1] = 	lb1(l1[x2] + shift);
-				rgb[xwy3+2] =	lb1(((l0[x2] + l2[x2])>>1) + shift);
+				rgb[xwy3] = 	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
+				rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
+				rgb[xwy3+2] =	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
 			}else if ((y&1) && !(x&1)){
-				rgb[xwy3] = 	lb1(((l0[x2] + l2[x2])>>1) + shift);
-				rgb[xwy3+1] = 	lb1(l1[x2] + shift);
-				rgb[xwy3+2] =	lb1(((l1[x2-1] + l1[x2+1])>>1) + shift);
+				rgb[xwy3] = 	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
+				rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
+				rgb[xwy3+2] =	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
 			}else {
-				rgb[xwy3] = 	lb1(((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift);
-				rgb[xwy3+1] = 	lb1(((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift);
-				rgb[xwy3+2] = 	lb1(l1[x2] + shift);
+				rgb[xwy3] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
+				rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
+				rgb[xwy3+2] = 	lb1((l1[x2] + shift)>>sh);
 			}
 		}
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
@@ -582,7 +612,8 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 	\param shift	The image shift for display.
 	\retval			Output RGB image..
 */
-void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
+void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
+{
 	int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
@@ -1180,9 +1211,15 @@ int16* utils_specular_border(int16 *img, int16 *img1, uint32 w, uint32 h, uint32
 */
 void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 {
-	uint32 i, size = w*h, shift = 1<<(bpp-1);;
+	uint32 i, size = w*h, shift = 1<<(bpp-1);
 	//printf("Start copy  x = %d y = %d p = %p \n", im->w, im->h, im->p);
-	if(bpp > 8) for(i=0; i<size; i++) img[i] = ((buff[i<<1]<<8) | buff[(i<<1)+1]) - shift;
+	//printf("utils_image_copy : bpp = %d shift = %d\n", bpp, shift);
+
+	if(bpp > 8) for(i=0; i<size; i++) {
+		//img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
+		img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
+		//printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
+	}
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
 }
 
@@ -1231,11 +1268,11 @@ void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint
 //	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 //	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
 //
-	uint32 x, y, i, size = h*w;
+	uint32 x, y, i, size = h*w, shift = 1<<(bits-1);
 	uint32 *c[4];
-	memset(r, 0, sizeof r);
-	memset(g, 0, sizeof g);
-	memset(b, 0, sizeof b);
+	memset(r, 0, sizeof(uint32)*(1<<bits));
+	memset(g, 0, sizeof(uint32)*(1<<bits));
+	memset(b, 0, sizeof(uint32)*(1<<bits));
 
 	switch(bay){
 		case(BGGR):{ c[0] = r; c[1] = g; c[2] = g; c[3] = b; break;}
@@ -1247,11 +1284,11 @@ void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint
 	for(i=0, x=0, y=0; i < size; i++, x++){
 		if(x == w) { x=0; y++;}
 		if(y&1)
-			if(x&1) c[0][img[i]]++;
-			else 	c[1][img[i]]++;
+			if(x&1) c[0][img[i]+shift]++;
+			else 	c[1][img[i]+shift]++;
 		else
-			if(x&1)	c[2][img[i]]++;
-			else 	c[3][img[i]]++;
+			if(x&1)	c[2][img[i]+shift]++;
+			else 	c[3][img[i]+shift]++;
 	}
 }
 
