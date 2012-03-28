@@ -7,7 +7,8 @@ typedef int (*FP)(uint8* , uint32 );
 extern "C" {
 #endif /* __cplusplus */
 
-void filters_white_balance			(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits, Gamma gamma);
+void filters_white_balance			(int16 *in, int16 *out, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma);
+void filters_wb(int16 *R, int16 *G, int16 *B, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma);
 void filters_bayer_median_filter_3x3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay);
 void filters_median_3x3				(int16 *img, int16 *img1, uint32 w, uint32 h);
 void filters_bayer_to_Y				(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay);

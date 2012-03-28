@@ -1292,6 +1292,14 @@ void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint
 	}
 }
 
+void fill_hist(int16 *img, uint32 *h, uint32 size, uint32 bits)
+{
+	uint32 i, shift = 1<<(bits-1);
+	memset(h, 0, sizeof(uint32)*(1<<bits));
+
+	for(i=0; i < size; i++) h[img[i]+shift]++;
+}
+
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)
 {
 	int i, j, dim = h*w*3;

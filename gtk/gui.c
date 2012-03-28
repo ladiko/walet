@@ -531,12 +531,16 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 {
 	Frame *f0 = &gw->gop.frames[0];
 	int i, sz = f0->img[0].w*f0->img[0].h;
-	uint32 *r = f0->hist, *g = &r[1<<gw->wc.bpp], *b = &g[1<<gw->wc.bpp];
+	uint32 *y = f0->hist, *r = &y[1<<gw->wc.bpp], *g = &r[1<<gw->wc.bpp], *b = &g[1<<gw->wc.bpp];
 
 	utils_bayer_to_RGB		(f0->b.pic, f0->R16.pic, f0->G16.pic, f0->B16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
 	utils_bayer_to_YUV444	(f0->b.pic, f0->Y16.pic, f0->U16.pic, f0->V16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
 
-	fill_bayer_hist(f0->b.pic, r, g, b, f0->b.w, f0->b.h,  gw->wc.bg, gw->wc.bpp);
+	//fill_bayer_hist(f0->b.pic, r, g, b, f0->b.w, f0->b.h,  gw->wc.bg, gw->wc.bpp);
+	fill_hist(f0->Y16.pic, y, f0->b.w*f0->b.h, gw->wc.bpp);
+	fill_hist(f0->R16.pic, r, f0->b.w*f0->b.h, gw->wc.bpp);
+	fill_hist(f0->G16.pic, g, f0->b.w*f0->b.h, gw->wc.bpp);
+	fill_hist(f0->B16.pic, b, f0->b.w*f0->b.h, gw->wc.bpp);
 	/*
 	filters_white_balance(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, f0->hist, f0->look,  gw->wc.bpp, gw->wc.bpp, LINEAR);
 
@@ -544,7 +548,8 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
 	gtk_widget_queue_draw(gw->drawingarea[1]);
 	*/
-	filters_white_balance(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, f0->hist, f0->look,  gw->wc.bpp, 8, LINEAR);
+	//filters_white_balance(f0->b.pic, f0->d.pic, f0->hist, f0->look, f0->b.w, f0->b.h, gw->wc.bg,  gw->wc.bpp, 8, LINEAR);
+	filters_wb(f0->R16.pic, f0->G16.pic, f0->B16.pic, f0->hist, f0->look, f0->b.w, f0->b.h, gw->wc.bg,  gw->wc.bpp, 8, LINEAR);
 
 	new_buffer (gw->orig[1], f0->b.w, f0->b.h);
 	utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
