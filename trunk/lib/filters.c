@@ -280,21 +280,57 @@ void filter_noise(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 #define bt709(maxx,maxy,x)	(((x) < (0.018*maxx)) ? 4.5*maxy*(x)/maxx : (1.099*pow(x/maxx,0.45)-0.099)*maxy)
 #define srgb(maxx,maxy,x)	(((x) < (0.00313*maxx)) ? 12.92*maxy*(x)/maxx : (1.055*pow(x/maxx,0.417)-0.055)*maxy)
 
-static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits, Gamma gamma)
+static uint32 get_grey_pixels(int16 *R, int16 *G, int16 *B, int *dr, int *db, uint32 size)
+{
+	uint32 i, th = 5;
+	int cn = 0;
+	*dr = 0; *db = 0;
+	for(i=0; i<size; i++){
+		//if(G[i] > 10 && G[i] < 4095 && R[i] > 10 && R[i] < 4095 && B[i] > 10 && B[i] < 4095){
+		//if(G[i] > 0 && R[i] > 0 &&  B[i] > 0 ){
+			if(abs(G[i]- R[i]) < 50 && abs(G[i]- B[i]) < 50) {
+				cn++;
+				(*dr) += (G[i]- R[i]);
+				(*db) += (G[i]- B[i]);
+			}
+		//}
+	}
+	//printf("dr = %d db = %d cn = %d\n", *dr, *db, cn);
+	*dr = (*dr)/cn; *db = (*db)/cn;
+	//printf("dr = %d db = %d\n", *dr, *db);
+	return cn;
+}
+
+static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits, uint32 size, Gamma gamma)
 {
 	uint32 i, j, sz = (1<<in_bits), sz1 = (1<<out_bits)-1, ind;
-	uint32 *h[3] = {hist, &hist[1<<in_bits], &hist[1<<(in_bits+1)]};
+	uint32 *yh = hist;
+	uint32 *h[3] = {&hist[1<<in_bits], &hist[(1<<in_bits)*2], &hist[(1<<in_bits)*3]};
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
-	double avr[3], max[3], a[3], p[3], sum, sum1;  //min[3],c[3],
+	double avr[3], max[3], a[3], p[3], sum, sum1, lim = size*0.01;  //min[3],c[3],
+	double yavr;
+	uint32 ymin, ymax;
 
+	//Calculate statistic for Y component
+	sum = 0.; sum1 = 0.;
+	for(i=0; i<sz; i++) sum += yh[i]*i;
+	yavr = (double)sum/(double)size;
+
+	sum = 0.;
+	for(i=0; i<sz; i++) { sum += yh[i]; if(sum > lim) break; }
+	ymin = i;
+	sum = 0.;
+	for(i=sz-1; i; i--) { sum += yh[i]; if(sum > lim) break;  }
+	ymax = i;
+
+	//Calculate statistic for RGB components
 	for(j=0; j<3; j++) {
-		sum = 0.; sum1 = 0.;
+		sum = 0.;
 		for(i=0; i<sz; i++) sum += h[j][i]*i;
-		for(i=0; i<sz; i++) sum1 += h[j][i];
-		avr[j] = (double)sum/(double)sum1;
-		//for(i=0; i<sz; i++) if(h[j][i]>0) break; min[j] = i;
-		for(i=sz-1; i; i--) if(h[j][i]>0) break; max[j] = i;
+		avr[j] = (double)sum/(double)size;
 	}
+	printf("ymin = %d ymax = %d y = %f r = %f g = %f b = %f\n",ymin, ymax, yavr, avr[0], avr[1], avr[2]);
+	/*
 	//Find maximum of average
 	ind = (avr[0]   < avr[1]) ? 1 : 0;
 	ind = (avr[ind] < avr[2]) ? 2 : ind;
@@ -311,15 +347,16 @@ static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_b
 		case(sRGB)   : { for(i=0; i<sz; i++) l[j][i] = (i>p[j]) ? sz1 : (uint32)srgb(max[j],(double)sz1,(double)i); break;}
 		}
 	}
+	*/
 }
 
-void filters_white_balance(int16 *in, int16 *out, uint32 w, uint32 h,  BayerGrid bay, uint32 *hist, uint16 *look,  uint32 in_bits, uint32 out_bits, Gamma gamma)
+void filters_white_balance(int16 *in, int16 *out, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
 	uint32 i, x, y, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1);
 	uint16 *c[4];
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
 
-	color_table(hist, look, in_bits, out_bits, gamma);
+	color_table(hist, look, in_bits, out_bits, w*h, gamma);
 
 	switch(bay){
 		case(BGGR):{ c[0] = l[0]; c[1] = l[1]; c[2] = l[1]; c[3] = l[2]; break;}
@@ -337,5 +374,18 @@ void filters_white_balance(int16 *in, int16 *out, uint32 w, uint32 h,  BayerGrid
 			if(x&1)	out[i] = c[2][in[i]+shift] - shift1;
 			else 	out[i] = c[3][in[i]+shift] - shift1;
 	}
+}
+
+void filters_wb(int16 *R, int16 *G, int16 *B, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma)
+{
+	uint32 i, x, y, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1), ngray;
+	uint16 *c[4];
+	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
+	int dr, db;
+
+	color_table(hist, look, in_bits, out_bits, w*h, gamma);
+
+	ngray = get_grey_pixels(R, G, B, &dr, &db, size);
+	printf("cn = %d gray = %f DR = %d DB = %d\n ", ngray, (double)ngray/(double)size, dr, db);
 }
 

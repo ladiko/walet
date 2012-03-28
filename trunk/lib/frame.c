@@ -829,7 +829,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 	Frame *f = &g->frames[fn];
 	if(check_state(f->state, FILL_HISTOGRAM)){
 		if(wc->ccol == BAYER){
-			filters_white_balance(f->b.pic, f->b.pic, f->b.w, f->b.h, wc->bg, f->hist, f->look, wc->bpp, bits, gamma);
+			filters_white_balance(f->b.pic, f->b.pic, f->hist, f->look, f->b.w, f->b.h, wc->bg, wc->bpp, bits, gamma);
 		}
 		f->state |= WHITE_BALANCE;
 		return 1;
