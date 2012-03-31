@@ -8,7 +8,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 void filters_white_balance			(int16 *in, int16 *out, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma);
-void filters_wb(int16 *R, int16 *G, int16 *B, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma);
+void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint8 *b, uint8 *buff,  uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma);
 void filters_bayer_median_filter_3x3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay);
 void filters_median_3x3				(int16 *img, int16 *img1, uint32 w, uint32 h);
 void filters_bayer_to_Y				(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay);
@@ -23,6 +23,7 @@ void filter_average(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 thresh);
 void filter_noise(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th);
 
 void filter_median_buf(uint8 *img, uint8 *img1, uint8 *buff, uint32 w, uint32 h);
+void filter_median_16(int16 *img, int16 *img1, uint32 w, uint32 h);
 
 
 #ifdef __cplusplus

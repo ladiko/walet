@@ -558,10 +558,10 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 	//printf("bpp = %d shift = %d\n", bpp, shift);
 
 	switch(bay){
-		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
-		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{ x = 0; y = 0; w1 = w; h1 = h;   break;}
+		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
 	}
 	h2 = h1-1;
 	//Create 3 rows buffer for transform
@@ -619,10 +619,10 @@ void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, u
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
 
 	switch(bay){
-		case(BGGR):{ x = 1; y = 1; w1 = w+1; h1 = h+1; break;}
-		case(GRBG):{ x = 1; y = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ x = 0; y = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{ x = 0; y = 0; w1 = w; h1 = h;   break;}
+		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
 	}
 	h2 = h1-1;
 	//Create 3 rows buffer for transform
@@ -1085,23 +1085,23 @@ void utils_RGB24_to_RGB(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint
 */
 void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint32 h, uint32 bpp)
 {
-	uint32 i, i3, size = w*h, shift = 1<<(bpp-1);
+	uint32 i, i3, size = w*h, shift = 1<<(bpp-1), sh = bpp - 8;
 	for(i=0; i<size; i++) {
 		i3 = i*3;
-		img[i3]   = lb1(r[i] + shift);
-		img[i3+1] = lb1(g[i] + shift);
-		img[i3+2] = lb1(b[i] + shift);
+		img[i3]   = lb1((r[i] + shift)>>sh);
+		img[i3+1] = lb1((g[i] + shift)>>sh);
+		img[i3+2] = lb1((b[i] + shift)>>sh);
 	}
 }
 
-uint8* utils_RGB_to_RGB24_8(uint8 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, uint32 shift)
+uint8* utils_RGB_to_RGB24_8(uint8 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, uint32 bpp)
 {
 	uint32 i, i3, size = w*h;
 	for(i=0; i<size; i++) {
 		i3 = i*3;
-		img[i3]   = lb1(r[i] + shift);
-		img[i3+1] = lb1(g[i] + shift);
-		img[i3+2] = lb1(b[i] + shift);
+		img[i3]   = lb1(r[i]);
+		img[i3+1] = lb1(g[i]);
+		img[i3+2] = lb1(b[i]);
 	}
 	return img;
 }
@@ -1216,8 +1216,8 @@ void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	//printf("utils_image_copy : bpp = %d shift = %d\n", bpp, shift);
 
 	if(bpp > 8) for(i=0; i<size; i++) {
-		//img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
-		img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
+		img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
+		//img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
 		//printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
 	}
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
@@ -1298,6 +1298,8 @@ void fill_hist(int16 *img, uint32 *h, uint32 size, uint32 bits)
 	memset(h, 0, sizeof(uint32)*(1<<bits));
 
 	for(i=0; i < size; i++) h[img[i]+shift]++;
+
+	for(i=0; i < (1<<bits); i++) printf("%d  %d\n", i, h[i]);
 }
 
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)

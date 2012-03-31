@@ -110,6 +110,13 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	    f->B16.w = w; f->B16.h = h;
 	    f->B16.pic = (int16 *)calloc(f->B16.w*f->B16.h, sizeof(int16));
 
+	    f->R8.w = w; f->R8.h = h;
+	    f->R8.pic = (uint8 *)calloc(f->R8.w*f->R8.h, sizeof(uint8));
+	    f->G8.w = w; f->G8.h = h;
+	    f->G8.pic = (uint8 *)calloc(f->G8.w*f->G8.h, sizeof(uint8));
+	    f->B8.w = w; f->B8.h = h;
+	    f->B8.pic = (uint8 *)calloc(f->B8.w*f->B8.h, sizeof(uint8));
+
 	    resize_init_(&f->R, w, h, wc->steps);
 	    resize_init_(&f->G, w, h, wc->steps);
 	    resize_init_(&f->B, w, h, wc->steps);

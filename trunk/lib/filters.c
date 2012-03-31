@@ -119,6 +119,64 @@ void filter_median1(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 	utils_copy_border(img, img1, 1, w, h);
 }
 
+static  inline int16*  sort_3_16(int16 *s)
+{
+	int16 tmp;
+	if(s[0] > s[1]) { tmp = s[1]; s[1] = s[0]; s[0] = tmp; }
+	if(s[1] > s[2]) { tmp = s[2]; s[2] = s[1]; s[1] = tmp; }
+	return s;
+}
+static  inline int16  max_3_16(int16 s0, int16 s1, int16 s2)
+{
+	return (s0 > s1) ? (s0 > s2 ? s0 : s2) : (s1 > s2 ? s1 : s2);
+}
+
+static  inline int16  min_3_16(int16 s0, int16 s1, int16 s2)
+{
+	return (s0 > s1) ? (s1 > s2 ? s2 : s1) : (s0 > s2 ? s2 : s0);
+}
+
+
+static  inline int16  median_3_16(int16 s0, int16 s1, int16 s2)
+{
+	return (s2 > s1) ? (s1 > s0 ? s1 : (s2 > s0 ? s0 : s2))
+					 : (s2 > s0 ? s2 : (s1 > s0 ? s0 : s1));
+}
+
+void filter_median_16(int16 *img, int16 *img1, uint32 w, uint32 h)
+{
+	// s[0]  s[1]  s[2]
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	//|     | yx  |     |
+	//|-----|-----|-----|
+	//|     |     |     |
+	//|-----|-----|-----|
+	uint32 y, x, yx, yw, i, h1 = h-1, w1 = w-1;
+	int16 s[3][3];
+
+	for(y=1; y < h1; y++){
+		i = 2; x = 2;
+		yw = y*w;
+		yx = yw + x;
+		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
+		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
+		sort_3_16(s[0]); sort_3_16(s[1]);
+		for(x=1; x < w1; x++){
+			yx = yw + x;
+			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
+			sort_3_16(s[i]);
+			img1[yx] = median_3(max_3_16   (s[0][0], s[1][0], s[2][0]),
+								median_3_16(s[0][1], s[1][1], s[2][1]),
+								min_3_16   (s[0][2], s[1][2], s[2][2]));
+			i = (i == 2) ? 0 : i+1;
+		}
+	}
+	//Copy one pixel border
+	//utils_copy_border(img, img1, 1, w, h);
+}
+
 void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
@@ -279,50 +337,74 @@ void filter_noise(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 #define line(a,x)  (a*x)
 #define bt709(maxx,maxy,x)	(((x) < (0.018*maxx)) ? 4.5*maxy*(x)/maxx : (1.099*pow(x/maxx,0.45)-0.099)*maxy)
 #define srgb(maxx,maxy,x)	(((x) < (0.00313*maxx)) ? 12.92*maxy*(x)/maxx : (1.055*pow(x/maxx,0.417)-0.055)*maxy)
+#define cut_max(x, max) (((x) < max) ? (x) : max - 1)
 
-static uint32 get_grey_pixels(int16 *R, int16 *G, int16 *B, int *dr, int *db, uint32 size)
+static void  multiply_color (int16 *R, double c, uint32 size, uint32 in_bits)
 {
-	uint32 i, th = 5;
+	int i,shift = 1<<(in_bits-1), max = (1<<in_bits);
+
+	for(i=0; i<size; i++){
+		//R[i] = cut_max((int)((double)(R[i] + shift)*c) - shift, max);
+		R[i] = cut_max((int)((double)(R[i])*c), max);
+	}
+}
+
+static uint32 get_grey_pixels(int16 *R, int16 *G, int16 *B, double *dr, double *db, uint32 size, uint32 in_bits)
+{
+	uint32 i, th = 5, shift = 1<<(in_bits-1), max = (1<<in_bits)-1-10, sh = (in_bits - 8);
+	int16 r, g, b;
 	int cn = 0;
 	*dr = 0; *db = 0;
 	for(i=0; i<size; i++){
+		r = (R[i] + shift)>>sh;
+		g = (G[i] + shift)>>sh;
+		b = (B[i] + shift)>>sh;
 		//if(G[i] > 10 && G[i] < 4095 && R[i] > 10 && R[i] < 4095 && B[i] > 10 && B[i] < 4095){
-		//if(G[i] > 0 && R[i] > 0 &&  B[i] > 0 ){
-			if(abs(G[i]- R[i]) < 50 && abs(G[i]- B[i]) < 50) {
+		//if(g > th && r > th && b > th ){
+			if(abs(g- r) < th && abs(g- r) < th) {
 				cn++;
-				(*dr) += (G[i]- R[i]);
-				(*db) += (G[i]- B[i]);
+				(*dr) += (double)(G[i]- R[i])/(double)R[i];
+				(*db) += (double)(G[i]- B[i])/(double)B[i];
 			}
 		//}
 	}
 	//printf("dr = %d db = %d cn = %d\n", *dr, *db, cn);
-	*dr = (*dr)/cn; *db = (*db)/cn;
+	*dr = 1. - (*dr)/(double)cn; *db = 1. - (*db)/(double)cn;
 	//printf("dr = %d db = %d\n", *dr, *db);
 	return cn;
 }
 
-static void color_table(uint32 *hist, uint16 *look, uint32 in_bits, uint32 out_bits, uint32 size, Gamma gamma)
+static void color_table(uint32 *hist, uint16 *look, double *avr, uint32 in_bits, uint32 out_bits, uint32 size, Gamma gamma)
 {
-	uint32 i, j, sz = (1<<in_bits), sz1 = (1<<out_bits)-1, ind;
-	uint32 *yh = hist;
+	uint32 i, j, sz = (1<<in_bits), sz1 = (1<<out_bits)-1, ind, sh = in_bits - out_bits;
+	uint32 *yh = hist, tot;
 	uint32 *h[3] = {&hist[1<<in_bits], &hist[(1<<in_bits)*2], &hist[(1<<in_bits)*3]};
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
-	double avr[3], max[3], a[3], p[3], sum, sum1, lim = size*0.01;  //min[3],c[3],
+	double max[3], a[3], p[3], sum, sum1, lim = size*0.01;  //min[3],c[3],
 	double yavr;
-	uint32 ymin, ymax;
+	uint32 ymin, ymax, sm, st;
 
 	//Calculate statistic for Y component
 	sum = 0.; sum1 = 0.;
 	for(i=0; i<sz; i++) sum += yh[i]*i;
 	yavr = (double)sum/(double)size;
-
+	/*
 	sum = 0.;
 	for(i=0; i<sz; i++) { sum += yh[i]; if(sum > lim) break; }
 	ymin = i;
 	sum = 0.;
 	for(i=sz-1; i; i--) { sum += yh[i]; if(sum > lim) break;  }
 	ymax = i;
-
+	*/
+	tot = size - yh[0] - yh[sz-1];
+	st = tot/(1<<out_bits);
+	sm = 0; l[0][0] = 0;
+	for(i=1; i<sz-1; i++){
+		sm += yh[i];
+		l[0][i] = sm/st;
+		if(l[0][i] > sz1) l[0][i] = sz1;
+		//printf("%4d = %d\n", i, l[0][i]);
+	}
 	//Calculate statistic for RGB components
 	for(j=0; j<3; j++) {
 		sum = 0.;
@@ -355,8 +437,9 @@ void filters_white_balance(int16 *in, int16 *out, uint32 *hist, uint16 *look, ui
 	uint32 i, x, y, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1);
 	uint16 *c[4];
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
+	double avr[3];
 
-	color_table(hist, look, in_bits, out_bits, w*h, gamma);
+	color_table(hist, look, avr, in_bits, out_bits, w*h, gamma);
 
 	switch(bay){
 		case(BGGR):{ c[0] = l[0]; c[1] = l[1]; c[2] = l[1]; c[3] = l[2]; break;}
@@ -376,16 +459,65 @@ void filters_white_balance(int16 *in, int16 *out, uint32 *hist, uint16 *look, ui
 	}
 }
 
-void filters_wb(int16 *R, int16 *G, int16 *B, uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma)
+void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint8 *b, uint8 *buff,
+		uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
-	uint32 i, x, y, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1), ngray;
-	uint16 *c[4];
+	uint32 i, size = h*w, shift = 1<<(in_bits-1), shift1 = 1<<(out_bits-1), ngray;
+	//uint16 *c[4];
 	uint16 *l[3] = {look, &look[1<<in_bits], &look[1<<(in_bits+1)]};
-	int dr, db;
+	uint32 *yh = hist, *rh = &yh[1<<in_bits], *gh = &rh[1<<in_bits], *bh = &gh[1<<in_bits];
+	//double dr, db;
+	double rc, bc;
+	double avr[3];
 
-	color_table(hist, look, in_bits, out_bits, w*h, gamma);
+	fill_hist(Y, yh, size, in_bits);
+	fill_hist(R, rh, size, in_bits);
+	fill_hist(G, gh, size, in_bits);
+	fill_hist(B, bh, size, in_bits);
 
-	ngray = get_grey_pixels(R, G, B, &dr, &db, size);
-	printf("cn = %d gray = %f DR = %d DB = %d\n ", ngray, (double)ngray/(double)size, dr, db);
+	for(i=0; i < size; i++) R[i] = R[i] + shift;
+	for(i=0; i < size; i++) G[i] = G[i] + shift;
+	for(i=0; i < size; i++) B[i] = B[i] + shift;
+	/*
+	for(i=0; i < size; i++) Y[i] = R[i] + shift;
+	filter_median_16(Y, R, w, h);
+	for(i=0; i < size; i++) Y[i] = G[i] + shift;
+	filter_median_16(Y, G, w, h);
+	for(i=0; i < size; i++) Y[i] = B[i] + shift;
+	filter_median_16(Y, B, w, h);
+	*/
+
+
+	color_table(hist, look, avr, in_bits, out_bits, size, gamma);
+
+
+	//ngray = get_grey_pixels(R, G, B, &rc, &bc, size, in_bits);
+	rc = avr[1]/avr[0]; bc = avr[1]/avr[2];
+	printf("cn = %d gray = %f DR = %f DB = %f\n", ngray, (double)ngray/(double)size, rc, bc);
+
+	multiply_color (R, rc, size, in_bits);
+	multiply_color (B, bc, size, in_bits);
+	/*
+	for(i=0; i < size; i++){
+		r[i] = l[0][R[i]+shift] - shift1;
+		g[i] = l[0][G[i]+shift] - shift1;
+		b[i] = l[0][B[i]+shift] - shift1;
+
+	}
+	*/
+	for(i=0; i < size; i++){
+		r[i] = l[0][R[i]];
+		g[i] = l[0][G[i]];
+		b[i] = l[0][B[i]];
+
+	}
+	/*
+	filter_median(r, buff, w, h);
+	for(i=0; i < size; i++) r[i] = buff[i];
+	filter_median(g, buff, w, h);
+	for(i=0; i < size; i++) g[i] = buff[i];
+	filter_median(b, buff, w, h);
+	for(i=0; i < size; i++) b[i] = buff[i];
+	*/
 }
 
