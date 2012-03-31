@@ -1,6 +1,7 @@
 #include 	<gtk/gtk.h>
 #include 	<gst/gst.h>
 #include 	<gdk-pixbuf/gdk-pixbuf.h>
+#include 	<gdk/gdk.h>
 
 #include	<walet.h>
 
@@ -64,10 +65,14 @@ typedef struct  {
 
 
 	//Image window
+	//GdkDrawable *drawable;
+	GdkPixmap 	*pixmap;
 	GtkWidget	*window1;
 	GtkWidget	*feet_button1;
 	GtkWidget	*full_button1;
+	GtkWidget	*fill_hist;
 	gboolean 	feet1;
+	gboolean 	hist;
 
 	//Walet structure
 	GOP				gop;
