@@ -2726,7 +2726,7 @@ static inline void new_line1(Line *ln, Vertex *vx1, Vertex *vx2, uint8 nd1, uint
 	ln->vx[0] = vx1; ln->vx[1] = vx2;
 	ln->nd[0] = nd1; ln->nd[1] = nd2;
 	ln->lc = 1;
-	vx1->lp[nd1] = ln; vx2->lp[nd2] = ln;
+	//vx1->lp[nd1] = ln; vx2->lp[nd2] = ln;
 }
 
 uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line **lp, uint32 vxc, uint32 w, uint32 h)
@@ -2741,7 +2741,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 	int sq;
 	uint32 regc = 2, cloop = 0, dloop = 0;
 
-	for(i=0; i < vxc; i++) vp[i]->cn = 0;
+	for(i=0; i < vxc; i++) { vp[i]->cn = 0; vp[i]->reg = 0; }
 
 	//Remove the outer contour
 	vx = vp[0];
@@ -2767,8 +2767,10 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 					regc++;
 					vx = vpx; vc = 0; vc1 = 0; sq = 0; k = 0, lc = 0;
 
-					for(j=0; j < 8; j++) lp[j] = NULL;
 					vx->lp = &lp[lc+=8];
+					for(j=0; j < 8; j++) vx->lp[j] = NULL;
+					vx->reg = regc;
+
 					do{
 						vx1 = vx->vp[nd];
 						nd2 = nd;
@@ -2777,6 +2779,13 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 						nd1 =  find_pointer1(vx1, vx);
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
+
+						if(vx1->reg != regc) vx1->reg = regc;
+						else {
+							new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+							//remove_dir2(vx1, nd)
+						}
+
 
 						//printf("vx->lp[nd2] = %p\n", vx1->lp[nd1]);
 
@@ -2814,22 +2823,22 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 						//printf("vx = %p vx1 = %p\n", vx, vx1);
 
 						//Store in the buffer
+						/*
 						if(!(vx1 == vpx && fd)){
-							for(j=0; j < 8; j++) lp[lc+j] = NULL;
 							vx1->lp = &lp[lc+=8];
+							for(j=0; j < 8; j++) vx1->lp[j] = NULL;
 						} else {
-							printf("Break regc = %d\n", regc);
+							//printf("Break regc = %d\n", regc);
 							break;
 						}
 						if(vx1->lp[nd1] == NULL) {
 							new_line1(&ln[k++], vx, vx1, nd2, nd1);
 							//printf("New line %p %p\n", vx, vx1);
-							printf("new lc[%d] = %d\n", k, vx1->lp[nd1]->lc);
-						}
-						else {
+							//printf("new lc[%d] = %d\n", k, vx1->lp[nd1]->lc);
+						} else {
 							vx1->lp[nd1]->lc++;
 							printf("old lc = %d\n", vx1->lp[nd1]->lc);
-						}
+						}*/
 
 						img[vx1->y*w + vx1->x] = 255;
 						//img[vx1->y*w + vx1->x+w] = 255;
@@ -2840,27 +2849,16 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 						vc1++;
 						vx = vx1;
 						if(vx == vpx && fd) break;
-
-
-						//printf("vx = %p n = %d vx->vp[nd] = %p nd = %d vpx = %p n = %d fd = %d\n", vx, vx->n, vx->vp[nd], nd, vpx, vpx->n, fd);
-						/*
-						if(vx1->vp[nd] == NULL){
-							img[vx1->y*w + vx1->x-w] = 255;
-							img[vx1->y*w + vx1->x+w] = 255;
-							img[vx1->y*w + vx1->x-1] = 255;
-							img[vx1->y*w + vx1->x+1] = 255;
-							return 0;
-						}*/
-						//if(vx == vpx && fd) break;
 					} while(1);
 
 					for(j=0; j < k; j++){
 						//Remove all lines with count more than one
-						if(ln[j].lc > 1){
+						//if(ln[j].lc > 1){
 
 							remove_dir1(ln[j].vx[0], ln[j].nd[0]);
 							remove_dir1(ln[j].vx[1], ln[j].nd[1]);
-							printf("k = %d  j = %d x = %d y = %d\n", k, j, ln[j].vx[0]->x, ln[j].vx[0]->y);
+							//printf("k = %d  j = %d x = %d y = %d\n", k, j, ln[j].vx[0]->x, ln[j].vx[0]->y);
+							/*
 							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x-w] = 255;
 							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x+w] = 255;
 							img[ln[j].vx[0]->y*w + ln[j].vx[0]->x-1] = 255;
@@ -2868,9 +2866,10 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Line *ln, Line *
 							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x-w] = 255;
 							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x+w] = 255;
 							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x-1] = 255;
-							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x+1] = 255;
-							return 0;
-						}
+							img[ln[j].vx[1]->y*w + ln[j].vx[1]->x+1] = 255;*/
+
+							//return 0;
+						//}
 					}
 					//if(k) return 0;
 					/*
