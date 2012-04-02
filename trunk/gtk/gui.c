@@ -735,7 +735,7 @@ void on_full_button1_clicked (GtkObject *object, GtkWalet *gw)
 void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 {
 	Frame *fr = &gw->gop.frames[0];
-	uint32 sz = 256, sz2 = sz<<1, width, height, hh = 200, sum;
+	uint32 sz = 256, sz2 = sz<<1, width, height, hh = 200, sum, mx[4];
 	uint32 rgb[sz*4], max=0, maxy=0, i, size = gw->wc.w*gw->wc.h;
 	uint8 *img = gdk_pixbuf_get_pixels(gw->orig[4]->pxb);
 	GdkGC *gc = gdk_gc_new (GDK_DRAWABLE (gw->drawingarea[4]->window));
@@ -771,20 +771,38 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 			//printf("%d r = %3d \n", i, rgb[i]);
 		}
 
-		/*
 		sum = 0;
-		for(i=0; i< sz; i++) sum += rgb[i];
-		printf("R = %d \n", sum);
+		for(i=0; i< sz; i++) {
+			sum += rgb[i];
+			printf("R[%3d] = %7d\n", i, rgb[i]);
+		}
+		for(i=sz-1; i >= 0; i--) if(rgb[i])  {mx[0] = i; break;  }
+		printf("R = %d max = %d\n", sum, mx[0]);
+
 		sum = 0;
-		for(i=sz; i< sz*2; i++) sum += rgb[i];
-		printf("G = %d \n", sum);
+		for(i=sz; i< sz*2; i++) {
+			sum += rgb[i];
+			printf("G[%3d] = %7d\n", i-sz, rgb[i]);
+		}
+		for(i=sz*2-1; i >= sz; i--) if(rgb[i])  {mx[1] = i-sz; break;  }
+		printf("G = %d max = %d\n", sum, mx[1]);
+
 		sum = 0;
-		for(i=sz*2; i< sz*3; i++) sum += rgb[i];
-		printf("B = %d \n", sum);
+		for(i=sz*2; i< sz*3; i++) {
+			sum += rgb[i];
+			printf("B[%3d] = %7d\n", i-sz*2, rgb[i]);
+		}
+		for(i=sz*3-1; i >= sz*2; i--) if(rgb[i])  {mx[2] = i-2*sz; break;  }
+		printf("B = %d max = %d\n", sum, mx[2]);
+
 		sum = 0;
-		for(i=sz*3; i< sz*4; i++) sum += rgb[i];
-		printf("Y = %d \n", sum);
-		*/
+		for(i=sz*3; i< sz*4; i++) {
+			sum += rgb[i];
+			printf("Y[%3d] = %7d\n", i-sz*3, rgb[i]);
+		}
+		for(i=sz*4-1; i >= sz*3; i--) if(rgb[i])  { mx[3] = i-3*sz; break;  }
+		printf("Y = %d max = %d\n", sum, mx[3]);
+
 
 		//new_buffer (gw->orig[4], 256, 256*3);
 		//gdk_draw_line(gw->pixmap, gw->window1->style->black_gc, 0 , 0, 256, 256*3);
