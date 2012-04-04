@@ -229,7 +229,7 @@ struct Vertex {
 	uint8		n;		//The number of neighborhood vertex
 	uint8		di;		//The direction round pixel to the neighborhood
 	uint8		cn;		//The counter of the directions
-	Line		**lp;	//The pointer to the lines array
+	//Line		**lp;	//The pointer to the lines array
 	Vertex		**vp;	//The pointer to Virtex array
 	uint32		reg;	//The pointer region numbers
 	uint8		rc;		//The counter of iterations
