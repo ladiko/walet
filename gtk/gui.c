@@ -626,7 +626,11 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 
 	new_buffer (gw->orig[3], fr->y1[1].w<<1, fr->y1[1].h<<1);
 	//utils_grey_draw8(fr->y1[1].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->y1[1].w, fr->y1[1].h, 0);
+	//utils_contour(fr->y1, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
 	utils_contour(fr->y1, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
+
+	//new_buffer (gw->orig[3], fr->di[0].w, fr->di[0].h);
+	//utils_contour(fr->di, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 0);
 	gtk_widget_queue_draw(gw->drawingarea[3]);
 
 	/*
