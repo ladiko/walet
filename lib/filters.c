@@ -521,3 +521,40 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	*/
 }
 
+void HDR_12bits_to_8bits(int *hist, int w, int h, int low_threshold, int high_threshold, float *gain, int *offset)
+{
+// |           *
+// |         *    *
+// |       *           *
+// |     *                 *
+// |    *                   *
+// | * *                      * *
+// |---|------------------------|------->
+//   low                       high      10 bits hist
+
+	int i, sum, sz = w*h;
+	int low_thr = sz*low_threshold/100, high_thr = sz*high_threshold/100;
+	int low, high;
+
+	//Finding low threshold
+	sum = 0;
+	for(i=0; ; i++) {
+		sum += hist[i];
+		if(sum > low_thr) {
+			low = i;
+			break;
+		}
+	}
+	//Finding high threshold
+	sum = 0;
+	for(i=511; ; i--) {
+		sum += hist[i];
+		if(sum > high_thr) {
+			high = i;
+			break;
+		}
+	}
+	*offset = -(low<<2); // from 10 bits to 12 bits
+	*gain = (float)((high - low)<<2)/(float)(1<<12);
+
+}
