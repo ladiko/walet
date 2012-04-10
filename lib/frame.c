@@ -177,7 +177,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->ln = (Line *)calloc((w>>1)*(h>>1), sizeof(Line));
 	f->lp = (Line **)calloc(w*h, sizeof(Line*));
 	f->vx = (Vertex *)calloc(w*h, sizeof(Vertex));
-	f->vp = (Vertex **)calloc(w*h, sizeof(Vertex*));
+	f->vp = (Vertex **)calloc(w*h<<1, sizeof(Vertex*));
 
 	//Old init
 	//f->size = w*h;
@@ -867,8 +867,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		//seg_vertex_draw3(f->y1[1].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 		seg_remove_virtex(f->vp, vxc, f->y[1].w, f->y[1].h);
-		rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vp[wc->w*wc->h>>2], &f->vp[wc->w*wc->h>>1], f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 		seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
+		rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vp[wc->w*wc->h>>1], &f->vp[wc->w*wc->h], f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 		seg_vertex_draw3(f->y1[1].pic, f->vp,  vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 		//for(i=0; i <  f->y[1].w*f->y[1].h; i++) f->y1[1].pic[i] = 0;
 
@@ -881,8 +881,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_vertex_draw3(f->y1[0].pic, f->vp, vxc, f->y[0].w, f->y[0].h, f->y[1].w, f->y[1].h);
 
 		seg_get_or_fill_color(NULL, f->y1[0].pic, f->dm[1].pic, (uint32*)g->buf, &f->vp[wc->w*wc->h>>1], f->dm[0].pic,
-				rgc, f->y[0].w, f->y[0].h, f->y[1].w, f->y[1].h, 0);
-		*/
+				rgc, f->y[0].w, f->y[0].h, f->y[1].w, f->y[1].h, 0);*/
+
 
 		//seg_draw_line_one(f->y1[0].pic, f->y[0].w, f->y[0].h);
 
