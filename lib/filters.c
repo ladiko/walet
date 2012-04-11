@@ -5,6 +5,8 @@
 #include <string.h>
 #include <math.h>
 
+#define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
+
 static  inline void sort(uint8 *s, uint8 x1, uint8 x2, uint8 x3)
 {
 	if(x1 > x2){
@@ -459,6 +461,46 @@ void filters_white_balance(int16 *in, int16 *out, uint32 *hist, uint16 *look, ui
 	}
 }
 
+void HDR_12bits_to_8bits(uint32 *hist, uint32 bits, uint32 w, uint32 h, float low_threshold, float high_threshold, float *gain, int *offset)
+{
+// |           *
+// |         *    *
+// |       *           *
+// |     *                 *
+// |    *                   *
+// | * *                      * *
+// |---|------------------------|------->
+//   low                       high      10 bits hist
+
+	int i, sum, sz = w*h, size = 1<<bits;
+	int low_thr = sz*low_threshold/100., high_thr = sz*high_threshold/100.;
+	int low, high;
+
+	//Finding low threshold
+	sum = 0;
+	for(i=0; ; i++) {
+		sum += hist[i];
+		if(sum > low_thr) {
+			low = i;
+			break;
+		}
+	}
+	//Finding high threshold
+	sum = 0;
+	for(i=size-1; ; i--) {
+		sum += hist[i];
+		if(sum > high_thr) {
+			high = i;
+			break;
+		}
+	}
+	*offset = -low; // from 10 bits to 12 bits
+	*gain = (float)(1<<8)/(float)((high - low));
+	printf("low = %d high = %d gain = %f\n", low, high, *gain);
+
+}
+
+
 void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint8 *b, uint8 *buff,
 		uint32 *hist, uint16 *look, uint32 w, uint32 h,  BayerGrid bay,  uint32 in_bits, uint32 out_bits, Gamma gamma)
 {
@@ -469,6 +511,8 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	//double dr, db;
 	double rc, bc;
 	double avr[3];
+	int offset;
+	float gain;
 
 	fill_hist(Y, yh, size, in_bits);
 	fill_hist(R, rh, size, in_bits);
@@ -495,8 +539,8 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	rc = avr[1]/avr[0]; bc = avr[1]/avr[2];
 	printf("cn = %d gray = %f DR = %f DB = %f\n", ngray, (double)ngray/(double)size, rc, bc);
 
-	multiply_color (R, rc, size, in_bits);
-	multiply_color (B, bc, size, in_bits);
+	//multiply_color (R, rc, size, in_bits);
+	//multiply_color (B, bc, size, in_bits);
 	/*
 	for(i=0; i < size; i++){
 		r[i] = l[0][R[i]+shift] - shift1;
@@ -505,10 +549,24 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 
 	}
 	*/
+
+	HDR_12bits_to_8bits(yh, in_bits, w, h, 0.1, 1, &gain, &offset);
+	//printf("gain = %f offset = %d\n", gain, offset);
+
+	/*
 	for(i=0; i < size; i++){
 		r[i] = l[0][R[i]];
 		g[i] = l[0][G[i]];
 		b[i] = l[0][B[i]];
+
+	}*/
+
+	//gain = 0.4;
+	for(i=0; i < size; i++){
+		r[i] =  (R[i]+offset) < 0 ? 0 : lb1((uint32)((R[i]+offset)*gain));
+		g[i] =  (G[i]+offset) < 0 ? 0 : lb1((uint32)((G[i]+offset)*gain));
+		b[i] =  (B[i]+offset) < 0 ? 0 : lb1((uint32)((B[i]+offset)*gain));
+
 
 	}
 	/*
@@ -521,40 +579,3 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	*/
 }
 
-void HDR_12bits_to_8bits(int *hist, int w, int h, int low_threshold, int high_threshold, float *gain, int *offset)
-{
-// |           *
-// |         *    *
-// |       *           *
-// |     *                 *
-// |    *                   *
-// | * *                      * *
-// |---|------------------------|------->
-//   low                       high      10 bits hist
-
-	int i, sum, sz = w*h;
-	int low_thr = sz*low_threshold/100, high_thr = sz*high_threshold/100;
-	int low, high;
-
-	//Finding low threshold
-	sum = 0;
-	for(i=0; ; i++) {
-		sum += hist[i];
-		if(sum > low_thr) {
-			low = i;
-			break;
-		}
-	}
-	//Finding high threshold
-	sum = 0;
-	for(i=511; ; i--) {
-		sum += hist[i];
-		if(sum > high_thr) {
-			high = i;
-			break;
-		}
-	}
-	*offset = -(low<<2); // from 10 bits to 12 bits
-	*gain = (float)((high - low)<<2)/(float)(1<<12);
-
-}

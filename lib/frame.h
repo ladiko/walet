@@ -43,6 +43,9 @@ typedef struct{
 	Line	 	**lp;		// The pointer to Line array
 	Vertex		*vx;		// The vertex array
 	Vertex		**vp;		// The pointer to Vertex array
+	Vertex		**vpn;		// The pointer to neighbor Vertex array
+	Vertex		**vpt;		// The pointer to temporary Vertex array
+	//uint32		*vp;		// The index to Vertex array
 
 	//Old interface
 	//Pic8u rgb; // Scaled image for each color

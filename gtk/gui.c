@@ -779,7 +779,7 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 		sum = 0;
 		for(i=0; i< sz; i++) {
 			sum += rgb[i];
-			printf("R[%3d] = %7d\n", i, rgb[i]);
+			//printf("R[%3d] = %7d\n", i, rgb[i]);
 		}
 		for(i=sz-1; i >= 0; i--) if(rgb[i])  {mx[0] = i; break;  }
 		printf("R = %d max = %d\n", sum, mx[0]);
@@ -787,7 +787,7 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 		sum = 0;
 		for(i=sz; i< sz*2; i++) {
 			sum += rgb[i];
-			printf("G[%3d] = %7d\n", i-sz, rgb[i]);
+			//printf("G[%3d] = %7d\n", i-sz, rgb[i]);
 		}
 		for(i=sz*2-1; i >= sz; i--) if(rgb[i])  {mx[1] = i-sz; break;  }
 		printf("G = %d max = %d\n", sum, mx[1]);
@@ -795,7 +795,7 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 		sum = 0;
 		for(i=sz*2; i< sz*3; i++) {
 			sum += rgb[i];
-			printf("B[%3d] = %7d\n", i-sz*2, rgb[i]);
+			//printf("B[%3d] = %7d\n", i-sz*2, rgb[i]);
 		}
 		for(i=sz*3-1; i >= sz*2; i--) if(rgb[i])  {mx[2] = i-2*sz; break;  }
 		printf("B = %d max = %d\n", sum, mx[2]);
@@ -803,7 +803,7 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 		sum = 0;
 		for(i=sz*3; i< sz*4; i++) {
 			sum += rgb[i];
-			printf("Y[%3d] = %7d\n", i-sz*3, rgb[i]);
+			//printf("Y[%3d] = %7d\n", i-sz*3, rgb[i]);
 		}
 		for(i=sz*4-1; i >= sz*3; i--) if(rgb[i])  { mx[3] = i-3*sz; break;  }
 		printf("Y = %d max = %d\n", sum, mx[3]);
