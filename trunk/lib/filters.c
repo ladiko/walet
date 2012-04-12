@@ -550,7 +550,7 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	}
 	*/
 
-	HDR_12bits_to_8bits(yh, in_bits, w, h, 0.1, 1, &gain, &offset);
+	HDR_12bits_to_8bits(yh, in_bits, w, h, 0.1, 2, &gain, &offset);
 	//printf("gain = %f offset = %d\n", gain, offset);
 
 	/*
@@ -562,6 +562,8 @@ void filters_wb(int16 *Y, int16 *R, int16 *G, int16 *B, uint8 *r, uint8 *g, uint
 	}*/
 
 	//gain = 0.4;
+	offset = 0;
+	gain = 1.;
 	for(i=0; i < size; i++){
 		r[i] =  (R[i]+offset) < 0 ? 0 : lb1((uint32)((R[i]+offset)*gain));
 		g[i] =  (G[i]+offset) < 0 ? 0 : lb1((uint32)((G[i]+offset)*gain));
