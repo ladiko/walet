@@ -2231,6 +2231,19 @@ static inline uint8  find_pointer1(Vertex *vx1, Vertex *vx2)
 	return 10;
 }
 
+static inline uint8 check_pointer(Vertex *vx1, Vertex *vx2)
+{
+	if(vx1->vp[0] == vx2) return 1;
+	if(vx1->vp[1] == vx2) return 1;
+	if(vx1->vp[2] == vx2) return 1;
+	if(vx1->vp[3] == vx2) return 1;
+	if(vx1->vp[4] == vx2) return 1;
+	if(vx1->vp[5] == vx2) return 1;
+	if(vx1->vp[6] == vx2) return 1;
+	if(vx1->vp[7] == vx2) return 1;
+	return 0;
+}
+
 static inline uint8 get_clockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
 {
 	uint8 tm, i = 0;
@@ -2415,7 +2428,7 @@ uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 	//for(i=0; i < vxc; i++) vp[i]->cn = 0;
 	//Remove near vertex
 	for(i=0; i < vxc; i++) {
-		if(vp[i]->n > 2){
+		if(vp[i]->n > 1){
 			vx = vp[i]; vx->cn = 0;
 			//printf("Start\n");
 			while(get_dir2(vx, &nd)){
@@ -2424,14 +2437,21 @@ uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 					vx1->cn = 0;
 					while(get_dir2(vx1, &nd1)) {
 						if(vx1->vp[nd1] != vx){
-							vx->vp[nd] = vx1->vp[nd1];
-							//nd1 = find_pointer1(vx1->vp[nd1], vx);
-							nd2 = find_pointer1(vx1->vp[nd1], vx1);
-							vx1->vp[nd1]->vp[nd2] = vx;
+							//Check for the pointer to the same vertex
+							if(check_pointer(vx, vx1->vp[nd1])){
+								remove_dir1(vx, nd);
+								nd2 = find_pointer1(vx1->vp[nd1], vx1);
+								remove_dir1(vx1->vp[nd1], nd2);
+							} else {
+								vx->vp[nd] = vx1->vp[nd1];
+								//nd1 = find_pointer1(vx1->vp[nd1], vx);
+								nd2 = find_pointer1(vx1->vp[nd1], vx1);
+								vx1->vp[nd1]->vp[nd2] = vx;
+							}
 						}
-						remove_dir1(vx1, nd1);
+						//remove_dir1(vx1, nd1);
 					}
-					//vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+					vx1->n = 0; vx1->di = 0; vx1->cn = 0;
 					vc++;
 				}
 			}
@@ -2714,15 +2734,15 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
 				*/
 
-				draw_line_1(img, &v, w, 64);
+				draw_line_1(img, &v, w, 1);
 				//draw_line_dir(img, &v, w);
 				lc++;
 
-				yx = v.y2*w + v.x2;
-				img[yx] = 128;
+				//yx = v.y2*w + v.x2;
+				//img[yx] = 128;
 				//if(vx->x == 780 && vx->y ==  8) img[yx] = 255;
-				yx = v.y1*w + v.x1;
-				img[yx] = 128;
+				//yx = v.y1*w + v.x1;
+				//img[yx] = 128;
 				//if(vx->x == 780 && vx->y ==  8) img[yx] = 255;
 
 
@@ -2866,6 +2886,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Li
 					vp2[rc] = vpx; dir[rc] = nd;
 					regc++; rc++;
 					//printf("New reg\n");
+					/*
 					if(vpx->x == 536 && vpx->y == 24 ) {
 						//vc1++;
 						img[vpx->y*w + vpx->x] = 255;
@@ -2874,7 +2895,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Li
 						img[vpx->y*w + vpx->x+w] = 255;
 						img[vpx->y*w + vpx->x+1] = 255;
 						//if(vc1 == 2) return 0;
-					}
+					}*/
 					while(1){
 						vx1 = vx->vp[nd];
 						nd2 = nd;
@@ -2886,22 +2907,23 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Li
 						nd = get_clockwise_dir1(vx1, nd1);
 						fd = finish_dir1(vx1, nd);
 
-						printf("vp[i] = %p x = %d y = %d vx = %p x = %d y = %d di = %d cn = %d n = %d nd = %d k = %d fd = %d \n",
-								vpx, vpx->x, vpx->y, vx1, vx1->x, vx1->y, vx1->di, vx1->cn, vx1->n, nd1, k, fd);
+						//printf("vp[i] = %p x = %d y = %d vx = %p x = %d y = %d di = %d cn = %d n = %d nd = %d k = %d fd = %d \n",
+						//		vpx, vpx->x, vpx->y, vx1, vx1->x, vx1->y, vx1->di, vx1->cn, vx1->n, nd1, k, fd);
 
 						if(vx1->reg != regc) { vx1->reg = regc; vx1->rc = 0; }
 						else {
 							vx1->rc++;
 							if(vx->rc) {
-								new_line1(&ln[k++], vx, vx1, nd2, nd1);
-								//if(vx->n > 2 && vx1->n > 2){
-								//	 if(!check_remove(vx1, nd1)) new_line1(&ln[k++], vx, vx1, nd2, nd1);
-								//} else new_line1(&ln[k++], vx, vx1, nd2, nd1);
+								//new_line1(&ln[k++], vx, vx1, nd2, nd1);
+								if(vx->n > 2 && vx1->n > 2){
+									 if(!check_remove(vx1, nd1)) new_line1(&ln[k++], vx, vx1, nd2, nd1);
+								} else new_line1(&ln[k++], vx, vx1, nd2, nd1);
 							}
 						}
 						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 						//vc1++; x = 795 y = 27
-						if(vx1->x == 797 && vx1->y == 25 ) vc1=1;
+						//if(vx1->x == 797 && vx1->y == 25 ) vc1=1;
+						/*
 						if(vc1) {
 							//vc1++;
 							img[vx1->y*w + vx1->x] = 255;
@@ -2922,13 +2944,13 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Li
 									vpx, vpx->x, vpx->y, vx1->vp[nd], vx1->vp[nd]->x, vx1->vp[nd]->y, vx1->vp[nd]->di, vx1->vp[nd]->cn, vx1->vp[nd]->n, nd1, k, fd);
 							return 0;
 						}
-
+						*/
 						if(vx1 == vpx && fd) {
 							if(vx1->vp[nd]->rc && vx1->rc)
-								new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
-								//if(vx1->vp[nd]->n > 2 && vx1->n > 2){
-								//	if(!check_remove(vx1, nd)) new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
-								//} else new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
+								//new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+								if(vx1->vp[nd]->n > 2 && vx1->n > 2){
+									if(!check_remove(vx1, nd)) new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+								} else new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
 							break;
 						}
 						vx = vx1;
@@ -3027,7 +3049,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 			nd1 =  find_pointer1(vx1, vx);
 			nd = get_clockwise_dir1(vx1, nd1);
 			fd = finish_dir1(vx1, nd);
-			printf("vp[i] = %p vx = %p x = %d y = %d di = %d cn = %d fd = %d\n", vp[i], vx1, vx1->x, vx1->y, vx1->di, vx1->cn, fd);
+			//printf("vp[i] = %p vx = %p x = %d y = %d di = %d cn = %d fd = %d\n", vp[i], vx1, vx1->x, vx1->y, vx1->di, vx1->cn, fd);
 			//Store in the buffer
 			//if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
