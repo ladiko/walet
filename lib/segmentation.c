@@ -2421,67 +2421,70 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 {
-	uint32 i, j, k, vc = 0, tmp;
+	uint32 i, j, k, vc = 0, vc1 = 0, tmp;
 	uint8 nd, nd1, nd2;
 	Vertex *vx, *vx1, *vx2;
 
 	//for(i=0; i < vxc; i++) vp[i]->cn = 0;
 	//Remove near vertex
 	for(i=0; i < vxc; i++) {
-		if(vp[i]->n > 1){
+		if(vp[i]->n > 2){
 			vx = vp[i]; vx->cn = 0;
 			//printf("Start\n");
 			while(get_dir2(vx, &nd)){
 				vx1 = vx->vp[nd];
-				if(vx1->n == 2 && abs((int)vx->x - (int)vx1->x) < 2 && abs((int)vx->y - (int)vx1->y) < 2){
-					vx1->cn = 0;
-					while(get_dir2(vx1, &nd1)) {
-						if(vx1->vp[nd1] != vx){
-							//Check for the pointer to the same vertex
-							if(check_pointer(vx, vx1->vp[nd1])){
-								remove_dir1(vx, nd);
-								nd2 = find_pointer1(vx1->vp[nd1], vx1);
-								remove_dir1(vx1->vp[nd1], nd2);
+				if(abs((int)vx->x - (int)vx1->x) < 2 && abs((int)vx->y - (int)vx1->y) < 2){
+					if(vx1->n == 2){
+						vx1->cn = 0;
+						while(get_dir2(vx1, &nd1)) {
+							if(vx1->vp[nd1] != vx){
+								//Check for the pointer to the same vertex
+								if(check_pointer(vx, vx1->vp[nd1])){
+									remove_dir1(vx, nd);
+									nd2 = find_pointer1(vx1->vp[nd1], vx1);
+									remove_dir1(vx1->vp[nd1], nd2);
+								} else {
+									vx->vp[nd] = vx1->vp[nd1];
+									//nd1 = find_pointer1(vx1->vp[nd1], vx);
+									nd2 = find_pointer1(vx1->vp[nd1], vx1);
+									vx1->vp[nd1]->vp[nd2] = vx;
+								}
+							}
+							//remove_dir1(vx1, nd1);
+						}
+						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+						vc++;
+					}
+					else if(vx1->n > 2){
+						/*
+						remove_dir1(vx, nd);
+						nd2 = find_pointer1(vx1, vx);
+						remove_dir1(vx1, nd2);
+
+						//if(vx->n > vx1->n){
+						vx1->cn = 0;
+						while(get_dir2(vx1, &nd1)){
+							if((1<<(7-nd1)) & vx->di){
+								printf("The same pointer x = %d y = %d vx->di = %d  vx1->di = %d\n", vx->x, vx1->y, vx->di, vx1->di);
+
 							} else {
-								vx->vp[nd] = vx1->vp[nd1];
-								//nd1 = find_pointer1(vx1->vp[nd1], vx);
-								nd2 = find_pointer1(vx1->vp[nd1], vx1);
-								vx1->vp[nd1]->vp[nd2] = vx;
+								vx->vp[nd1] = vx1->vp[nd1];
 							}
 						}
-						//remove_dir1(vx1, nd1);
+						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+						//} else {
+
+						//}
+						*/
+						if(vx1->n + vp[i]->n  > 8) printf("n = %d\n", vx1->n + vp[i]->n );
+						vc1++;
+
 					}
-					vx1->n = 0; vx1->di = 0; vx1->cn = 0;
-					vc++;
 				}
 			}
 		}
 	}
-	/*
-	for(i=0; i < vxc; i++) {
-		if(vp[i]->x == 780 && vp[i]->y ==  8) {
-			vx =  vp[i];
-			printf("vx = %p x = %d y = %d n = %d di = %d cn = %d\n", vx, vx->x, vx->y, vx->n, vx->di, vx->cn);
-			for(j=0; j < 8; j++) printf("vx ->vp[%d] = %p\n", j, vx->vp[j]);
-		}
-		if(vp[i]->x == 780 && vp[i]->y ==  8) {
-			vx =  vp[i]->vp[1];
-			printf("vx = %p x = %d y = %d n = %d di = %d cn = %d\n", vx, vx->x, vx->y, vx->n, vx->di, vx->cn);
-			for(j=0; j < 8; j++) printf("vx ->vp[%d] = %p\n", j, vx->vp[j]);
-		}
-		if(vp[i]->x == 780 && vp[i]->y ==  8) {
-			vx =  vp[i]->vp[3];
-			printf("vx = %p x = %d y = %d n = %d di = %d cn = %d\n", vx, vx->x, vx->y, vx->n, vx->di, vx->cn);
-			for(j=0; j < 8; j++) printf("vx ->vp[%d] = %p\n", j, vx->vp[j]);
-		}
-		if(vp[i]->x == 780 && vp[i]->y ==  8) {
-			vx =  vp[i]->vp[5];
-			printf("vx = %p x = %d y = %d n = %d di = %d cn = %d\n", vx, vx->x, vx->y, vx->n, vx->di, vx->cn);
-			for(j=0; j < 8; j++) printf("vx ->vp[%d] = %p\n", j, vx->vp[j]);
-		}
-
-	}*/
-	printf("Numbers of removed vertexs  = %d\n", vc);
+	printf("Numbers of removed vertexs  = %d 3x3 = %d\n", vc, vc1);
 }
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
@@ -2734,18 +2737,14 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h
 				v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
 				*/
 
-				draw_line_1(img, &v, w, 1);
+				draw_line_1(img, &v, w, 50);
 				//draw_line_dir(img, &v, w);
 				lc++;
 
-				//yx = v.y2*w + v.x2;
-				//img[yx] = 128;
-				//if(vx->x == 780 && vx->y ==  8) img[yx] = 255;
-				//yx = v.y1*w + v.x1;
-				//img[yx] = 128;
-				//if(vx->x == 780 && vx->y ==  8) img[yx] = 255;
-
-
+				yx = v.y2*w + v.x2;
+				img[yx] = 128;
+				yx = v.y1*w + v.x1;
+				img[yx] = 128;
 
 				if(!get_clockwise_dir(vx1, nd1, &nd)) break;
 				vx = vx1;
@@ -2753,7 +2752,7 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h
 			//rc++;
 		}
 	}
-
+/*
 	for(i=0; i < vxc; i++) {
 		//printf("%d %p \n", j, vp[j]);
 		//if(vp[i]->di != vp[i]->cn ) {
@@ -2766,7 +2765,9 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h
 			//img[vp[i]->y*w + vp[i]->x+w] = 255;
 			//img[vp[i]->y*w + vp[i]->x+1] = 255;
 		}
-	}
+	}*/
+	img[10*w + 176] = 255;
+	img[17*w + 126] = 255;
 
 	printf("Numbers of drawing lines  = %d vertexes = %d \n", lc, vc);
 	return vc;
@@ -3055,7 +3056,11 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 
 			yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
 			//l1[vc++] = yxw;
-			if(yxw) { l1[vc++] = yxw; con[yxw] = cl; }
+			if(yxw) {
+				l1[vc++] = yxw;
+				//if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
+				con[yxw] = cl;
+			}
 			//else if(!yxw) col[rc++] = 0;
 			//last = yxw ? 1 : 0;
 			vx = vx1;
@@ -3067,11 +3072,11 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 
 		if(!vc){
 			printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
-			con[vp[i]->x + w*vp[i]->y] = 255;
-			con[vp[i]->y*w + vp[i]->x-w] = 255;
-			con[vp[i]->y*w + vp[i]->x-1] = 255;
-			con[vp[i]->y*w + vp[i]->x+w] = 255;
-			con[vp[i]->y*w + vp[i]->x+1] = 255;
+			//con[vp[i]->x + w*vp[i]->y] = 255;
+			//con[vp[i]->y*w + vp[i]->x-w] = 255;
+			//con[vp[i]->y*w + vp[i]->x-1] = 255;
+			//con[vp[i]->y*w + vp[i]->x+w] = 255;
+			//con[vp[i]->y*w + vp[i]->x+1] = 255;
 			dloop++;
 		}
 
