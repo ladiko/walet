@@ -854,7 +854,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	Frame *f = &g->frames[fn];
-	uint32 i, j, npix, vxc, rgc;
+        uint32 i, j, vxc, rgc;
 	if(wc->ccol == CS420){
 		resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 		filter_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
@@ -865,9 +865,9 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
 		seg_remove_virtex(f->vp, vxc, f->y[1].w, f->y[1].h);
 
-		rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
+                rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 
-		seg_vertex_draw3(f->y1[1].pic, f->vp,  vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+                //seg_vertex_draw3(f->y1[1].pic, f->vp,  vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 
 		//for(i=0; i <  f->y[1].w*f->y[1].h; i++) f->y1[1].pic[i] = 0;
