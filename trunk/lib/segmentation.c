@@ -2066,9 +2066,9 @@ static inline uint32 get_dir_arr(Vertex *vx, uint8 *nd)
 
 static inline uint32 is_dir(Vertex *vx)
 {
-	if(!(vx->di - vx->cn)) return 0;
-	else return 1;
-	/*
+        //if(!(vx->di - vx->cn)) return 0;
+        //else return 1;
+
 	if		((vx->di&1  ) && !(vx->cn&1  )) return 1;
 	else if	((vx->di&2  ) && !(vx->cn&2  )) return 1;
 	else if	((vx->di&4  ) && !(vx->cn&4  )) return 1;
@@ -2078,7 +2078,7 @@ static inline uint32 is_dir(Vertex *vx)
 	else if ((vx->di&64 ) && !(vx->cn&64 )) return 1;
 	else if ((vx->di&128) && !(vx->cn&128)) return 1;
 	return 0;
-	*/
+
 }
 
 static inline uint32 get_dir_clock(Vertex *vx, uint8 *nd)
@@ -2492,98 +2492,83 @@ uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
 {
-	uint32 i, j, l, k, k1, vc = 0, vc1 = 0, tmp;
-	uint8 nd, nd1, nd2, ndc, nda[8], na;
-	Vertex *vx, *vx1, *vx2;
+    uint32 i, j, l, k, k1, vc = 0, vc1 = 0, tmp;
+    uint8 nd, nd1, nd2, ndc, nda[8], na;
+    Vertex *vx, *vx1, *vx2;
 
-	//for(i=0; i < vxc; i++) vp[i]->cn = 0;
-	//Remove near vertex
-	for(i=0; i < vxc; i++) {
-		if(vp[i]->n > 2){
-			vx = vp[i]; vx->cn = 0;
-			na = get_dir_arr(vx, nda);
-			//printf("Start\n");
-			for(l=0; l < na; l++){
-			//while(get_dir2(vx, &nd)){
-				nd = nda[l];
-				vx1 = vx->vp[nd];
-				if(abs((int)vx->x - (int)vx1->x) < 2 && abs((int)vx->y - (int)vx1->y) < 2){
-					if(vx1->n == 2){
-						vx1->cn = 0;
-						while(get_dir2(vx1, &nd1)) {
-							if(vx1->vp[nd1] != vx){
-								//Check for the pointer to the same vertex
-								if(check_pointer(vx, vx1->vp[nd1])){
-									remove_dir1(vx, nd);
-									nd2 = find_pointer1(vx1->vp[nd1], vx1);
-									remove_dir1(vx1->vp[nd1], nd2);
-								} else {
-									vx->vp[nd] = vx1->vp[nd1];
-									//nd1 = find_pointer1(vx1->vp[nd1], vx);
-									nd2 = find_pointer1(vx1->vp[nd1], vx1);
-									vx1->vp[nd1]->vp[nd2] = vx;
-								}
-							}
-							//remove_dir1(vx1, nd1);
-						}
-						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
-						vc++;
-					} else if (vx1->n > 2){
-						//printf("free = %d  %d x = %d y = %d di = %d x1 = %d y1 = %d di1 = %d\n",
-						//		ndc, vx1->n, vx->x, vx->y, vx->di, vx1->x, vx1->y, vx1->di);
-						nd1 = get_clockwise_dir1(vx, nd);
-						nd2 = get_counterclockwise_dir(vx, nd);
-						ndc = (nd1 > nd2) ? nd1 - nd2 -1 : nd1 + 7 - nd2;
+    //for(i=0; i < vxc; i++) vp[i]->cn = 0;
+    //Remove near vertex
+    for(i=0; i < vxc; i++) {
+        if(vp[i]->n > 2){
+            vx = vp[i]; vx->cn = 0;
+            na = get_dir_arr(vx, nda);
+            //printf("Start\n");
+            for(l=0; l < na; l++){
+                //while(get_dir2(vx, &nd)){
+                nd = nda[l];
+                vx1 = vx->vp[nd];
+                if(abs((int)vx->x - (int)vx1->x) < 2 && abs((int)vx->y - (int)vx1->y) < 2){
+                    if(vx1->n == 2){
+                        vx1->cn = 0;
+                        while(get_dir2(vx1, &nd1)) {
+                            if(vx1->vp[nd1] != vx){
+                                //Check for the pointer to the same vertex
+                                if(check_pointer(vx, vx1->vp[nd1])){
+                                    remove_dir1(vx, nd);
+                                    nd2 = find_pointer1(vx1->vp[nd1], vx1);
+                                    remove_dir1(vx1->vp[nd1], nd2);
+                                } else {
+                                    vx->vp[nd] = vx1->vp[nd1];
+                                    //nd1 = find_pointer1(vx1->vp[nd1], vx);
+                                    nd2 = find_pointer1(vx1->vp[nd1], vx1);
+                                    vx1->vp[nd1]->vp[nd2] = vx;
+                                }
+                            }
+                            //remove_dir1(vx1, nd1);
+                        }
+                        vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+                        vc++;
+                    } else if (vx1->n > 2){
 
-						//Checking for free space for new directions
-						if(ndc >= vx1->n-1) {
-							nd1 = find_pointer1(vx1, vx);
-							//vx->di ^= (1<<nd); vx->n--;
-							remove_dir1(vx, nd);
+                        //printf("free = %d  %d x = %d y = %d di = %d x1 = %d y1 = %d di1 = %d\n",
+                        //		ndc, vx1->n, vx->x, vx->y, vx->di, vx1->x, vx1->y, vx1->di);
+                        nd1 = get_clockwise_dir1(vx, nd);
+                        nd2 = get_counterclockwise_dir(vx, nd);
+                        ndc = (nd1 > nd2) ? nd1 - nd2 -1 : nd1 + 7 - nd2;
 
-							vx1->n--; //remove_dir1(vx1, nd2);
-							//nd1 = get_clockwise_dir1(vx1, nd1);
+                        //Checking for free space for new directions
+                        if(ndc >= vx1->n-1) {
+                            nd1 = find_pointer1(vx1, vx);
+                            //vx->di ^= (1<<nd); vx->n--;
+                            remove_dir1(vx, nd);
 
-							k = nd2; k1 = nd1;
-							for(j=0; j < vx1->n; j++){
-								k  = (k  == 7) ? 0 : k  + 1;
-								k1 = get_clockwise_dir1(vx1, k1);
-								vx->vp[k] = vx1->vp[k1];
-								vx->n++; vx->di |= (1<<k);
-								nd2 = find_pointer1(vx1->vp[k1], vx1);
-								vx->vp[k]->vp[nd2] = vx;
-							}
-							vx1->n = 0; vx1->di = 0; vx1->cn = 0;
+                            vx1->n--; //remove_dir1(vx1, nd2);
+                            //nd1 = get_clockwise_dir1(vx1, nd1);
 
-						} else {
-							printf("free = %d  %d x = %d y = %d di = %d x1 = %d y1 = %d di1 = %d\n",
-									ndc, vx1->n, vx->x, vx->y, vx->di, vx1->x, vx1->y, vx1->di);
-						}
+                            k = nd2; k1 = nd1;
+                            for(j=0; j < vx1->n; j++){
+                                k  = (k  == 7) ? 0 : k  + 1;
+                                k1 = get_clockwise_dir1(vx1, k1);
+                                vx->vp[k] = vx1->vp[k1];
+                                vx->n++; vx->di |= (1<<k);
+                                nd2 = find_pointer1(vx1->vp[k1], vx1);
+                                vx->vp[k]->vp[nd2] = vx;
+                            }
+                            vx1->n = 0; vx1->di = 0; vx1->cn = 0;
 
-						/*
-						vx1->cn = 0;
+                        } else {
+                            printf("free = %d  %d x = %d y = %d di = %d x1 = %d y1 = %d di1 = %d\n",
+                                   ndc, vx1->n, vx->x, vx->y, vx->di, vx1->x, vx1->y, vx1->di);
+                        }
+                        vc1++;
 
-						while(get_dir2(vx1, &nd1)){
-							if((1<<(7-nd1)) & vx->di){
-								printf("The same pointer x  = %d y  = %d vx->di = %d \n", vx->x, vx1->y, vx->di);
-								printf("The same pointer x1 = %d y1 = %d vx1->di = %d \n", vx1->x, vx1->y, vx1->di);
 
-							} else {
-								vx->vp[nd1] = vx1->vp[nd1];
-							}
-						}
-						vx1->n = 0; vx1->di = 0; vx1->cn = 0;
-
-						if(vx1->n + vp[i]->n  > 8) printf("n = %d\n", vx1->n + vp[i]->n );
-						*/
-						vc1++;
-
-					}
-				}
-			}
-		}
-	}
-	printf("Numbers of removed vertexs  = %d 3x3 = %d\n", vc, vc1);
+                    }
+                }
+            }
+        }
+    }
+    printf("Numbers of removed vertexs  = %d 3x3 = %d\n", vc, vc1);
 }
 
 void seg_vertex_draw(uint8 *r, uint8 *g, uint8 *b, Vertex **vp, uint32 vxc, uint32 w)
@@ -2811,266 +2796,248 @@ static inline uint32 check_remove(Vertex *vx, uint8 nd)
 
 uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Line *ln, uint8 *dir, uint32 vxc, uint32 w, uint32 h)
 {
-	uint32 i, j, k, yx, yxw, pn=1, pn1, fd, num, nr, cn, vc1 = 0;
-	Vector v;
-	uint8  nd, nd1, nd2;
-	Vertex *vx, *vx1, *vx2, *vpx, *vpx1;
+    uint32 i, j, k, yx, pn=1, pn1, fd, cn;
+    Vector v;
+    uint8  nd, nd1, nd2;
+    Vertex *vx, *vx1, *vpx;
 
-	int sq, sqr;
-	uint32 regc = 0, cloop = 0, dloop = 0, rc = 0;
+    int sq, sqr;
+    uint32 regc = 0, cloop = 0, rc = 0;
 
-	for(i=0; i < vxc; i++) { vp[i]->cn = 0; vp[i]->reg = 0; }
+    for(i=0; i < vxc; i++) { vp[i]->cn = 0; vp[i]->reg = 0; }
 
-	//Remove the outer contour
-	vx = vp[0];
-	//nd = 4; //get_dir_clock(vx, &nd);
-	nd = find_same_y_dir(vx);
-	printf("nd = %d vx->x = vx->vp[nd]->x = %d\n", nd, vx->x, vx->vp[nd]->x);
-	/*
-	vx->reg = regc;
-	do{
-		printf("vp[i] = %p x = %d y = %d di = %d cn = %d n = %d \n",
-				vx, vx->x, vx->y, vx->di, vx->cn, vx->n);
-		nd = get_counterclockwise_dir(vx, nd);
-		vx = vx->vp[nd];
-		//nd = get_same_dir(vx, nd);
-		vx->reg = regc;
-	} while(vx != vp[0]);
-	//printf("Finish contour\n");
-	return 0;
-	*/
-	//Start main cycle
-	for(i=0; i < vxc; i++){
-		if(vp[i]->n>1  && is_dir(vp[i])){
-			//New closed region
-			//printf("New region\n");
-			cloop++; sqr = 0;
-			pn = 1; pn1 = 0;
-			vp1[0] = vp[i];
-			while(pn1 < pn){
-				vpx = vp1[pn1++];
-				while(get_dir2(vpx, &nd)){
-					k = 0; vx = vpx; sq = 0; cn = 0;
-					//Store new region
-					vp2[rc] = vpx; dir[rc] = nd;
-					regc++; rc++;
-					//printf("New reg\n");
-					/*
-					if(vpx->x == 536 && vpx->y == 24 ) {
-						//vc1++;
-						img[vpx->y*w + vpx->x] = 255;
-						img[vpx->y*w + vpx->x-w] = 255;
-						img[vpx->y*w + vpx->x-1] = 255;
-						img[vpx->y*w + vpx->x+w] = 255;
-						img[vpx->y*w + vpx->x+1] = 255;
-						//if(vc1 == 2) return 0;
-					}*/
-					while(1){
-						vx1 = vx->vp[nd];
-						nd2 = nd;
-						//Calculate square of region
-						sq += (vx1->y + vx->y)*(vx1->x - vx->x);//>>1;
-						nd1 =  find_pointer1(vx1, vx);
-						//printf("nd1 = %d\n", nd1);
-						//if(nd1 == 10) return rc;
-						nd = get_clockwise_dir1(vx1, nd1);
-						fd = finish_dir1(vx1, nd);
+    //Remove the outer contour
+    vx = vp[0];
+    //nd = 4; //get_dir_clock(vx, &nd);
+    nd = find_same_y_dir(vx);
+    printf("nd = %d vx->x = vx->vp[nd]->x = %d\n", nd, vx->x, vx->vp[nd]->x);
+    /*
+    vx->reg = regc;
+    do{
+    printf("vp[i] = %p x = %d y = %d di = %d cn = %d n = %d \n",
+    vx, vx->x, vx->y, vx->di, vx->cn, vx->n);
+    nd = get_counterclockwise_dir(vx, nd);
+    vx = vx->vp[nd];
+    //nd = get_same_dir(vx, nd);
+    vx->reg = regc;
+    } while(vx != vp[0]);
+    //printf("Finish contour\n");
+    return 0;
+    */
+    //Start main cycle
+    for(i=0; i < vxc; i++){
+        if(vp[i]->n>1  && is_dir(vp[i])){
+            //New closed region
+            //printf("New region\n");
+            cloop++; sqr = 0;
+            pn = 1; pn1 = 0;
+            vp1[0] = vp[i];
+            while(pn1 < pn){
+                vpx = vp1[pn1++];
+                while(get_dir2(vpx, &nd)){
+                    k = 0; vx = vpx; sq = 0; cn = 0;
+                    //Store new region
+                    vp2[rc] = vpx; dir[rc] = nd;
+                    regc++; rc++;
+                    if(regc == 2) return 0;
+                    //printf("New reg\n");
+                    while(1){
+                        vx1 = vx->vp[nd];
+                        nd2 = nd;
+                        //Calculate square of region
+                        sq += (vx1->y + vx->y)*(vx1->x - vx->x);//>>1;
+                        nd1 =  find_pointer1(vx1, vx);
+                        //printf("nd1 = %d\n", nd1);
+                        //if(nd1 == 10) return rc;
+                        nd = get_clockwise_dir1(vx1, nd1);
+                        fd = finish_dir1(vx1, nd);
 
-						printf("vp[i] = %p x = %d y = %d vx = %p x = %d y = %d di = %d cn = %d n = %d nd = %d k = %d fd = %d \n",
-								vpx, vpx->x, vpx->y, vx1, vx1->x, vx1->y, vx1->di, vx1->cn, vx1->n, nd1, k, fd);
+                        //printf("vp[i] = %p x = %d y = %d vx = %p x = %d y = %d di = %d cn = %d n = %d nd = %d k = %d fd = %d \n",
+                        //		vpx, vpx->x, vpx->y, vx1, vx1->x, vx1->y, vx1->di, vx1->cn, vx1->n, nd1, k, fd);
+                        if(regc == 1){
+                            v.x1 = vx->x; v.y1 = vx->y;
+                            v.x2 = vx1->x; v.y2 = vx1->y;
 
-						if(vx1->reg != regc) { vx1->reg = regc; vx1->rc = 0; }
-						else {
-							vx1->rc++;
-							if(vx->rc) {
-								//new_line1(&ln[k++], vx, vx1, nd2, nd1);
-								if(vx->n > 2 && vx1->n > 2){
-									 if(!check_remove(vx1, nd1)) new_line1(&ln[k++], vx, vx1, nd2, nd1);
-								} else new_line1(&ln[k++], vx, vx1, nd2, nd1);
-							}
-						}
-						if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
-						//vc1++; x = 795 y = 27
-						//if(vx1->x == 797 && vx1->y == 25 ) vc1=1;
-						/*
-						if(vc1) {
-							//vc1++;
-							img[vx1->y*w + vx1->x] = 255;
-							img[vx1->y*w + vx1->x-w] = 255;
-							img[vx1->y*w + vx1->x-1] = 255;
-							img[vx1->y*w + vx1->x+w] = 255;
-							img[vx1->y*w + vx1->x+1] = 255;
-							//if(vx1->x == 807 && vx1->y == 1 ) return 0;
-						}
-						if(vpx->x == 536 && vpx->y == 24 && fd) {
-							printf("vx1 = %p x = %d y = %d \n", vx1, vx1->x, vx1->y);
-							img[vx1->y*w + vx1->x] = 255;
-							img[vx1->y*w + vx1->x-w] = 255;
-							img[vx1->y*w + vx1->x-1] = 255;
-							img[vx1->y*w + vx1->x+w] = 255;
-							img[vx1->y*w + vx1->x+1] = 255;
-							printf("vp[i] = %p x = %d y = %d vx = %p x = %d y = %d di = %d cn = %d n = %d nd = %d k = %d fd = %d \n",
-									vpx, vpx->x, vpx->y, vx1->vp[nd], vx1->vp[nd]->x, vx1->vp[nd]->y, vx1->vp[nd]->di, vx1->vp[nd]->cn, vx1->vp[nd]->n, nd1, k, fd);
-							return 0;
-						}
-						*/
-						if(vx1 == vpx && fd) {
-							if(vx1->vp[nd]->rc && vx1->rc)
-								//new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
-								if(vx1->vp[nd]->n > 2 && vx1->n > 2){
-									if(!check_remove(vx1, nd)) new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
-								} else new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
-							break;
-						}
-						vx = vx1;
-					}
+                            draw_line_1(img, &v, w, 50);
+                            //draw_line_dir(img, &v, w);
 
-					//printf("sq = %d\n", sq);
-					sqr += sq;
 
-					for(j=0; j < k; j++){
-						//regc--;
-						if(ln[j].vx[0]->n && ln[j].vx[1]->n){
-							//printf("remove\n");
-						//Remove all lines with count more than one
-							remove_dir1(ln[j].vx[0], ln[j].nd[0]);
-							remove_dir1(ln[j].vx[1], ln[j].nd[1]);
-						}
-					}
-					if(sq >0 )  rc--;
-				}
-			}
-			if(sqr) printf("Toatl sq = %d\n", sqr);
-		}
-	}
-	/*
-	for(i=0; i < vxc; i++) {
-		//printf("%d %p \n", j, vp[j]);
-		//if(vp[i]->di != vp[i]->cn ) {
-		if(vp[i]->n == 1 || vp[i]->n > 8 || vp[i]->di != vp[i]->cn) {
-			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
-			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
-			img[vp[i]->y*w + vp[i]->x] = 255;
-			//img[vp[i]->y*w + vp[i]->x-w] = 255;
-			//img[vp[i]->y*w + vp[i]->x-1] = 255;
-			//img[vp[i]->y*w + vp[i]->x+w] = 255;
-			//img[vp[i]->y*w + vp[i]->x+1] = 255;
-		}
-	}
-	*/
-	printf("Numbers of drawing regions  = %d closed loops = %d\n", rc, cloop);
-	return rc;
+                            yx = v.y2*w + v.x2;
+                            img[yx] = 128;
+                            yx = v.y1*w + v.x1;
+                            img[yx] = 128;
+                        }
+
+
+                        if(vx1->reg != regc) { vx1->reg = regc; vx1->rc = 0; }
+                        else {
+                            vx1->rc++;
+                            if(vx->rc) {
+                                //new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                                if(vx->n > 2 && vx1->n > 2){
+                                    if(!check_remove(vx1, nd1)) new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                                } else new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                            }
+                        }
+                        if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
+
+                        if(vx1 == vpx && fd) {
+                            if(vx1->vp[nd]->rc && vx1->rc)
+                                //new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+                                if(vx1->vp[nd]->n > 2 && vx1->n > 2){
+                                    if(!check_remove(vx1, nd)) new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+                                } else new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
+                            break;
+                        }
+                        vx = vx1;
+                    }
+
+                    printf("sq = %d ", sq);
+                    sqr += sq;
+
+                    for(j=0; j < k; j++){
+                        //regc--;
+                        if(ln[j].vx[0]->n && ln[j].vx[1]->n){
+                            //printf("remove\n");
+                            //Remove all lines with count more than one
+                            remove_dir1(ln[j].vx[0], ln[j].nd[0]);
+                            remove_dir1(ln[j].vx[1], ln[j].nd[1]);
+                        }
+                    }
+                    if(sq < 0 )  rc--;
+                }
+            }
+            if(sqr) printf("Toatl sq = %d\n", sqr);
+        }
+    }
+    /*
+ for(i=0; i < vxc; i++) {
+  //printf("%d %p \n", j, vp[j]);
+  //if(vp[i]->di != vp[i]->cn ) {
+  if(vp[i]->n == 1 || vp[i]->n > 8 || vp[i]->di != vp[i]->cn) {
+   printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
+   //printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+   img[vp[i]->y*w + vp[i]->x] = 255;
+   //img[vp[i]->y*w + vp[i]->x-w] = 255;
+   //img[vp[i]->y*w + vp[i]->x-1] = 255;
+   //img[vp[i]->y*w + vp[i]->x+w] = 255;
+   //img[vp[i]->y*w + vp[i]->x+1] = 255;
+  }
+ }
+ */
+    printf("Numbers of drawing regions  = %d closed loops = %d\n", rc, cloop);
+    return rc;
 }
 
 uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint8 *dir, uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get)
 {
-	uint32 i, j, k, yx, yxw, vc = 0, vc1, pn=1, pn1, fd, cn;
-	Vector v;
-	uint8  nd, nd1, nd2, sh = 15, cl = 255;
-	Vertex *vx, *vx1, *vx2;
-	uint32 kx = ((w-2)<<sh)/(w1-3);
-	uint32 ky = ((h-2)<<sh)/(h1-3);
-	//uint32 num, c, cn;
-	//uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
-	uint32 *l1 = buff;
+    uint32 i, j, k, yx, yxw, vc = 0, vc1, pn=1, pn1, fd, cn;
+    Vector v;
+    uint8  nd, nd1, nd2, sh = 15, cl = 255;
+    Vertex *vx, *vx1, *vx2;
+    uint32 kx = ((w-2)<<sh)/(w1-3);
+    uint32 ky = ((h-2)<<sh)/(h1-3);
+    //uint32 num, c, cn;
+    //uint32 *l1 = buff, *l2 = &buff[w*h>>2], *tm;
+    uint32 *l1 = buff;
 
-	//Vertex *vpx;
-	int sq;
-	uint32 cloop = 0, dloop = 0;
+    //Vertex *vpx;
+    int sq;
+    uint32 cloop = 0, dloop = 0;
 
-	//for(i=0; i < vxc; i++) vp[i]->cn = 0;
+    //for(i=0; i < vxc; i++) vp[i]->cn = 0;
 
-	//Remove the outer contour
-	/*
-	vx = vp[0];
-	get_dir_clock(vx, &nd);
-	do{
-		vx = vx->vp[nd];
-		nd = get_same_dir(vx, nd);
-	} while(vx != vp[0]);
-	*/
+    //Remove the outer contour
+    /*
+ vx = vp[0];
+ get_dir_clock(vx, &nd);
+ do{
+  vx = vx->vp[nd];
+  nd = get_same_dir(vx, nd);
+ } while(vx != vp[0]);
+ */
 
-	//Start main cycle
-	for(i=0; i < rgc; i++){
-		//if(vp[i]->n > 1 && is_dir(vp[i])){
-			//printf("New closed region\n");
-			//cloop++;
-			//pn = 1; pn1 = 0;
-			//vp1[0] = vp[i];
-			//while(pn1 < pn){
-				//vpx = vp1[pn1++];
-				//printf("pn = %d\n", pn1);
-				//while(get_dir2(vpx, &nd)){
-		//regc++;
-		//vx = vpx; //nd2 = nd;
+    //Start main cycle
+    for(i=0; i < rgc; i++){
+        //if(vp[i]->n > 1 && is_dir(vp[i])){
+        //printf("New closed region\n");
+        //cloop++;
+        //pn = 1; pn1 = 0;
+        //vp1[0] = vp[i];
+        //while(pn1 < pn){
+        //vpx = vp1[pn1++];
+        //printf("pn = %d\n", pn1);
+        //while(get_dir2(vpx, &nd)){
+        //regc++;
+        //vx = vpx; //nd2 = nd;
 
-		vc = 0; vc1 = 0; sq = 0;
-		vx = vp[i]; nd = dir[i];
+        vc = 0; vc1 = 0; sq = 0;
+        vx = vp[i]; nd = dir[i];
 
-		if(!get) cl = col[i];
-			//printf("New region\n");
+        if(!get) cl = col[i];
+        //printf("New region\n");
 
-		while(1){
-			vx1 = vx->vp[nd];
-			//Calculate square of region
-			sq += (vx1->y + vx->y)*(vx1->x - vx->x);
+        while(1){
+            vx1 = vx->vp[nd];
+            //Calculate square of region
+            sq += (vx1->y + vx->y)*(vx1->x - vx->x);
 
-			nd1 =  find_pointer1(vx1, vx);
-			nd = get_clockwise_dir1(vx1, nd1);
-			fd = finish_dir1(vx1, nd);
-			//printf("vp[i] = %p vx = %p x = %d y = %d di = %d cn = %d fd = %d\n", vp[i], vx1, vx1->x, vx1->y, vx1->di, vx1->cn, fd);
-			//Store in the buffer
-			//if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
+            nd1 =  find_pointer1(vx1, vx);
+            nd = get_clockwise_dir1(vx1, nd1);
+            fd = finish_dir1(vx1, nd);
+            //printf("vp[i] = %p vx = %p x = %d y = %d di = %d cn = %d fd = %d\n", vp[i], vx1, vx1->x, vx1->y, vx1->di, vx1->cn, fd);
+            //Store in the buffer
+            //if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
-			yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
-			//l1[vc++] = yxw;
-			if(yxw) {
-				l1[vc++] = yxw;
-				//if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
-				con[yxw] = cl;
-			}
-			//else if(!yxw) col[rc++] = 0;
-			//last = yxw ? 1 : 0;
-			vx = vx1;
-			vc1++;
-			if(vx == vp[i] && fd) break;
-		}
-		//} while(vx != vpx && df);
-		if(sq > 0) printf("sq = %d vc = %d\n", sq, vc);
+            yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
+            //l1[vc++] = yxw;
+            if(yxw) {
+                l1[vc++] = yxw;
+                //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
+                con[yxw] = cl;
+            }
+            //else if(!yxw) col[rc++] = 0;
+            //last = yxw ? 1 : 0;
+            vx = vx1;
+            vc1++;
+            if(vx == vp[i] && fd) break;
+        }
+        //} while(vx != vpx && df);
+        if(sq > 0) printf("sq = %d vc = %d\n", sq, vc);
 
-		if(!vc){
-			printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
-			//con[vp[i]->x + w*vp[i]->y] = 255;
-			//con[vp[i]->y*w + vp[i]->x-w] = 255;
-			//con[vp[i]->y*w + vp[i]->x-1] = 255;
-			//con[vp[i]->y*w + vp[i]->x+w] = 255;
-			//con[vp[i]->y*w + vp[i]->x+1] = 255;
-			dloop++;
-		}
+        if(!vc){
+            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
+            //con[vp[i]->x + w*vp[i]->y] = 255;
+            //con[vp[i]->y*w + vp[i]->x-w] = 255;
+            //con[vp[i]->y*w + vp[i]->x-1] = 255;
+            //con[vp[i]->y*w + vp[i]->x+w] = 255;
+            //con[vp[i]->y*w + vp[i]->x+1] = 255;
+            dloop++;
+        }
 
-		if(vc){
-			if(get) col[i] = get_region_color(img, con, l1, vc, w);
-			else  	fill_region_color(con, l1, vc, col[i], w);
-		} else if(get) col[i] = 1;
+        if(vc){
+            if(get) col[i] = get_region_color(img, con, l1, vc, w);
+            else  	fill_region_color(con, l1, vc, col[i], w);
+        } else if(get) col[i] = 1;
 
-				//}
-			//}
-		//}
-	}
-	/*
-	for(i=0; i < vxc; i++) {
-		if(vp[i]->n == 1 || vp[i]->di != vp[i]->cn) {
-			printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
-			//printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
-			img[vp[i]->y*w + vp[i]->x-w] = 255;
-			img[vp[i]->y*w + vp[i]->x-1] = 255;
-			img[vp[i]->y*w + vp[i]->x+w] = 255;
-			img[vp[i]->y*w + vp[i]->x+1] = 255;
-		}
-	}*/
+        //}
+        //}
+        //}
+    }
+    /*
+ for(i=0; i < vxc; i++) {
+  if(vp[i]->n == 1 || vp[i]->di != vp[i]->cn) {
+   printf("%d  x = %d y = %d %o %o %o n = %d\n", i, vp[i]->x,  vp[i]->y, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di, vp[i]->n);
+   //printf("%d n = %d %o %o %o\n", i, vp[i]->n, vp[i]->di, vp[i]->cn, vp[i]->cn^vp[i]->di);
+   img[vp[i]->y*w + vp[i]->x-w] = 255;
+   img[vp[i]->y*w + vp[i]->x-1] = 255;
+   img[vp[i]->y*w + vp[i]->x+w] = 255;
+   img[vp[i]->y*w + vp[i]->x+1] = 255;
+  }
+ }*/
 
-	printf("Numbers of drawing regions  = %d  zero regions = %d\n", rgc, dloop);
-	return rgc;
+    printf("Numbers of drawing regions  = %d  zero regions = %d\n", rgc, dloop);
+    return rgc;
 }
 
 
