@@ -556,9 +556,8 @@ static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 
 static inline uint32 scale(uint32  x, uint32  w, uint32 k, uint32 sh)
 {
-	uint32 x1;
-	x1 = ((x-1)*k>>sh);
-	return (x1 == w-2) ? x1 : x1 + 1;
+    uint32 x1 = ((x-1)*k>>sh);
+    return (x1 == w-2) ? x1 : x1 + 1;
 }
 
 static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
@@ -584,76 +583,76 @@ static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
 }
 
 
-static inline uint32 get_first_pixel(uint8 *img, Vertex *v,  Vertex *v1,  Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
+static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
 {
-	uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn, cn = 0;//, cn255 = 0;
-	int stx, sty;
-	int dma, dmi, stmi, stma;
+    uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn, cn = 0;//, cn255 = 0;
+    int stx, sty;
+    int dma, dmi, stmi, stma;
 
-	sty = v1->y > v->y ? w : -w;
-	stx = v1->x > v->x ? 1 : -1;
-	//dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
-	dx = abs(scale(v1->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
-	dy = abs(scale(v1->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
-	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
-        else        { dma = dy; dmi = dx; stmi = sty; stma = stx; }
-	if(v1->x <= v->x && (dma&1 || dmi&1)) dmi = (dmi<<1)-1;
+    sty = v1->y > v->y ? w : -w;
+    stx = v1->x > v->x ? 1 : -1;
+    //dx = abs(v1->x - v->x)+1; dy = abs(v1->y - v->y)+1;
+    dx = abs(scale(v1->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
+    dy = abs(scale(v1->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
+    if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
+    else        { dma = dy; dmi = dx; stmi = sty; stma = stx; }
+    if(v1->x <= v->x && (dma&1 || dmi&1)) dmi = (dmi<<1)-1;
 
-	//x = v->x; y = v->y*w;
-	x = scale(v->x, w, kx, sh);
-	y = scale(v->y, h, ky, sh)*w;
-	yx = y + x;
+    //x = v->x; y = v->y*w;
+    x = scale(v->x, w, kx, sh);
+    y = scale(v->y, h, ky, sh)*w;
+    yx = y + x;
 
-	//min += dmi; x += stmi;
-	//if(min >= max) { max += dma; y += stma; }
-	//yx1 = y + x;
-	yx1 = yx + stmi;
-	if(dmi >= dma) yx1 += stma;
+    //min += dmi; x += stmi;
+    //if(min >= max) { max += dma; y += stma; }
+    //yx1 = y + x;
+    yx1 = yx + stmi;
+    if(dmi >= dma) yx1 += stma;
 
-	sty = v2->y > v->y ? w : -w;
-	stx = v2->x > v->x ? 1 : -1;
-	//dx = abs(v2->x - v->x)+1; dy = abs(v2->y - v->y)+1;
-	dx = abs(scale(v2->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
-	dy = abs(scale(v2->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
-	if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
-        else 	{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
-	if(v2->x <= v->x && (dma&1 || dmi&1)) dmi = (dmi<<1)-1;
+    sty = v2->y > v->y ? w : -w;
+    stx = v2->x > v->x ? 1 : -1;
+    //dx = abs(v2->x - v->x)+1; dy = abs(v2->y - v->y)+1;
+    dx = abs(scale(v2->x, w, kx, sh) - scale(v->x, w, kx, sh))+1;
+    dy = abs(scale(v2->y, h, ky, sh) - scale(v->y, h, ky, sh))+1;
+    if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
+    else 	{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
+    if(v2->x <= v->x && (dma&1 || dmi&1)) dmi = (dmi<<1)-1;
 
-	yx2 = yx + stmi;
-	if(dmi >= dma) yx2 += stma;
+    yx2 = yx + stmi;
+    if(dmi >= dma) yx2 += stma;
 
-	if(yx1 == yx2) {
-		//printf("it's a problem yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
-		//img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
-		return 0;
-	}
+    if(yx1 == yx2) {
+        //printf("it's a problem yx = %d %d yx1 = %d %d yx2 = %d %d\n", yx%w, yx/w, yx1%w, yx1/w, yx2%w, yx2/w);
+        //img[yx] = 255; img[yx1] = 255; img[yx2] = 255;
+        return 0;
+    }
 
-        yxn = yx2;
-	//yxn = yx2;
-	do{
-		cn++;
-		yxn = get_next_pixel(yx, yxn, w);
-		//printf("yx2 = %d yxn = %d img[yxn] = %d\n", yx2, yxn, img[yxn]);
-		//if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)) return yxn;
-                if(yxn != yx1 && !img[yxn]) return yxn;
-        } while(yxn != yx1);
+    yxn = yx2;
+    //yxn = yx2;
+    do{
+        cn++;
+        yxn = get_next_pixel(yx, yxn, w);
+        //printf("yx2 = %d yxn = %d img[yxn] = %d\n", yx2, yxn, img[yxn]);
+        //if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)) return yxn;
+        if(yxn != yx1 && !img[yxn]) return yxn;
+    } while(yxn != yx1);
 
-	//if(cn == cn255) return 1;
+    //if(cn == cn255) return 1;
 
-	return 0;
+    return 0;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
 {
-	//vx->n++;
-	if      (yx2-yx1 == -1  ) img[yx1] |= 128;
-	else if (yx2-yx1 == -w-1) img[yx1] |= 64;
-	else if (yx2-yx1 == -w  ) img[yx1] |= 32;
-	else if (yx2-yx1 == -w+1) img[yx1] |= 16;
-	else if (yx2-yx1 ==  1  ) img[yx1] |= 8;
-	else if (yx2-yx1 ==  w+1) img[yx1] |= 4;
-	else if (yx2-yx1 ==  w  ) img[yx1] |= 2;
-	else if (yx2-yx1 ==  w-1) img[yx1] |= 1;
+    //vx->n++;
+    if      (yx2-yx1 == -1  ) img[yx1] |= 128;
+    else if (yx2-yx1 == -w-1) img[yx1] |= 64;
+    else if (yx2-yx1 == -w  ) img[yx1] |= 32;
+    else if (yx2-yx1 == -w+1) img[yx1] |= 16;
+    else if (yx2-yx1 ==  1  ) img[yx1] |= 8;
+    else if (yx2-yx1 ==  w+1) img[yx1] |= 4;
+    else if (yx2-yx1 ==  w  ) img[yx1] |= 2;
+    else if (yx2-yx1 ==  w-1) img[yx1] |= 1;
     //printf("finish d = %d dir = %o\n", d, dir);
 }
 
@@ -2987,8 +2986,10 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             //if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
             yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
+
             //l1[vc++] = yxw;
             if(yxw) {
+                if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
                 l1[vc++] = yxw;
                 //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
                 con[yxw] = cl;
