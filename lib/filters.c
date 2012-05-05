@@ -7,22 +7,42 @@
 
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
+static  inline uint8 med(uint8 x1, uint8 x2, uint8 x3)
+{
+    /*
+    if(x1 > x2){
+        if(x2 > x3) return x2;
+        else {
+            if(x1 > x3) return x3;
+            else        return x1;
+        }
+    } else {
+        if(x1 > x3) return x1;
+        else {
+            if(x3 > x2) return x2;
+            else        return x3;
+        }
+    }*/
+    return x1 > x2 ? (x2 > x3 ? x2 : (x1 > x3 ? x3 : x1)):
+                     (x1 > x3 ? x1 : (x3 > x2 ? x2 : x3));
+}
+
 static  inline void sort(uint8 *s, uint8 x1, uint8 x2, uint8 x3)
 {
-	if(x1 > x2){
-		if(x2 > x3) { s[0] = x3; s[1] = x2; s[2] = x1; }
-		else {
-			if(x1 > x3) { s[0] = x2; s[1] = x3; s[2] = x1; }
-			else 		{ s[0] = x2; s[1] = x1; s[2] = x3; }
-		}
-	} else {
-		if(x1 > x3) { s[0] = x3; s[1] = x1; s[2] = x2; }
-		else {
-			if(x3 > x2) { s[0] = x1; s[1] = x2; s[2] = x3; }
-			else 		{ s[0] = x1; s[1] = x3; s[2] = x2; }
-		}
-	}
-	//return s;
+        if(x1 > x2){
+                if(x2 > x3) { s[0] = x3; s[1] = x2; s[2] = x1; }
+                else {
+                        if(x1 > x3) { s[0] = x2; s[1] = x3; s[2] = x1; }
+                        else 		{ s[0] = x2; s[1] = x1; s[2] = x3; }
+                }
+        } else {
+                if(x1 > x3) { s[0] = x3; s[1] = x1; s[2] = x2; }
+                else {
+                        if(x3 > x2) { s[0] = x1; s[1] = x2; s[2] = x3; }
+                        else 		{ s[0] = x1; s[1] = x3; s[2] = x2; }
+                }
+        }
+        //return s;
 }
 
 static  inline uint8  max_3(uint8 s0, uint8 s1, uint8 s2)
@@ -178,38 +198,64 @@ void filter_median_16(int16 *img, int16 *img1, uint32 w, uint32 h)
 	//utils_copy_border(img, img1, 1, w, h);
 }
 
+void filter_fast_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+    // s[0]  s[1]  s[2]
+    //|-----|-----|-----|
+    //|     |     |     |
+    //|-----|-----|-----|
+    //|     | yx  |     |
+    //|-----|-----|-----|
+    //|     |     |     |
+    //|-----|-----|-----|
+    uint32 y, x, yx, yw, h1 = h-1;
+    uint8 s[w];
+
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        s[0] = med(img[yw-w], img[yw], img[yw+w]);
+        yx = yw+1;
+        s[1] = med(img[yx-w], img[yx], img[yx+w]);
+        for(x=2; x < w; x++){
+            yx = yw + x;
+            s[x] = med(img[yx-w], img[yx], img[yx+w]);
+            img1[yx-1] = med(s[x-2], s[x-1], s[x]);
+        }
+    }
+}
+
 void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
-	// s[0]  s[1]  s[2]
-	//|-----|-----|-----|
-	//|     |     |     |
-	//|-----|-----|-----|
-	//|     | yx  |     |
-	//|-----|-----|-----|
-	//|     |     |     |
-	//|-----|-----|-----|
-	uint32 y, x, yx, yw, i, h1 = h-1, w1 = w-1;
-	uint8 s[3][3];
+        // s[0]  s[1]  s[2]
+        //|-----|-----|-----|
+        //|     |     |     |
+        //|-----|-----|-----|
+        //|     | yx  |     |
+        //|-----|-----|-----|
+        //|     |     |     |
+        //|-----|-----|-----|
+        uint32 y, x, yx, yw, i, h1 = h-1, w1 = w-1;
+        uint8 s[3][3];
 
-	for(y=1; y < h1; y++){
-		i = 2; x = 2;
-		yw = y*w;
-		yx = yw + x;
-		s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
-		s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
-		sort_3(s[0]); sort_3(s[1]);
-		for(x=1; x < w1; x++){
-			yx = yw + x;
-			s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
-			sort_3(s[i]);
-			img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
-								median_3(s[0][1], s[1][1], s[2][1]),
-								min_3   (s[0][2], s[1][2], s[2][2]));
-			i = (i == 2) ? 0 : i+1;
-		}
-	}
-	//Copy one pixel border
-	//utils_copy_border(img, img1, 1, w, h);
+        for(y=1; y < h1; y++){
+                i = 2; x = 2;
+                yw = y*w;
+                yx = yw + x;
+                s[0][0] = img[yx-1-w]; s[0][1] = img[yx-1]; s[0][2] = img[yx-1+w];
+                s[1][0] = img[yx-1  ]; s[1][1] = img[yx  ]; s[1][2] = img[yx+1  ];
+                sort_3(s[0]); sort_3(s[1]);
+                for(x=1; x < w1; x++){
+                        yx = yw + x;
+                        s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
+                        sort_3(s[i]);
+                        img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
+                                                                median_3(s[0][1], s[1][1], s[2][1]),
+                                                                min_3   (s[0][2], s[1][2], s[2][2]));
+                        i = (i == 2) ? 0 : i+1;
+                }
+        }
+        //Copy one pixel border
+        //utils_copy_border(img, img1, 1, w, h);
 }
 
 void filter_contrast(uint8 *img, uint8 *img1, uint32 w, uint32 h)

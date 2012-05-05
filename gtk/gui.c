@@ -616,15 +616,28 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	utils_grey_draw8(fr->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), fr->y[0].w, fr->y[0].h, 0);
 	gtk_widget_queue_draw(gw->drawingarea[0]);
 
-	new_buffer (gw->orig[1], fr->y[1].w, fr->y[1].h);
-	utils_grey_draw8(fr->y[1].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->y[1].w, fr->y[1].h, 0);
-	gtk_widget_queue_draw(gw->drawingarea[1]);
+        //new_buffer (gw->orig[1], fr->dg[0].w, fr->dg[0].h);
+        //utils_grey_draw8(fr->dg[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->dg[0].w, fr->dg[0].h, 0);
+        //gtk_widget_queue_draw(gw->drawingarea[1]);
 
-	new_buffer (gw->orig[2], fr->y1[0].w, fr->y1[0].h);
-	utils_grey_draw8(fr->y1[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->y1[0].w, fr->y1[0].h, 0);
-	gtk_widget_queue_draw(gw->drawingarea[2]);
+        new_buffer (gw->orig[1], fr->y[1].w, fr->y[1].h);
+        utils_grey_draw8(fr->dm[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->y[1].w, fr->y[1].h, 0);
+        gtk_widget_queue_draw(gw->drawingarea[1]);
 
-	//utils_grey_draw8(fr->y1[1].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->y1[1].w, fr->y1[1].h, 0);
+        new_buffer (gw->orig[2], fr->dc[0].w, fr->dc[0].h);
+        utils_grey_draw8(fr->dc[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->dc[0].w, fr->dc[0].h, 0);
+        gtk_widget_queue_draw(gw->drawingarea[2]);
+
+/*
+        new_buffer (gw->orig[1], fr->y[1].w, fr->y[1].h);
+        utils_grey_draw8(fr->y[1].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->y[1].w, fr->y[1].h, 0);
+        gtk_widget_queue_draw(gw->drawingarea[1]);
+
+        new_buffer (gw->orig[2], fr->y1[0].w, fr->y1[0].h);
+        utils_grey_draw8(fr->y1[0].pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->y1[0].w, fr->y1[0].h, 0);
+        gtk_widget_queue_draw(gw->drawingarea[2]);
+*/
+        //utils_grey_draw8(fr->y1[1].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->y1[1].w, fr->y1[1].h, 0);
 	//utils_contour(fr->y1, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), 1);
 
 	new_buffer (gw->orig[3], fr->y1[1].w<<1, fr->y1[1].h<<1);
