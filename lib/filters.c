@@ -35,7 +35,6 @@ static  inline uint8  min_3(uint8 s0, uint8 s1, uint8 s2)
 	return (s0 > s1) ? (s1 > s2 ? s2 : s1) : (s0 > s2 ? s2 : s0);
 }
 
-
 static  inline uint8  median_3(uint8 s0, uint8 s1, uint8 s2)
 {
 	return (s2 > s1) ? (s1 > s0 ? s1 : (s2 > s0 ? s0 : s2))
