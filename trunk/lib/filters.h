@@ -16,6 +16,7 @@ void filters_bayer_gradient			(int16 *img, int16 *img1, uint32 w, uint32 h, Baye
 void filters_gradient				(int16 *img, int16 *img1, uint32 w, uint32 h, uint32 thresh);
 void filters_edge_detector			(int16 *img, int16 *img1, uint32 w, uint32 h);
 
+void filter_fast_median(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void filter_contrast(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h);

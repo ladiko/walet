@@ -2166,75 +2166,18 @@ static inline void remove_dir2(Vertex *vx, uint8 nd)
     //printf("1finish nd = %d %o %o n = %d %p\n", nd, vx->di, vx->cn, vx->n, vx);
     vx->n--; vx1->n--;
     vx->di ^= nb; if(vx->cn&nb) vx->cn ^= nb;
-    /*
-    if      (nd == 0) { vx->di ^= 1;    vx->cn ^= 1;  }
-    else if (nd == 1) { vx->di ^= 2;    vx->cn ^= 2;  }
-    else if (nd == 2) { vx->di ^= 4;     vx->cn ^= 4;  }
-    else if (nd == 3) { vx->di ^= 8;     vx->cn ^= 8;  }
-    else if (nd == 4) { vx->di ^= 16;    vx->cn ^= 16; }
-    else if (nd == 5) { vx->di ^= 32;    vx->cn ^= 32; }
-    else if (nd == 6) { vx->di ^= 64;    vx->cn ^= 64; }
-    else if (nd == 7) { vx->di ^= 128;   vx->cn ^= 128;}*/
 
     for(i; i < 8; i++) {
         nb = 1<<i;
         if( vx1->di&nb && vx1->vp[i] == vx) break;
     }
     vx1->di ^= nb; if(vx1->cn&nb) vx1->cn ^= nb;
-
-    /*
-    if		(vx1->vp[0] == vx) { vx1->di ^= 1;    vx1->cn ^= 1;	}// 	vx1->vp[0] = NULL; }
-    else if	(vx1->vp[1] == vx) { vx1->di ^= 2;    vx1->cn ^= 2; 	}//	vx1->vp[1] = NULL; }
-    else if	(vx1->vp[2] == vx) { vx1->di ^= 4;    vx1->cn ^= 4; 	}//	vx1->vp[2] = NULL; }
-    else if	(vx1->vp[3] == vx) { vx1->di ^= 8;    vx1->cn ^= 8; 	}//	vx1->vp[3] = NULL; }
-    else if	(vx1->vp[4] == vx) { vx1->di ^= 16;   vx1->cn ^= 16; 	}//	vx1->vp[4] = NULL; }
-    else if	(vx1->vp[5] == vx) { vx1->di ^= 32;   vx1->cn ^= 32; 	}// 	vx1->vp[5] = NULL; }
-    else if	(vx1->vp[6] == vx) { vx1->di ^= 64;   vx1->cn ^= 64; 	}//	vx1->vp[6] = NULL; }
-    else if	(vx1->vp[7] == vx) { vx1->di ^= 128;  vx1->cn ^= 128; 	}//	vx1->vp[7] = NULL; }
-    */
-    //vx->vp[nd] = vx->vp[2];
-
-    //printf("2finish nd = %d %o %o\n", nd, vx->di, vx->cn);
 }
 
 static inline uint32 finish_dir1(Vertex *vx, uint8 nd)
 {
 	if(vx->cn&(1<<nd)) return 1;
 	else { vx->cn |= (1<<nd); return 0;}
-	/*
-	if (nd == 0) {
-		if(vx->cn&1) return 1;
-		else { vx->cn |= 1; return 0;}
-	}
-	if (nd == 1) {
-		if(vx->cn&2) return 1;
-		else { vx->cn |= 2; return 0;}
-	}
-	if (nd == 2) {
-		if(vx->cn&4) return 1;
-		else { vx->cn |= 4; return 0;}
-	}
-	if (nd == 3) {
-		if(vx->cn&8) return 1;
-		else { vx->cn |= 8; return 0;}
-	}
-	if (nd == 4) {
-		if(vx->cn&16) return 1;
-		else { vx->cn |= 16; return 0;}
-	}
-	if (nd == 5) {
-		if(vx->cn&32) return 1;
-		else { vx->cn |= 32; return 0;}
-	}
-	if (nd == 6) {
-		if(vx->cn&64) return 1;
-		else { vx->cn |= 64; return 0;}
-	}
-	if (nd == 7) {
-		if(vx->cn&128) return 1;
-		else { vx->cn |= 128; return 0;}
-	}
-	*/
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
@@ -2253,39 +2196,21 @@ static inline void finish_dir2(Vertex *vx, uint8 nd)
 
 static inline uint8  find_pointer1(Vertex *vx1, Vertex *vx2)
 {
-	/*
-	if		(vx1->di&128 && vx1->vp[0] == vx2) return 0;
-	else if	(vx1->di&64  && vx1->vp[1] == vx2) return 1;
-	else if	(vx1->di&32  && vx1->vp[2] == vx2) return 2;
-	else if	(vx1->di&16  && vx1->vp[3] == vx2) return 3;
-	else if	(vx1->di&8   && vx1->vp[4] == vx2) return 4;
-	else if	(vx1->di&4   && vx1->vp[5] == vx2) return 5;
-	else if	(vx1->di&2   && vx1->vp[6] == vx2) return 6;
-	else if	(vx1->di&1   && vx1->vp[7] == vx2) return 7;
-	*/
     int i;
     for(i=0; i < 8; i++) if(vx1->di&(1<<i) && vx1->vp[i] == vx2) return i;
-    /*
-        if	(vx1->di&1   && vx1->vp[0] == vx2) return 0;
-        else if	(vx1->di&2   && vx1->vp[1] == vx2) return 1;
-        else if	(vx1->di&4   && vx1->vp[2] == vx2) return 2;
-        else if	(vx1->di&8   && vx1->vp[3] == vx2) return 3;
-        else if	(vx1->di&16  && vx1->vp[4] == vx2) return 4;
-        else if	(vx1->di&32  && vx1->vp[5] == vx2) return 5;
-        else if	(vx1->di&64  && vx1->vp[6] == vx2) return 6;
-        else if	(vx1->di&128 && vx1->vp[7] == vx2) return 7;
-    */
-        int k;
-	printf("vx1 = %p vx2 = %p x1 = %d y1 = %d n1 = %d x2 = %d y2 = %d n2 = %d\n", vx1, vx2, vx1->x, vx1->y, vx1->n,  vx2->x, vx2->y, vx2->n);
-        for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vx1->di&(1<<k), k, vx1->vp[k],
-                                    vx1->vp[k] ? vx1->vp[k]->x : 0, vx1->vp[k] ? vx1->vp[k]->y : 0);
-        for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vx2->di&(1<<k), k, vx2->vp[k],
-                                    vx2->vp[k] ? vx2->vp[k]->x : 0, vx2->vp[k] ? vx2->vp[k]->y : 0);
 
-        //for(i=0; i < 8; i++) printf("vx1->vp[%d] = %p\n", i, vx1->vp[i]);
-        //for(i=0; i < 8; i++) printf("vx2->vp[%d] = %p\n", i, vx2->vp[i]);
-	//printf("It's a problem\n");
-	return 10;
+    //For test
+    int k;
+    printf("vx1 = %p vx2 = %p x1 = %d y1 = %d n1 = %d x2 = %d y2 = %d n2 = %d\n", vx1, vx2, vx1->x, vx1->y, vx1->n,  vx2->x, vx2->y, vx2->n);
+    for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vx1->di&(1<<k), k, vx1->vp[k],
+                                vx1->vp[k] ? vx1->vp[k]->x : 0, vx1->vp[k] ? vx1->vp[k]->y : 0);
+    for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vx2->di&(1<<k), k, vx2->vp[k],
+                                vx2->vp[k] ? vx2->vp[k]->x : 0, vx2->vp[k] ? vx2->vp[k]->y : 0);
+
+    //for(i=0; i < 8; i++) printf("vx1->vp[%d] = %p\n", i, vx1->vp[i]);
+    //for(i=0; i < 8; i++) printf("vx2->vp[%d] = %p\n", i, vx2->vp[i]);
+    //printf("It's a problem\n");
+    return 10;
 }
 
 static inline uint8 check_pointer(Vertex *vx1, Vertex *vx2)
@@ -2317,30 +2242,28 @@ static inline uint8 find_same_y_dir(Vertex *vx)
 
 static inline uint8 get_clockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
 {
-	uint8 tm, i = 0;
 	if(!(vx->di - vx->cn)) return 0;
 
-	if      (nd == 0) { vx->cn |= 1; 	goto m1; }
-	else if (nd == 1) { vx->cn |= 2;  	goto m2; }
-	else if (nd == 2) { vx->cn |= 4;  	goto m3; }
-	else if (nd == 3) { vx->cn |= 8;  	goto m4; }
+        if      (nd == 0) { vx->cn |= 1;    goto m1; }
+        else if (nd == 1) { vx->cn |= 2;    goto m2; }
+        else if (nd == 2) { vx->cn |= 4;    goto m3; }
+        else if (nd == 3) { vx->cn |= 8;    goto m4; }
 	else if (nd == 4) { vx->cn |= 16;   goto m5; }
 	else if (nd == 5) { vx->cn |= 32;   goto m6; }
 	else if (nd == 6) { vx->cn |= 64;   goto m7; }
 	else if (nd == 7) { vx->cn |= 128;  goto m8; }
-	//return 0;
 
-	m1:	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 1; vx->cn |= 2;		return 1; }
-	m2:	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 2; vx->cn |= 4;		return 1; }
-	m3:	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 3; vx->cn |= 8;		return 1; }
+        m1:	if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 1; vx->cn |= 2;	return 1; }
+        m2:	if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 2; vx->cn |= 4;	return 1; }
+        m3:	if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 3; vx->cn |= 8;	return 1; }
 	m4:	if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 4; vx->cn |= 16;	return 1; }
 	m5:	if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 5; vx->cn |= 32;	return 1; }
 	m6:	if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 6; vx->cn |= 64;	return 1; }
 	m7:	if ((vx->di&128) && !(vx->cn&128)) { *nd1 = 7; vx->cn |= 128;	return 1; }
 	m8:	if ((vx->di&1  ) && !(vx->cn&1  )) { *nd1 = 0; vx->cn |= 1; 	return 1; }
-		if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 1; vx->cn |= 2;		return 1; }
-		if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 2; vx->cn |= 4;		return 1; }
-		if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 3; vx->cn |= 8;		return 1; }
+                if ((vx->di&2  ) && !(vx->cn&2  )) { *nd1 = 1; vx->cn |= 2;	return 1; }
+                if ((vx->di&4  ) && !(vx->cn&4  )) { *nd1 = 2; vx->cn |= 4;	return 1; }
+                if ((vx->di&8  ) && !(vx->cn&8  )) { *nd1 = 3; vx->cn |= 8;	return 1; }
 		if ((vx->di&16 ) && !(vx->cn&16 )) { *nd1 = 4; vx->cn |= 16;	return 1; }
 		if ((vx->di&32 ) && !(vx->cn&32 )) { *nd1 = 5; vx->cn |= 32;	return 1; }
 		if ((vx->di&64 ) && !(vx->cn&64 )) { *nd1 = 6; vx->cn |= 64;	return 1; }
