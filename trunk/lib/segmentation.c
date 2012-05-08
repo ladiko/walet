@@ -31,52 +31,52 @@ void print_around32(uint32 *con, uint32 yx, uint32 w)
 
 void seg_grad(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
 {
-	/// | |x| |      | | | |      |x| | |      | | |x|
-	/// | |x| |      |x|x|x|      | |x| |      | |x| |
-	/// | |x| |      | | | |      | | |x|      |x| | |
-	///  g[2]         g[0]         g[1]         g[3]
-	/// Direction
-	///   n=0          n=2         n=3          n=1
-	/// | | | |      | ||| |      | | |/|      |\| | |
-	/// |-|-|-|      | ||| |      | |/| |      | |\| |
-	/// | | | |      | ||| |      |/| | |      | | |\|
-	uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
-	uint8 in, col = 253;
-	uint32 g[4];
-	int max;
+        /// | |x| |      | | | |      |x| | |      | | |x|
+        /// | |x| |      |x|x|x|      | |x| |      | |x| |
+        /// | |x| |      | | | |      | | |x|      |x| | |
+        ///  g[2]         g[0]         g[1]         g[3]
+        /// Direction
+        ///   n=0          n=2         n=3          n=1
+        /// | | | |      | ||| |      | | |/|      |\| | |
+        /// |-|-|-|      | ||| |      | |/| |      | |\| |
+        /// | | | |      | ||| |      |/| | |      | | |\|
+        uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
+        uint8 in, col = 253;
+        uint32 g[4];
+        int max;
 
-	//Make the up border
-	for(x=1; x < w1; x++) img1[w + x] = col;
-	con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
-	//for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
-	for(x=1; x < w2; x++) di[w + x] = 16; di[w + x] = 64;
+        //Make the up border
+        for(x=1; x < w1; x++) img1[w + x] = col;
+        con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
+        //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
+        for(x=1; x < w2; x++) di[w + x] = 16; di[w + x] = 64;
 
-	for(y=2; y < h2; y++){
-		yw = y*w;
-		img1[yw + 1] = col; con[yw + 1] = 64;  di[yw + 1] = 4; //di[yw + 1] = 32;
-		for(x=2; x < w2; x++){
-			yx = yw + x;
-			g[0] = abs(img[yx-1  ] - img[yx+1  ]);
-			g[1] = abs(img[yx-1-w] - img[yx+1+w]);
-			g[2] = abs(img[yx-w  ] - img[yx+w  ]);
-			g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+        for(y=2; y < h2; y++){
+                yw = y*w;
+                img1[yw + 1] = col; con[yw + 1] = 64;  di[yw + 1] = 4; //di[yw + 1] = 32;
+                for(x=2; x < w2; x++){
+                        yx = yw + x;
+                        g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+                        g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+                        g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+                        g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
-			max = (g[0] + g[1] + g[2] + g[3])>>1;
-			img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
-			//printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
-			//img1[yx] = max>>th;
-			//max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
-			//img1[yx] = max > 252 ? 252 : max;
-		}
-		img1[yx + 1] = col; con[yx + 1] = 64; di[yx + 1] = 64; //di[yx + 1] = 2;
-		 //img1[yx + 2] = col1;
-	}
-	//Make the bottom border
-	yw = y*w;
-	for(x=1; x < w1; x++) img1[yw + x] = col;
-	con[yw+1] = 255; for(x=2; x < w2; x++) con[yw + x] = 64; con[yw + x] = 255;
-	//di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
-	di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+                        max = (g[0] + g[1] + g[2] + g[3])>>1;
+                        img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
+                        //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
+                        //img1[yx] = max>>th;
+                        //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+                        //img1[yx] = max > 252 ? 252 : max;
+                }
+                img1[yx + 1] = col; con[yx + 1] = 64; di[yx + 1] = 64; //di[yx + 1] = 2;
+                 //img1[yx + 2] = col1;
+        }
+        //Make the bottom border
+        yw = y*w;
+        for(x=1; x < w1; x++) img1[yw + x] = col;
+        con[yw+1] = 255; for(x=2; x < w2; x++) con[yw + x] = 64; con[yw + x] = 255;
+        //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
+        di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
 }
 
 void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th)
@@ -445,15 +445,46 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
 */
 static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 {
-	if( img[yx-1] 	<= img[yx] &&
-		img[yx-w]	<= img[yx] &&
-		img[yx+1] 	<= img[yx] &&
-		img[yx+w] 	<= img[yx] &&
-		img[yx-1-w] <= img[yx] &&
-		img[yx+1-w] <= img[yx] &&
-		img[yx-1+w] <= img[yx] &&
-		img[yx+1+w] <= img[yx] ) return 1;
+        if( img[yx-1]   <= img[yx] &&
+            img[yx-w]   <= img[yx] &&
+            img[yx+1]   <= img[yx] &&
+            img[yx+w]   <= img[yx] &&
+            img[yx-1-w] <= img[yx] &&
+            img[yx+1-w] <= img[yx] &&
+            img[yx-1+w] <= img[yx] &&
+            img[yx+1+w] <= img[yx] ) return img[yx];
 	else return 0;
+}
+
+void seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 w, uint32 h)
+{
+    uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h1 = h-1, w1 = w-1, lmaxc;
+    uint8 max;
+
+    memset(hist ,0, sizeof(uint32)*256);
+    memset(hist1,0, sizeof(uint32)*256);
+
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            max = loc_max(img, yx, w);
+            if(max) {
+                hist[255-max]++;
+                buff[i++] = yx;
+            }
+        }
+    }
+    lmaxc = i;
+    //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist[i]);
+
+    //printf("lmaxc = %d sq = %d\n",lmaxc, w*h);
+    hist1[0] = 0;
+    for(i=0; i < 255; i++) hist1[i+1] = hist1[i] + hist[i];
+    //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist1[i]);
+
+    for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
+
 }
 
 static inline uint32 draw_line_3(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc)
