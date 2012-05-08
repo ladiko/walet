@@ -456,7 +456,7 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
 	else return 0;
 }
 
-void seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 w, uint32 h)
+uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
 {
     uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h1 = h-1, w1 = w-1, lmaxc;
     uint8 max;
@@ -469,7 +469,7 @@ void seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 w, uint32 h)
         for(x=1; x < w1; x++){
             yx = yw + x;
             max = loc_max(img, yx, w);
-            if(max) {
+            if(max > th) {
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -484,6 +484,7 @@ void seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 w, uint32 h)
     //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist1[i]);
 
     for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
+    return lmaxc;
 
 }
 
@@ -709,64 +710,6 @@ static inline uint32 draw_line_dir(uint8 *img, Vector *v, uint32 w)
 		if(min >= max) { max += dma; y += stma; }
 		yx1 = yx;
 	}
-}
-
-/*	\brief	Finf pixels with lines intersection.
-	\param	grad	The pointer to input gradient image.
-	\param	con		The pointer to output contour image.
-	\param  w		The image width.
-	\param  h		The image height.
-*/
-void seg_find_intersect(uint8 *grad, uint8 *con, uint32 w, uint32 h)
-{
-	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
-	int d1, d2, npix = 0;
-	//Make border
-	con[w+1] = 255; con[(w<<1)-2] = 255;
-	con[w*(h-2)+1] = 255; con[w*(h-1)-2] = 255;
-	yw = w*(h-2);
-	for(x=2; x < w1-1; x++) con[yw + x] = 64;
-
-	for(y=1; y < h1; y++){
-		yw = y*w;
-		for(x=1; x < w1; x++){
-			yx = yw + x;
-			if(grad[yx] && !con[yx]){
-				if(loc_max(grad, yx, w)){
-					//printf("x = %d y = %d\n", x, y);
-					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; //con[yx1] = 64;
-					d1 = dir(grad, yx1, w, 0);
-					d2 = dir(grad, yx1, w, d1);
-					while(1){
-						yx1 = yx1 + d1;
-						if(con[yx1]) {
-							con[yx1] = 255; grad[yx1] = 255;
-							npix++;
-							break;
-						}
-						//if(!d1){ con[yx1] = 128; break; }
-						con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-						d1 = dir(grad, yx1, w, -d1);
-					}
-					while(1){
-						yx2 = yx2 + d2;
-						if(con[yx2]) {
-							con[yx2] = 255; grad[yx2] = 255;
-							npix++;
-							break;
-						}
-						//if(!d2){ con[yx2] = 128; break; }
-						con[yx2] = grad[yx2];  grad[yx2] = 254; //con[yx2] = 64;
-						d2 = dir(grad, yx2, w, -d2);
-
-					}
-				}
-				//break;
-			}
-		}
-	}
-	printf("Numbers of intersection  = %d\n", npix);
 }
 
 static inline uint32 check_nei2(uint8 *img, uint32 yx, uint32 w)
@@ -1209,34 +1152,6 @@ static inline void get_per_dir(int d, uint32 w, int *ld, int *rd)
 	else if (d ==  w-1) { *ld = w+1;  	*rd = -w-1; }
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
-/*
-static inline uint32 get_next_vertex(uint8 *img, uint8 *dir, uint32 yx, uint8 nd, uint32 *yx1, uint8 *nd1)
-{
-	uint32 n = 1;
-	*yx1 = yx;
-	if		(nd == 0) { *yx1 += -1  ;}
-	else if	(nd == 1) { *yx1 += -1-w;}
-	else if (nd == 2) { *yx1 +=   -w;}
-	else if (nd == 3) { *yx1 +=  1-w;}
-	else if (nd == 4) { *yx1 +=  1  ;}
-	else if (nd == 5) { *yx1 +=  1+w;}
-	else if (nd == 6) { *yx1 +=    w;}
-	else if (nd == 7) { *yx1 += -1+w;}
-
-	while(img[yx] < 254){
-		n++;
-		if		(dir[yx]&128) { *yx1 += -1  ;}
-		else if	(dir[yx]&64 ) { *yx1 += -1-w;}
-		else if (dir[yx]&32 ) { *yx1 +=   -w;}
-		else if (dir[yx]&16 ) { *yx1 +=  1-w;}
-		else if (dir[yx]&8  ) { *yx1 +=  1  ;}
-		else if (dir[yx]&4  ) { *yx1 +=  1+w;}
-		else if (dir[yx]&2  ) { *yx1 +=    w;}
-		else if (dir[yx]&1  ) { *yx1 += -1+w;}
-	}
-	return n;
-}
-*/
 
 static inline uint32 is_new_line3(int d, int *fs, int *sc, int *cfs, int *csc, int *ll)
 {
@@ -1283,129 +1198,65 @@ static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
 	return 0;
 }
 
-void seg_find_intersect2(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
+void seg_find_intersect(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
 {
-	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
-	int d1, d2, npix = 0;
-	//Make border
-	con[w+1] = 255; con[(w<<1)-2] = 255;
-	con[w*(h-2)+1] = 255; con[w*(h-1)-2] = 255;
-	yw = w*(h-2);
-	for(x=2; x < w1-1; x++) con[yw + x] = 64;
-	for(x=2; x < w1; x++) di[yw + x] = 128;
-
-	for(y=1; y < h1; y++){
-		yw = y*w;
-		for(x=1; x < w1; x++){
-			yx = yw + x;
-			if(grad[yx] && !con[yx]){
-				if(loc_max(grad, yx, w)){
-					//printf("x = %d y = %d\n", x, y);
-					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
-					d1 = dir(grad, yx1, w, 0);
-					d2 = dir(grad, yx1, w, d1);
-					while(1){
-						if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
-						add_dir1(&di[yx1], d1, w);
-						//printf("d1 = %d di = %d \n", d1, di[yx1]);
-						yx1 = yx1 + d1;
-						if(con[yx1]) {
-							con[yx1] = 255; grad[yx1] = 255;
-							npix++;
-							break;
-						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
-						d1 = dir(grad, yx1, w, -d1);
-					}
-					while(1){
-						if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
-						yx2 = yx2 + d2;
-						add_dir1(&di[yx2], -d2, w);
-						if(con[yx2]) {
-							con[yx2] = 255; grad[yx2] = 255;
-							npix++;
-							break;
-						}
-						con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
-						d2 = dir(grad, yx2, w, -d2);
-
-					}
-				}
-				//break;
-			}
-		}
-	}
-	printf("Numbers of intersection  = %d\n", npix);
-}
-
-void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h)
-{
-	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1;
-	int d1, d2, npix = 0;
-	//Make border
-	//The right direction for last row
-	yw = w*(h-2);
-	for(x=2; x < w1-1; x++) con[yw + x] = 64;
-	for(x=2; x < w1; x++) di[yw + x] = 128;
-
-	for(y=1; y < h1; y++){
-		yw = y*w;
-		for(x=1; x < w1; x++){
-			yx = yw + x;
-			if(grad[yx] && !con[yx]){
-				if(loc_max(grad, yx, w)){
-					//printf("x = %d y = %d\n", x, y);
-					yx1 = yx; yx2 = yx;
-					con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
-					d1 = dir(grad, yx1, w, 0);
-					d2 = dir(grad, yx1, w, d1);
-					while(1){
-						//if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
-						add_dir1(&di[yx1], d1, w);
-						//printf("d1 = %d di = %d \n", d1, di[yx1]);
-						yx1 = yx1 + d1;
-						if(con[yx1]) {
-							con[yx1] = 255; grad[yx1] = 255;
-							npix++;
-							break;
-						}
-						con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
-						d1 = dir(grad, yx1, w, -d1);
-					}
-					while(1){
-						//if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
-						yx2 = yx2 + d2;
-						add_dir1(&di[yx2], -d2, w);
-						if(con[yx2]) {
-							con[yx2] = 255; grad[yx2] = 255;
-							npix++;
-							break;
-						}
-						con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
-						d2 = dir(grad, yx2, w, -d2);
-					}
-				}
-				//break;
-			}
-		}
-	}
-	printf("Numbers of intersection  = %d\n", npix);
+    uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-2, w1 = w-2;
+    int d1, d2, npix = 0, cr;
+    for(i=0; i < lmaxc; i++){
+        if(!con[hist[i]]){
+            //printf("x = %d y = %d\n", x, y);
+            yx = hist[i];
+            yx1 = yx; yx2 = yx; cr = 0;
+            con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
+            d1 = dir(grad, yx1, w, 0);
+            d2 = dir(grad, yx1, w, d1);
+            while(1){
+                //if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
+                add_dir1(&di[yx1], d1, w);
+                //printf("d1 = %d di = %d \n", d1, di[yx1]);
+                yx1 = yx1 + d1;
+                if(con[yx1]) {
+                    con[yx1] = 255; grad[yx1] = 255;
+                    npix++;
+                    //Check for circle
+                    if(yx == yx1) cr = 1;
+                    break;
+                }
+                con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
+                d1 = dir(grad, yx1, w, -d1);
+            }
+            if(!cr){
+                while(1){
+                    //if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
+                    yx2 = yx2 + d2;
+                    add_dir1(&di[yx2], -d2, w);
+                    if(con[yx2]) {
+                        con[yx2] = 255; grad[yx2] = 255;
+                        npix++;
+                        break;
+                    }
+                    con[yx2] = grad[yx2];  grad[yx2] = 254; //con[yx2] = 64;
+                    d2 = dir(grad, yx2, w, -d2);
+                }
+            }
+        }
+    }
+    printf("Numbers of intersection  = %d\n", npix);
 }
 
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-2, w1 = w-2;
+    uint32 y, y1, x, yx, yw, yx1, yx2, i, h2 = h-2, w2 = w-2;
     int d1, d2, npix = 0, cr;
+
     //Make border
     //The right direction for last row
     //yw = w*(h-2);
     //for(x=2; x < w1-1; x++) con[yw + x] = 64;
     //for(x=2; x < w1; x++) di[yw + x] = 128;
-
-    for(y=2; y < h1; y++){
+    for(y=2; y < h2; y++){
         yw = y*w;
-        for(x=2; x < w1; x++){
+        for(x=2; x < w2; x++){
             yx = yw + x;
             if(grad[yx] && !con[yx]){
                 if(loc_max(grad, yx, w)){
