@@ -864,13 +864,14 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 		resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 
                 gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-                filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
+                //filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
                 filter_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
                 gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
                 tmp = (double)(end-start)/1000000.; time +=tmp;
                 printf("Median filter time    = %f\n", tmp);
 
                 seg_grad(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
+                seg_local_max1(f->dg[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], f->y[1].w, f->y[1].h);
 		seg_find_intersect4(f->dg[0].pic, f->dc[0].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
 		vxc = seg_vertex3(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
 
