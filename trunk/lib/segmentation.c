@@ -348,90 +348,90 @@ static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy,
 	\param  in1		The previous maximum direction.
 	\retval			The direction of of local max.
 */
-static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1)
+static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1, uint32 *max)
 {
-    uint32 max = 0;
+    *max = 0;
     int in = 0;
     if(in1 == 0   ){
-        if(img[yx-1  ] > max) { max = img[yx-1  ]; in = -1  ; }
-        if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-        if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-        if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-        if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-        if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-        if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-        if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+        if(img[yx-1  ] > *max) { *max = img[yx-1  ]; in = -1  ; }
+        if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
+        if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
+        if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
+        if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
+        if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in = +1+w; }
+        if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
+        if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
         return in;
     }
-    else if(in1 == -1  ){
-        if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-        if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-        if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-        //if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-        //if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
+    if(in1 == -1  ){
+        if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
+        if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
+        if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in = +1+w; }
+        //if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
+        //if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 == -1-w){
-        if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-        if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-        if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-        //if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-        //if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
+    if(in1 == -1-w){
+        if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in = +1+w; }
+        if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
+        if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
+        //if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
+        //if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 ==   -w){
-        if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-        if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
-        if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-        //if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-        //if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
+    if(in1 ==   -w){
+        if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
+        if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in = +1+w; }
+        if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
+        //if(img[yx  -1] > *max) { *max = img[yx  -1]; in =   -1; }
+        //if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 ==  1-w){
-        if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-        if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
-        if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-        //if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-        //if(img[yx+1+w] > max) { max = img[yx+1+w]; in = +1+w; }
+    if(in1 ==  1-w){
+        if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
+        if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
+        if(img[yx  -1] > *max) { *max = img[yx  -1]; in =   -1; }
+        //if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
+        //if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in = +1+w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 ==  1  ){
-        if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-        if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
-        if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-        //if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-        //if(img[yx  +w] > max) { max = img[yx  +w]; in =   +w; }
+    if(in1 ==  1  ){
+        if(img[yx  -1] > *max) { *max = img[yx  -1]; in =   -1; }
+        if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
+        if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
+        //if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
+        //if(img[yx  +w] > *max) { *max = img[yx  +w]; in =   +w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 ==  1+w){
-        if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-        if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
-        if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-        //if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-        //if(img[yx-1+w] > max) { max = img[yx-1+w]; in = -1+w; }
+    if(in1 ==  1+w){
+        if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
+        if(img[yx  -1] > *max) { *max = img[yx  -1]; in =   -1; }
+        if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
+        //if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
+        //if(img[yx-1+w] > *max) { *max = img[yx-1+w]; in = -1+w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 ==    w){
-        if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-        if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
-        if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-        //if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-        //if(img[yx  -1] > max) { max = img[yx  -1]; in =   -1; }
+    if(in1 ==    w){
+        if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
+        if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
+        if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
+        //if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
+        //if(img[yx  -1] > *max) { *max = img[yx  -1]; in =   -1; }
         //return cn == 2 ? 0 : in;
         return in;
     }
-    else if(in1 == -1+w){
-        if(img[yx+1-w] > max) { max = img[yx+1-w]; in = +1-w; }
-        if(img[yx  -w] > max) { max = img[yx  -w]; in =   -w; }
-        if(img[yx+1  ] > max) { max = img[yx+1  ]; in = +1  ; }
-        //if(img[yx+1+w] > max) { max = img[yx+1+w]; in =  1+w; }
-        //if(img[yx-1-w] > max) { max = img[yx-1-w]; in = -1-w; }
+    if(in1 == -1+w){
+        if(img[yx+1-w] > *max) { *max = img[yx+1-w]; in = +1-w; }
+        if(img[yx  -w] > *max) { *max = img[yx  -w]; in =   -w; }
+        if(img[yx+1  ] > *max) { *max = img[yx+1  ]; in = +1  ; }
+        //if(img[yx+1+w] > *max) { *max = img[yx+1+w]; in =  1+w; }
+        //if(img[yx-1-w] > *max) { *max = img[yx-1-w]; in = -1-w; }
         //return cn == 2 ? 0 : in;
         return in;
     }
@@ -453,7 +453,20 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
             img[yx+1-w] <= img[yx] &&
             img[yx-1+w] <= img[yx] &&
             img[yx+1+w] <= img[yx] ) return img[yx];
-	else return 0;
+    else return 0;
+}
+
+static inline uint32 check_vertex(uint8 *img, uint32 yx, uint32 w)
+{
+    if(img[yx-1]   == 255) return 1;
+    if(img[yx-w]   == 255) return 1;
+    if(img[yx+1]   == 255) return 1;
+    if(img[yx+w]   == 255) return 1;
+    if(img[yx-1-w] == 255) return 1;
+    if(img[yx+1-w] == 255) return 1;
+    if(img[yx-1+w] == 255) return 1;
+    if(img[yx+1+w] == 255) return 1;
+    return 0;
 }
 
 uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
@@ -470,6 +483,7 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
             yx = yw + x;
             max = loc_max(img, yx, w);
             if(max > th) {
+                img[yx] = 254;
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -731,7 +745,7 @@ static inline uint32 check_nei2(uint8 *img, uint32 yx, uint32 w)
 
 uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 {
-	uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0;
+    uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-1, w1 = w-1, is = 0, max;
 	int d, npix = 0;
 
 	for(y=1; y < h1; y++){
@@ -742,7 +756,7 @@ uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 				//printf("x = %d y = %d\n", x, y);
 				yx1 = yx;
 				con[yx1] = 0;
-				d = dir(con, yx1, w, 0);
+                d = dir(con, yx1, w, 0, &max);
 				while(1){
 					//printf("yx = %d d = %d con = %d\n", yx1, d, con[yx1]);
 					yx1 = yx1 + d;
@@ -752,7 +766,7 @@ uint32 seg_remove_line1(uint8 *con, uint32 w, uint32 h)
 						else break;
 					}
 					con[yx1] = 0;
-					d = dir(con, yx1, w, -d);
+                    d = dir(con, yx1, w, -d, &max);
 					if(!d)  break;
 				}
 				//break;
@@ -1200,43 +1214,68 @@ static inline uint32 is_new_line2(int d, uint32 *cn, int *fs, int *sc)
 
 void seg_find_intersect(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, i, h1 = h-2, w1 = w-2;
+    uint32 y, y1, x, yx, yw, yx1, yx2, yxt, i, h1 = h-2, w1 = w-2, max;
     int d1, d2, npix = 0, cr;
     for(i=0; i < lmaxc; i++){
         if(!con[hist[i]]){
             //printf("x = %d y = %d\n", x, y);
             yx = hist[i];
             yx1 = yx; yx2 = yx; cr = 0;
-            con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-            d1 = dir(grad, yx1, w, 0);
-            d2 = dir(grad, yx1, w, d1);
+            con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
+            d1 = dir(grad, yx1, w, 0, &max);
+            d2 = dir(grad, yx1, w, d1, &max);
             while(1){
                 //if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
-                add_dir1(&di[yx1], d1, w);
+                //add_dir1(&di[yx1], d1, w);
+                yxt = yx1;
                 //printf("d1 = %d di = %d \n", d1, di[yx1]);
                 yx1 = yx1 + d1;
                 if(con[yx1]) {
-                    con[yx1] = 255; grad[yx1] = 255;
-                    npix++;
+                    while(check_vertex(con, yx1, w)){
+                        grad[yx1] = 0;
+                        yx1 = yx1 - d1;
+                        d1 = dir(grad, yx1, w, -d1, &max);
+                        yx1 = yx1 + d1;
+                        //printf("d = %d check = %d\n", d1, check_vertex(con, yx1, w));
+                        if(!d1) break;
+                    }
+                    if(d1) add_dir1(&di[yxt], d1, w);
+                    //if(d1){
+                        con[yx1] = 255; grad[yx1] = 255;
+                        npix++;
+                    //}
                     //Check for circle
                     if(yx == yx1) cr = 1;
                     break;
                 }
-                con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-                d1 = dir(grad, yx1, w, -d1);
+                add_dir1(&di[yxt], d1, w);
+                con[yx1] = grad[yx1]; grad[yx1] = 254; con[yx1] = 64;
+                d1 = dir(grad, yx1, w, -d1, &max);
             }
             if(!cr){
                 while(1){
                     //if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
+                    //yxt = yx1;
                     yx2 = yx2 + d2;
-                    add_dir1(&di[yx2], -d2, w);
                     if(con[yx2]) {
-                        con[yx2] = 255; grad[yx2] = 255;
-                        npix++;
+                        while(check_vertex(con, yx2, w)){
+                            grad[yx2] = 0;
+                            yx2 = yx2 - d2;
+                            d2 = dir(grad, yx2, w, -d2, &max);
+                            yx2 = yx2 + d2;
+                            //printf("d = %d check = %d\n", d2, check_vertex(con, yx2, w));
+                            if(!d2) break;
+                        }
+                        if(d2) add_dir1(&di[yx2], -d2, w);
+                        //if(d2){
+                            con[yx2] = 255; grad[yx2] = 255;
+                            npix++;
+                        //}
                         break;
                     }
-                    con[yx2] = grad[yx2];  grad[yx2] = 254; //con[yx2] = 64;
-                    d2 = dir(grad, yx2, w, -d2);
+                    add_dir1(&di[yx2], -d2, w);
+                    con[yx2] = grad[yx2];  grad[yx2] = 254; con[yx2] = 64;
+                    d2 = dir(grad, yx2, w, -d2, &max);
                 }
             }
         }
@@ -1246,7 +1285,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32
 
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, i, h2 = h-2, w2 = w-2;
+    uint32 y, y1, x, yx, yw, yx1, yx2, i, h2 = h-2, w2 = w-2, max;
     int d1, d2, npix = 0, cr;
 
     //Make border
@@ -1263,8 +1302,8 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
                     //printf("x = %d y = %d\n", x, y);
                     yx1 = yx; yx2 = yx; cr = 0;
                     con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-                    d1 = dir(grad, yx1, w, 0);
-                    d2 = dir(grad, yx1, w, d1);
+                    d1 = dir(grad, yx1, w, 0, &max);
+                    d2 = dir(grad, yx1, w, d1, &max);
                     while(1){
                         //if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
                         add_dir1(&di[yx1], d1, w);
@@ -1278,7 +1317,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
                             break;
                         }
                         con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-                        d1 = dir(grad, yx1, w, -d1);
+                        d1 = dir(grad, yx1, w, -d1, &max);
                     }
                     if(!cr){
                         while(1){
@@ -1291,7 +1330,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
                                 break;
                             }
                             con[yx2] = grad[yx2];  grad[yx2] = 254; //con[yx2] = 64;
-                            d2 = dir(grad, yx2, w, -d2);
+                            d2 = dir(grad, yx2, w, -d2, &max);
 
                         }
                     }
@@ -5012,7 +5051,7 @@ static inline void change_line(Pixel *pix, Pixel *pix1, uint8 pow, uint16 npix)
 
 void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 {
-	uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0;
+    uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0, max;
 	int d1, d2;
 	(*npix) = 0;
 	for(y=1, y1=w; y1 < sq; y++, y1+=w){
@@ -5023,21 +5062,21 @@ void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 				if(loc_max(img, yx, w)){
 					yx1 = yx; yx2 = yx;
 					img[yx1] = 255;
-					d1 = dir(img, yx1, w, 0);
-					d2 = dir(img, yx1, w, d1);
+                    d1 = dir(img, yx1, w, 0, &max);
+                    d2 = dir(img, yx1, w, d1, &max);
 					while(1){
 						yx1 = yx1 + d1;
 						if(img[yx1] == 255 || !img[yx1]) break;
 						(*npix)++;
 						img[yx1] = 255;
-						d1 = dir(img, yx1, w, -d1);
+                        d1 = dir(img, yx1, w, -d1, &max);
 					}
 					while(1){
 						yx2 = yx2 + d2; //yx2 = yx2 + dy2*w + dx2; //x = x + dx; y = y + dy;
 						if(img[yx2] == 255 || !img[yx2]) break;
 						(*npix)++;
 						img[yx2] = 255;
-						d2 = dir(img, yx2, w, -d2);
+                        d2 = dir(img, yx2, w, -d2, &max);
 					}
 				}
 			}
