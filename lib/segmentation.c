@@ -589,6 +589,30 @@ static inline uint32 check_line(uint8 *img, uint32 x1, uint32 y1, uint32 x2, uin
     return n*100/dma;
 }
 
+static inline uint32 check_line1(Line_buff *buf, uint32 x1, uint32 y1, uint32 x2, uint32 y2)
+{
+    uint32 i, in, max , min = 0, n = 0, x, y, dx, dy;
+    int stx, sty, yx;
+    int dma, dmi, stmi, stma;
+
+    x = x1; y = y1;
+    sty = y2 > y1 ? 1 : -1;
+    stx = x2 > x1 ? 1 : -1;
+    dx = abs(x2 - x1)+1; dy = abs(y2 - y1)+1;
+    if(dx >= dy) { dma = dx; dmi = dy; stmi = stx; stma = sty; }
+    else 		 { dma = dy; dmi = dx; stmi = sty; stma = stx; }
+    max = dma; //n = dma;
+    if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
+
+    for(i=0; i < dma; i++){
+        in = i<<1;
+        if(x == buf[in].x && y == buf[in].y) n++;
+        min += dmi; x += stmi;
+        if(min >= max) { max += dma; y += stma; }
+    }
+    return n*100/dma;
+}
+
 static inline uint32 check_next_pixel(Vector *v, uint32 w)
 {
 	uint32 i, max , min = 0, n, x, y, dx, dy;
