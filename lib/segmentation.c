@@ -589,13 +589,16 @@ static inline uint32 check_line(uint8 *img, uint32 x1, uint32 y1, uint32 x2, uin
     return n*100/dma;
 }
 
-static inline uint32 check_line1(Line_buff *buf, uint32 x1, uint32 y1, uint32 x2, uint32 y2)
+static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last)
 {
-    uint32 i, in, max , min = 0, n = 0, x, y, dx, dy;
-    int stx, sty, yx;
+    uint32 i, max , min = 0, n = 0, x1, x2, y1, y2, dx, dy;
+    int stx, sty;
     int dma, dmi, stmi, stma;
 
-    x = x1; y = y1;
+    //x = x1; y = y1;
+    x1 = buf[first].x; y1 =  buf[first].y;
+    x2 = buf[last ].x; y2 =  buf[last ].y;
+
     sty = y2 > y1 ? 1 : -1;
     stx = x2 > x1 ? 1 : -1;
     dx = abs(x2 - x1)+1; dy = abs(y2 - y1)+1;
@@ -605,10 +608,9 @@ static inline uint32 check_line1(Line_buff *buf, uint32 x1, uint32 y1, uint32 x2
     if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
 
     for(i=0; i < dma; i++){
-        in = i<<1;
-        if(x == buf[in].x && y == buf[in].y) n++;
-        min += dmi; x += stmi;
-        if(min >= max) { max += dma; y += stma; }
+        if(x1 == buf[i].x && y1 == buf[i].y) n++;
+        min += dmi; x1 += stmi;
+        if(min >= max) { max += dma; y1 += stma; }
     }
     return n*100/dma;
 }
@@ -1379,11 +1381,11 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
     printf("Numbers of intersection  = %d\n", npix);
 }
 
-static inline uint32 lines_approximation(uint8 *con, uint8 *di, uint32 *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
+static inline uint32 lines_approximation(uint8 *con, uint8 *di, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
 {
     Vector v;
-    uint32 i = 0, j = 0, *out, len, lx, ly, yx, intr, ln; //x1 = *x, y1 = *y, yx = *x + (*y)*w, yx1 = *x + *dx + (*y + *dy)*w;
-    buf[i++] = x; buf[i++] = y;
+    uint32 i = 0, j = 0, len, lx, ly, yx, intr, ln;
+    buf[i].x = x; buf[i].y = y;  buf[i].np = 0;  buf[i].in = 0; i++;
 
     //int fs = 0, sc = 0, cfs = 0, csc = 0, ll = 0;
     //*cc = 0, *pow = 0;
@@ -1392,42 +1394,37 @@ static inline uint32 lines_approximation(uint8 *con, uint8 *di, uint32 *buf, int
     while(1){
         x += dx; y += dy;
         yx = x + y*w;
-        buf[i++] = x; buf[i++] = y;
+        buf[i].x = x; buf[i].y = y; buf[i].np = 0;  buf[i].in = 0; i++;
         if(con[yx] > 253) break;
-       get_next_dir1(di[yx], &dx, &dy);
+        get_next_dir1(di[yx], &dx, &dy);
     }
 
-    if(i == 4){
+    if(i == 2){
         printf("Problem: the vertexs is near !!!!!\n");
         return 0;
-    } else if (i < 9){
+    } else if (i < 5){
     //Less than 5 pixeles in the line
-        out = &buf[i];
-        out[j++] = buf[0];   out[j++] = buf[1];
-        out[j++] = buf[i-2]; out[j++] = buf[i-1];
-        return j;
+        buf[0].np = buf[i-1];
+        return 1;
     } else {
     //More than 5 pixeles in the line
         //Find the line length in pixels
-        lx = abs(buf[0] - buf[i-2]);
-        ly = abs(buf[1] - buf[i-1]);
+        lx = abs(buf[0].x - buf[i-1].x);
+        ly = abs(buf[0].x - buf[i-1].y);
         len = lx > ly ? lx + 1 : ly + 1;
         //Curve length
-        ln = i>>1;
-        ln = ln&1 ? ln-1 : ln;
 
-        if(len == i>>1){
-            intr = check_line(con, buf[0], buf[1], buf[i-2], buf[i-1], w);
+        if(len == i){
+            intr = check_line1(buf, 0, i-1);
             if(intr > 90){
                 //Check for one line approximation
-                out[j++] = buf[0];   out[j++] = buf[1];
-                out[j++] = buf[i-2]; out[j++] = buf[i-1];
-                return j;
-            }
+                buf[0].np = buf[i-1];
+                return 1;
+             }
         }
         //Find midpoint
-        x = i>>1;
-        x = x&1 ? x-1 : x;
+        j = i>>1;
+        buf[0].np = buf[j]; buf[j].np = buf[i-1];
 
 
     }
