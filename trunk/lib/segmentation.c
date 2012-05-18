@@ -1384,7 +1384,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 static inline uint32 lines_approximation(uint8 *con, uint8 *di, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
 {
     Vector v;
-    uint32 i = 0, j = 0, len, lx, ly, yx, intr, ln;
+    uint32 i = 0, j = 0, j1, mid, len, lx, ly, yx, intr, ln;
     buf[i].x = x; buf[i].y = y;  buf[i].np = 0;  buf[i].in = 0; i++;
 
     //int fs = 0, sc = 0, cfs = 0, csc = 0, ll = 0;
@@ -1398,6 +1398,8 @@ static inline uint32 lines_approximation(uint8 *con, uint8 *di, Line_buff *buf, 
         if(con[yx] > 253) break;
         get_next_dir1(di[yx], &dx, &dy);
     }
+    //Pointer to the last pixel in the array.
+    buf[0].np = i-1;
 
     if(i == 2){
         printf("Problem: the vertexs is near !!!!!\n");
@@ -1409,24 +1411,37 @@ static inline uint32 lines_approximation(uint8 *con, uint8 *di, Line_buff *buf, 
     } else {
     //More than 5 pixeles in the line
         //Find the line length in pixels
-        lx = abs(buf[0].x - buf[i-1].x);
-        ly = abs(buf[0].x - buf[i-1].y);
-        len = lx > ly ? lx + 1 : ly + 1;
-        //Curve length
+        j = 0; j1 = 0; dl = 0;
+        while(1){
+            if(j1 == i && !dl) return 1;
+            if(j1 == i) { j = 0; dl = 0; }
+            if(!buf[j].in){
+                j1 = buf[j].np;
+                //The segment length
+                ln = j1-j+1;
+                lx = abs(buf[j].x - buf[j1].x);
+                ly = abs(buf[j].x - buf[j1].y);
+                len = lx > ly ? lx + 1 : ly + 1;
+                //Curve length
 
-        if(len == i){
-            intr = check_line1(buf, 0, i-1);
-            if(intr > 90){
-                //Check for one line approximation
-                buf[0].np = buf[i-1];
-                return 1;
+                if(len == ln && check_line1(buf, j, j1) > 90){
+                    //intr = check_line1(buf, j, j1);
+                    //if(intr > 90){
+                        //Check for one line approximation
+                        buf[j].in = 1;
+                        //return 1;
+                    //}
+                } else {
+                    //Find midpoint
+                    j = i>>1;
+                    mid = j + (ln>>1);
+                    buf[j].np = mid;
+                    buf[mid].np = j1;
+                    dl++;
+                }
              }
+            j = j1;
         }
-        //Find midpoint
-        j = i>>1;
-        buf[0].np = buf[j]; buf[j].np = buf[i-1];
-
-
     }
     /*
     while(1){
