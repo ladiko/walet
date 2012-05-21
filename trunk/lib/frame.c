@@ -872,12 +872,14 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         seg_grad(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
         lmaxc = seg_local_max1(f->dg[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 15, f->y[1].w, f->y[1].h);
-        seg_find_intersect(f->dg[0].pic, f->dc[0].pic, f->di[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
+        //seg_find_intersect(f->dg[0].pic, f->dc[0].pic, f->di[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
+        seg_find_intersect1(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
 
         //seg_find_intersect4(f->dg[0].pic, f->dc[0].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
 
+
         //vxc = seg_vertex3(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
-        vxc = seg_vertex4(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
+        vxc = seg_vertex4(f->dc[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
 /*
         seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
         seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
