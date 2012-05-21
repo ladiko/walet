@@ -1016,26 +1016,29 @@ static inline void new_vertex(uint8 dir, Vertex *vx, Vertex **vp, Vertex **vp1, 
 
 }
 
-static inline void set_dir(uint8 *img, uint32 yx, uint8 *di, uint32 w)
+static inline uint32 set_dir(uint8 *img, uint32 yx, uint8 *di, uint32 w)
 {
-    if(img[yx-1  ]) *di |= 1;
-    if(img[yx-w-1]) *di |= 2;
-    if(img[yx-w  ]) *di |= 4;
-    if(img[yx-w+1]) *di |= 8;
-    if(img[yx+1  ]) *di |= 16;
-    if(img[yx+w+1]) *di |= 32;
-    if(img[yx+w  ]) *di |= 64;
-    if(img[yx+w-1]) *di |= 128;
+    uint32 n = 0;
+    if(img[yx-1  ]) { *di |= 1;   n++; }
+    if(img[yx-w-1]) { *di |= 2;   n++; }
+    if(img[yx-w  ]) { *di |= 4;   n++; }
+    if(img[yx-w+1]) { *di |= 8;   n++; }
+    if(img[yx+1  ]) { *di |= 16;  n++; }
+    if(img[yx+w+1]) { *di |= 32;  n++; }
+    if(img[yx+w  ]) { *di |= 64;  n++; }
+    if(img[yx+w-1]) { *di |= 128; n++; }
+    return n;
 }
 
-static inline void new_vertex1(uint8 *img, Vertex *vx, Vertex **vp, uint32 x, uint16 y,uint16 yx, uint16 w)
+static inline void new_vertex1(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vp1, uint32 x, uint16 y,uint16 yx, uint16 w)
 {
     vx->x = x; vx->y = y;
     //vx->di = dir;
-    vx->n = 0;
+    //vx->n = 0;
     vx->cn = 0;
-    vx->vp = vp;
-    set_dir(img, yx, &vx->di, w);
+    vx->vp = vp1;
+    vp[yx] = vx;
+    //set_dir(img, yx, &vx->di, w);
     //return vx->n;
     //printf("x = %d y = %d n = %d vp = %p\n", (*vp)->x, (*vp)->y, (*vp)->n, *vp);
 
@@ -1143,15 +1146,34 @@ static inline void add_dir1(uint8 *dir, int d, uint32 w)
 */
 static inline void remove_dir(Vertex *vx, int d, uint32 w)
 {
-	vx->n--;
-	if      (d == -1  ) { vx->di ^= 1;    	vx->cn ^= 1; }
-	else if (d == -w-1) { vx->di ^= 2; 		vx->cn ^= 2;  }
-	else if (d == -w  ) { vx->di ^= 4;     	vx->cn ^= 4;  }
-	else if (d == -w+1) { vx->di ^= 8;     	vx->cn ^= 8;  }
-	else if (d ==  1  ) { vx->di ^= 16;     vx->cn ^= 16;  }
-	else if (d ==  w+1) { vx->di ^= 32;     vx->cn ^= 32;  }
-	else if (d ==  w  ) { vx->di ^= 64;     vx->cn ^= 64;  }
-	else if (d ==  w-1) { vx->di ^= 128;    vx->cn ^= 128;  }
+    vx->n--;
+    if      (d == -1  ) { vx->di ^= 1;    	vx->cn ^= 1; }
+    else if (d == -w-1) { vx->di ^= 2; 		vx->cn ^= 2;  }
+    else if (d == -w  ) { vx->di ^= 4;     	vx->cn ^= 4;  }
+    else if (d == -w+1) { vx->di ^= 8;     	vx->cn ^= 8;  }
+    else if (d ==  1  ) { vx->di ^= 16;     vx->cn ^= 16;  }
+    else if (d ==  w+1) { vx->di ^= 32;     vx->cn ^= 32;  }
+    else if (d ==  w  ) { vx->di ^= 64;     vx->cn ^= 64;  }
+    else if (d ==  w-1) { vx->di ^= 128;    vx->cn ^= 128;  }
+        //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
+}
+
+/*      \brief  Remove direction bit.
+        \param  vx              The pointer to vertex.
+        \param  d               The direction.
+        \param  w               The image width.
+*/
+static inline void remove_dir3(Vertex *vx, int dx, int dy)
+{
+    vx->n--;
+    if      (dx == -1 &&  dy ==  0) vx->di ^= 1;
+    else if (dx == -1 &&  dy == -1) vx->di ^= 2;
+    else if (dx ==  0 &&  dy == -1) vx->di ^= 4;
+    else if (dx ==  1 &&  dy == -1) vx->di ^= 8;
+    else if (dx ==  1 &&  dy ==  0) vx->di ^= 16;
+    else if (dx ==  1 &&  dy ==  1) vx->di ^= 32;
+    else if (dx ==  0 &&  dy ==  1) vx->di ^= 64;
+    else if (dx == -1 &&  dy ==  1) vx->di ^= 128;
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
@@ -1180,6 +1202,7 @@ m1: vx->n++;
 
 static inline uint32 get_next_dir2(Vertex *vx, int *dx, int *dy)
 {
+    if(vx->di == vx->cn)  return 0;
     if((vx->di&1  ) && !(vx->cn&1  )) { *dx =-1; *dy = 0;  return 1; }
     if((vx->di&2  ) && !(vx->cn&2  )) { *dx =-1; *dy =-1;  return 1; }
     if((vx->di&4  ) && !(vx->cn&4  )) { *dx = 0; *dy =-1;  return 1; }
@@ -1466,6 +1489,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 }
 
 static inline uint32 get_next_vertex(uint8 *con, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
+//Return 0 if curve ended not vertex
 {
     uint32 i=0, yx;
     buf[i].x = x; buf[i].y = y;  buf[i].np = 0;  buf[i].in = 0; i++;
@@ -1473,12 +1497,42 @@ static inline uint32 get_next_vertex(uint8 *con, Line_buff *buf, int dx, int dy,
         x += dx; y += dy;
         yx = x + y*w;
         buf[i].x = x; buf[i].y = y; buf[i].np = 0;  buf[i].in = 0; i++;
-        if(con[yx] == 255) return i;
-        //get_next_dir1(di[yx], &dx, &dy);
+        if(con[yx] > 253) return i;
         dx = -dx; dy = -dy;
         direction(con, yx, &dx, &dy, w);
-        if(!dx && !dy) return 0;
+        //if(!dx && !dy) return 0;
     }
+}
+
+static inline finish_two_dirs(Vertex *vx1, Vertex *vx2, Line_buff *buf)
+{
+    uint8 n1, n2;
+    int dx, dy;
+    dx = buf[1].x - vx1->x; dy = buf[1].y - vx1->y;
+    printf("finish_two_dirs: buf[1].np = %d\n", buf[0].np);
+    if      (dx == -1 &&  dy ==  0) { vx1->cn |= 1;     n1 = 0; }
+    else if (dx == -1 &&  dy == -1) { vx1->cn |= 2;     n1 = 1; }
+    else if (dx ==  0 &&  dy == -1) { vx1->cn |= 4;     n1 = 2; }
+    else if (dx ==  1 &&  dy == -1) { vx1->cn |= 8;     n1 = 3; }
+    else if (dx ==  1 &&  dy ==  0) { vx1->cn |= 16;    n1 = 4; }
+    else if (dx ==  1 &&  dy ==  1) { vx1->cn |= 32;    n1 = 5; }
+    else if (dx ==  0 &&  dy ==  1) { vx1->cn |= 64;    n1 = 6; }
+    else if (dx == -1 &&  dy ==  1) { vx1->cn |= 128;   n1 = 7; }
+
+    dx = buf[buf[0].np-1].x - vx2->x; dy = buf[buf[0].np-1].y - vx2->y;
+    printf("finish_two_dirs: dx2 = %d dy2 = %d\n", dx, dy);
+    if      (dx == -1 &&  dy ==  0) { vx2->cn |= 1;     n2 = 0; }
+    else if (dx == -1 &&  dy == -1) { vx2->cn |= 2;     n2 = 1; }
+    else if (dx ==  0 &&  dy == -1) { vx2->cn |= 4;     n2 = 2; }
+    else if (dx ==  1 &&  dy == -1) { vx2->cn |= 8;     n2 = 3; }
+    else if (dx ==  1 &&  dy ==  0) { vx2->cn |= 16;    n2 = 4; }
+    else if (dx ==  1 &&  dy ==  1) { vx2->cn |= 32;    n2 = 5; }
+    else if (dx ==  0 &&  dy ==  1) { vx2->cn |= 64;    n2 = 6; }
+    else if (dx == -1 &&  dy ==  1) { vx2->cn |= 128;   n2 = 7; }
+    printf("finish_two_dirs: remove n1 = %d cn1 = %d  n2 = %d  cn2  = %d\n", n1, vx1->cn, n2, vx2->cn);
+
+    vx1->vp[n1] = vx2;
+    vx2->vp[n2] = vx1;
 }
 
 static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
@@ -1495,6 +1549,9 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
         buf[0].np = i-1;
         return 1;
     } else {
+        buf[0].np = i-1;
+        return 1;
+        /*
         //More than 5 pixeles in the line
         //Find the line length in pixels
         j = 0; j1 = 0; dl = 0;
@@ -1523,7 +1580,7 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
                 }
             }
             j = j1;
-        }
+        }*/
     }
 }
 
@@ -1768,58 +1825,82 @@ uint32 seg_vertex4(uint8 *con, Vertex *vx, Vertex **vp, Vertex **vpn, Line_buff 
     uint32 i, j, j1, y, x, x1, y1, x2, y2, yx, yx1, yx2,  yw, nd, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
     uint32  vxc = 0, lnc = 0, pow, vc1, vc2;
     int d,  dx, dy;
+    uint8 tm;
+    Vertex *vxp, vt, *vx1, *vx2;
+    //It's a fake vertex for return 0 func get_next_dir2
+    vt.di = 0; vt.cn = 0;
 
     //printf("w = %d h = %d w*h>>4 = %d\n", w, h, w*h>>4 );
     for(y=1; y < h1; y++){
         yw = y*w;
         for(x=1; x < w1; x++){
             yx = yw + x;
-            if(con[yx] == 255 && con[yx] == 254) { //New vertex
-                if(con[yx] != 255) {
-                    new_vertex1(con, &vx[vxc++], &vpn[lnc+=8], x, y, yx, w);
-                    con[yx] = 254;
-                }
+            ////New vertex or old vertex
+            if(con[yx] > 253) {
+                if(con[yx] == 255) {
+                    //Check if vertex have more than one neighbour
+                    vx[vxc].n = set_dir(con, yx, &vx[vxc].di, w);
+                    if(vx[vxc].n > 1) {
+                        new_vertex1(con, &vx[vxc], vp, &vpn[lnc+=8], x, y, yx, w);
+                        vxp = &vx[vxc];
+                        con[yx] = 254; vxc++;
+                    } else vxp = &vt;
+                } else vxp = vp[yx];
 
-                while(get_next_dir2(&vx[yx], &dx, &dy)){
-                    x1 = x; y1 = y; yx1 = yx;
-                    //Check if the curve finished n > 1
-                    i = get_next_vertex(con, buf, dx, dy, x1, y1, w);
-                    if(i){
+                printf("vxc = %d x = %d y = %d n = %d di = %d cn = %d\n", vxc, vxp->x, vxp->y, vxp->n, vxp->di, vxp->cn);
+
+                while(get_next_dir2(vxp, &dx, &dy)){
+                    //x1 = x; y1 = y; yx1 = yx;
+
+                    i = get_next_vertex(con, buf, dx, dy, x, y, w);
+                    yx1 = buf[i-1].x + buf[i-1].y*w;
+                    printf("i = %d x = %d y = %d \n", i, buf[i-1].x, buf[i-1].y);
+
+                    //Check if the last vertex have n > 1
+                    if(con[yx1] == 255) j = set_dir(con, yx1, &tm, w);
+                    else j = vp[yx1]->n;
+
+                    if(j > 1){
+                        //Check if the last vertex have more than one neighbour
                         lines_approximation(buf, i);
-                        j = 0;
+                        j = 0; vx1 = vxp;
                         yx1 = buf[j].x + buf[j].y*w;
-                        nd1 = nd; vc1 = vxc;
+                        //nd1 = nd; vc1 = vxc;
                         while(1){
                             j1 = buf[j].np;
+                            yx2 = buf[j1].x + buf[j1].y*w;
                             if(j1 = i-1){
                                 if(con[yx2] == 255) {
-                                    new_vertex1(con, &vx[vxc], &vpn[lnc+=8], x1, y1, yx1, w);
-                                    nd1 = add_finish_dir(&vx[vxc], -d, w); //vx[yx1].n++;
-                                    finish_dir(&vx[yx1], -d, w);
-                                    con[yx1] = 254; vxc++;
-                                    //printf("New vertex \n");
-                                } else if (con[yx1] == 254){
-                                    nd1 = add_finish_dir(&vx[yx1], -d, w); //vx[yx1].n++;
-                                    finish_dir(&vx[yx1], -d, w);
+                                    vx2 = &vx[vxc];
+                                    vx2->n = set_dir(con, yx2, &vx2->di, w);
+                                    new_vertex1(con, vx2, vp, &vpn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
+                                    finish_two_dirs(vx1, vx2, &buf[j]);
+                                    con[yx2] = 254; vxc++;
+                                } else {
+                                    vx2 = vp[yx2];
+                                    finish_two_dirs(vx1, vx2, &buf[j]);
                                 }
                                 break;
                             } else {
-                                yx2 = buf[j1].x + buf[j1].y*w;
-                                new_vertex1(con, &vx[vxc], &vpn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
-                                new_line(&vx[yx1], &vx[yx2], nd1, nd2, pow);
-                                finish_two_dirs(&vx[vc1], &vx[vc2], &buf[j]);
-                                con[yx2] = 255; vxc++;
+                                vx2 = &vx[vxc];
+                                vx2->n = set_dir(con, yx2, &vx2->di, w);
+                                new_vertex1(con, vx2, vp, &vpn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
+                                finish_two_dirs(vx1, vx2, &buf[j]);
+                                con[yx2] = 254; vxc++;
                             }
-                            j = j1; yx1 = yx2; vc1 = vc2; nd1 = nd2;
+                            j = j1; yx1 = yx2; vx1 = vx2;
                         }
+                    } else {
+                        //Remove direction
+                        remove_dir3(vxp, dx, dy);
                     }
                 }
+
             }
         }
     }
 
     printf("Numbers of vertexs  = %d\n", vxc);
-    //printf("Numbers of lines    = %d\n", linc);
 
     for(j=0; j < vxc; j++) {
         //printf("%d %p \n", j, vp[j]);

@@ -174,10 +174,11 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->look = (uint16 *)calloc((1<<wc->bpp)*3, sizeof(uint16));
 
 	//Init new sermentation
+    f->lbuf = (Line_buff *)calloc(w*h>>4, sizeof(Line_buff));
 	f->ln = (Line *)calloc(w*h>>4, sizeof(Line));
 	f->lp = (Line **)calloc(w*h, sizeof(Line*));
-	f->vx = (Vertex *)calloc(w*h, sizeof(Vertex));
-	f->vp = (Vertex **)calloc(w*h>>4, sizeof(Vertex*));
+    f->vx = (Vertex *)calloc(w*h>>4, sizeof(Vertex));
+    f->vp = (Vertex **)calloc(w*h, sizeof(Vertex*));
 	f->vpn = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
 	f->vpt = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
 
@@ -879,7 +880,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 
         //vxc = seg_vertex3(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
-        vxc = seg_vertex4(f->dc[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
+        vxc = seg_vertex4(f->dc[0].pic, f->vx, f->vp, f->vpn, f->lbuf, f->y[1].w, f->y[1].h);
 /*
         seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
         seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
