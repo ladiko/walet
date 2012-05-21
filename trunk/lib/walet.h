@@ -204,6 +204,13 @@ typedef struct Vector Vector;
 typedef struct Vertex Vertex;
 typedef struct Line Line;
 
+typedef struct {
+    uint16		x;		//The x
+    uint16		y;		//The y
+    uint16 		np;		//Next vertex
+    uint8 		in;		//If 1 next curve line has approximated, if 0 not
+} Line_buff;
+
 struct Line {
 	Vertex 	*vx[2];		//The pointer to vertex
 	uint8	nd[2];		//The direction from vertex

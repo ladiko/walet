@@ -14,13 +14,6 @@ typedef struct {
     uint8 		cr[4];		//The right color
 } Point;
 
-typedef struct {
-    uint16		x;		//The x
-    uint16		y;		//The y
-    uint16 		np;		//Next vertex
-    uint8 		in;		//If 1 next curve line has approximated, if 0 not
-} Line_buff;
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
