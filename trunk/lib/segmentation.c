@@ -555,19 +555,19 @@ static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
 
 uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
 {
-    uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h1 = h-1, w1 = w-1, lmaxc;
+    uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2, lmaxc;
     uint8 max;
 
-    memset(hist ,0, sizeof(uint32)*256);
-    memset(hist1,0, sizeof(uint32)*256);
+    memset(hist ,0, sizeof(uint32)<<8);
+    memset(hist1,0, sizeof(uint32)<<8);
 
-    for(y=1; y < h1; y++){
+    for(y=2; y < h2; y++){
         yw = y*w;
-        for(x=1; x < w1; x++){
+        for(x=2; x < w2; x++){
             yx = yw + x;
             max = loc_max(img, yx, w);
             if(max > th) {
-                //img[yx] = 253;
+                img[yx] = 253;
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -577,10 +577,10 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
     //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist[i]);
 
     //printf("lmaxc = %d sq = %d\n",lmaxc, w*h);
+    //Make cumulitive probability array
     hist1[0] = 0;
     for(i=0; i < 255; i++) hist1[i+1] = hist1[i] + hist[i];
-    //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist1[i]);
-
+    //Sort the array
     for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
     return lmaxc;
 
