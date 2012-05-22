@@ -26,11 +26,12 @@ void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
 void seg_find_intersect2(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h);
 void seg_find_intersect3(uint8 *grad, uint32 *con, uint8 *di, uint32 w, uint32 h);
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h);
+void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h);
 uint32 seg_vertex(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, Line **lp, uint32 w, uint32 h);
 uint32 seg_vertex1(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uint32 h);
 uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, uint32 h);
 uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, Vertex **vpn, int8 *buf, uint32 w, uint32 h);
-uint32 seg_vertex4(uint8 *con, Vertex *vx, Vertex **vp, Vertex **vpn, Line_buff *buf, uint32 w, uint32 h);
+uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vpn, Line_buff *buf, uint32 w, uint32 h);
 
 
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
