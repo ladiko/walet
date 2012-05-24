@@ -717,10 +717,18 @@ static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last)
     max = dma; //n = dma;
     if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
 
-    for(i=0; i < dma; i++){
-        if(x1 == buf[i].x && y1 == buf[i].y) n++;
-        min += dmi; x1 += stmi;
-        if(min >= max) { max += dma; y1 += stma; }
+    if(dx >= dy){
+        for(i=0; i < dma; i++){
+            if(x1 == buf[i+first].x && y1 == buf[i+first].y) n++;
+            min += dmi; x1 += stmi;
+            if(min >= max) { max += dma; y1 += stma; }
+        }
+    } else {
+        for(i=0; i < dma; i++){
+            if(x1 == buf[i+first].x && y1 == buf[i+first].y) n++;
+            min += dmi; y1 += stmi;
+            if(min >= max) { max += dma; x1 += stma; }
+        }
     }
     return n*100/dma;
 }
@@ -1797,51 +1805,58 @@ static inline finish_two_dirs(Vertex *vx1, Vertex *vx2, Line_buff *buf)
 
 static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
 {
-    uint32 i = npix, j = 0, j1, dl, mid, len, lx, ly, yx, ln;
+    uint32 i = npix-1, j = 0, j1, dl, mid, len, lx, ly, yx, ln, cl;
     //Pointer to the last pixel in the array to start vectorization algorithm.
-    buf[0].np = i-1;
+    buf[0].np = i;
 
-    if(i == 2){
+    if(i == 1){
         printf("Problem: the vertexs is near !!!!!\n");
         return 0;
-    } else if (i < 5){
+    } else if (i < 4){
         //Less than 5 pixeles in the line
-        buf[0].np = i-1;
+        //buf[0].np = i-1;
         return 1;
     } else {
-        //buf[0].np = i-1;
-        //return 1;
-
         //More than 5 pixeles in the line
         //Find the line length in pixels
         j = 0; j1 = 0; dl = 0;
         while(1){
-            if(j1 == i){
+            if(j == i){
+                for(j=0; j < i+1; j++) printf("buf[j].in = %d\n",buf[j].in);
                 if(!dl) return 1;
                 j = 0; dl = 0;
             }
+            printf("buf[j].in = %d\n",buf[j].in);
+            j1 = buf[j].np;
             if(!buf[j].in){
-                j1 = buf[j].np;
                 //The segment length
                 ln = j1-j+1;
                 lx = abs(buf[j].x - buf[j1].x);
-                ly = abs(buf[j].x - buf[j1].y);
+                ly = abs(buf[j].y - buf[j1].y);
                 len = lx > ly ? lx + 1 : ly + 1;
                 //Curve length
-
-                if(len == ln && check_line1(buf, j, j1) > 90){
+                cl = check_line1(buf, j, j1);
+                printf("i = %d j = %d j1 = %d ln = %d len = %d cl = %d dl = %d buf[j].in = %d  \n", i, j, j1, ln, len, cl, dl, buf[j].in);
+                printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",buf[j].x, buf[j].y, buf[j1].x, buf[j1].y);
+                if(len == ln && cl > 90){
                     buf[j].in = 1;
-                } else {
+                    printf("Finish\n");
+                } else if (j1-j > 3){
                     //Divid cuver
                     mid = j + (ln>>1);
                     buf[j].np = mid;
                     buf[mid].np = j1;
                     dl++;
+                    printf("Divid\n");
+                } else {
+                    //The line less than 5 pixels
+                    buf[j].in = 1;
+                    printf("Less than 5\n");
                 }
             }
             j = j1;
         }
-    }
+     }
 }
 
 static inline uint8 find_vertex(uint8 *con, uint8 *di, int8 *buf, int *dx, int *dy, int *d, int *d1, uint32 *x, uint32 *y, uint32 *cc, uint32 *pow, uint32 w)
@@ -2109,7 +2124,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                     } else vxp = &vt;
                 } else vxp = vp[yx];
 
-                //printf("vxc = %d x = %d y = %d n = %d di = %d cn = %d\n", vxc, vxp->x, vxp->y, vxp->n, vxp->di, vxp->cn);
+                printf("New pixel vxc = %d x = %d y = %d n = %d di = %d cn = %d\n", vxc, vxp->x, vxp->y, vxp->n, vxp->di, vxp->cn);
                 //print_around(con, yx, w);
                 //print_around(grad, yx, w);
 
@@ -2119,7 +2134,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
 
                     i = get_next_vertex1(con, grad, buf, dx, dy, x, y, w);
                     yx1 = buf[i-1].x + buf[i-1].y*w;
-                    //printf("i = %d x = %d y = %d con = %d grad = %d\n", i, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
+                    printf("next pixel i = %d x = %d y = %d con = %d grad = %d\n", i, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
 
                     //Check if the last vertex have n > 1
                     //printf("yx1 = %d vp[yx1] = %p\n", yx1, vp[yx1]);
@@ -2137,6 +2152,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                         while(1){
                             j1 = buf[j].np;
                             yx2 = buf[j1].x + buf[j1].y*w;
+                            printf("yx2 = %d \n", yx2);
                             if(j1 = i-1){
                                 if(grad[yx2] == 255) {
                                     vx2 = &vx[vxc];
