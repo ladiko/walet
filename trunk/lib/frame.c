@@ -881,19 +881,19 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         //vxc = seg_vertex3(f->dc[0].pic, f->di[0].pic, f->vx, f->vp, f->vpn, g->buf, f->y[1].w, f->y[1].h);
         vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->lbuf, f->y[1].w, f->y[1].h);
-/*
-        seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
-        seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
 
-        seg_remove_virtex(f->vp, vxc, f->y[1].w, f->y[1].h);
+        //seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
+        //rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 
-        rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
-*/
+        seg_remove_virtex(f->vx, vxc, f->y[1].w, f->y[1].h);
+
+        //rgc = seg_remove_loops1(f->vx, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
+
         //seg_vertex_draw3(f->y1[1].pic, f->vp,  vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
         seg_vertex_draw4(f->y1[1].pic, f->vx,  vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 /*
-         seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
+        seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
                               rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
 
         memset(f->y1[0].pic, 0, f->y1[0].w*f->y1[0].h);
