@@ -36,7 +36,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
 
 uint32 seg_vector(uint8 *con, Vertex *vx, Vertex **vp, Line *ln, uint32 vxc, uint32 w);
 void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th);
-uint32 seg_remove_virtex(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
+uint32 seg_remove_virtex(Vertex *vx, uint32 vxc, uint32 w, uint32 h);
 uint32 seg_fill_reg(uint32 *reg, uint32 *buff, uint32 w, uint32 h);
 void seg_remove_contour(uint32 *reg, uint32 w, uint32 h);
 void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, uint32 k);
@@ -47,6 +47,8 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx, uint32 vxc, uint32 w, uint32 h,
 
 uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint8 *dir, uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Line *ln, uint8 *dir, uint32 vxc, uint32 w, uint32 h);
+uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uint8 *dir, uint32 vxc, uint32 w, uint32 h);
+
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
 
 uint32 seg_get_one_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, uint32 w, uint32 h);
