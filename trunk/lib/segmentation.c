@@ -4,15 +4,37 @@
 
 void print_around(uint8 *con, uint32 yx, uint32 w)
 {
-	printf("%3d ",con[yx-1-w]);
-	printf("%3d ",con[yx  -w]);
-	printf("%3d\n",con[yx+1-w]);
-	printf("%3d ",con[yx-1  ]);
-	printf("%3d ",con[yx    ]);
-	printf("%3d\n",con[yx+1  ]);
-	printf("%3d ",con[yx-1+w]);
-	printf("%3d ",con[yx  +w]);
-	printf("%3d\n\n",con[yx+1+w]);
+
+    printf("%3d ",con[yx-2-w*2]);
+    printf("%3d ",con[yx-1-w*2]);
+    printf("%3d ",con[yx-w*2]);
+    printf("%3d ",con[yx+1-w*2]);
+    printf("%3d\n",con[yx+2-w*2]);
+
+    printf("%3d ",con[yx-2-w]);
+    printf("%3d ",con[yx-1-w]);
+    printf("%3d ",con[yx-w]);
+    printf("%3d ",con[yx+1-w]);
+    printf("%3d\n",con[yx+2-w]);
+
+    printf("%3d ",con[yx-2]);
+    printf("%3d ",con[yx-1]);
+    printf("%3d ",con[yx]);
+    printf("%3d ",con[yx+1]);
+    printf("%3d\n",con[yx+2]);
+
+    printf("%3d ",con[yx-2+w]);
+    printf("%3d ",con[yx-1+w]);
+    printf("%3d ",con[yx+w]);
+    printf("%3d ",con[yx+1+w]);
+    printf("%3d\n",con[yx+2+w]);
+
+    printf("%3d ",con[yx-2+w*2]);
+    printf("%3d ",con[yx-1+w*2]);
+    printf("%3d ",con[yx+w*2]);
+    printf("%3d ",con[yx+1+w*2]);
+    printf("%3d\n\n",con[yx+2+w*2]);
+
 }
 
 void print_around32(uint32 *con, uint32 yx, uint32 w)
@@ -27,6 +49,15 @@ void print_around32(uint32 *con, uint32 yx, uint32 w)
 	printf("%4d ",con[yx  +w]);
 	printf("%4d\n\n",con[yx+1+w]);
 }
+
+void print_pointer(Vertex *vx2)
+{
+    int k;
+    for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vx2->di&(1<<k), k, vx2->vp[k],
+                                vx2->vp[k] ? vx2->vp[k]->x : 0, vx2->vp[k] ? vx2->vp[k]->y : 0);
+
+}
+
 
 
 void seg_grad(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
@@ -1772,36 +1803,72 @@ static inline uint32 get_next_vertex1(uint8 *con, uint8 *grad, Line_buff *buf, i
     }
 }
 
+static inline check_same_vertex(Vertex *vx1, Vertex *vx2, uint8 nd)
+{
+    uint8 n = nd;
+    //Find next vertex in clockwise direction
+    do{
+        n = (n == 7) ? 0 : n + 1;
+        //printf("n = %d vx1->n = %d  vx2->n = %d vx1->vp[n] = %p\n", n, vx1->n, vx2->n, vx1->vp[n]);
+    } while(!(vx1->vp[n] || n == nd));
+    if(vx1->vp[n] == vx2) return 1;
+    //Find next vertex in counterclockwise direction
+    n = nd;
+    do{
+        n = (n == 0) ? 7 : n - 1;
+    } while(!(vx1->vp[n] || n == nd));
+    if(vx1->vp[n] == vx2) return 1;
+    return 0;
+
+}
+
 static inline finish_two_dirs(Vertex *vx1, Vertex *vx2, Line_buff *buf1, Line_buff *buf2)
 {
     uint8 n1, n2;
     int dx, dy;
     dx = buf1->x - vx1->x; dy = buf1->y - vx1->y;
     //printf("finish_two_dirs: buf[1].np = %d\n", buf[0].np);
-    if      (dx == -1 &&  dy ==  0) { vx1->cn |= 1;     n1 = 0; }
-    else if (dx == -1 &&  dy == -1) { vx1->cn |= 2;     n1 = 1; }
-    else if (dx ==  0 &&  dy == -1) { vx1->cn |= 4;     n1 = 2; }
-    else if (dx ==  1 &&  dy == -1) { vx1->cn |= 8;     n1 = 3; }
-    else if (dx ==  1 &&  dy ==  0) { vx1->cn |= 16;    n1 = 4; }
-    else if (dx ==  1 &&  dy ==  1) { vx1->cn |= 32;    n1 = 5; }
-    else if (dx ==  0 &&  dy ==  1) { vx1->cn |= 64;    n1 = 6; }
-    else if (dx == -1 &&  dy ==  1) { vx1->cn |= 128;   n1 = 7; }
+    if      (dx == -1 &&  dy ==  0) n1 = 0;
+    else if (dx == -1 &&  dy == -1) n1 = 1;
+    else if (dx ==  0 &&  dy == -1) n1 = 2;
+    else if (dx ==  1 &&  dy == -1) n1 = 3;
+    else if (dx ==  1 &&  dy ==  0) n1 = 4;
+    else if (dx ==  1 &&  dy ==  1) n1 = 5;
+    else if (dx ==  0 &&  dy ==  1) n1 = 6;
+    else if (dx == -1 &&  dy ==  1) n1 = 7;
+
 
     dx = buf2->x - vx2->x; dy =  buf2->y - vx2->y;
     //printf("finish_two_dirs: dx2 = %d dy2 = %d vx2->x = %d vx2->y = %d buf[buf[0].np-1].x = %d buf[buf[0].np-1].y = %d\n",
     //       dx, dy, vx2->x, vx2->y, buf[buf[0].np].x, buf[buf[0].np].y);
-    if      (dx == -1 &&  dy ==  0) { vx2->cn |= 1;     n2 = 0; }
-    else if (dx == -1 &&  dy == -1) { vx2->cn |= 2;     n2 = 1; }
-    else if (dx ==  0 &&  dy == -1) { vx2->cn |= 4;     n2 = 2; }
-    else if (dx ==  1 &&  dy == -1) { vx2->cn |= 8;     n2 = 3; }
-    else if (dx ==  1 &&  dy ==  0) { vx2->cn |= 16;    n2 = 4; }
-    else if (dx ==  1 &&  dy ==  1) { vx2->cn |= 32;    n2 = 5; }
-    else if (dx ==  0 &&  dy ==  1) { vx2->cn |= 64;    n2 = 6; }
-    else if (dx == -1 &&  dy ==  1) { vx2->cn |= 128;   n2 = 7; }
+    if      (dx == -1 &&  dy ==  0) n2 = 0;
+    else if (dx == -1 &&  dy == -1) n2 = 1;
+    else if (dx ==  0 &&  dy == -1) n2 = 2;
+    else if (dx ==  1 &&  dy == -1) n2 = 3;
+    else if (dx ==  1 &&  dy ==  0) n2 = 4;
+    else if (dx ==  1 &&  dy ==  1) n2 = 5;
+    else if (dx ==  0 &&  dy ==  1) n2 = 6;
+    else if (dx == -1 &&  dy ==  1) n2 = 7;
     //printf("finish_two_dirs: remove n1 = %d cn1 = %d  n2 = %d  cn2  = %d\n", n1, vx1->cn, n2, vx2->cn);
 
-    vx1->vp[n1] = vx2;
-    vx2->vp[n2] = vx1;
+    //Check if vx1 have pointer to vx2
+    //if(vx1->n > 1 && vx2->n > 1 && check_same_vertex(vx1, vx2, n1)){
+    if(vx1 == vx2){
+        printf("finish_two_dirs: vx1 = %p n1 = %d cn1 = %d  vx2 = %p n2 = %d  cn2  = %d\n", vx1, n1, vx1->cn, vx2, n2, vx2->cn);
+        printf("finish_two_dirs: x1 = %d y1 = %d x2 = %d y2 = %d\n", buf1->x, buf1->y, buf2->x, buf2->y);
+    }
+    if(check_same_vertex(vx1, vx2, n1)){
+        //Remove direction
+        vx1->n--; vx2->n--;
+        vx1->di ^= (1<<n1); vx2->di ^= (1<<n2);
+        //if(vx->cn&nb) vx->cn ^= nb;
+    } else {
+        //Finish direction
+        vx1->cn |= (1<<n1);
+        vx2->cn |= (1<<n2);
+        vx1->vp[n1] = vx2;
+        vx2->vp[n2] = vx1;
+    }
 }
 
 static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
@@ -2162,13 +2229,39 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                                     vx2->n = get_num_dir(con[yx2]);
                                     new_vertex1(con, vx2, vp, &vpn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
                                     finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                    /*
+                                    if(yx2 == 218 + 6*w) {
+                                        printf("New pixel x = %d y = %d n = %d di = %d cn = %d\n", vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
+                                        print_around(con, yx2, w);
+                                        print_pointer(vx2);
+                                    }
+                                    */
                                     grad[yx2] = 254; vxc++;
                                     //printf("yx2 = %d vp[yx2] = %p vx2 = %p\n", yx2, vp[yx2], vx2);
-                                } else {
+                                 } else {
                                     //printf("yx2 = %d\n", yx2);
                                     vx2 = vp[yx2];
                                     //printf("vp = %p\n", vp[yx2]);
                                     finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                    if(vx1 == vx2){
+                                        printf("Old pixel: i = %d  p = %p x = %d y = %d n = %d di = %d cn = %d\n", i, vx2, vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
+                                        print_around(con, yx2, w);
+                                        print_around(grad, yx2, w);
+                                        print_pointer(vx2);
+
+                                    }
+
+                                    //if(vx1 != vx2) finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                    //The same vertex
+                                    //else vx1->n = 0;  vx1->di = 0;
+
+                                    /*
+                                    if(yx2 == 218 + 6*w) {
+                                        printf("Old pixel x = %d y = %d n = %d di = %d cn = %d\n", vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
+                                        print_around(con, yx2, w);
+                                        print_pointer(vx2);
+                                    }
+                                    */
                                 }
                                 /*Check
                                 j = 0;
@@ -2187,6 +2280,12 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                                 new_vertex1(con, vx2, vp, &vpn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
                                 finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
                                 grad[yx2] = 254; vxc++;
+                                /*
+                                if(vx1->x + vx1->y*w == 218 + 6*w) {
+                                    printf("Satart pixel x = %d y = %d n = %d di = %d cn = %d\n", vx1->x, vx1->y, vx1->n, vx1->di, vx1->cn);
+                                    print_around(con, vx1->x + vx1->y*w, w);
+                                    print_pointer(vx1);
+                                }*/
                             }
                             j = j1; yx1 = yx2; vx1 = vx2;
                         }
@@ -2203,6 +2302,12 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
     printf("Numbers of vertexs  = %d\n", vxc);
 
     for(j=0; j < vxc; j++) {
+        /*
+        if(vx[j].x + vx[j].y*w == 218 + 6*w) {
+            printf("seg_vertex4: x = %d y = %d n = %d di = %d cn = %d\n", vx[j].x, vx[j].y, vx[j].n, vx[j].di, vx[j].cn);
+            print_around(con, vx[j].x + vx[j].y*w, w);
+            print_pointer(&vx[j]);
+        }*/
         //printf("%d %p \n", j, vp[j]);
         if(vx[j].di != vx[j].cn ) {
             printf("%d  x = %d y = %d %o %o %o n = %d\n", j, vx[j].x,  vx[j].y, vx[j].di, vx[j].cn, vx[j].cn^vx[j].di, vx[j].n);
@@ -2569,51 +2674,8 @@ uint32 seg_remove_virtex(Vertex *vx2, uint32 vxc, uint32 w, uint32 h)
 
     for(i=0; i < vxc; i++) vx2[i].cn = 0;
 
-    //Remove closed loop
-
-    for(i=0; i < vxc; i++) {
-        if(vx2[i].n > 1){
-            tmp = 0;
-            for(j=1; j < 8; j++){
-                //if(vp[i]->di&(1<<j) && vp[i]->vp[j]) {
-                if(vx2[i].di&(1<<j)) {
-                    //if(tmp){
-                        if (vx2[i].vp[j] == vx2[i].vp[tmp]){
-                            remove_dir2(&vx2[i], j);
-                            //remove_dir1(vp[i], j);
-                            //printf("Remove closed loop vp[i] = %p x = %d y = %d n = %d\n", vp[i], vp[i]->x, vp[i]->y, vp[i]->n);
-                            //for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vp[i]->di&(1<<k), k, vp[i]->vp[k],
-                            //                            vp[i]->vp[k] ? vp[i]->vp[k]->x : 0, vp[i]->vp[k] ? vp[i]->vp[k]->y : 0);
-                            //printf("Remove closed loop vp[i] = %p x = %d y = %d n = %d\n", vp[i]->vp[tmp], vp[i]->vp[tmp]->x, vp[i]->vp[tmp]->y, vp[i]->vp[tmp]->n);
-                            //for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vp[i]->vp[tmp]->di&(1<<k), k, vp[i]->vp[tmp]->vp[k],
-                            //                            vp[i]->vp[tmp]->vp[k] ? vp[i]->vp[tmp]->vp[k]->x : 0, vp[i]->vp[tmp]->vp[k] ? vp[i]->vp[tmp]->vp[k]->y : 0);
-
-                            vc++;
-                        }
-                    //}
-                    tmp = j;
-                }
-            }
-
-            for(j=0; j < 8; j++){
-                //if(vp[i]->vp[j]) {
-                if(vx2[i].di&(1<<j)) {
-                    if (vx2[i].vp[j] == vx2[i].vp[tmp]){
-                        remove_dir2(&vx2[i], j);
-                        //remove_dir1(vp[i], j);
-                        //printf("Remove closed loop 1 vp[i] = %p x = %d y = %d n = %d\n", vp[i], vp[i]->x, vp[i]->y, vp[i]->n);
-                        //for(k=0; k < 8; k++) printf("%3d vp[i]->vp[%d] = %p x = %d y = %d\n", vp[i]->di&(1<<k), k, vp[i]->vp[k],
-                        //                            vp[i]->vp[k] ? vp[i]->vp[k]->x : 0, vp[i]->vp[k] ? vp[i]->vp[k]->y : 0);
-                        vc++;
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
     //Remove all vertexes with one neighborhood
-    /*
+
     for(i=0; i < vxc; i++) {
         if(vx2[i].n == 1){
             vx = &vx2[i];
@@ -2625,7 +2687,45 @@ uint32 seg_remove_virtex(Vertex *vx2, uint32 vxc, uint32 w, uint32 h)
                 } else break;
             }
         }
-    }*/
+    }
+
+    //Remove closed loop
+
+    for(i=0; i < vxc; i++) {
+        if(vx2[i].n > 1){
+            tmp = 0;
+            for(j=1; j < 8; j++){
+                //if(vp[i]->di&(1<<j) && vp[i]->vp[j]) {
+                if(vx2[i].di&(1<<j)) {
+                    //if(tmp){
+                        if (vx2[i].vp[j] == vx2[i].vp[tmp]){
+                            printf("seg_remove_virtex: x = %d y = %d n = %d di = %d cn = %d\n", vx2[i].x, vx2[i].y, vx2[i].n, vx2[i].di, vx2[i].cn);
+                            print_pointer(&vx2[i]);
+
+                            remove_dir2(&vx2[i], j);
+                            vc++;
+                        }
+                    //}
+                    tmp = j;
+                }
+            }
+
+            for(j=0; j < 8; j++){
+                //if(vp[i]->vp[j]) {
+                if(vx2[i].di&(1<<j)) {
+                    if (vx2[i].vp[j] == vx2[i].vp[tmp]){
+                        printf("seg_remove_virtex: x = %d y = %d n = %d di = %d cn = %d\n", vx2[i].x, vx2[i].y, vx2[i].n, vx2[i].di, vx2[i].cn);
+                        print_pointer(&vx2[i]);
+
+                        remove_dir2(&vx2[i], j);
+                        vc++;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     /*
     //Remove inline vertexes
     for(i=0; i < vxc; i++) {
@@ -2651,6 +2751,7 @@ uint32 seg_remove_virtex(Vertex *vx2, uint32 vxc, uint32 w, uint32 h)
     }
     */
     printf("Numbers of closed loops vertexs  = %d\n", vc);
+
 }
 
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h)
@@ -2899,7 +3000,8 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
     for(i=0; i < vxc; i++){
         //if(vp[i]->n > 1)
         //If any problem may change if to while
-        while(vx2[i].n  && get_dir2(&vx2[i], &nd)){
+        while(vx2[i].n && get_dir2(&vx2[i], &nd)){
+        //while(vx2[i].n && get_dir2(&vx2[i], &nd)){
             vx = &vx2[i]; nd2 = nd; vc++; //vc = 0;
             //vp1 = vp[i];
             //printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
