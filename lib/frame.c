@@ -885,7 +885,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
         //rgc = seg_remove_loops(f->y1[1].pic, f->vp, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 
-        seg_remove_virtex(f->vx, vxc, f->y[1].w, f->y[1].h);
+        //seg_remove_virtex(f->vx, vxc, f->y[1].w, f->y[1].h);
 
         //rgc = seg_remove_loops1(f->vx, &f->vpt[wc->w*wc->h>>2], f->vpt, f->ln, f->dm[0].pic, vxc, f->y[1].w, f->y[1].h);
 
