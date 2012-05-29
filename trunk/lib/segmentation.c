@@ -2491,9 +2491,11 @@ static inline uint8 get_same_dir(Vertex *vx, uint8 nd)
 static inline void remove_dir1(Vertex *vx, uint8 nd)
 {
     uint8 nb = 1<<nd;
+    if(!vx->n) printf("The number less than 0\n");
     vx->n--;
     vx->di ^= nb;
     if(vx->cn&nb) vx->cn ^= nb;
+
     //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
@@ -3345,8 +3347,21 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
                                     //printf("Check to remove\n");
                                     //Check if not like thid        /-*-\
                                     //                          ---*-----*----
-                                    if(!check_remove(vx1, nd1)) new_line1(&ln[k++], vx, vx1, nd2, nd1);
-                                } else new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                                    if(!check_remove(vx1, nd1)) {
+                                        //new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                                        if(vx->n && vx1->n){
+                                            remove_dir1(vx, nd2);
+                                            remove_dir1(vx1, nd1);
+                                        }
+                                    }
+                                } else {
+                                    //new_line1(&ln[k++], vx, vx1, nd2, nd1);
+                                    if(vx->n && vx1->n){
+                                        remove_dir1(vx, nd2);
+                                        remove_dir1(vx1, nd1);
+                                    }
+
+                                }
                             }
                         }
                         //Store not finished vertext for future processing
@@ -3357,8 +3372,20 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
                             if(vx1->vp[nd]->rc && vx1->rc){
                                 //new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
                                 if(vx1->vp[nd]->n > 2 && vx1->n > 2){
-                                    if(!check_remove(vx1, nd)) new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
-                                } else new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
+                                    if(!check_remove(vx1, nd)) {
+                                        //new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1));
+                                        if(vx1->n && vx1->vp[nd]->n){
+                                            remove_dir1(vx1, nd);
+                                            remove_dir1(vx1->vp[nd], find_pointer1(vx1->vp[nd], vx1));
+                                        }
+                                    }
+                                } else {
+                                    //new_line1(&ln[k++], vx1, vx1->vp[nd], nd, find_pointer1(vx1->vp[nd], vx1)); //&& vx->rc
+                                    if(vx1->n && vx1->vp[nd]->n){
+                                        remove_dir1(vx1, nd);
+                                        remove_dir1(vx1->vp[nd], find_pointer1(vx1->vp[nd], vx1));
+                                    }
+                                }
                             }
                             break;
                         }
@@ -3367,7 +3394,7 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
 
                     //printf("sq = %d \n", sq);
                     sqr += sq;
-
+                    /*
                     for(j=0; j < k; j++){
                         //regc--;
                         if(ln[j].vx[0]->n && ln[j].vx[1]->n){
@@ -3377,6 +3404,7 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
                             remove_dir1(ln[j].vx[1], ln[j].nd[1]);
                         }
                     }
+                    */
                     if(sq < 0 )  rc--;
                 }
             }
