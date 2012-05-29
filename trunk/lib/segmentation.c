@@ -1629,8 +1629,8 @@ void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
 
 void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, yxt, i, h1 = h-2, w1 = w-2, max;
-    int d1, d2, npix = 0, cr;
+    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h1 = h-2, w1 = w-2, max;
+    int d1, d2, d3, npix = 0, cr;
     int cn = 0;
     for(i=0; i < lmaxc; i++){
         if(!con[hist[i]]){
@@ -1650,17 +1650,12 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                     //Check if near have another intersection
                     while(check_vertex(grad, yx1, w)){
                         grad[yx1] = 0;
-                        yx1 = yx1 - d1;
-                        d1 = dir(grad, yx1, w, -d1, &max);
-                        yx1 = yx1 + d1;
+                        //yx1 = yx1 - d1;
+                        d1 = dir(grad, yxt, w, d3, &max);
+                        yx1 = yxt + d1;
                         //if(yx1 == 218+ 6*w) printf("d = %d check = %d\n", d1, check_vertex(grad, yx1, w));
                         if(!d1) break;
                     }
-                    //if(yx1 == 218+ 6*w) cn++;
-                    //if(cn > 1) {
-                    //    con[yx1-d1] = 255;
-                    //    return;
-                    //}
                     if(d1) add_dir3(con, yx1, -d1, w);
                     grad[yx1] = 255; //con[yx1] = 255;
                     npix++;
@@ -1672,20 +1667,21 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                 //add_dir1(&di[yxt], d1, w);
                 add_dir3(con, yx1, -d1, w);
                 grad[yx1] = 253; //con[yx1] = 255;
+                d3 = -d1;
                 d1 = dir(grad, yx1, w, -d1, &max);
              }
             //Start second search direction if curve is not closed.
             if(!cr){
                 while(1){
                     //if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
-                    //yxt = yx1;
+                    yxt = yx2;
                     yx2 = yx2 + d2;
                     if(con[yx2]) {
                         while(check_vertex(grad, yx2, w)){
                             grad[yx2] = 0;
-                            yx2 = yx2 - d2;
-                            d2 = dir(grad, yx2, w, -d2, &max);
-                            yx2 = yx2 + d2;
+                            //yx2 = yx2 - d2;
+                            d2 = dir(grad, yxt, w, d3, &max);
+                            yx2 = yxt + d2;
                             //if(yx2 == 218+ 6*w) printf("d = %d check = %d\n", d2, check_vertex(con, yx2, w));
                             if(!d2) break;
                         }
@@ -1702,7 +1698,61 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                     }
                     add_dir3(con, yx2, -d2, w);
                     grad[yx2] = 253; //con[yx2] = 255;
+                    d3 = -d2;
                     d2 = dir(grad, yx2, w, -d2, &max);
+                }
+            }
+        }
+    }
+    printf("Numbers of intersection  = %d\n", npix);
+}
+
+void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
+{
+    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h1 = h-2, w1 = w-2, max;
+    int d1, d2, d3, npix = 0, cr;
+    int cn, ck = 0;
+    for(i=0; i < lmaxc; i++){
+        if(!con[hist[i]]){
+            //printf("x = %d y = %d\n", x, y);
+            yx = hist[i];
+            yx1 = yx; cr = 0; cn = 0;
+            grad[yx1] = 253; //con[yx1] = 255;
+            //Store first search direction
+            d1 = dir(grad, yx1, w, 0, &max);
+            //Store second search direction
+            d2 = dir(grad, yx1, w, d1, &max);
+            d3 = -d1;
+            if(d1 && d2 && !con[yx1+d1] && !con[yx1+d2]){
+                //Start first search direction
+                while(!cr && cn < 2){
+                    while(1){
+                        yxt = yx1;
+                        yx1 = yx1 + d1;
+                        if(con[yx1]) {
+                            //Check if near another intersection
+                            if(check_vertex(grad, yx1, w)){
+                                //if(yxt == 310+ 144*w) printf("seg_find_intersect6: d = %d check = %d\n", d1, check_vertex(grad, yx1, w));
+                                grad[yx1] = 0;
+                                yx1 = yxt; d1 = d3;
+                                goto m1;
+                            }
+                            if(d1) add_dir3(con, yx1, -d1, w);
+                            grad[yx1] = 255; //con[yx1] = 255;
+                            npix++;
+
+                            //Check for circle
+                            if(yx == yx1) cr = 1;
+                            break;
+                        }
+                        //add_dir1(&di[yxt], d1, w);
+                        add_dir3(con, yx1, -d1, w);
+                        grad[yx1] = 253; //con[yx1] = 255;
+                        d3 = d1;
+m1:                     d1 = dir(grad, yx1, w, -d1, &max);
+                    }
+                    cn++;
+                    d1 = d2; yx1 = yx;
                 }
             }
         }
@@ -2690,7 +2740,7 @@ uint32 seg_remove_virtex(Vertex *vx2, uint32 vxc, uint32 w, uint32 h)
     }
 
     //Remove closed loop
-
+    /*
     for(i=0; i < vxc; i++) {
         if(vx2[i].n > 1){
             tmp = 0;
@@ -2725,7 +2775,7 @@ uint32 seg_remove_virtex(Vertex *vx2, uint32 vxc, uint32 w, uint32 h)
             }
         }
     }
-
+    */
     /*
     //Remove inline vertexes
     for(i=0; i < vxc; i++) {
@@ -3282,6 +3332,8 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
                         nd1 = find_pointer1(vx1, vx);
                         nd = get_clockwise_dir1(vx1, nd1);
                         fd = finish_dir1(vx1, nd);
+                        //Check if vertex have only one direction
+                        if(nd1 == nd) { vx1->reg = regc; vx1->rc = 0; }
 
                         //Check number of rounds of vertex
                         if(vx1->reg != regc) { vx1->reg = regc; vx1->rc = 0; }
