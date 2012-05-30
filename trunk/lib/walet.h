@@ -23,7 +23,7 @@ typedef unsigned long long 	uint64;
  */
 typedef enum {
 	LOSS,		///Loss compression.
-	LOSSLESS,	///Lossless compression.
+    LOSSLESS	///Lossless compression.
 } Compression;
 
 /**
@@ -35,7 +35,7 @@ typedef enum {
   	RGB,
   	RGBY,
   	GREY,
-  	BAYER,
+    BAYER
 } ColorSpace;
 
 /**
@@ -45,7 +45,7 @@ typedef enum {
 	WAVELET,
 	PREDICT,
   	RESIZE,
-  	VECTORIZE,
+    VECTORIZE
 } Decorrelation;
 
 /**
@@ -54,7 +54,7 @@ typedef enum {
 typedef enum {
 	LINEAR,
 	BT709,
-  	sRGB,
+    sRGB
 } Gamma;
 
 /**
@@ -63,7 +63,7 @@ typedef enum {
 typedef enum {
   	I_FRAME = 0,
   	P_FRAME = 1,	
-  	B_FRAME = 2,	
+    B_FRAME = 2
 } FrameType;
 
 /**
@@ -84,7 +84,7 @@ typedef enum {
   	FILL_HISTOGRAM 	= 	1<<11,
   	WHITE_BALANCE	= 	1<<12,
   	SEGMENTATION	= 	1<<13,
-  	MATCH			= 	1<<14,
+    MATCH			= 	1<<14
 }CodecState;
 
 /**
@@ -104,7 +104,7 @@ typedef enum {
 	BGGR = 0,
 	GRBG = 1,
 	GBRG = 2,
-	RGGB = 3,
+    RGGB = 3
 } BayerGrid;
 /*
 typedef enum {		//Wavelet transform type.
@@ -119,7 +119,7 @@ typedef enum {		//Wavelet transform type.
 typedef enum {
 	FR_HAAR	= 0,
 	FR_5_3	= 1,
-	FR_9_7	= 2,
+    FR_9_7	= 2
 } FilterBank;
 
 /**
@@ -128,7 +128,7 @@ typedef enum {
 typedef enum {
 	ADAP	= 0,	///Adaptive range coder.
 	NADAP	= 1,	///Nonadaptive range coder.
-	FAST	= 2,	///Nonadaptive fast range coder.
+    FAST	= 2	///Nonadaptive fast range coder.
 } RangeType;
 
 /*
