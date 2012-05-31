@@ -121,8 +121,13 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
         /// | | | |      | ||| |      | | |/|      |\| | |
         /// |-|-|-|      | ||| |      | |/| |      | |\| |
         /// | | | |      | ||| |      |/| | |      | | |\|
+        /// 255 - intersection
+        /// 254 - vertex
+        /// 253 - direction curve
+        /// 252 - local max
+
         uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
-        uint8 in, col = 253;
+        uint8 in, col = 252;
         uint32 g[4];
         int max;
 
@@ -143,7 +148,7 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
                         g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
                         max = (g[0] + g[1] + g[2] + g[3])>>1;
-                        img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
+                        img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 0;
                         //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
                         //img1[yx] = max>>th;
                         //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
@@ -584,16 +589,16 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
     else return 0;
 }
 
-static inline uint32 check_vertex(uint8 *img, uint32 yx, uint32 w)
+static inline uint32 check_vertex(uint8 *img, uint32 yx, uint8 val, uint32 w)
 {
-    if(img[yx-1]   == 255) return 1;
-    if(img[yx-w]   == 255) return 1;
-    if(img[yx+1]   == 255) return 1;
-    if(img[yx+w]   == 255) return 1;
-    if(img[yx-1-w] == 255) return 1;
-    if(img[yx+1-w] == 255) return 1;
-    if(img[yx-1+w] == 255) return 1;
-    if(img[yx+1+w] == 255) return 1;
+    if(img[yx-1]   == val) return 1;
+    if(img[yx-w]   == val) return 1;
+    if(img[yx+1]   == val) return 1;
+    if(img[yx+w]   == val) return 1;
+    if(img[yx-1-w] == val) return 1;
+    if(img[yx+1-w] == val) return 1;
+    if(img[yx-1+w] == val) return 1;
+    if(img[yx+1+w] == val) return 1;
     return 0;
 }
 
@@ -624,7 +629,7 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
             yx = yw + x;
             max = loc_max(img, yx, w);
             if(max > th) {
-                img[yx] = 253;
+                img[yx] = 252;
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -1503,7 +1508,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32
                 yx1 = yx1 + d1;
                 if(con[yx1]) {
                     //Check if near have another intersection
-                    while(check_vertex(con, yx1, w)){
+                    while(check_vertex(con, yx1, 255, w)){
                         grad[yx1] = 0;
                         yx1 = yx1 - d1;
                         d1 = dir(grad, yx1, w, -d1, &max);
@@ -1530,7 +1535,7 @@ void seg_find_intersect(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32
                     //yxt = yx1;
                     yx2 = yx2 + d2;
                     if(con[yx2]) {
-                        while(check_vertex(con, yx2, w)){
+                        while(check_vertex(con, yx2, 255, w)){
                             grad[yx2] = 0;
                             yx2 = yx2 - d2;
                             d2 = dir(grad, yx2, w, -d2, &max);
@@ -1575,7 +1580,7 @@ void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                 yx1 = yx1 + d1;
                 if(con[yx1]) {
                     //Check if near have another intersection
-                    while(check_vertex(con, yx1, w)){
+                    while(check_vertex(con, yx1, 255, w)){
                         grad[yx1] = 0;
                         yx1 = yx1 - d1;
                         d1 = dir(grad, yx1, w, -d1, &max);
@@ -1602,7 +1607,7 @@ void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                     //yxt = yx1;
                     yx2 = yx2 + d2;
                     if(con[yx2]) {
-                        while(check_vertex(con, yx2, w)){
+                        while(check_vertex(con, yx2, 255, w)){
                             grad[yx2] = 0;
                             yx2 = yx2 - d2;
                             d2 = dir(grad, yx2, w, -d2, &max);
@@ -1648,7 +1653,7 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                 yx1 = yx1 + d1;
                 if(con[yx1]) {
                     //Check if near have another intersection
-                    while(check_vertex(grad, yx1, w)){
+                    while(check_vertex(grad, yx1, 255, w)){
                         grad[yx1] = 0;
                         //yx1 = yx1 - d1;
                         d1 = dir(grad, yxt, w, d3, &max);
@@ -1677,7 +1682,7 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                     yxt = yx2;
                     yx2 = yx2 + d2;
                     if(con[yx2]) {
-                        while(check_vertex(grad, yx2, w)){
+                        while(check_vertex(grad, yx2, 255, w)){
                             grad[yx2] = 0;
                             //yx2 = yx2 - d2;
                             d2 = dir(grad, yxt, w, d3, &max);
@@ -1709,7 +1714,7 @@ void seg_find_intersect5(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
 
 void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h1 = h-2, w1 = w-2, max;
+    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h2 = h-2, w2 = w-2, max;
     int d1, d2, d3, npix = 0, cr;
     int cn, ck = 0;
     for(i=0; i < lmaxc; i++){
@@ -1731,7 +1736,7 @@ void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                         yx1 = yx1 + d1;
                         if(con[yx1]) {
                             //Check if near another intersection
-                            if(check_vertex(grad, yx1, w)){
+                            if(check_vertex(grad, yx1, 255, w)){
                                 //if(yxt == 310+ 144*w) printf("seg_find_intersect6: d = %d check = %d\n", d1, check_vertex(grad, yx1, w));
                                 grad[yx1] = 0;
                                 yx1 = yxt; d1 = d3;
@@ -1758,6 +1763,24 @@ m1:                     d1 = dir(grad, yx1, w, -d1, &max);
         }
     }
     printf("Numbers of intersection  = %d\n", npix);
+
+    //Test for near itersections
+    /*
+    for(y=2; y < h2; y++){
+        yw = y*w;
+        for(x=2; x < w2; x++){
+            yx = yw + x;
+            if(grad[yx] == 255 && check_vertex(grad, yx, w)){
+                printf("seg_find_intersect6: x = %d y = %d\n", yx%w, yx/w);
+                print_around(con, yx, w);
+                print_around(grad, yx, w);
+                //print_pointer(&vx[j]);
+                con[yx] = 255;
+            }
+        }
+    }
+    */
+
 }
 
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
@@ -1817,6 +1840,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
         }
     }
     printf("Numbers of intersection  = %d\n", npix);
+
 }
 
 static inline uint32 get_next_vertex(uint8 *con, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
@@ -1927,8 +1951,8 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix)
     //Pointer to the last pixel in the array to start vectorization algorithm.
     buf[0].np = i;
 
-    if(i == 1){
-        printf("Problem: the vertexs is near !!!!!\n");
+    if(i < 2){
+        printf("i = %d Problem: the vertexs is near !!!!!\n", i);
         return 0;
     } else if (i < 4){
         //Less than 5 pixeles in the line
@@ -2253,7 +2277,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
 
                     i = get_next_vertex1(con, grad, buf, dx, dy, x, y, w);
                     yx1 = buf[i-1].x + buf[i-1].y*w;
-                    //printf("next pixel i = %d x = %d y = %d con = %d grad = %d\n", i, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
+                    if(i < 3) printf("next pixel i = %d x = %d y = %d x = %d y = %d con = %d grad = %d\n", i, x, y, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
 
                     //Check if the last vertex have n > 1
                     //printf("yx1 = %d vp[yx1] = %p\n", yx1, vp[yx1]);
@@ -2352,7 +2376,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
     printf("Numbers of vertexs  = %d\n", vxc);
 
     for(j=0; j < vxc; j++) {
-
+/*
         if(vx[j].x + vx[j].y*w == 730*w + 1265 || vx[j].x + vx[j].y*w == 732*w + 1267) {
             printf("seg_vertex4: x = %d y = %d n = %d di = %d cn = %d\n", vx[j].x, vx[j].y, vx[j].n, vx[j].di, vx[j].cn);
             print_around(con, vx[j].x + vx[j].y*w, w);
@@ -2362,8 +2386,16 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
             con[vx[j].y*w + vx[j].x-1] = 255;
             con[vx[j].y*w + vx[j].x+w] = 255;
             con[vx[j].y*w + vx[j].x+1] = 255;
-        }
+        }*/
         //printf("%d %p \n", j, vp[j]);
+        /*
+        if(grad[vx[j].y*w + vx[j].x] == 254 && check_vertex(grad, vx[j].y*w + vx[j].x, 254, w)){
+            printf("seg_vertex4: x = %d y = %d n = %d di = %d cn = %d\n", vx[j].x, vx[j].y, vx[j].n, vx[j].di, vx[j].cn);
+            print_around(con, vx[j].x + vx[j].y*w, w);
+            print_around(grad, vx[j].x + vx[j].y*w, w);
+            print_pointer(&vx[j]);
+            //con[vx2[j].y*w + vx2[j].x] = 255;
+        }*/
         if(vx[j].di != vx[j].cn ) {
             printf("%d  x = %d y = %d %o %o %o n = %d\n", j, vx[j].x,  vx[j].y, vx[j].di, vx[j].cn, vx[j].cn^vx[j].di, vx[j].n);
             //printf("%d n = %d %o %o %o\n", j, vp[j]->n, vp[j]->di, vp[j]->cn, vp[j]->cn^vp[j]->di);
@@ -2372,6 +2404,8 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
             con[vx[j].y*w + vx[j].x+w] = 255;
             con[vx[j].y*w + vx[j].x+1] = 255;
         }
+        //Check for near vertex
+
     }
 
     return vxc;
@@ -3097,6 +3131,7 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
     }
 
     for(j=0; j < vxc; j++) {
+        /*
         if(vx2[j].x + vx2[j].y*w == 730*w + 1265 || vx2[j].x + vx2[j].y*w == 732*w + 1267) {
             printf("seg_vertex4: x = %d y = %d n = %d di = %d cn = %d\n", vx2[j].x, vx2[j].y, vx2[j].n, vx2[j].di, vx2[j].cn);
             print_pointer(&vx2[j]);
@@ -3105,7 +3140,20 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
             //img[vx2[j].y*w + vx2[j].x-1] = 255;
             //img[vx2[j].y*w + vx2[j].x+w] = 255;
             //img[vx2[j].y*w + vx2[j].x+1] = 255;
+        }*/
+        /*
+        if(img[vx2[j].y*w + vx2[j].x] == 128 && check_vertex(img, vx2[j].y*w + vx2[j].x, 128, w)){
+            //printf("seg_vertex4: x = %d y = %d n = %d di = %d cn = %d\n", vx2[j].x, vx2[j].y, vx2[j].n, vx2[j].di, vx2[j].cn);
+            //print_around(con, vx2[j].x + vx2[j].y*w, w);
+            //print_around(grad, vx2[j].x + vx2[j].y*w, w);
+            //print_pointer(&vx2[j]);
+            img[vx2[j].y*w + vx2[j].x] = 255;
+            //img[vx2[j].y*w + vx2[j].x-w] = 255;
+            //img[vx2[j].y*w + vx2[j].x-1] = 255;
+            //img[vx2[j].y*w + vx2[j].x+w] = 255;
+            //img[vx2[j].y*w + vx2[j].x+1] = 255;
         }
+        */
 
         //printf("%d %p \n", j, vp[j]);
         if(vx2[j].di != vx2[j].cn ) {
@@ -3360,11 +3408,11 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp1, Vertex **vp2, Line *ln, uin
                         fd = finish_dir1(vx1, nd);
                         //Check if vertex have only one direction
                         //if(nd1 == nd) { vx1->reg = regc; vx1->rc = 0; }
-
-                        if(vx->x + vx->y*w == 730*w + 1265 || vx->x + vx->y*w == 732*w + 1267) {
-                            printf("seg_remove_loops1: x = %d y = %d n = %d di = %d cn = %d\n", vx->x, vx->y, vx->n, vx->di, vx->cn);
+                        /*
+                        if(vx->x + vx->y*w == 730*w + 1265 || vx->x + vx->y*w == 732*w + 1267 || vx->x + vx->y*w == 732*w + 1264 || vx->x + vx->y*w == 733*w + 1263) {
+                            printf("seg_remove_loops1: x = %d y = %d n = %d di = %d cn = %d rc = %d reg = %d\n", vx->x, vx->y, vx->n, vx->di, vx->cn, vx->rc, vx->reg);
                             print_pointer(&vx[j]);
-                        }
+                        }*/
 
                         //Check number of rounds of vertex
                         if(vx1->reg != regc) { vx1->reg = regc; vx1->rc = 0; }
