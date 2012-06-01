@@ -131,7 +131,7 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
         uint32 g[4];
         int max;
 
-        //Make the up border
+        //The up border
         img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
         //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
         //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
@@ -157,12 +157,13 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
                 img1[yx + 1] = col; con[yx + 1] = 68; //di[yx + 1] = 64; //di[yx + 1] = 2;
                  //img1[yx + 2] = col1;
         }
-        //Make the bottom border
+        //The bottom border
         yw = y*w;
         img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
         con[yw + 1] = 20; for(x=2; x < w2; x++) con[yw + x] = 17; con[yw + x] = 5;
         //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
         //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+        printf("Finish gradient\n");
 }
 
 void seg_grad_RGB(uint8 *R, uint8 *G, uint8 *B, uint8 *grad, uint32 w, uint32 h, uint32 th)
@@ -638,12 +639,12 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
     lmaxc = i;
     //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist[i]);
 
-    //printf("lmaxc = %d sq = %d\n",lmaxc, w*h);
     //Make cumulitive probability array
     hist1[0] = 0;
     for(i=0; i < 255; i++) hist1[i+1] = hist1[i] + hist[i];
     //Sort the array
     for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
+    printf("Local maxs = %d\n",lmaxc);
     return lmaxc;
 
 }
@@ -1738,6 +1739,12 @@ void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                             //Check if near another intersection
                             if(check_vertex(grad, yx1, 255, w)){
                                 //if(yxt == 310+ 144*w) printf("seg_find_intersect6: d = %d check = %d\n", d1, check_vertex(grad, yx1, w));
+                                //printf("seg_find_intersect6: x = %d y = %d d1 = %d d3 = %d w = %d\n", yx1%w, yx1/w, d1, d3, w);
+                                //if(d1 == 0){
+                                //    print_around(con, yx1, w);
+                                //    print_around(grad, yx1, w);
+                                //}
+
                                 grad[yx1] = 0;
                                 yx1 = yxt; d1 = d3;
                                 goto m1;
@@ -1755,6 +1762,11 @@ void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                         grad[yx1] = 253; //con[yx1] = 255;
                         d3 = d1;
 m1:                     d1 = dir(grad, yx1, w, -d1, &max);
+                        if(!d1) {
+                            grad[yx1] = 255; //con[yx1] = 255;
+                            npix++;
+                            break;
+                        }
                     }
                     cn++;
                     d1 = d2; yx1 = yx;
