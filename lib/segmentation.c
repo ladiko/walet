@@ -891,7 +891,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *
 
     //if(cn == cn255) return 1;
 
-    return 0;
+    return 1;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
@@ -3361,7 +3361,7 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp2, uint8 *dir, uint32 vxc, uin
                         nd2 = nd;
                         //printf("x1 = %d y1 = %d n1 = %d x2 = %d y2 = %d n2 = %d\n", vx->x, vx->y, vx->n, vx1->x, vx1->y, vx1->n);
                         //Store for finding vertex with n != 1
-                        vp2[rc+k] = vpx; dir[rc+k] = nd; k++;
+                        vp2[rc+k] = vx; dir[rc+k] = nd; k++;
 
                         //Calculate square of region multiply by 2
                         sq += (vx1->y + vx->y)*(vx1->x - vx->x);
@@ -3419,12 +3419,13 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp2, uint8 *dir, uint32 vxc, uin
                             }
                             //Add vertex and direction to future use
                             if(sq > 0 ){
-                                if(vpx->n){
+                                if(vpx->n && vpx->di&(1<<nd)){
                                     vp2[rc] = vpx; dir[rc] = nd;
                                 } else {
                                     //Find first vertex with n != 0
-                                    printf("k = %d n = %d\n", k, vp2[rc]->n);
-                                    for(k=0; !vp2[rc+k]->n; k++) printf("k = %d n = %d\n", k, vp2[rc+k]->n);
+                                    printf("k = %d n = %d di = %d \n", k, vp2[rc]->n, vp2[rc]->di);
+                                    for(k=0; !(vp2[rc+k]->n && vp2[rc+k]->di&(1<<dir[rc+k])); k++);
+                                    printf("k = %d n = %d di = %d x = %d y = %d\n", k, vp2[rc+k]->n, vp2[rc+k]->di, vp2[rc+k]->x, vp2[rc+k]->y);
                                     vp2[rc] = vp2[rc+k]; dir[rc] =  dir[rc+k];
                                 }
                                 rc++;
@@ -3462,9 +3463,9 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp2, uint8 *dir, uint32 vxc, uin
 
 uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint8 *dir, uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get)
 {
-    uint32 i, j, k, yx, yxw, vc = 0, vc1, pn=1, pn1, fd, cn;
+    uint32 i, j, k, yx, yxw, yxw1, vc = 0, vc1, pn=1, pn1, fd, cn;
     Vector v;
-    uint8  nd, nd1, nd2, sh = 15, cl = 128;
+    uint8  nd, nd1, nd2, sh = 15, cl = 200;
     Vertex *vx, *vx1, *vx2;
     uint32 kx = ((w-2)<<sh)/(w1-3);
     uint32 ky = ((h-2)<<sh)/(h1-3);
@@ -3480,13 +3481,13 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 
     //Start main cycle
     for(i=0; i < rgc; i++){
-        vc = 0; vc1 = 0; sq = 0;
+        vc = 0; vc1 = 0; sq = 0; yxw1 = 0;
         vx = vp[i]; nd = dir[i];
 
         if(!get) cl = col[i];
         //printf("New region\n");
 
-        while(1){
+        do {
             vx1 = vx->vp[nd];
             //Calculate square of region
             sq += (vx1->y + vx->y)*(vx1->x - vx->x);
@@ -3509,28 +3510,51 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
 
             //l1[vc++] = yxw;
-            if(yxw) {
-                if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+            //if(yxw == (777+23+1) + (1055+34+2)*w){
+            /*
+            if(yxw == (209) + (1093)*w){
+                con[vp[i]->x + w*vp[i]->y] = 255;
+                con[vp[i]->y*w + vp[i]->x-w] = 255;
+                con[vp[i]->y*w + vp[i]->x-1] = 255;
+                con[vp[i]->y*w + vp[i]->x+w] = 255;
+                con[vp[i]->y*w + vp[i]->x+1] = 255;
+
+                con[vx->x + w*vx->y] = 255;
+                con[vx1->x + w*vx1->y] = 255;
+                con[vx1->vp[nd]->x + w*vx1->vp[nd]->y] = 255;
+            }*/
+
+            if(yxw > 1 && yxw1) {
+            //if(yxw > 1) {
+                //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
                 l1[vc++] = yxw;
                 //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
                 con[yxw] = cl;
-            }
+            } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
             //else if(!yxw) col[rc++] = 0;
             //last = yxw ? 1 : 0;
-            vx = vx1;
+            vx = vx1; yxw1 = yxw;
             vc1++;
-            if(vx == vp[i] && fd) break;
-        }
-        //} while(vx != vpx && df);
+        } while(!(vx == vp[i] && fd));
         //if(sq > 0) printf("sq = %d vc = %d\n", sq, vc);
 
         if(!vc){
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
+            /*
             con[vp[i]->x + w*vp[i]->y] = 255;
             con[vp[i]->y*w + vp[i]->x-w] = 255;
             con[vp[i]->y*w + vp[i]->x-1] = 255;
             con[vp[i]->y*w + vp[i]->x+w] = 255;
             con[vp[i]->y*w + vp[i]->x+1] = 255;
+            */
+            /*
+            if(vp[i]->x == 777 && vp[i]->y == 1055){
+                con[vp[i]->x + w*vp[i]->y] = 255;
+                con[vp[i]->y*w + vp[i]->x-w] = 255;
+                con[vp[i]->y*w + vp[i]->x-1] = 255;
+                con[vp[i]->y*w + vp[i]->x+w] = 255;
+                con[vp[i]->y*w + vp[i]->x+1] = 255;
+            }*/
             dloop++;
         }
 
