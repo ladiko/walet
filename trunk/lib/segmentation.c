@@ -819,19 +819,19 @@ static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
 // |c|*|*|  |*|*|c|  |*|*|c|  |c|*|*|
 // |*|*|*|  |*|*|*|  |*|c|x|  |x|c|*|
 {
-	if(yxn - yx == -w-1){
-		if((img[yx-w] & 17) || (img[yx-1] & 17) ) return 0;
-	}
-	else if(yxn - yx == -w+1){
-		if((img[yx-w] & 68) || (img[yx+1] & 68) ) return 0;
-	}
-	else if(yxn - yx == w+1){
-		if((img[yx+w] & 17) || (img[yx+1] & 17)) return 0;
-	}
-	else if(yxn - yx == w-1){
-		if((img[yx+w] & 68) || (img[yx-1] & 68)) return 0;
-	}
-	 return 1;
+    if(yxn - yx == -w-1){
+        if((img[yx-w] & 17) || (img[yx-1] & 17) ) return 0;
+    }
+    else if(yxn - yx == -w+1){
+        if((img[yx-w] & 68) || (img[yx+1] & 68) ) return 0;
+    }
+    else if(yxn - yx == w+1){
+        if((img[yx+w] & 17) || (img[yx+1] & 17)) return 0;
+    }
+    else if(yxn - yx == w-1){
+        if((img[yx+w] & 68) || (img[yx-1] & 68)) return 0;
+    }
+    return 1;
 }
 
 
@@ -3396,7 +3396,6 @@ uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp2, uint8 *dir, uint32 vxc, uin
                         }
                         //For end vertex with n == 1
                         if(nd1 == nd) { vx1->rc++; }
-
                         //Store not finished vertext for future processing
                         //if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
@@ -3507,33 +3506,38 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             //Store in the buffer
             //if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
-            yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
-
-            //l1[vc++] = yxw;
-            //if(yxw == (777+23+1) + (1055+34+2)*w){
-            /*
-            if(yxw == (209) + (1093)*w){
-                con[vp[i]->x + w*vp[i]->y] = 255;
-                con[vp[i]->y*w + vp[i]->x-w] = 255;
-                con[vp[i]->y*w + vp[i]->x-1] = 255;
-                con[vp[i]->y*w + vp[i]->x+w] = 255;
-                con[vp[i]->y*w + vp[i]->x+1] = 255;
+            //Check for acute angle x = 824 y = 562
+            if(vp[i]->x == (824) && vp[i]->y == (562)){
+                //con[vp[i]->x + w*vp[i]->y] = 255;
+                //con[vp[i]->y*w + vp[i]->x-w] = 255;
+                //con[vp[i]->y*w + vp[i]->x-1] = 255;
+                //con[vp[i]->y*w + vp[i]->x+w] = 255;
+                //con[vp[i]->y*w + vp[i]->x+1] = 255;
 
                 con[vx->x + w*vx->y] = 255;
                 con[vx1->x + w*vx1->y] = 255;
                 con[vx1->vp[nd]->x + w*vx1->vp[nd]->y] = 255;
-            }*/
+            }
 
-            if(yxw > 1 && yxw1) {
-            //if(yxw > 1) {
-                //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
-                l1[vc++] = yxw;
-                //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
-                con[yxw] = cl;
-            } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+            //Check for acute angle
+            if(abs(nd1 - nd) < 5) {
+
+                yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
+
+                //l1[vc++] = yxw;
+                //if(yxw == (777+23+1) + (1055+34+2)*w){
+
+                 //if(yxw > 1 && yxw1) {
+                if(yxw > 1) {
+                    //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+                    l1[vc++] = yxw;
+                    //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
+                    //con[yxw] = cl;
+                } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+            }
             //else if(!yxw) col[rc++] = 0;
             //last = yxw ? 1 : 0;
-            vx = vx1; yxw1 = yxw;
+            vx = vx1; //yxw1 = yxw;
             vc1++;
         } while(!(vx == vp[i] && fd));
         //if(sq > 0) printf("sq = %d vc = %d\n", sq, vc);
