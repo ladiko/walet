@@ -796,15 +796,48 @@ static inline uint32 check_next_pixel(Vector *v, uint32 w)
 
 static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
 {
-	if      (yx2-yx1 ==   -1) return yx1-w-1;
-	else if (yx2-yx1 == -w-1) return yx1-w  ;
-	else if (yx2-yx1 == -w  ) return yx1-w+1;
-	else if (yx2-yx1 == -w+1) return yx1  +1;
-	else if (yx2-yx1 ==  1  ) return yx1+w+1;
-	else if (yx2-yx1 ==  w+1) return yx1+w  ;
-	else if (yx2-yx1 ==  w  ) return yx1+w-1;
-	else if (yx2-yx1 ==  w-1) return yx1  -1;
+    if      (yx2-yx1 ==   -1) return yx1-w-1;
+    else if (yx2-yx1 == -w-1) return yx1-w  ;
+    else if (yx2-yx1 == -w  ) return yx1-w+1;
+    else if (yx2-yx1 == -w+1) return yx1  +1;
+    else if (yx2-yx1 ==  1  ) return yx1+w+1;
+    else if (yx2-yx1 ==  w+1) return yx1+w  ;
+    else if (yx2-yx1 ==  w  ) return yx1+w-1;
+    else if (yx2-yx1 ==  w-1) return yx1  -1;
 }
+
+static inline uint32 get_corner1(uint8 nd1, uint8 nd2)
+{
+    int i;
+    for(i=0; nd1 != nd2; i++) nd1 = (nd1 == 7) ? 0 : nd1 + 1;
+    return i;
+}
+
+static inline uint32 get_corner(uint32 yx, uint32 yx1, uint32 yx2, uint32 w)
+{
+    uint8 nd1, nd2, i;
+    if      (yx-yx1 ==   -1) nd1 = 0;
+    else if (yx-yx1 == -w-1) nd1 = 7;
+    else if (yx-yx1 == -w  ) nd1 = 6;
+    else if (yx-yx1 == -w+1) nd1 = 5;
+    else if (yx-yx1 ==  1  ) nd1 = 4;
+    else if (yx-yx1 ==  w+1) nd1 = 3;
+    else if (yx-yx1 ==  w  ) nd1 = 2;
+    else if (yx-yx1 ==  w-1) nd1 = 1;
+
+    if      (yx2-yx1 ==   -1) nd2 = 0;
+    else if (yx2-yx1 == -w-1) nd2 = 7;
+    else if (yx2-yx1 == -w  ) nd2 = 6;
+    else if (yx2-yx1 == -w+1) nd2 = 5;
+    else if (yx2-yx1 ==  1  ) nd2 = 4;
+    else if (yx2-yx1 ==  w+1) nd2 = 3;
+    else if (yx2-yx1 ==  w  ) nd2 = 2;
+    else if (yx2-yx1 ==  w-1) nd2 = 1;
+
+    for(i=0; nd1 != nd2; i++) nd1 = (nd1 == 7) ? 0 : nd1 + 1;
+    return i;
+}
+
 
 static inline uint32 scale(uint32  x, uint32  w, uint32 k, uint32 sh)
 {
@@ -879,19 +912,21 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *
         return 0;
     }
 
-    yxn = yx2;
-    //yxn = yx2;
-    do{
-        cn++;
-        yxn = get_next_pixel(yx, yxn, w);
-        //printf("yx2 = %d yxn = %d img[yxn] = %d\n", yx2, yxn, img[yxn]);
-        //if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)) return yxn;
-        if(yxn != yx1 && !img[yxn]) return yxn;
-    } while(yxn != yx1);
+    if(get_corner(yx, yx2, yx1, w) < 5){
+        yxn = yx2;
+        //yxn = yx2;
+        do{
+            cn++;
+            yxn = get_next_pixel(yx, yxn, w);
+            //printf("yx2 = %d yxn = %d img[yxn] = %d\n", yx2, yxn, img[yxn]);
+            //if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)) return yxn;
+            if(yxn != yx1 && !img[yxn]) return yxn;
+        } while(yxn != yx1);
+    }
 
     //if(cn == cn255) return 1;
 
-    return 1;
+    return 0;
 }
 
 static inline void add_dir2(uint8 *img, uint32 yx1, uint32 yx2, uint32 w)
@@ -3508,6 +3543,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 
             //Check for acute angle x = 824 y = 562
             if(vp[i]->x == (824) && vp[i]->y == (562)){
+                //printf("Corner  = %d x = %d y = %d \n",get_corner(nd1, nd), vx1->x, vx1->y);
                 //con[vp[i]->x + w*vp[i]->y] = 255;
                 //con[vp[i]->y*w + vp[i]->x-w] = 255;
                 //con[vp[i]->y*w + vp[i]->x-1] = 255;
@@ -3520,7 +3556,8 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             }
 
             //Check for acute angle
-            if(abs(nd1 - nd) < 5) {
+            //if(get_corner(nd1, nd) < 5){
+            //if(abs(nd1 - nd) < 5) {
 
                 yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
 
@@ -3528,13 +3565,13 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
                 //if(yxw == (777+23+1) + (1055+34+2)*w){
 
                  //if(yxw > 1 && yxw1) {
-                if(yxw > 1) {
+                if(yxw ) {
                     //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
                     l1[vc++] = yxw;
                     //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
                     //con[yxw] = cl;
                 } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
-            }
+            //}
             //else if(!yxw) col[rc++] = 0;
             //last = yxw ? 1 : 0;
             vx = vx1; //yxw1 = yxw;
