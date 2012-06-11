@@ -817,22 +817,22 @@ static inline uint32 get_corner(uint32 yx, uint32 yx1, uint32 yx2, uint32 w)
 {
     uint8 nd1, nd2, i;
     if      (yx-yx1 ==   -1) nd1 = 0;
-    else if (yx-yx1 == -w-1) nd1 = 7;
-    else if (yx-yx1 == -w  ) nd1 = 6;
-    else if (yx-yx1 == -w+1) nd1 = 5;
+    else if (yx-yx1 == -w-1) nd1 = 1;
+    else if (yx-yx1 == -w  ) nd1 = 2;
+    else if (yx-yx1 == -w+1) nd1 = 3;
     else if (yx-yx1 ==  1  ) nd1 = 4;
-    else if (yx-yx1 ==  w+1) nd1 = 3;
-    else if (yx-yx1 ==  w  ) nd1 = 2;
-    else if (yx-yx1 ==  w-1) nd1 = 1;
+    else if (yx-yx1 ==  w+1) nd1 = 5;
+    else if (yx-yx1 ==  w  ) nd1 = 6;
+    else if (yx-yx1 ==  w-1) nd1 = 7;
 
     if      (yx2-yx1 ==   -1) nd2 = 0;
-    else if (yx2-yx1 == -w-1) nd2 = 7;
-    else if (yx2-yx1 == -w  ) nd2 = 6;
-    else if (yx2-yx1 == -w+1) nd2 = 5;
+    else if (yx2-yx1 == -w-1) nd2 = 1;
+    else if (yx2-yx1 == -w  ) nd2 = 2;
+    else if (yx2-yx1 == -w+1) nd2 = 3;
     else if (yx2-yx1 ==  1  ) nd2 = 4;
-    else if (yx2-yx1 ==  w+1) nd2 = 3;
-    else if (yx2-yx1 ==  w  ) nd2 = 2;
-    else if (yx2-yx1 ==  w-1) nd2 = 1;
+    else if (yx2-yx1 ==  w+1) nd2 = 5;
+    else if (yx2-yx1 ==  w  ) nd2 = 6;
+    else if (yx2-yx1 ==  w-1) nd2 = 7;
 
     for(i=0; nd1 != nd2; i++) nd1 = (nd1 == 7) ? 0 : nd1 + 1;
     return i;
