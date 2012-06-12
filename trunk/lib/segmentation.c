@@ -868,11 +868,15 @@ static inline uint32 check_true_reg(uint8 *img, uint32 yx, uint32 yxn, uint32 w)
 }
 
 
-static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *v2, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
+static inline uint32 get_first_pixel(uint8 *img, Vertex *v2, Vertex *v, Vertex *v1, uint32 w, uint32 h, uint32 kx, uint32 ky, uint32 sh)
 {
     uint32 i, x, y, yx, yx1, yx2, dx, dy, yxn, cn = 0;//, cn255 = 0;
     int stx, sty;
     int dma, dmi, stmi, stma;
+
+    x = scale(v->x, w, kx, sh);
+    y = scale(v->y, h, ky, sh);
+    yx = y*w + x;
 
     sty = v1->y > v->y ? w : -w;
     stx = v1->x > v->x ? 1 : -1;
@@ -883,14 +887,6 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *
     else        { dma = dy; dmi = dx; stmi = sty; stma = stx; }
     if(v1->x <= v->x && (dma&1 || dmi&1)) dmi = (dmi<<1)-1;
 
-    //x = v->x; y = v->y*w;
-    x = scale(v->x, w, kx, sh);
-    y = scale(v->y, h, ky, sh)*w;
-    yx = y + x;
-
-    //min += dmi; x += stmi;
-    //if(min >= max) { max += dma; y += stma; }
-    //yx1 = y + x;
     yx1 = yx + stmi;
     if(dmi >= dma) yx1 += stma;
 
@@ -912,7 +908,7 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v, Vertex *v1, Vertex *
         return 0;
     }
 
-    if(get_corner(yx, yx2, yx1, w) < 5){
+    if(get_corner(yx2, yx, yx1, w) < 5){
         yxn = yx2;
         //yxn = yx2;
         do{
@@ -3112,9 +3108,10 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h
     return vc;
 }
 
-uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
+uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
-    uint32 i, j, yx, rgc = 0, lc = 0;
+    uint32 i, j, yx, rgc = 0, rc = 0, lc = 0, fd;
+    int sq;
     Vector v;
     uint8  nd, nd1, nd2, sh = 15;
     Vertex *vx, *vx1;
@@ -3127,17 +3124,25 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
         //If any problem may change if to while
         while(vx2[i].n && get_dir2(&vx2[i], &nd)){
             //Start new region
-            vx = &vx2[i]; nd2 = nd; rgc++;
+            vx = &vx2[i]; nd2 = nd; rgc++; sq = 0;
             //vp1 = vp[i];
             //printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
             do {
                 //printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
+
                 vx1 = vx->vp[nd];
-                finish_dir1(vx, nd);
+
+                sq += (vx1->y + vx->y)*(vx1->x - vx->x);
+
+                //finish_dir1(vx, nd);
                 //finish_dir2(vx, nd);
-                nd1 =  find_pointer1(vx1, vx);
-                finish_dir1(vx1, nd1);
+                //nd1 =  find_pointer1(vx1, vx);
+                //finish_dir1(vx1, nd1);
                 //finish_dir2(vx1, nd1);
+
+                nd1 = find_pointer1(vx1, vx);
+                nd = get_clockwise_dir1(vx1, nd1);
+                fd = finish_dir1(vx1, nd);
 
                 v.x1 = scale(vx->x, w, kx, sh);
                 v.y1 = scale(vx->y, h, ky, sh);
@@ -3160,7 +3165,15 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
                 img[yx] = 128;
 
                 vx = vx1;
-            } while(get_clockwise_dir(vx1, nd1, &nd)); //;while(vx != vp[i]);
+            //} while(get_clockwise_dir(vx1, nd1, &nd)); //;while(vx != vp[i]);
+            } while(!(vx1 == &vx2[i] && fd)); //;while(vx != vp[i]);
+
+            if(sq > 0 ){
+                //vp2[rc] = vx1; dir[rc] = nd1;
+                vp2[rc] = &vx2[i]; dir[rc] = nd2;
+                rc++;
+            }
+
             //rc++;
         }
     }
@@ -3179,8 +3192,8 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
         }
     }
 
-    printf("Numbers of drawing lines = %d \n", lc);
-    return lc;
+    printf("Numbers of drawing lines = %d  regions = %d\n", lc, rc);
+    return rc;
 }
 
 static inline uint8 get_region_color(uint8 *img, uint8 *con, uint32 *l1, uint32 num, uint32 w)
@@ -3360,6 +3373,7 @@ uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Li
     printf("Numbers of drawing regions  = %d closed loops = %d\n", rc, cloop);
     return rc;
 }
+
 
 uint32  seg_remove_loops1(Vertex *vx2, Vertex **vp2, uint8 *dir, uint32 vxc, uint32 w, uint32 h)
 //vp1 temporary array for store vertexes
@@ -3541,14 +3555,15 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             //Store in the buffer
             //if(vx1->di != vx1->cn && vx1->n > 2) vp1[pn++] = vx1;
 
-            //Check for acute angle x = 824 y = 562
-            if(vp[i]->x == (824) && vp[i]->y == (562)){
+            //Check for acute angle x = 824 y = 562  x = 570 y = 1036 x = 1802 y = 1069 x = 570 y = 1036 x = 908 y = 57
+            //if(vp[i]->x == (570) && vp[i]->y == (1036)){
+            if(vp[i]->x == (908) && vp[i]->y == (57)){
                 //printf("Corner  = %d x = %d y = %d \n",get_corner(nd1, nd), vx1->x, vx1->y);
                 //con[vp[i]->x + w*vp[i]->y] = 255;
-                //con[vp[i]->y*w + vp[i]->x-w] = 255;
-                //con[vp[i]->y*w + vp[i]->x-1] = 255;
-                //con[vp[i]->y*w + vp[i]->x+w] = 255;
-                //con[vp[i]->y*w + vp[i]->x+1] = 255;
+                //con[vx1->y*w + vx1->x-w] = 255;
+                //con[vx1->y*w + vx1->x-1] = 255;
+                //con[vx1->y*w + vx1->x+w] = 255;
+                //con[vx1->y*w + vx1->x+1] = 255;
 
                 con[vx->x + w*vx->y] = 255;
                 con[vx1->x + w*vx1->y] = 255;
@@ -3559,7 +3574,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             //if(get_corner(nd1, nd) < 5){
             //if(abs(nd1 - nd) < 5) {
 
-                yxw  = get_first_pixel(con, vx1, vx1->vp[nd], vx, w, h, kx, ky, sh);
+                yxw  = get_first_pixel(con, vx, vx1, vx1->vp[nd], w, h, kx, ky, sh);
 
                 //l1[vc++] = yxw;
                 //if(yxw == (777+23+1) + (1055+34+2)*w){
@@ -3577,7 +3592,8 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             vx = vx1; //yxw1 = yxw;
             vc1++;
         } while(!(vx == vp[i] && fd));
-        //if(sq > 0) printf("sq = %d vc = %d\n", sq, vc);
+        //if(sq > 0)
+        //sprintf("sq = %d vc = %d\n", sq, vc);
 
         if(!vc){
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
