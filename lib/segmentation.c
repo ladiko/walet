@@ -689,34 +689,26 @@ static inline uint32 draw_line_3(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32
 
 static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
 {
-    uint32 i, max , min = 0, n, x, y, dx, dy;
-    int stx, sty, yx;
+    uint32 i, max , min = 0, x, y, dx, dy;
+    int sty, yx;
     int dma, dmi, stmi, stma;
 
-    if(v->x1 > v->x2) x = v->x2;
+    //if(v->x1 > v->x2) x = v->x2;
 
     if(v->x2 > v->x1){
         x = v->x1; y = v->y1*w;
         sty = v->y2 > v->y1 ? w : -w;
     } else {
         x = v->x2; y = v->y2*w;
-        sty = v->y2 > v->y1 ? -w : w;
+        sty = v->y2 < v->y1 ? w : -w;
     }
-    //x = v->x2 > v->x1 ? v->x1 : v->x2;
-    //y = v->x2 > v->x1 ? v->y1*w : v->y2*w;
-
-    //x = v->x1; y = v->y1*w;
-    //sty = v->y2 > v->y1 ? w : -w;
-    //stx = v->x2 > v->x1 ? 1 : -1;
-    stx = 1;
     dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
-    if(dx >= dy){ dma = dx; dmi = dy; stmi = stx; stma = sty; }
-    else 		{ dma = dy; dmi = dx; stmi = sty; stma = stx; }
-    min = 0; max = dma; n = dma;
-    if(v->x2 <= v->x1 && (dma&1 || dmi&1)) min = dmi-1;
+    if(dx >= dy){ dma = dx; dmi = dy; stmi = 1; stma = sty; }
+    else 		{ dma = dy; dmi = dx; stmi = sty; stma = 1; }
+    max = dma;
 
     yx = y + x;
-    for(i=0; i < n; i++){
+    for(i=0; i < dma; i++){
         //yx = y + x;
         img[yx] = col;
         min += dmi; yx += stmi;
@@ -752,33 +744,56 @@ static inline uint32 check_line(uint8 *img, uint32 x1, uint32 y1, uint32 x2, uin
 
 static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last)
 {
-    uint32 i, max , min = 0, n = 0, x1, x2, y1, y2, dx, dy;
-    int stx, sty;
+    uint32 i, max , min = 0, n = 0, x, y, x1, x2, y1, y2, dx, dy;
+    int  sty;
     int dma, dmi, stmi, stma;
 
     //x = x1; y = y1;
     x1 = buf[first].x; y1 =  buf[first].y;
     x2 = buf[last ].x; y2 =  buf[last ].y;
 
-    sty = y2 > y1 ? 1 : -1;
-    stx = x2 > x1 ? 1 : -1;
+    //sty = y2 > y1 ? 1 : -1;
+    //stx = x2 > x1 ? 1 : -1;
+    if(x2 > x1){
+        x = x1; y = y1;
+        sty = y2 > y1 ? 1 : -1;
+    } else {
+        x = x2; y = y2;
+        sty = y2 < y1 ? 1 : -1;
+    }
     dx = abs(x2 - x1)+1; dy = abs(y2 - y1)+1;
-    if(dx >= dy) { dma = dx; dmi = dy; stmi = stx; stma = sty; }
-    else 		 { dma = dy; dmi = dx; stmi = sty; stma = stx; }
+    if(dx >= dy) { dma = dx; dmi = dy; stmi = 1; stma = sty; }
+    else 		 { dma = dy; dmi = dx; stmi = sty; stma = 1; }
     max = dma; //n = dma;
-    if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
+    //if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
 
     if(dx >= dy){
-        for(i=0; i < dma; i++){
-            if(x1 == buf[i+first].x && y1 == buf[i+first].y) n++;
-            min += dmi; x1 += stmi;
-            if(min >= max) { max += dma; y1 += stma; }
+        if(x2 > x1){
+            for(i=0; i < dma; i++){
+                if(x == buf[i+first].x && y == buf[i+first].y) n++;
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+            }
+        } else {
+            for(i=0; i < dma; i++){
+                if(x == buf[last-i].x && y == buf[last-i].y) n++;
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+            }
         }
     } else {
-        for(i=0; i < dma; i++){
-            if(x1 == buf[i+first].x && y1 == buf[i+first].y) n++;
-            min += dmi; y1 += stmi;
-            if(min >= max) { max += dma; x1 += stma; }
+        if(x2 > x1){
+            for(i=0; i < dma; i++){
+                if(x == buf[i+first].x && y == buf[i+first].y) n++;
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+            }
+        } else {
+            for(i=0; i < dma; i++){
+                if(x == buf[last-i].x && y == buf[last-i].y) n++;
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+            }
         }
     }
     return n*100/dma;
