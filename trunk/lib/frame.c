@@ -175,12 +175,13 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 
 	//Init new sermentation
     f->lbuf = (Line_buff *)calloc(w*h>>4, sizeof(Line_buff));
-	f->ln = (Line *)calloc(w*h>>4, sizeof(Line));
-	f->lp = (Line **)calloc(w*h, sizeof(Line*));
+    //f->ln = (Line *)calloc(w*h>>4, sizeof(Line));
+    //f->lp = (Line **)calloc(w*h, sizeof(Line*));
     f->vx = (Vertex *)calloc(w*h>>4, sizeof(Vertex));
     f->vp = (Vertex **)calloc(w*h, sizeof(Vertex*));
-	f->vpn = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
+    f->vpn = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
 	f->vpt = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
+    f->yx = (uint32 *)calloc(w*h>>1, sizeof(uint32));
 
 	//Old init
 	//f->size = w*h;
@@ -881,7 +882,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_remove_inline(f->vp, vxc, f->y[1].w, f->y[1].h);
         //seg_remove_virtex(f->vx, vxc, f->y[1].w, f->y[1].h);
 
-        vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->lbuf, f->y[1].w, f->y[1].h);
+        vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
         rgc = seg_remove_loops1(f->vx, vxc, f->y[1].w, f->y[1].h);
         rgc = seg_vertex_draw4(f->y1[1].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
@@ -890,9 +891,9 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
 
         memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
-        */
-        //seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
-        /*
+
+        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+
 
         seg_get_or_fill_color(NULL, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
                               rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
