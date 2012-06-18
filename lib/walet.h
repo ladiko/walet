@@ -207,6 +207,7 @@ typedef struct Line Line;
 typedef struct {
     uint16		x;		//The x
     uint16		y;		//The y
+    uint32      yx;     //The fist line point
     uint16 		np;		//Next vertex
     uint8 		in;		//If 1 next curve line has approximated, if 0 not
 } Line_buff;
@@ -238,7 +239,8 @@ struct Vertex {
 	uint8		cn;		//The counter of the directions
 	//Line		**lp;	//The pointer to the lines array
 	Vertex		**vp;	//The pointer to Virtex array
-	uint32		reg;	//The pointer region numbers
+    uint32      *yx;    //The pointer to array of first pint of line
+    uint32		reg;	//The region numbers
 	uint8		rc;		//The counter of iterations
 };
 
