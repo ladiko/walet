@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
+
 void print_around(uint8 *con, uint32 yx, uint32 w)
 {
 
@@ -58,6 +59,88 @@ void print_pointer(Vertex *vx2)
 
 }
 
+//* * *
+//*254*
+//* * *
+static void print_5(uint8 *grad, uint8 *con, uint32 yx, uint32 w)
+{
+    if(con[yx-2]&2) printf("*"); else printf(" ");
+    if(con[yx-2]&4) printf(" * "); else printf("   ");
+    if(con[yx-2]&8) printf("*"); else printf(" ");
+
+    if(con[yx-1]&2) printf("*"); else printf(" ");
+    if(con[yx-1]&4) printf(" * "); else printf("   ");
+    if(con[yx-1]&8) printf("*"); else printf(" ");
+
+    if(con[yx]&2) printf("*"); else printf(" ");
+    if(con[yx]&4) printf(" * "); else printf("   ");
+    if(con[yx]&8) printf("*"); else printf(" ");
+
+    if(con[yx+1]&2) printf("*"); else printf(" ");
+    if(con[yx+1]&4) printf(" * "); else printf("   ");
+    if(con[yx+1]&8) printf("*"); else printf(" ");
+
+    if(con[yx+2]&2) printf("*"); else printf(" ");
+    if(con[yx+2]&4) printf(" * "); else printf("   ");
+    if(con[yx+2]&8) printf("*"); else printf(" ");
+    printf("\n");
+
+    if(con[yx-2]&1) printf("*"); else printf(" ");
+    printf(" 0 ");
+    //printf("%5d", grad[yx-2]);
+    if(con[yx-2]&16) printf("*"); else printf(" ");
+
+    if(con[yx-1]&1) printf("*"); else printf(" ");
+    printf(" 0 ");
+    //printf("%5d", grad[yx-1]);
+    if(con[yx-1]&16) printf("*"); else printf(" ");
+
+    if(con[yx]&1) printf("*"); else printf(" ");
+    printf(" 0 ");
+    //printf("%5d", grad[yx]);
+    if(con[yx]&16) printf("*"); else printf(" ");
+
+    if(con[yx+1]&1) printf("*"); else printf(" ");
+    printf(" 0 ");
+    //printf("%5d", grad[yx+1]);
+    if(con[yx+1]&16) printf("*"); else printf(" ");
+
+    if(con[yx+2]&1) printf("*"); else printf(" ");
+    printf(" 0 ");
+    //printf("%5d", grad[yx+2]);
+    if(con[yx+2]&16) printf("*"); else printf(" ");
+    printf("\n");
+
+    if(con[yx-2]&128) printf("*"); else printf(" ");
+    if(con[yx-2]&64) printf(" * "); else printf("   ");
+    if(con[yx-2]&32) printf("*"); else printf(" ");
+
+    if(con[yx-1]&128) printf("*"); else printf(" ");
+    if(con[yx-1]&64) printf(" * "); else printf("   ");
+    if(con[yx-1]&32) printf("*"); else printf(" ");
+
+    if(con[yx]&128) printf("*"); else printf(" ");
+    if(con[yx]&64) printf(" * "); else printf("   ");
+    if(con[yx]&32) printf("*"); else printf(" ");
+
+    if(con[yx+1]&128) printf("*"); else printf(" ");
+    if(con[yx+1]&64) printf(" * "); else printf("   ");
+    if(con[yx+1]&32) printf("*"); else printf(" ");
+
+    if(con[yx+2]&128) printf("*"); else printf(" ");
+    if(con[yx+2]&64) printf(" * "); else printf("   ");
+    if(con[yx+2]&32) printf("*"); else printf(" ");
+    printf("\n");
+}
+
+static void print_con_grad(uint8 *grad, uint8 *con, uint32 yx, uint32 w)
+{
+    print_5(grad, con, yx - 2*w, w);
+    print_5(grad, con, yx - w, w);
+    print_5(grad, con, yx , w);
+    print_5(grad, con, yx + w, w);
+    print_5(grad, con, yx + 2*w, w);
+}
 
 
 void seg_grad(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
@@ -476,11 +559,11 @@ static inline void direction1(uint8 *img, uint32 w, uint32 yx, int *dx, int *dy,
 }
 
 /*	\brief	Find the maximum around the pixel.
-	\param	img		The pointer to gradient image.
-	\param	yx		The pixel coordinate (yx = y*w + x)
-	\param	w		The image width.
-	\param  in1		The previous maximum direction.
-	\retval			The direction of of local max.
+    \param	img		The pointer to gradient image.
+    \param	yx		The pixel coordinate (yx = y*w + x)
+    \param	w		The image width.
+    \param  in1		The previous maximum direction.
+    \retval			The direction of of local max.
 */
 static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1, uint32 *max)
 {
@@ -575,6 +658,96 @@ static inline int dir(uint8 *img, uint32 yx, uint32 w, int in1, uint32 *max)
     }
 }
 
+static inline uint32 check_vertex(uint8 *img, uint32 yx, uint8 val, uint32 w)
+{
+    if(img[yx-1]   == val) return 1;
+    if(img[yx-w]   == val) return 1;
+    if(img[yx+1]   == val) return 1;
+    if(img[yx+w]   == val) return 1;
+    if(img[yx-1-w] == val) return 1;
+    if(img[yx+1-w] == val) return 1;
+    if(img[yx-1+w] == val) return 1;
+    if(img[yx+1+w] == val) return 1;
+    return 0;
+}
+
+static inline uint32 check_max(uint8 *img, int *dr, uint32 yx, uint8 val)
+{
+    if(img[yx+dr[0]] == val) return 1;
+    if(img[yx+dr[1]] == val) return 1;
+    if(img[yx+dr[2]] == val) return 1;
+    if(img[yx+dr[3]] == val) return 1;
+    if(img[yx+dr[4]] == val) return 1;
+    if(img[yx+dr[5]] == val) return 1;
+    if(img[yx+dr[6]] == val) return 1;
+    if(img[yx+dr[7]] == val) return 1;
+    return 0;
+}
+
+
+/*	\brief	Find the maximum around the pixel.
+    \param	img		The pointer to gradient image.
+    \param	yx		The pixel coordinate (yx = y*w + x)
+    \param	w		The image width.
+    \param  in1		The previous maximum direction.
+    \retval			The direction of of local max.
+*/
+static inline int dir1(uint8 *grad, uint8 *con, int *dr, uint32 yx, uint32 w, int in1)
+{
+    max = 0;
+    int in = 0;
+    if(in1 == 0   ){
+        if(grad[yx+dr[0]] > max) { max = grad[yx+dr[0]]; in = dr[0]; }
+        if(grad[yx+dr[1]] > max) { max = grad[yx+dr[1]]; in = dr[1]; }
+        if(grad[yx+dr[2]] > max) { max = grad[yx+dr[2]]; in = dr[2]; }
+        if(grad[yx+dr[3]] > max) { max = grad[yx+dr[3]]; in = dr[3]; }
+        if(grad[yx+dr[4]] > max) { max = grad[yx+dr[4]]; in = dr[4]; }
+        if(grad[yx+dr[5]] > max) { max = grad[yx+dr[5]]; in = dr[5]; }
+        if(grad[yx+dr[6]] > max) { max = grad[yx+dr[6]]; in = dr[6]; }
+        if(grad[yx+dr[7]] > max) { max = grad[yx+dr[7]]; in = dr[7]; }
+        return in;
+    }
+    if(in1 == dr[0]){ tmp[0] = dr[3]; tmp[1] = dr[4]; tmp[2] = dr[5]; }
+    if(in1 == dr[1]){ tmp[0] = dr[4]; tmp[1] = dr[5]; tmp[2] = dr[6]; }
+    if(in1 == dr[2]){ tmp[0] = dr[5]; tmp[1] = dr[6]; tmp[2] = dr[7]; }
+    if(in1 == dr[3]){ tmp[0] = dr[6]; tmp[1] = dr[7]; tmp[2] = dr[0]; }
+    if(in1 == dr[4]){ tmp[0] = dr[7]; tmp[1] = dr[0]; tmp[2] = dr[1]; }
+    if(in1 == dr[5]){ tmp[0] = dr[0]; tmp[1] = dr[1]; tmp[2] = dr[2]; }
+    if(in1 == dr[6]){ tmp[0] = dr[1]; tmp[1] = dr[2]; tmp[2] = dr[3]; }
+    if(in1 == dr[7]){ tmp[0] = dr[2]; tmp[1] = dr[3]; tmp[2] = dr[4]; }
+
+    if(grad[yx+tmp[0]] > max) { max = grad[yx+tmp[0]]; in = tmp[0]; }
+    if(grad[yx+tmp[1]] > max) { max = grad[yx+tmp[1]]; in = tmp[1]; }
+    if(grad[yx-tmp[2]] > max) { max = grad[yx+tmp[2]]; in = tmp[2]; }
+
+    if(con[max]){
+        if(max == 255) return in;
+        else if(check_max(grad, dr, max, 255)){
+            if(in == tmp[0]) tmp[0] = tmp[2];
+            else if(in == tmp[1]) tmp[1] = tmp[2];
+        } else return in;
+    } else return in;
+
+    if(grad[yx+tmp[0]] > grad[yx+tmp[1]]) { max = grad[yx+tmp[0]]; in = tmp[0]; }
+    else { max = grad[yx+tmp[1]]; in = tmp[1]; }
+
+    if(con[max]){
+        if(max == 255) return in;
+        else if(check_max(grad, dr, max, 255)){
+            if(in == tmp[0]) { max = grad[yx+tmp[1]]; in = tmp[1]; }
+            else { max = grad[yx+tmp[0]]; in = tmp[0]; }
+        } else return in;
+    } else return in;
+
+    if(con[max]){
+        if(max == 255) return in;
+        else if(check_max(grad, dr, max, 255)){
+            return 0;
+        } else return in;
+    } else return in;
+
+}
+
 /*	\brief	Check is a pixel the local maximum.
 	\param	img		The pointer to gradient image.
 	\param	yx		The pixel coordinate (yx = y*w + x)
@@ -592,19 +765,6 @@ static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
         img[yx-1+w] <= img[yx] &&
         img[yx+1+w] <= img[yx] ) return img[yx];
     else return 0;
-}
-
-static inline uint32 check_vertex(uint8 *img, uint32 yx, uint8 val, uint32 w)
-{
-    if(img[yx-1]   == val) return 1;
-    if(img[yx-w]   == val) return 1;
-    if(img[yx+1]   == val) return 1;
-    if(img[yx+w]   == val) return 1;
-    if(img[yx-1-w] == val) return 1;
-    if(img[yx+1-w] == val) return 1;
-    if(img[yx-1+w] == val) return 1;
-    if(img[yx+1+w] == val) return 1;
-    return 0;
 }
 
 static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
@@ -1811,6 +1971,8 @@ void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
     uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h2 = h-2, w2 = w-2, max;//, yxl = 0;
     int d1, d2, d3, npix = 0, cr;
     int cn, ck = 0;
+    int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
+
     for(i=0; i < lmaxc; i++){
         if(!con[hist[i]]){
             //printf("x = %d y = %d\n", x, y);
@@ -1848,19 +2010,21 @@ void seg_find_intersect6(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                             grad[yx1] = 255; //con[yx1] = 255;
                             npix++;
                             //Check for circle
+                            /*
                             if((yx1 == 1449 + 264*w) || (yx1 == 1448 + 264*w)) {
                                 printf(" x = %d y = %d con = %d grad = %d \n", yx1%w, yx1/w, con[yx1], grad[yx1]);
                                 print_around(con, yx1, w);
                                 print_around(grad, yx1, w);
-                            }
+                            }*/
                             if(yx == yx1) cr = 1;
                             break;
                         }
+                        /*
                         if((yx1 == 1449 + 264*w) || (yx1 == 1448 + 264*w)) {
                             printf(" x = %d y = %d con = %d grad = %d \n", yx1%w, yx1/w, con[yx1], grad[yx1]);
                             print_around(con, yx1, w);
                             print_around(grad, yx1, w);
-                        }
+                        }*/
                         //add_dir1(&di[yxt], d1, w);
                         add_dir3(con, yx1, -d1, w);
                         grad[yx1] = 253; //con[yx1] = 255;
@@ -2398,6 +2562,7 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                     printf("New pixel vxc = %d x = %d y = %d n = %d di = %d cn = %d\n", vxc, vxp->x, vxp->y, vxp->n, vxp->di, vxp->cn);
                     print_around(con, yx, w);
                     print_around(grad, yx, w);
+                    print_con_grad(grad, con, yx, w);
                 }
 
                 while(get_next_dir2(vxp, &dx, &dy)){
