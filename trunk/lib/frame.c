@@ -887,10 +887,10 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         rgc = seg_remove_loops1(f->vx, vxc, f->y[1].w, f->y[1].h);
         rgc = seg_vertex_draw4(f->y1[1].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        /*
+
         seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
-
+        /*
         memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
 
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
