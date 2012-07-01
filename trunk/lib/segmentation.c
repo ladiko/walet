@@ -1095,6 +1095,43 @@ static inline uint32 get_next_pixel(uint32 yx1, uint32 yx2, uint32 w)
     else if (yx2-yx1 ==  w-1) return yx1  -1;
 }
 
+static inline uint32 get_first_pixel2(uint8 *img, uint32 yx, uint32 yx1, uint32 yx2, int *dr)
+{
+    uint32 i, nd1, nd2, ndt;
+    if      (yx1-yx == dr[0]) nd1 = 0;
+    else if (yx1-yx == dr[1]) nd1 = 1;
+    else if (yx1-yx == dr[2]) nd1 = 2;
+    else if (yx1-yx == dr[3]) nd1 = 3;
+    else if (yx1-yx == dr[4]) nd1 = 4;
+    else if (yx1-yx == dr[5]) nd1 = 5;
+    else if (yx1-yx == dr[6]) nd1 = 6;
+    else if (yx1-yx == dr[7]) nd1 = 7;
+
+    if      (yx2-yx == dr[0]) nd2 = 0;
+    else if (yx2-yx == dr[1]) nd2 = 1;
+    else if (yx2-yx == dr[2]) nd2 = 2;
+    else if (yx2-yx == dr[3]) nd2 = 3;
+    else if (yx2-yx == dr[4]) nd2 = 4;
+    else if (yx2-yx == dr[5]) nd2 = 5;
+    else if (yx2-yx == dr[6]) nd2 = 6;
+    else if (yx2-yx == dr[7]) nd2 = 7;
+
+    ndt = nd1;
+    for(i=0; ndt != nd2; i++) ndt = (ndt == 7) ? 0 : ndt + 1;
+    i--;
+    printf("nd1 = %d nd2 = %d i = %d\n", nd1, nd2, i);
+
+    if(i && i < 4){
+        i = (nd1 == 7) ? 0 : nd1 + 1;
+        while(i != nd2){
+            if(!img[yx+dr[i]]) return yx+dr[i];
+            i = (i == 7) ? 0 : i + 1;
+            printf("i = %d nd2 = %d img[yx+dr[i]] = %d\n", i, nd2, img[yx+dr[i]]);
+        }
+    } else return 0;
+    return 0;
+}
+
 static inline uint32 get_corner1(uint8 nd1, uint8 nd2)
 {
     int i;
@@ -1207,7 +1244,6 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v2, Vertex *v, Vertex *
             if(yxn != yx1 && !img[yxn]) return yxn;
         } while(yxn != yx1);
     }
-
     //if(cn == cn255) return 1;
 
     return 0;
@@ -1216,16 +1252,20 @@ static inline uint32 get_first_pixel(uint8 *img, Vertex *v2, Vertex *v, Vertex *
 static inline uint32 get_first_pixel1(uint8 *img, Vertex *v, uint8 nd1, uint8 nd2, uint32 w)
 {
     uint32 i, yxn, yx = v->x + v->y*w;
+
     if(v->yx[nd1] == v->yx[nd2]) return 0;
 
-    for(i=0; nd1 != nd2; i++) nd1 = (nd1 == 7) ? 0 : nd1 + 1;
+    //i = get_n_round(yx, v->yx[nd1], v->yx[nd2], w);
 
-    if(i < 5){
+    for(i=0; nd1 != nd2; i++) nd1 = (nd1 == 7) ? 0 : nd1 + 1;
+    printf("nd1 = %d nd2 = %d i = %d\n", i, nd1, nd2);
+
+    if(i && i < 4){
         yxn = v->yx[nd1];
         //yxn = yx2;
         do{
             yxn = get_next_pixel(yx, yxn, w);
-            //printf("yx2 = %d yxn = %d img[yxn] = %d\n", yx2, yxn, img[yxn]);
+            printf("x = %d y = %d x1 = %d y1 = %d img[yxn] = %d\n", yx%w, yx/w, yxn%w, yxn/w, img[yxn]);
             //if(yxn != yx2 && !img[yxn] && check_true_reg(img, yx, yxn, w)) return yxn;
             if(yxn != v->yx[nd2] && !img[yxn]) return yxn;
         } while(yxn != v->yx[nd2]);
@@ -2451,10 +2491,30 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
                 ly = abs(buf[j].y - buf[j1].y);
                 len = lx > ly ? lx + 1 : ly + 1;
                 //Curve length
-                //if(ln == len){
-                    cl = check_line1(buf, j, j1, w);
-                    //printf("i = %d j = %d j1 = %d ln = %d len = %d cl = %d dl = %d buf[j].in = %d  \n", i, j, j1, ln, len, cl, dl, buf[j].in);
-                    //printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",buf[j].x, buf[j].y, buf[j1].x, buf[j1].y);
+
+                //printf("i = %d j = %d j1 = %d ln = %d len = %d cl = %d dl = %d buf[j].in = %d  \n", i, j, j1, ln, len, cl, dl, buf[j].in);
+                //printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",buf[j].x, buf[j].y, buf[j1].x, buf[j1].y);
+
+                if (j1-j < 4){
+                    buf[j].in = 1;
+                } else {
+                    if(ln == len) cl = check_line1(buf, j, j1, w);
+                    else cl = 0;
+
+                    if(cl > 50){
+                        buf[j].in = 1;
+                        //printf("Finish\n");
+                    } else {
+                        //Divid cuver
+                        mid = j + (ln>>1);
+                        buf[j].np = mid;
+                        buf[mid].np = j1;
+                        dl++;
+                        //printf("Divid\n");
+                    }
+                }
+                /*
+                cl = check_line1(buf, j, j1, w);
 
                     //if(len == ln && cl > 50){
                     if(ln == len) cl = check_line1(buf, j, j1, w);
@@ -2475,8 +2535,7 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
                         //The line less than 5 pixels
                         buf[j].in = 1;
                         //printf("Less than 5\n");
-                    }
-                //s}
+                    }*/
             }
             j = j1;
         }
@@ -3971,6 +4030,7 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
     Vector v;
     uint8  nd, nd1, nd2, sh = 15, cl = 200;
     Vertex *vx, *vx1;
+    int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
     uint32 kx = ((w-2)<<sh)/(w1-3);
     uint32 ky = ((h-2)<<sh)/(h1-3);
     //uint32 num, c, cn;
@@ -3987,12 +4047,13 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
     for(i=0; i < rgc; i++){
         vc = 0; vc1 = 0; sq = 0; yxw1 = 0;
         vx = vp[i]; nd = dir[i]; nd2 = nd;
-
-        //con[vx->x + w*vx->y] = 255;
-        //con[vx->y*w + vx->x-w] = 255;
-        //con[vx->y*w + vx->x-1] = 255;
-        //con[vx->y*w + vx->x+w] = 255;
-        //con[vx->y*w + vx->x+1] = 255;
+        /*
+        con[vx->x + w*vx->y] = 255;
+        con[vx->y*w + vx->x-w] = 255;
+        con[vx->y*w + vx->x-1] = 255;
+        con[vx->y*w + vx->x+w] = 255;
+        con[vx->y*w + vx->x+1] = 255;
+        */
 
         if(!get) cl = col[i];
         //printf("New region\n");
@@ -4039,29 +4100,33 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             //if(get_corner(nd1, nd) < 5){
             //if(abs(nd1 - nd) < 5) {
 
-                //yxw = get_first_pixel(con, vx, vx1, vx1->vp[nd], w, h, kx, ky, sh);
-                yxw = get_first_pixel1(con, vx1, nd1, nd, w);
+            //yxw = get_first_pixel(con, vx, vx1, vx1->vp[nd], w, h, kx, ky, sh);
+            //yxw = get_first_pixel1(con, vx1, nd1, nd, w);
+            printf("nd1 = %d nd2 = %d x = %d y = %d x = %d y = %d x = %d y = %d \n",
+                   nd1, nd, vx1->x,vx1->y, vx1->yx[nd1]%w, vx1->yx[nd1]/w,vx1->yx[nd]%w, vx1->yx[nd]/w);
+            yxw = get_first_pixel2(con, vx1->x + vx1->y*w, vx1->yx[nd1], vx1->yx[nd], dr);
+            printf("nd1 = %d nd2 = %d x = %d y = %d yxw = %d con = %d\n", nd1, nd, yxw%w, yxw/w, yxw, con[yxw]);
 
-                //l1[vc++] = yxw;
-                //if(yxw == (777+23+1) + (1055+34+2)*w){
+            //l1[vc++] = yxw;
+            //if(yxw == (777+23+1) + (1055+34+2)*w){
 
-                 //if(yxw > 1 && yxw1) {
-                if(yxw) {
-                    //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
-                    l1[vc++] = yxw;
-                    //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
-                    //con[yxw] = cl;
-                } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+            //if(yxw > 1 && yxw1) {
+            if(yxw) {
+                //if(con[yxw] != 0) printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
+                l1[vc++] = yxw;
+                printf("vc = %d yxw = %d\n", vc, yxw);
+                con[yxw] = 250;
+                //if(con[yxw]) printf("yxw = %d con[yxw] = %d\n", yxw, con[yxw]);
+                //con[yxw] = cl;
+            } //else  printf("x = %d y = %d con = %d\n", yxw%w, yxw/w, con[yxw]);
             //}
             //else if(!yxw) col[rc++] = 0;
             //last = yxw ? 1 : 0;
+
             vx = vx1; //yxw1 = yxw;
             vc1++;
         } while(!(vx == vp[i] && nd == nd2));
-        //} while(!(vx == vp[i] && fd));
-        //} while(vx != vp[i]);
-        //if(sq > 0)
-        //sprintf("sq = %d vc = %d\n", sq, vc);
+        return 0;
 
         if(!vc){
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!       x = %d y = %d vc = %d di = %d cn = %d pn1 = %d sq = %d\n", vp[i]->x, vp[i]->y, vc1, vp[i]->di, vp[i]->cn, pn1, sq);
@@ -4084,10 +4149,12 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
             dloop++;
         }
 
+
         if(vc){
             if(get) col[i] = get_region_color(img, con, l1, vc, w);
             else    fill_region_color(con, l1, vc, col[i], w);
         } else if(get) col[i] = 1;
+        //printf("Finish color\n");
 
         //}
         //}
