@@ -3840,28 +3840,36 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, Vertex **vp2, uint
     return rc;
 }
 
+static inline uint32 get_cn_num(uint8 cn)
+{
+    uint32 i, n=0;
+    for(i=0; i < 8; i++) if(cn&(1<<i)) n++;
+    return n;
+}
+
 uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir, uint16 *bf,  uint32 *pc, uint32 w, uint32 h)
 {
-    uint32 i, j, rc = 0, lc;
+    uint32 i, j, rc = 0, fn;
     int sq,  sqr = 0;
     uint8  nd, nd1, nd2;
     Vertex *vx, *vx1;
 
     for(i=0; i < vxc; i++) { vx2[i].cn = 0; vx2[i].rc = 0; }
 
-    *pc = 0;
+    *pc = 2; bf[0] = 0;  bf[1] = 0;
     for(i=0; i < vxc; i++){
 
-        while(vx2[i].n  && get_dir2(&vx2[i], &nd)){
-            if(vx2[i].n < 3) {  vx2[i].n = 0; break; }
+        while(vx2[i].n > 2  && get_dir2(&vx2[i], &nd)){
+            //if(vx2[i].n < 3) {  vx2[i].n = 0; break; }
             //Start new region
-            vx = &vx2[i]; nd2 = nd; sq = 0; vx2[i].rc++;
+            //printf("New region\n");
+            vx = &vx2[i]; nd2 = nd; sq = 0; fn = 0;
             ///Store pixeles for compression
-            bf[(*pc)++] = vx->x; bf[(*pc)++] = vx->y; lc = 1;
+            //bf[(*pc)++] = vx->x; bf[(*pc)++] = vx->y; vx->rc++; //lc = 1;
             do {
                 //printf("x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
                 vx1 = vx->vp[nd];
-                bf[(*pc)++] = vx1->x; bf[(*pc)++] = vx1->y; lc++;
+
                 nd1 = find_pointer1(vx1, vx);
 
                 if(nd1 == 10) {
@@ -3871,6 +3879,23 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
                     //print_around(con, vx->x + vx->y*w, w);
                     return 0;
                 }
+
+                if(!(vx1->cn&(1<<nd1))){
+                    if(!(bf[(*pc)-2] == vx->x && bf[(*pc)-1] == vx->y) || get_cn_num(vx->cn) > 1 ){
+                        bf[(*pc)++] = vx->x;  bf[(*pc)++] = vx->y;  //vx->rc++;
+                        //printf("bf[%d] = %d bf[%d] = %d\n", (*pc)-2, bf[(*pc)-2], (*pc)-1, bf[(*pc)-1]);
+                    }
+                    bf[(*pc)++] = vx1->x; bf[(*pc)++] = vx1->y; //vx1->rc++;
+                    //printf("bf[%d] = %d bf[%d] = %d\n", (*pc)-2, bf[(*pc)-2], (*pc)-1, bf[(*pc)-1]);
+                }
+                /*
+                if(!fn){
+                    //Check if line is exist
+
+                    bf[(*pc)++] = vx1->x; bf[(*pc)++] = vx1->y;
+                    if(vx1->cn&(1<<nd1)) fn = 1;
+                    vx1->rc++;
+                }*/
 
                 nd = get_clockwise_dir1(vx1, nd1);
                 finish_dir1(vx1, nd);
@@ -3882,31 +3907,41 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
             if(sq > 0 ){
                 vp2[rc] = &vx2[i]; dir[rc] = nd2;
                 rc++;
-            } else (*pc) -= (lc<<1);
+            } //else (*pc) -= (lc<<1);
             sqr += sq;
+            /*
+            if(rc == 5) {
+                (*pc)-=2;
+                return;
+            }
+            */
         }
     }
     if(sqr) printf("seg_vertex_draw4: Toatl sq = %d\n", sqr);
+    (*pc)-=2;
 
     printf("Numbers of regions = %d number of pixels  = %d\n", rc, (*pc));
     return rc;
 }
 
-void seg_draw_xy(uint8 *img, uint16 *xy, uint32 npc, uint32 w, uint32 h, uint32 w1, uint32 h1)
+void seg_draw_xy(uint8 *img, uint16 *bf, uint32 npc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
-    uint32 i, x, y, tmp =0, cn ;
+    uint32 i = 0, x, y, tmp =0, cn = 0;
     Vector v;
     uint8  sh = 15;
     uint32 kx = ((w-2)<<sh)/(w1-3);
     uint32 ky = ((h-2)<<sh)/(h1-3);
+    uint16 *xy = &bf[2];
 
-    x = xy[0]; y = xy[1]; i = 0;
+
     while(1){
-        printf("New region\n"); cn = 0;
-        do{
-            if(i>npc) return;
-            if(x == 317 && y == 54 && tmp > 1 ) cn++;
-            if(cn ==10) return;
+        x = xy[i]; y = xy[i+1]; cn++;
+        //printf("%d New region\n", cn); //cn = 0;
+        while(1){
+            if(i >= npc) break;
+            //if(i>npc) return;
+            //if(x == 317 && y == 54 && tmp > 1 ) cn++;
+            //if(cn ==10) return;
             i += 2;
             /*
             v.x1 = xy[i-2];
@@ -3918,27 +3953,24 @@ void seg_draw_xy(uint8 *img, uint16 *xy, uint32 npc, uint32 w, uint32 h, uint32 
             v.y1 = scale(xy[i-1], h, ky, sh);
             v.x2 = scale(xy[i  ], w, kx, sh);
             v.y2 = scale(xy[i+1], h, ky, sh);
+            //printf("%d npc = %d xb = %d yb = %d x = %d y = %d x1 = %d y1 = %d\n", i, npc, x, y, xy[i-2], xy[i-1], xy[i], xy[i+1]);
+            if(img[v.x2 + v.y2*w]) {
+                draw_line_1(img, &v, w, 50);
+                img[v.y2*w + v.x2] = 200;
+                img[v.y1*w + v.x1] = 200;
+                break;
+            }
 
             draw_line_1(img, &v, w, 50);
             img[v.y2*w + v.x2] = 200;
             img[v.y1*w + v.x1] = 200;
 
-            printf("%d npc = %d xb = %d yb = %d x = %d y = %d x1 = %d y1 = %d\n", i, npc, x, y, xy[i-2], xy[i-1], xy[i], xy[i+1]);
-
-        } while(!(xy[i] == x && xy[i+1] == y));
-        i += 2;
-        if(i == npc) break;
-        x = xy[i]; y = xy[i+1];
-        if(x == 317 && y == 54) {
-            //img[y*w + x-w] = 255;
-            //img[y*w + x-1] = 255;
-            //img[y*w + x+w] = 255;
-            //img[y*w + x+1] = 255;
-
-            tmp++;  //if(tmp > 1) return;
         }
-        //i += 2;
+        i += 2;
+        if(i >= npc) break;
     }
+    printf("Numbers of pixels = %d\n", i);
+
 }
 
 static inline uint8 get_region_color(uint8 *img, uint8 *con, uint32 *l1, uint32 num, uint32 w)

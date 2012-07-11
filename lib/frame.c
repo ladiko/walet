@@ -904,9 +904,9 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
         */
 
-        //memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
 
-        //seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+        seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
         /*
         seg_vertex_draw3(f->y1[1].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
