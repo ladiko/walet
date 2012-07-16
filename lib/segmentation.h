@@ -14,6 +14,7 @@ typedef struct {
     uint8 		cr[4];		//The right color
 } Point;
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -52,6 +53,7 @@ void seg_vertex_draw1(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, u
 void seg_vertex_draw2(uint8 *img, Vertex **vp, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1);
 uint32 seg_vertex_draw3(uint8 *img, Vertex *vx, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1);
 uint32  seg_vertex_draw4(uint8 *img, Vertex *vx, uint32 vxc, Vertex **vp2, uint8 *dir, uint32 w, uint32 h, uint32 w1, uint32 h1);
+uint32 seg_average(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 
 uint32  seg_get_or_fill_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex *vx, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 

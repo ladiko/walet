@@ -249,8 +249,8 @@ void filter_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
                         s[i][0] = img[yx+1-w]; s[i][1] = img[yx+1]; s[i][2] = img[yx+1+w];
                         sort_3(s[i]);
                         img1[yx] = median_3(max_3   (s[0][0], s[1][0], s[2][0]),
-                                                                median_3(s[0][1], s[1][1], s[2][1]),
-                                                                min_3   (s[0][2], s[1][2], s[2][2]));
+                                            median_3(s[0][1], s[1][1], s[2][1]),
+                                            min_3   (s[0][2], s[1][2], s[2][2]));
                         i = (i == 2) ? 0 : i+1;
                 }
         }
@@ -342,6 +342,56 @@ void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h)
 			i = (i == 2) ? 0 : i+1;
 		}
 	}
+}
+
+void filter_contrast_5x5(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+    uint32 y, x, yw, yx, h2 = h-3, w2 = w-3, min, max, i;
+    int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
+                          -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
+                          -2-w, 2-w,
+                          -2, 2,
+                          -2+w, 2+w,
+                          -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
+
+
+    for(y=3; y < h2; y++){
+        yw = y*w;
+        for(x=3; x < w2; x++){
+            yx = yw + x;
+            min = img[yx]; max = img[yx];
+            for(i=0; i < 24; i++) {
+                if(img[yx+dr[i]] > max) max = img[yx+dr[i]];
+                else if((img[yx+dr[i]] < min)) min = img[yx+dr[i]];
+            }
+            img1[yx] = abs(max-img[yx]) < abs(min-img[yx]) ? max : min;
+        }
+    }
+
+}
+
+uint32 filter_average_new(uint8 *img, uint8 *img1, uint32 w, uint32 h)
+{
+    uint32 y, x, yw, yx, h2 = h-3, w2 = w-3, avr, i;
+    int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w};
+
+    for(x=0; x < w*3; x++) img1[x] = img[x];
+
+    for(y=3; y < h2; y++){
+        yw = y*w;
+        img1[yw] = img[yw]; img1[yw+1] = img[yw+1]; img1[yw+2] = img[yw+2];
+        for(x=3; x < w2; x++){
+            yx = yw + x;
+            avr = img[yx];
+            for(i=0; i < 8; i++) avr+= img[yx+dr[i]];
+            avr >>= 3;
+            img1[yx] = avr > 251 ? 251 : avr;
+        }
+        img1[yx] = img[yx]; img1[yx+1] = img[yx+1]; img1[yx+2] = img[yx+2];
+    }
+
+    for(x=0; x < w*3; x++) img1[yx+x] = img[yx+x];
+
 }
 
 static inline uint8 filter(int16 *img, uint32 yx, uint32 w, uint32 thresh)
