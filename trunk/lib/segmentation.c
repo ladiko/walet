@@ -226,17 +226,18 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
                 img1[yw + 1] = col; con[yw + 1] = 68;  //di[yw + 1] = 4; //di[yw + 1] = 32;
                 for(x=2; x < w2; x++){
                         yx = yw + x;
-                        /*
+
                         g[0] = abs(img[yx-1  ] - img[yx+1  ]);
                         g[1] = abs(img[yx-1-w] - img[yx+1+w]);
                         g[2] = abs(img[yx-w  ] - img[yx+w  ]);
                         g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-                        */
 
+                        /*
                         g[0] = abs(img[yx-2  ] - img[yx+2  ]);
                         g[1] = abs(img[yx-2-(w<<1)] - img[yx+2+(w<<1)]);
                         g[2] = abs(img[yx-(w<<1)  ] - img[yx+(w<<1)  ]);
                         g[3] = abs(img[yx+2-(w<<1)] - img[yx-2+(w<<1)]);
+                        */
 
                         /*
                         g[4] = abs(img[yx-2-w  ] - img[yx+2+w  ]);
@@ -984,17 +985,23 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
 	\param  w		The image width.
 	\retval			1 if local max, 0 - if not
 */
-static inline uint32 loc_max(uint8 *img, uint32 yx, uint32 w)
+static inline uint32 loc_max(uint8 *img, int *dr, uint32 yx, uint32 w)
 {
-    if( img[yx-1]   <= img[yx] &&
-        img[yx-w]   <= img[yx] &&
-        img[yx+1]   <= img[yx] &&
-        img[yx+w]   <= img[yx] &&
-        img[yx-1-w] <= img[yx] &&
-        img[yx+1-w] <= img[yx] &&
-        img[yx-1+w] <= img[yx] &&
-        img[yx+1+w] <= img[yx] ) return img[yx];
+    uint32 i = 0;
+    for(i=0; i < 24; i++) if(img[yx+dr[i]] > img[yx]) return 0;
+    return img[yx];
+    /*
+    if( img[yx+dr[0]] <= img[yx] &&
+        img[yx+dr[1]] <= img[yx] &&
+        img[yx+dr[2]] <= img[yx] &&
+        img[yx+dr[3]] <= img[yx] &&
+        img[yx+dr[4]] <= img[yx] &&
+        img[yx+dr[5]] <= img[yx] &&
+        img[yx+dr[6]] <= img[yx] &&
+        img[yx+dr[7]] <= img[yx]
+            ) return img[yx];
     else return 0;
+    */
 }
 
 static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
@@ -1010,21 +1017,31 @@ static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
     return 0;
 }
 
+
 uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
 {
     uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2, lmaxc;
     uint8 max;
+    int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
+                          -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
+                          -2-w, 2-w,
+                          -2, 2,
+                          -2+w, 2+w,
+                          -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
+
 
     memset(hist ,0, sizeof(uint32)<<8);
     memset(hist1,0, sizeof(uint32)<<8);
+
+
 
     for(y=2; y < h2; y++){
         yw = y*w;
         for(x=2; x < w2; x++){
             yx = yw + x;
-            max = loc_max(img, yx, w);
+            max = loc_max(img, dr, yx, w);
             if(max > th) {
-                //img[yx] = 252;
+                img[yx] = 252;
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -1104,6 +1121,9 @@ static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
     yx = y + x;
     for(i=0; i < dma; i++){
         //yx = y + x;
+        ////Check if vertex is in another line
+        if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/x);
+
         img[yx] = col;
         min += dmi; yx += stmi;
         if(min >= max) { max += dma; yx += stma; }
@@ -1170,6 +1190,7 @@ static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last, uint
                 min += dmi; x += stmi;
                 if(min >= max) { max += dma; y += stma; }
             }
+            //If differnt line and curve lenght should be only if line = 3 pixel and curve = 4 pixel
             if(dma -1 != last - first) buf[ic].yx = buf[ic-1].yx;
 
         } else {
@@ -1206,7 +1227,7 @@ static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last, uint
             if(dma -1 != last - first) buf[ic].yx = buf[ic+1].yx;
         }
     }
-    //If differnt line and curve lenght should be only if line = 3 pixel and curve = 4 pixel
+
     return n*100/dma;
 }
 
@@ -2449,7 +2470,7 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
     printf("Numbers of intersection  = %d\n", npix);
 
 }
-
+/*
 void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
 {
     uint32 y, y1, x, yx, yw, yx1, yx2, i, h2 = h-2, w2 = w-2, max;
@@ -2509,7 +2530,7 @@ void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
     printf("Numbers of intersection  = %d\n", npix);
 
 }
-
+*/
 static inline uint32 get_next_vertex(uint8 *con, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
 //Return 0 if curve ended not vertex
 {
@@ -2667,7 +2688,7 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
                     if(ln == len) cl = check_line1(buf, j, j1, w);
                     else cl = 0;
 
-                    if(cl > 50){
+                    if(cl > 60){
                         buf[j].in = 1;
                         //printf("Finish\n");
                     } else {
@@ -3664,6 +3685,13 @@ static inline uint32 get_pix(uint8 *img, uint32 yx, uint32 w, uint8 nd1)
 	return 0;
 }
 
+static inline uint32 get_cn_num(uint8 cn)
+{
+    uint32 i, n=0;
+    for(i=0; i < 8; i++) if(cn&(1<<i)) n++;
+    return n;
+}
+
 uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
     uint32 i, j, yx, vc = 0, lc = 0;
@@ -3677,9 +3705,13 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
 
     for(i=0; i < vxc; i++){
         //if(vp[i]->n > 1)
-        //If any problem may change if to while
-        while(vx2[i].n  && get_dir2(&vx2[i], &nd)){
+        while(vx2[i].n && get_dir2(&vx2[i], &nd)){
+
             vx = &vx2[i];//vc = 0;
+            //Check if vertex is in another line
+            if(get_cn_num(vx->cn) == 1) if(img[vx->x + vx->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx->x, vx->y);
+
+
             //vp1 = vp[i];
             //printf("%4d x = %4d y = %4d di = %d cn = %d nd = %d n = %d\n", i, vx->x, vx->y, vx->di, vx->cn, nd, vx->n);
             //while(1){
@@ -3688,6 +3720,11 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
             finish_dir1(vx, nd);
             //finish_dir2(vx, nd);
             nd1 =  find_pointer1(vx1, vx);
+
+            //Check if vertex is in another line
+            if(!vx1->cn) if(img[vx1->x + vx1->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx1->x, vx1->y);
+
+
             finish_dir1(vx1, nd1);
             //finish_dir2(vx1, nd1);
 
@@ -3840,14 +3877,7 @@ uint32  seg_vertex_draw4(uint8 *img, Vertex *vx2, uint32 vxc, Vertex **vp2, uint
     return rc;
 }
 
-static inline uint32 get_cn_num(uint8 cn)
-{
-    uint32 i, n=0;
-    for(i=0; i < 8; i++) if(cn&(1<<i)) n++;
-    return n;
-}
-
-uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir, uint16 *bf,  uint32 *pc, uint32 w, uint32 h)
+uint32 seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir, uint16 *bf,  uint32 *pc, uint32 w, uint32 h)
 {
     uint32 i, j, rc = 0, fn;
     int sq,  sqr = 0;
@@ -3856,7 +3886,7 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
 
     for(i=0; i < vxc; i++) { vx2[i].cn = 0; vx2[i].rc = 0; }
 
-    *pc = 2; bf[0] = 0;  bf[1] = 0;
+    bf[(*pc)++] = 0; bf[(*pc)++] = 0;
     for(i=0; i < vxc; i++){
 
         while(vx2[i].n > 2  && get_dir2(&vx2[i], &nd)){
@@ -3882,7 +3912,9 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
 
                 if(!(vx1->cn&(1<<nd1))){
                     if(!(bf[(*pc)-2] == vx->x && bf[(*pc)-1] == vx->y) || get_cn_num(vx->cn) > 1 ){
+                        bf[(*pc)++] = 0;
                         bf[(*pc)++] = vx->x;  bf[(*pc)++] = vx->y;  //vx->rc++;
+
                         //printf("bf[%d] = %d bf[%d] = %d\n", (*pc)-2, bf[(*pc)-2], (*pc)-1, bf[(*pc)-1]);
                     }
                     bf[(*pc)++] = vx1->x; bf[(*pc)++] = vx1->y; //vx1->rc++;
@@ -3918,7 +3950,9 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
         }
     }
     if(sqr) printf("seg_vertex_draw4: Toatl sq = %d\n", sqr);
-    (*pc)-=2;
+    bf[(*pc)] = 0;
+    //(*pc)-=2;
+    (*pc)-=3;
 
     printf("Numbers of regions = %d number of pixels  = %d\n", rc, (*pc));
     return rc;
@@ -3927,21 +3961,18 @@ uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *di
 void seg_draw_xy(uint8 *img, uint16 *bf, uint32 npc, uint32 w, uint32 h, uint32 w1, uint32 h1)
 {
     uint32 i = 0, x, y, tmp =0, cn = 0;
+    int out = 0;
     Vector v;
     uint8  sh = 15;
     uint32 kx = ((w-2)<<sh)/(w1-3);
     uint32 ky = ((h-2)<<sh)/(h1-3);
-    uint16 *xy = &bf[2];
-
+    uint16 *xy = &bf[3];
 
     while(1){
-        x = xy[i]; y = xy[i+1]; cn++;
+        cn++;
         //printf("%d New region\n", cn); //cn = 0;
         while(1){
-            if(i >= npc) break;
-            //if(i>npc) return;
-            //if(x == 317 && y == 54 && tmp > 1 ) cn++;
-            //if(cn ==10) return;
+            //if(i >= npc) break;
             i += 2;
             /*
             v.x1 = xy[i-2];
@@ -3949,27 +3980,49 @@ void seg_draw_xy(uint8 *img, uint16 *bf, uint32 npc, uint32 w, uint32 h, uint32 
             v.x2 = xy[i  ];
             v.y2 = xy[i+1];
             */
+            //printf("%d npc = %d xb = %d yb = %d x = %d y = %d x1 = %d y1 = %d\n", i, npc, x, y, xy[i-2], xy[i-1], xy[i], xy[i+1]);
+            if(!xy[i  ]){
+                i++;
+                out--;
+                //printf("0 out = %d\n", out);
+                break;
+            }
+            /*
+            if(out) {
+                v.x1 = scale(xy[i-2], w, kx, sh);
+                v.y1 = scale(xy[i-1], h, ky, sh);
+                v.x2 = scale(xy[i  ], w, kx, sh);
+                v.y2 = scale(xy[i+1], h, ky, sh);
+                //draw_line_1(img, &v, w, 50);
+                img[v.y1*w + v.x1] = 250;
+                //img[v.y2*w + v.x2] = 250;
+                return;
+            }*/
+
             v.x1 = scale(xy[i-2], w, kx, sh);
             v.y1 = scale(xy[i-1], h, ky, sh);
             v.x2 = scale(xy[i  ], w, kx, sh);
             v.y2 = scale(xy[i+1], h, ky, sh);
-            //printf("%d npc = %d xb = %d yb = %d x = %d y = %d x1 = %d y1 = %d\n", i, npc, x, y, xy[i-2], xy[i-1], xy[i], xy[i+1]);
+
             if(img[v.x2 + v.y2*w]) {
-                draw_line_1(img, &v, w, 50);
-                img[v.y2*w + v.x2] = 200;
-                img[v.y1*w + v.x1] = 200;
-                break;
+                //draw_line_1(img, &v, w, 50);
+                //img[v.y2*w + v.x2] = 200;
+                //img[v.y1*w + v.x1] = 200;
+                out++;
+                //printf("  out = %d\n", out);
+                //break;
             }
 
             draw_line_1(img, &v, w, 50);
-            img[v.y2*w + v.x2] = 200;
-            img[v.y1*w + v.x1] = 200;
+            img[v.y2*w + v.x2] = 100;
+            img[v.y1*w + v.x1] = 100;
 
         }
-        i += 2;
+        //i += 2;
+        //printf(" i  = %d\n", i);
         if(i >= npc) break;
     }
-    printf("Numbers of pixels = %d\n", i);
+    printf("Numbers of pixels = %d %d out = %d\n", npc, i, out);
 
 }
 
@@ -6694,7 +6747,7 @@ static inline void change_line(Pixel *pix, Pixel *pix1, uint8 pow, uint16 npix)
 	pix->out = pix1;  pix->nout = 1; pix->pow = pow;  //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
 	pix1->nin = 1; pix1->pow = pow; pix->npix = npix;
 }
-
+/*
 void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 {
     uint32 y, y1, x, yx, yx1, yx2, i, sq = w*h - w, w1 = w-1, is = 0, max;
@@ -6730,7 +6783,7 @@ void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 	}
 	printf("Numbers of pixels  = %d\n", *npix);
 }
-
+*/
 void seg_point(uint8 *con, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, in, sq = w*h - w, w1 = w-1;
@@ -6961,7 +7014,7 @@ static inline uint32 find_lines(Pixel *pix, uint8 *img, uint32 x, uint32 y, uint
 		}
     }
 }
-
+/*
 uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
@@ -6987,6 +7040,7 @@ uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 	return npix;
 
 }
+*/
 
 static inline uint32 get_dir1(uint8 *img, uint32 yx, uint32 w, uint8 dir, int *dm)
 {
@@ -7069,7 +7123,7 @@ uint32 seg_region(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 	return npix;
 
 }
-
+/*
 uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yw, w1 = w-1, h1 = h-1;
@@ -7103,7 +7157,8 @@ uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 	return nedge;
 
 }
-
+*/
+/*
 uint32 seg_points(uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, yx1, yw, w1 = w-1, h1 = h-1, sz = w*h;
@@ -7132,7 +7187,7 @@ uint32 seg_points(uint8 *img, uint32 w, uint32 h)
 	for(x=0; x < sz; x++) img[x] = (img[x] == 254) ? 0 : img[x];
 	return nedge;
 }
-
+*/
 void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
