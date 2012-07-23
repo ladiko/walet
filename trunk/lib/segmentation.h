@@ -62,6 +62,10 @@ uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, 
 uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Line *ln, uint8 *dir, uint32 vxc, uint32 w, uint32 h);
 uint32  seg_remove_loops1(uint8 *con, Vertex *vx2, uint32 vxc, uint32 w, uint32 h);
 
+void seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, uint16 *xy, uint32 npc, uint32 w, uint32 h);
+
+
+
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
 
 uint32 seg_get_one_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, uint32 w, uint32 h);
