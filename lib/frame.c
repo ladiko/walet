@@ -866,12 +866,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 
         gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-        //filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
+        filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
 
-        filter_fast_median(f->y[1].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
+        //filter_fast_median(f->y[1].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
         //filter_contrast(f->di[0].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
-        filter_contrast_5x5(f->di[0].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
-        memset(f->di[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        //filter_contrast_5x5(f->di[0].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
+        //memset(f->di[0].pic, 0, f->y1[1].w*f->y1[1].h);
 
         //filter_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
         gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
@@ -909,6 +909,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
 
+
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 
@@ -918,9 +919,16 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
         */
 
-        //memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
 
         //seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+
+        memset(f->vx, 0, sizeof(f->vx)*vxc);
+        memset(f->vp, 0, sizeof(f->vp)*f->y[1].w*f->y[1].h);
+        memset(f->vpn, 0, sizeof(f->vpn)*vxc*8);
+        memset(f->yx, 0, sizeof(f->yx)*vxc*8);
+        seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h);
+
 
         /*
         seg_vertex_draw3(f->y1[1].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);

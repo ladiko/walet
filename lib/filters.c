@@ -346,7 +346,7 @@ void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h)
 
 void filter_contrast_5x5(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
-    uint32 y, x, yw, yx, h2 = h-3, w2 = w-3, min, max, i;
+    uint32 y, x, yw, yx, h2 = h-3, w2 = w-3, min, max, i, nmin, nmax;
     int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
                           -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
                           -2-w, 2-w,
@@ -360,14 +360,21 @@ void filter_contrast_5x5(uint8 *img, uint8 *img1, uint32 w, uint32 h)
         for(x=3; x < w2; x++){
             yx = yw + x;
             min = img[yx]; max = img[yx];
+            //max = 0; min = 0; nmax = 0; nmin = 0;
             for(i=0; i < 24; i++) {
-                if(img[yx+dr[i]] > max) max = img[yx+dr[i]];
-                else if((img[yx+dr[i]] < min)) min = img[yx+dr[i]];
+                if(img[yx+dr[i]] > max) { max = img[yx+dr[i]]; }
+                else if((img[yx+dr[i]] < min)) { min = img[yx+dr[i]]; }
+                //if(img[yx+dr[i]] > img[yx]) { max += img[yx+dr[i]]; nmax++ ;}
+                //else { min += img[yx+dr[i]]; nmin++; }
             }
+
+            //if(nmax) max = max/nmax;
+            //if(nmin) min = min/nmin;
+            //img1[yx] = nmax > nmin ? max : min;
+            //img1[yx] = abs(max-img[yx]) < abs(min-img[yx]) ? max : min;
             img1[yx] = abs(max-img[yx]) < abs(min-img[yx]) ? max : min;
         }
     }
-
 }
 
 uint32 filter_average_new(uint8 *img, uint8 *img1, uint32 w, uint32 h)
