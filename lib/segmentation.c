@@ -1137,8 +1137,6 @@ static inline uint32 draw_line_2(uint8 *img, Vector *v, uint32 w, uint8 col, uin
     int sty, yx;
     int dma, dmi, stmi, stma;
 
-    //if(v->x1 > v->x2) x = v->x2;
-
     if(v->x2 > v->x1){
         x = v->x1; y = v->y1*w;
         sty = v->y2 > v->y1 ? w : -w;
@@ -1156,14 +1154,59 @@ static inline uint32 draw_line_2(uint8 *img, Vector *v, uint32 w, uint8 col, uin
         //yx = y + x;
         ////Check if vertex is in another line
         if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/x);
-        if(i == 1) xy[0] = yx;
-        if(i == dma-2) xy[1] = yx;
+        if(v->x2 > v->x1) {
+            if(i == 1) xy[0] = yx;
+            if(i == dma-2) xy[1] = yx;
+        } else {
+            if(i == dma-2) xy[0] = yx;
+            if(i == 1) xy[1] = yx;
+        }
 
         img[yx] = col;
         min += dmi; yx += stmi;
         if(min >= max) { max += dma; yx += stma; }
     }
     return dma;
+}
+
+static inline uint32 check_line_2(Vector *v, uint32 w, uint32 pz, uint32 *xy)
+{
+    uint32 i, max , min = 0, x, y, dx, dy, out;
+    int sty, yx;
+    int dma, dmi, stmi, stma;
+
+    if(v->x2 > v->x1){
+        x = v->x1; y = v->y1*w;
+        sty = v->y2 > v->y1 ? w : -w;
+    } else {
+        x = v->x2; y = v->y2*w;
+        sty = v->y2 < v->y1 ? w : -w;
+    }
+    dx = abs(v->x2 - v->x1)+1; dy = abs(v->y2 - v->y1)+1;
+    if(dx >= dy){ dma = dx; dmi = dy; stmi = 1; stma = sty; }
+    else 		{ dma = dy; dmi = dx; stmi = sty; stma = 1; }
+    max = dma;
+
+    yx = y + x;
+    for(i=0; i < dma; i++){
+        //yx = y + x;
+        ////Check if vertex is in another line
+        //bif(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/x);
+        if(v->x2 > v->x1) {
+            if(i == 1) xy[0] = yx;
+            if(i == dma-2) xy[1] = yx;
+            if(i == pz) out = yx;
+        } else {
+            if(i == dma-2) xy[0] = yx;
+            if(i == 1) xy[1] = yx;
+            if(i == dma-1 - pz) out = yx;
+        }
+
+        //img[yx] = col;
+        min += dmi; yx += stmi;
+        if(min >= max) { max += dma; yx += stma; }
+    }
+    return out;
 }
 
 static inline uint32 check_line(uint8 *img, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 w)
@@ -2693,19 +2736,89 @@ static inline void finish_two_dirs(Vertex *vx1, Vertex *vx2, Line_buff *buf1, Li
     }*/
 }
 
-static inline void finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint32 yx2, int *dr, uint32 w)
+static inline uint32  check_direction(int dr1, int dr2, int *dr)
 {
-    uint8 n1, n2, i;
-    int dyx;
+    uint8 i, n1, n2;
+    for(i=0; i < 8; i++) if(dr1 == dr[i]) { n1 = i; break; }
+    for(i=0; i < 8; i++) if(dr2 == dr[i]) { n2 = i; break; }
 
-    dyx = yx1 - vx1->x - vx1->y*w;
-    for(i=0; i < 8; i++ ) if(dyx == dr[i]) { n1 = i; break; }
+    for(i=0; i < 8; i++) {
+        n1 = (n1 == 7) ? 0 : n1 + 1;
+        if(n1 == n2) break;
+    }
+    i++;
+    if(i == 4){
+        printf("It a problem i = %d\n", i);
+        printf("dyx1 = %d dyx = %d\n", dr1, dr2);
 
-    dyx = yx2 - vx2->x - vx2->y*w;
-    for(i=0; i < 8; i++ ) if(dyx == dr[i]) { n2 = i; break; }
+    } else if(i < 4){
+        //printf("On the right i = %d\n", i);
+    } else {
+        //printf("On the left i = %d\n", i);
+    }
+    return i;
+}
 
-    if(vx1->yx[n1] && vx2->yx[n2]) {
-        printf("The same direction \n");
+static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint32 yx2, int *dr, uint32 w)
+{
+    uint8 n1, n2, i, d;
+    int dyx, dyx1, dyx2, dx, dy, yxt, lm1, lm2;
+    uint32 xy[2];
+    //Vertex *vx3;
+    Vector v;
+
+    dyx1 = yx1 - vx1->x - vx1->y*w;
+    for(i=0; i < 8; i++) if(dyx1 == dr[i]) { n1 = i; break; }
+
+    dyx2 = yx2 - vx2->x - vx2->y*w;
+    for(i=0; i < 8; i++) if(dyx2 == dr[i]) { n2 = i; break; }
+
+    if(vx1->vp[n1]) {
+        //printf("The same direction \n");
+        //Check which of the sides is shoter
+        //v.x1 = vx2->x; v.y1 = vx2->y;
+        //v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
+
+        dx = abs(vx2->x - vx1->x)+1; dy = abs(vx2->y - vx1->y)+1;
+        lm1 = dx > dy ? dx : dy;
+
+        dx = abs(vx1->vp[n1]->x - vx1->x)+1; dy = abs(vx1->vp[n1]->y - vx1->y)+1;
+        lm2 = dx > dy ? dx : dy;
+
+        if(lm1 > lm2){
+            v.x1 = vx1->x; v.y1 = vx1->y;
+            v.x2 = vx2->x; v.y2 = vx2->y;
+            yxt = check_line_2(&v, w, lm2-1, xy);
+
+            v.x1 = yxt%w; v.y1 = yxt/w;
+            v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
+            check_line_2(&v, w, 0, xy);
+            dyx = xy[0] - v.x1 - v.y1*w;
+
+            //printf("lm1 > lm2 dyx1 = %d  dyx = %d\n", dyx1, dyx);
+            d = check_direction(dyx1, dyx, dr);
+            printf("lm1 > lm2 lm1 = %d lm2 = %d n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d di = %d cn = %d\n",
+                   lm1, lm2, n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx1->di, vx1->cn);
+            if(d == 4 || d == 8) return vx1->x + vx1->y*w;
+        } else {
+            v.x1 = vx1->x; v.y1 = vx1->y;
+            v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
+            yxt = check_line_2(&v, w, lm1-1, xy);
+
+            v.x1 = vx2->x; v.y1 = vx2->y;
+            v.x2 = yxt%w; v.y2 = yxt/w;
+            check_line_2(&v, w, 0, xy);
+            dyx = xy[0] - v.x1 - v.y1*w;
+
+            //printf("lm1 < lm2  dyx1 = %d  dyx = %d\n", dyx1, dyx);
+            d = check_direction(dyx1, dyx, dr);
+            printf("lm1 > lm2 lm1 = %d lm2 = %d n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d di = %d cn = %d\n",
+                   lm1, lm2, n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx1->di, vx1->cn);
+            if(d == 4 || d == 8) return vx1->x + vx1->y*w;
+        }
+    }
+    if(vx2->yx[n2]) {
+
     }
 
     //Finish direction
@@ -2715,6 +2828,8 @@ static inline void finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint32
     vx2->vp[n2] = vx1;
     vx1->yx[n1] = yx1;
     vx2->yx[n2] = yx2;
+    return 0;
+
 }
 
 static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
@@ -4151,9 +4266,9 @@ void seg_draw_xy(uint8 *img, uint16 *xy, uint32 npc, uint32 w, uint32 h, uint32 
 
 }
 
-void seg_restore_vertex(uint8 *img,Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, uint16 *xy, uint32 npc, uint32 w, uint32 h)
+void seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, uint16 *xy, uint32 npc, uint32 w, uint32 h)
 {
-    uint32 i = 0, x, y, yx1, yx2, tmp =0, cn = 0, lnc = 0, vxc = 0, yxa[2];
+    uint32 i = 0, x, y, yx, yx1, yx2, tmp =0, cn = 0, lnc = 0, vxc = 0, yxa[2];
     int out = 0;
     Vector v;
     int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
@@ -4182,10 +4297,24 @@ void seg_restore_vertex(uint8 *img,Vertex *vx, Vertex **vp, Vertex **vpn, uint32
             if(!vp[yx1]) new_vertex2(&vx[vxc++], vp, &vpn[lnc+=8], &yxn[lnc+=8], v.x1, v.y1, yx1, w);
             if(!vp[yx2]) {
                 new_vertex2(&vx[vxc++], vp, &vpn[lnc+=8], &yxn[lnc+=8], v.x2, v.y2, yx2, w);
-                finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                if(yx) {
+                    img[yx] =  255;
+                    //img[yx+1] =  255;
+                    //img[yx-1] =  255;
+                    //img[yx+w] =  255;
+                    //img[yx-w] =  255;
+                }
             } else {
                 i += 2;
-                finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                if(yx) {
+                    img[yx] =  255;
+                    //img[yx+1] =  255;
+                    //img[yx-1] =  255;
+                    //img[yx+w] =  255;
+                    //img[yx-w] =  255;
+                }
                 break;
             }
         }
