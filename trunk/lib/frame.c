@@ -923,10 +923,10 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         //seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        memset(f->vx, 0, sizeof(f->vx)*vxc);
-        memset(f->vp, 0, sizeof(f->vp)*f->y[1].w*f->y[1].h);
-        memset(f->vpn, 0, sizeof(f->vpn)*vxc*8);
-        memset(f->yx, 0, sizeof(f->yx)*vxc*8);
+        memset(f->vx, 0, sizeof(Vertex)*vxc);
+        memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
+        memset(f->vpn, 0, sizeof(Vertex*)*vxc*8);
+        memset(f->yx, 0, sizeof(uint32)*vxc*8);
         seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h);
 
 
