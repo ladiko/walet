@@ -1122,7 +1122,7 @@ static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
     for(i=0; i < dma; i++){
         //yx = y + x;
         ////Check if vertex is in another line
-        if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/x);
+        if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/w);
 
         img[yx] = col;
         min += dmi; yx += stmi;
@@ -1153,7 +1153,7 @@ static inline uint32 draw_line_2(uint8 *img, Vector *v, uint32 w, uint8 col, uin
     for(i=0; i < dma; i++){
         //yx = y + x;
         ////Check if vertex is in another line
-        if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/x);
+        if(i > 0 && i < dma-1 && img[yx] == 200) printf("The line is ander virtex x = %d y = %d\n", yx%w, yx/w);
         if(v->x2 > v->x1) {
             if(i == 1) xy[0] = yx;
             if(i == dma-2) xy[1] = yx;
@@ -1872,7 +1872,7 @@ static inline void new_vertex2(Vertex *vx, Vertex **vp, Vertex **vp1, uint32 *yx
     vx->x = x; vx->y = y;
     //vx->di = img[yx];
     vx->n = 0;
-    vx->cn = 0;
+    vx->cn = 0; vx->di = 0;
     vx->vp = vp1;
     vx->yx = yxn;
     vp[yx] = vx;
@@ -2761,7 +2761,7 @@ static inline uint32  check_direction(int dr1, int dr2, int *dr)
 
 static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint32 yx2, int *dr, uint32 w)
 {
-    uint8 n1, n2, i, d;
+    uint8 n1, n2, nt, i, d;
     int dyx, dyx1, dyx2, dx, dy, yxt, lm1, lm2;
     uint32 xy[2];
     //Vertex *vx3;
@@ -2773,11 +2773,60 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
     dyx2 = yx2 - vx2->x - vx2->y*w;
     for(i=0; i < 8; i++) if(dyx2 == dr[i]) { n2 = i; break; }
 
+    //Check if two lines from one vertex are closed and have the same direction
     if(vx1->vp[n1]) {
-        //printf("The same direction \n");
-        //Check which of the sides is shoter
-        //v.x1 = vx2->x; v.y1 = vx2->y;
-        //v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
+        nt = n1;
+        nt = (nt == 7) ? 0 : nt + 1;
+        if(vx1->vp[nt]){
+            nt = n1;
+            nt = (nt == 0) ? 7 : nt - 1;
+            if(vx1->vp[nt]) {
+                printf("%p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+                       vx1->vp[n1], n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx2->x, vx2->y, vx1->di, vx1->cn);
+                return vx1->x + vx1->y*w;
+            }
+            vx1->di |= (1<<nt);
+            vx1->cn |= (1<<nt);
+            vx1->vp[nt] = vx1->vp[n1];
+            vx1->yx[nt] = vx1->yx[n1];
+        } else {
+            n1 = nt;
+        }
+    }
+    if(vx2->vp[n2]) {
+        nt = n2;
+        nt = (nt == 0) ? 7 : nt - 1;
+        if(vx2->vp[nt]){
+            nt = n2;
+            nt = (nt == 7) ? 0 : nt + 1;
+            if(vx2->vp[nt]) {
+                printf("%p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+                       vx2->vp[n2], n1, vx2->x, vx2->y, vx2->vp[n2]->x, vx2->vp[n2]->y, vx1->x, vx1->y, vx2->di, vx2->cn);
+                return vx2->x + vx2->y*w;
+            }
+            vx2->di |= (1<<nt);
+            vx2->cn |= (1<<nt);
+            vx2->vp[nt] = vx2->vp[n2];
+            vx2->yx[nt] = vx2->yx[n2];
+
+        } else {
+            n2 = nt;
+        }
+    }
+    /*
+    if(vx1->vp[n1]) {
+        printf("%p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+               vx1->vp[n1], n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx2->x, vx2->y, vx1->di, vx1->cn);
+        return vx1->x + vx1->y*w;
+    }
+    if(vx2->vp[n2]) {
+        printf("%p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+               vx2->vp[n2], n1, vx2->x, vx2->y, vx2->vp[n2]->x, vx2->vp[n2]->y, vx1->x, vx1->y, vx2->di, vx2->cn);
+        return vx2->x + vx2->y*w; }
+
+    */
+    /*
+    if(vx1->vp[n1]) {
 
         dx = abs(vx2->x - vx1->x)+1; dy = abs(vx2->y - vx1->y)+1;
         lm1 = dx > dy ? dx : dy;
@@ -2792,14 +2841,6 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
 
             v.x1 = yxt%w; v.y1 = yxt/w;
             v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
-            check_line_2(&v, w, 0, xy);
-            dyx = xy[0] - v.x1 - v.y1*w;
-
-            //printf("lm1 > lm2 dyx1 = %d  dyx = %d\n", dyx1, dyx);
-            d = check_direction(dyx1, dyx, dr);
-            printf("lm1 > lm2 lm1 = %d lm2 = %d n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d di = %d cn = %d\n",
-                   lm1, lm2, n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx1->di, vx1->cn);
-            if(d == 4 || d == 8) return vx1->x + vx1->y*w;
         } else {
             v.x1 = vx1->x; v.y1 = vx1->y;
             v.x2 = vx1->vp[n1]->x; v.y2 = vx1->vp[n1]->y;
@@ -2807,27 +2848,36 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
 
             v.x1 = vx2->x; v.y1 = vx2->y;
             v.x2 = yxt%w; v.y2 = yxt/w;
-            check_line_2(&v, w, 0, xy);
-            dyx = xy[0] - v.x1 - v.y1*w;
-
-            //printf("lm1 < lm2  dyx1 = %d  dyx = %d\n", dyx1, dyx);
-            d = check_direction(dyx1, dyx, dr);
-            printf("lm1 > lm2 lm1 = %d lm2 = %d n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d di = %d cn = %d\n",
-                   lm1, lm2, n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx1->di, vx1->cn);
-            if(d == 4 || d == 8) return vx1->x + vx1->y*w;
         }
+
+        check_line_2(&v, w, 0, xy);
+        dyx = xy[0] - v.x1 - v.y1*w;
+        printf("v.x1 = %d v.y1 = %d v.x2 = %d v.y2 = %d dyx = %d\n", v.x1, v.y1, v.x2, v.y2, dyx);
+
+        printf("lm1 > lm2 dyx1 = %d  dyx = %d\n", dyx1, dyx);
+        d = check_direction(dyx1, dyx, dr);
+        printf("lm1 > lm2 lm1 = %d lm2 = %d n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+               lm1, lm2, n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx2->x, vx2->y, vx1->di, vx1->cn);
+
+        if(d == 4 || d == 8 || d == 0) {
+            return vx1->x + vx1->y*w;
+        }
+        else if(d < 4)  n1 = (n1 == 7) ? 0 : n1 + 1;
+        else            n1 = (n1 == 0) ? 7 : n1 - 1;
     }
     if(vx2->yx[n2]) {
+    } */
 
-    }
-
-    //Finish direction
+    vx1->di |= (1<<n1);
     vx1->cn |= (1<<n1);
-    vx2->cn |= (1<<n2);
     vx1->vp[n1] = vx2;
-    vx2->vp[n2] = vx1;
     vx1->yx[n1] = yx1;
+
+    vx2->di |= (1<<n2);
+    vx2->cn |= (1<<n2);
+    vx2->vp[n2] = vx1;
     vx2->yx[n2] = yx2;
+
     return 0;
 
 }
