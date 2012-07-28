@@ -37,7 +37,7 @@ uint32 seg_vertex2(uint32 *con, uint8 *di, Vertex *vx, Vertex **vp, uint32 w, ui
 uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, Vertex **vpn, int8 *buf, uint32 w, uint32 h);
 uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vpn,  uint32 *yxn, Line_buff *buf, uint32 w, uint32 h);
 
-uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir,  uint16 *bf, uint32 *pc, uint32 w, uint32 h);
+uint32  seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir,  uint16 *bf, uint32 *pc, uint32 w, uint32 get);
 void seg_mean_shift(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 void seg_mean_shift_color(uint8 *img, uint8 *con, uint8 *con1, uint32 *buff, uint32 w, uint32 h);
 
@@ -55,16 +55,16 @@ uint32 seg_vertex_draw3(uint8 *img, Vertex *vx, uint32 vxc, uint32 w, uint32 h, 
 uint32  seg_vertex_draw4(uint8 *img, Vertex *vx, uint32 vxc, Vertex **vp2, uint8 *dir, uint32 w, uint32 h, uint32 w1, uint32 h1);
 uint32 seg_average(uint8 *img, uint8 *img1, uint32 w, uint32 h);
 
-uint32  seg_get_or_fill_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex *vx, uint32 vxc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
-
+uint32  seg_get_or_fill_color1(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, uint16 *xy, uint32 rgc,
+                              uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 
 uint32  seg_get_or_fill_color(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint8 *dir, uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 uint32  seg_remove_loops(uint8 *img, Vertex **vp, Vertex **vp1, Vertex **vp2, Line *ln, uint8 *dir, uint32 vxc, uint32 w, uint32 h);
 uint32  seg_remove_loops1(uint8 *con, Vertex *vx2, uint32 vxc, uint32 w, uint32 h);
 
-void seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, uint16 *xy, uint32 npc, uint32 w, uint32 h);
+uint32  seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, uint16 *xy, uint32 npc, uint32 w, uint32 h);
 
-
+uint32 seg_regions1(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir, uint32 w, uint32 h);
 
 uint32 seg_remove_inline(Vertex **vp, uint32 vxc, uint32 w, uint32 h);
 

@@ -8,6 +8,8 @@
 #define WALET_MINOR_VERSION 5
 #define WALET_MICRO_VERSION 1
 
+#define DEBUG
+
 #ifndef _WALET_TYPES_
 #define _WALET_TYPES_
 typedef char       			int8;

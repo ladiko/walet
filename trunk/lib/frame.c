@@ -856,7 +856,7 @@ uint32 frame_white_balance(GOP *g, uint32 fn, WaletConfig *wc, uint32 bits, Gamm
 uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 {
     Frame *f = &g->frames[fn];
-    uint32 i, j, vxc, rgc, lmaxc, npix;
+    uint32 i, j, vxc, rgc, lmaxc, npix, sum = 0;
     clock_t start, end;
     double time=0., tmp;
     struct timeval tv;
@@ -898,12 +898,12 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         rgc = seg_remove_loops1(f->dc[0].pic, f->vx, vxc, f->y[1].w, f->y[1].h);
         //rgc = seg_vertex_draw4(f->y1[1].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->buf, &npix, f->y[1].w, f->y[1].h);
+        rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 
         /*
-        seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
+        seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
 
 
@@ -913,23 +913,40 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
 
-        seg_get_or_fill_color(NULL, f->y1[1].pic, f->dm[1].pic, (uint32*)g->buf, f->vpt, f->dm[0].pic,
+        seg_get_or_fill_color(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
                               rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
 
         seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
         */
 
-        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        //memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
 
         //seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        memset(f->vx, 0, sizeof(Vertex)*vxc);
+        //Start decode
+        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        //memset(f->vx, 0, sizeof(Vertex)*vxc);
         memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
-        memset(f->vpn, 0, sizeof(Vertex*)*vxc*8);
-        memset(f->yx, 0, sizeof(uint32)*vxc*8);
-        seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h);
+        //memset(f->vpn, 0, sizeof(Vertex*)*vxc*8);
+        //memset(f->yx, 0, sizeof(uint32)*vxc*8);
 
+        vxc = seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->cbuf, npix, f->y[1].w, f->y[1].h);
+        rgc = seg_regions(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, NULL, &npix, f->y[1].w, 0);
 
+        for(i=0; i < f->y[1].w*f->y[1].h; i++) {
+            f->dg[0].pic[i] = f->dc[0].pic[i] - f->y1[1].pic[i];
+            if(f->dg[0].pic[i]) printf("diff = %d x = %d y = %d c1 = %d c2 = %d\n",
+                                       f->dg[0].pic[i], i%f->y[1].w, i/f->y[1].w, f->dc[0].pic[i], f->y1[1].pic[i]);
+            sum += f->dg[0].pic[i];
+        }
+        printf("SUM = %d\n", sum);
+
+        //rgc = seg_regions1(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h);
+        /*
+        seg_get_or_fill_color(NULL, f->dc[0].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
+
+        */
         /*
         seg_vertex_draw3(f->y1[1].pic, f->vp, (uint32*)g->buf, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
         seg_get_or_fill_color(NULL, f->y1[1].pic, f->dm[0].pic, (uint32*)&g->buf[f->dg[0].w*f->dg[0].h>>1], f->vp, &f->vp[wc->w*wc->h>>2],
