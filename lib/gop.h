@@ -12,6 +12,7 @@ typedef struct {
 	Frame			*frames;	//Pointer to frames array
 	uint8			*buf;		//Temporal buffer for DWT, IDW, and range coder
 	int				*ibuf;		//Temporal buffer for range coder quantization tables and for cumulative frequency;
+    uint8           *cbuf;      //Compressed data buffer
 
 	uint32			cur_gop_frame;	// The current gop frame
 	uint64			cur_stream_frame;	// The current stream frame
