@@ -1294,12 +1294,126 @@ void fill_bayer_hist(int16 *img, uint32 *r, uint32 *g, uint32 *b, uint32 w, uint
 
 void fill_hist(int16 *img, uint32 *h, uint32 size, uint32 bits)
 {
-	uint32 i, shift = 1<<(bits-1);
-	memset(h, 0, sizeof(uint32)*(1<<bits));
+    uint32 i, shift = 1<<(bits-1);
+    memset(h, 0, sizeof(uint32)*(1<<bits));
 
-	for(i=0; i < size; i++) h[img[i]+shift]++;
+    for(i=0; i < size; i++) h[img[i]+shift]++;
 
-	for(i=0; i < (1<<bits); i++) printf("%d  %d\n", i, h[i]);
+    for(i=0; i < (1<<bits); i++) printf("%d  %d\n", i, h[i]);
+}
+
+void make_lookup(int16 *img, uint32 *h, uint32 *look, uint32 size, uint32 ibit, uint32 hbit)
+{
+    uint32 i, df = ibit-hbit, hz = 1<<hbit, sum, low, top, shift = 1<<(ibit-1);
+    double lowt = 0.01, topt = 0.01, a;
+    memset(h, 0, sizeof(uint32)*(1<<hbit));
+    memset(look, 0, sizeof(uint32)*(1<<hbit));
+
+    for(i=0; i < size; i++) h[(img[i]+shift)>>df]++;
+    //for(i=0; i < hz; i++) printf("look[%d] = %d\n", i, h[i]);
+
+    sum = 0;
+    for(i=0; (double)sum/(double)size < lowt ; i++) sum += h[i];
+    low = i;
+    sum = 0;
+    for(i=hz-1; (double)sum/(double)size < topt ; i--) sum += h[i];
+    top = i;
+
+    a = 255./(double)(top - low);
+    printf("low = %d top = %d a = %f\n", low, top, a);
+
+    //Make LUT table liniar
+    /*
+    for(i = 0; i < low; i++) look[i] = 0;
+    for(i = low; i < top; i++) look[i] = (uint32)(a*(double)(i-low));
+    for(i = top; i < hz; i++) look[i] = 255;
+    */
+    //Make LUT table integral
+    sum = 0;
+    for(i = 0; i < hz; i++) { sum += h[i]; look[i] = (uint32)(255.*(double)sum/(double)size); }
+
+
+    //for(i=0; i < hz; i++) printf("look[%d] = %d\n", i, look[i]);
+}
+
+void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
+///	\fn make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
+///	\brief Make intergal LUT.
+///	\param img	 		The input image.
+///	\param hist 		The histogram.
+///	\param look 		The LUT.
+/// \param w            The image width.
+/// \param h            The image height.
+/// \param ibit         The image bits per pixel.
+/// \param hbit         The histogram bits.
+{
+    uint32 i, df = ibit-hbit, hz = 1<<hbit, sum, low, top, shift = 1<<(ibit-1);
+    double lowt = 0.01, topt = 0.01, a;
+    uint32 size = w*h, b, max;
+
+    memset(hist, 0, sizeof(uint32)*(1<<hbit));
+    memset(look, 0, sizeof(uint32)*(1<<hbit));
+
+    for(i=0; i < size; i++) hist[(img[i]+shift)>>df]++;
+
+    //Make LUT table liniar
+    /*
+    sum = 0;
+    for(i=0; (double)sum/(double)size < lowt ; i++) sum += h[i];
+    low = i;
+    sum = 0;
+    for(i=hz-1; (double)sum/(double)size < topt ; i--) sum += h[i];
+    top = i;
+
+    a = 255./(double)(top - low);
+    printf("low = %d top = %d a = %f\n", low, top, a);
+
+    for(i = 0; i < low; i++) look[i] = 0;
+    for(i = low; i < top; i++) look[i] = (uint32)(a*(double)(i-low));
+    for(i = top; i < hz; i++) look[i] = 255;
+    */
+
+    //Make LUT table integral
+    b = (1<<31)/size;
+
+    //Check if one bin in historgamm more then one bin in LUT------------------------------------
+
+    sum = 0;
+    max = size>>8;
+
+    for(i = 0; i < hz; i++) {
+        if(hist[i] > max) {
+            sum += hist[i] - max;
+            hist[i] = max;
+        }
+    }
+    b = (1<<31)/(size - sum);
+
+    //---------------------------------------------------------------------------------------------
+    sum = 0;
+    //With double
+    //for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = (uint32)(255.*(double)sum/(double)size); }
+    //With int
+    for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23; }
+
+
+    //for(i = 0; i < hz; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
+
+}
+
+void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
+///	\fn bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
+///	\brief Image transform.
+///	\param img	 		The input image.
+///	\param img1	 		The output image.
+///	\param look 		The LUT.
+/// \param w            The image width.
+/// \param h            The image height.
+/// \param ibit         The image bits per pixel.
+/// \param hbit         The histogram bits.
+{
+    uint32 i, df = ibit-hbit, shift = 1<<(ibit-1), size = w*h;
+    for(i=0; i < size; i++) img1[i] = look[(img[i]+shift)>>df]-128;
 }
 
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)
