@@ -245,7 +245,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 				utils_bayer_to_Y_fast_(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
 			}
 		} else {
-
+            utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
@@ -890,7 +890,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_average(f->dm[0].pic, f->dw[0].pic, f->y[1].w, f->y[1].h);
         //seg_grad3(f->dw[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
 
-        lmaxc = seg_local_max1(f->dg[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 10, f->y[1].w, f->y[1].h);
+        lmaxc = seg_local_max1(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 10, f->y[1].w, f->y[1].h);
 
         seg_find_intersect7(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
 
@@ -899,7 +899,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //rgc = seg_vertex_draw4(f->y1[1].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
         rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
-        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+        //seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+        seg_vertex_draw3(f->y1[0].pic, f->vx, vxc, f->y1[0].w, f->y1[0].h, f->y1[1].w, f->y1[1].h);
 
 
         /*
@@ -924,22 +925,24 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_draw_xy(f->dc[0].pic, (uint16*)g->buf, npix, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
         //Start decode
-        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+
         //memset(f->vx, 0, sizeof(Vertex)*vxc);
-        memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
         //memset(f->vpn, 0, sizeof(Vertex*)*vxc*8);
         //memset(f->yx, 0, sizeof(uint32)*vxc*8);
 
+        memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
+        memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
         vxc = seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->cbuf, npix, f->y[1].w, f->y[1].h);
         rgc = seg_regions(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, NULL, &npix, f->y[1].w, 0);
 
+        /*
         for(i=0; i < f->y[1].w*f->y[1].h; i++) {
             f->dg[0].pic[i] = f->dc[0].pic[i] - f->y1[1].pic[i];
             if(f->dg[0].pic[i]) printf("diff = %d x = %d y = %d c1 = %d c2 = %d\n",
                                        f->dg[0].pic[i], i%f->y[1].w, i/f->y[1].w, f->dc[0].pic[i], f->y1[1].pic[i]);
             sum += f->dg[0].pic[i];
-        }
-        printf("SUM = %d\n", sum);
+        }*/
+        //printf("SUM = %d\n", sum);
 
         //rgc = seg_regions1(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, f->y[1].w, f->y[1].h);
         /*

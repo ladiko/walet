@@ -121,6 +121,10 @@ uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col);
 
 void util_copy_border(uint8 *img, uint8 *img1, uint32 b, uint32 w, uint32 h);
 
+void make_lookup(int16 *img, uint32 *h, uint32 *look, uint32 size, uint32 ibit, uint32 hbit);
+void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit);
+void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

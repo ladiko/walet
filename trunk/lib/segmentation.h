@@ -20,7 +20,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 //New segmentation interface
-uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h);
+uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h);
 
 void seg_find_intersect	(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h);
 void seg_find_intersect1(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h);

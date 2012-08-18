@@ -979,6 +979,7 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
 
 }
 
+
 /*	\brief	Check is a pixel the local maximum.
 	\param	img		The pointer to gradient image.
 	\param	yx		The pixel coordinate (yx = y*w + x)
@@ -1018,7 +1019,7 @@ static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
 }
 
 
-uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
+uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
 {
     uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2, lmaxc;
     uint8 max;
@@ -1033,8 +1034,6 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
     memset(hist ,0, sizeof(uint32)<<8);
     memset(hist1,0, sizeof(uint32)<<8);
 
-
-
     for(y=2; y < h2; y++){
         yw = y*w;
         for(x=2; x < w2; x++){
@@ -1042,6 +1041,7 @@ uint32 seg_local_max1(uint8 *img, uint32 *lmax, uint32 *buff, uint32 th, uint32 
             max = loc_max(img, dr, yx, w);
             if(max > th) {
                 img[yx] = 252;
+                //con[yx] = max;
                 hist[255-max]++;
                 buff[i++] = yx;
             }
@@ -1123,7 +1123,14 @@ static inline uint32 draw_line_1(uint8 *img, Vector *v, uint32 w, uint8 col)
         //yx = y + x;
 #ifdef DEBUG
         ////Check if vertex is in another line
-        if(i > 0 && i < dma-1 && img[yx] == 200) printf("draw_line_1: The line is ander virtex x = %d y = %d\n", yx%w, yx/w);
+        if(i > 0 && i < dma-1 && img[yx] == 200) {
+            printf("draw_line_1: The line is ander virtex x = %d y = %d\n", yx%w, yx/w);
+            img[yx] = 255;
+            //img[yx+1] = 255;
+            //img[yx-1] = 255;
+            //img[yx+w] = 255;
+            //img[yx-w] = 255;
+        }
 #endif
         img[yx] = col;
         min += dmi; yx += stmi;
@@ -1237,6 +1244,99 @@ static inline uint32 check_line(uint8 *img, uint32 x1, uint32 y1, uint32 x2, uin
     return n*100/dma;
 }
 
+static inline uint32 check_line3(Line_buff *buf, uint32 first, uint32 last, uint32 *lf, uint32 *rt, uint32 w)
+{
+    uint32 i, ic, max , min = 0, n = 0, l, x, y, x1, x2, y1, y2, dx, dy;
+    int  sty;
+    int dma, dmi, stmi, stma;
+
+    //x = x1; y = y1;
+    x1 = buf[first].x; y1 =  buf[first].y;
+    x2 = buf[last ].x; y2 =  buf[last ].y;
+    //Check if line
+
+    if(x2 > x1){
+        x = x1; y = y1;
+        sty = y2 > y1 ? 1 : -1;
+    } else {
+        x = x2; y = y2;
+        sty = y2 < y1 ? 1 : -1;
+    }
+    dx = abs(x2 - x1)+1; dy = abs(y2 - y1)+1;
+    if(dx >= dy) { dma = dx; dmi = dy; stmi = 1; stma = sty; }
+    else 		 { dma = dy; dmi = dx; stmi = sty; stma = 1; }
+    max = dma; l = dma-2;
+    //if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
+    //Check the first+1 and last-1 pixels if they have the same direction with curve
+    *lf = 0; *rt = 0;
+
+    if(dx >= dy){
+        if(x2 > x1){
+            for(i=0; i < dma; i++){
+                ic = i+first;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                if(x == buf[ic].x && y == buf[ic].y) {
+                    n++;
+                    if(i == 1) *lf = 1;
+                    if(i == l) *rt = 1;
+                }
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+            }
+            //If differnt line and curve lenght should be only if line = 3 pixel and curve = 4 pixel
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic-1].yx;
+
+        } else {
+            for(i=0; i < dma; i++){
+                ic = last-i;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                if(x == buf[ic].x && y == buf[ic].y) {
+                    n++;
+                    if(i == 1) *rt = 1;
+                    if(i == l) *lf = 1;
+                }
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic+1].yx;
+        }
+    } else {
+        if(x2 > x1){
+            for(i=0; i < dma; i++){
+                ic = i+first;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                if(x == buf[ic].x && y == buf[ic].y) {
+                    n++;
+                    if(i == 1) *lf = 1;
+                    if(i == l) *rt = 1;
+                }
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic-1].yx;
+        } else {
+            for(i=0; i < dma; i++){
+                ic = last-i;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                if(x == buf[ic].x && y == buf[ic].y) {
+                    n++;
+                    if(i == 1) *rt = 1;
+                    if(i == l) *lf = 1;
+                }
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic+1].yx;
+        }
+    }
+
+    return n*100/dma;
+}
+
 static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last, uint32 w)
 {
     uint32 i, ic, max , min = 0, n = 0, l, x, y, x1, x2, y1, y2, dx, dy;
@@ -1309,6 +1409,97 @@ static inline uint32 check_line1(Line_buff *buf, uint32 first, uint32 last, uint
         }
     }
 
+    return n*100/dma;
+}
+
+static inline uint32 check_line2(Line_buff *buf, uint32 first, uint32 last, uint32 w)
+{
+    uint32 i, ic, max , min = 0, n = 1, l, x, y, x1, x2, y1, y2, dx, dy;
+    int  sty;
+    int dma, dmi, stmi, stma;
+
+    //x = x1; y = y1;
+    x1 = buf[first].x<<1; y1 = buf[first].y<<1;
+    x2 = buf[last ].x<<1; y2 = buf[last ].y<<1;
+    //Check if line
+
+    if(x2 > x1){
+        x = x1; y = y1;
+        sty = y2 > y1 ? 1 : -1;
+    } else {
+        x = x2; y = y2;
+        sty = y2 < y1 ? 1 : -1;
+    }
+    dx = abs(x2 - x1)+1; dy = abs(y2 - y1)+1;
+    if(dx >= dy) { dma = dx; dmi = dy; stmi = 1; stma = sty; }
+    else 		 { dma = dy; dmi = dx; stmi = sty; stma = 1; }
+    max = dma; //l = dma-2;
+    //if(x2 <= x1 && (dma&1 || dmi&1)) min = dmi-1;
+
+    if(dx >= dy){
+        if(x2 > x1){
+            //printf("\n");
+            for(i=1; i < dma; i++){
+                ic = ((i+1)>>1) + first;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+                if(i&1) { if(x == (buf[ic-1].x + buf[ic].x) && y == (buf[ic-1].y + buf[ic].y)) n++; }
+                else    { if(x == (buf[ic].x<<1) && y == (buf[ic].y<<1)) n++; }
+                //printf("x = %d buf = %d buf1 = %d y = %d buf = %d buf1 = %d ic = %d i = %d n = %d\n",
+                //      x, buf[ic].x<<1, buf[ic-1].x + buf[ic].x, y, buf[ic].y<<1, buf[ic-1].y + buf[ic].y, ic, i, n);
+            }
+            //printf("\n");
+            //If differnt line and curve lenght should be only if line = 3 pixel and curve = 4 pixel
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic-1].yx;
+
+        } else {
+            for(i=1; i < dma; i++){
+                ic = last - ((i+1)>>1);
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                min += dmi; x += stmi;
+                if(min >= max) { max += dma; y += stma; }
+                if(i&1) { if(x == (buf[ic+1].x + buf[ic].x) && y == (buf[ic+1].y + buf[ic].y)) n++; }
+                else    { if(x == (buf[ic].x<<1) && y == (buf[ic].y<<1)) n++; }
+                //printf("x = %d buf = %d buf1 = %d y = %d buf = %d buf1 = %d ic = %d i = %d n = %d\n",
+                //       x, buf[ic].x<<1, buf[ic+1].x + buf[ic].x, y, buf[ic].y<<1, buf[ic+1].y + buf[ic].y, ic, i, n);
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic+1].yx;
+        }
+    } else {
+        if(x2 > x1){
+            for(i=1; i < dma; i++){
+                ic = ((i+1)>>1) + first;
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                //if(x == buf[ic].x && y == buf[ic].y) n++;
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+                if(i&1) { if(x == (buf[ic-1].x + buf[ic].x) && y == (buf[ic-1].y + buf[ic].y)) n++; }
+                else    { if(x == (buf[ic].x<<1) && y == (buf[ic].y<<1)) n++; }
+                //printf("x = %d buf = %d buf1 = %d y = %d buf = %d buf1 = %d ic = %d i = %d n = %d\n",
+                //       x, buf[ic].x<<1, buf[ic-1].x + buf[ic].x, y, buf[ic].y<<1, buf[ic-1].y + buf[ic].y, ic, i, n);
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic-1].yx;
+        } else {
+            for(i=1; i < dma; i++){
+                ic = last - ((i+1)>>1);
+                //if(i == 1 || i == l) buf[ic].yx = x + y*w;
+                //buf[ic].yx = x + y*w;
+                //if(x == buf[ic].x && y == buf[ic].y) n++;
+                min += dmi; y += stmi;
+                if(min >= max) { max += dma; x += stma; }
+                if(i&1) { if(x == (buf[ic+1].x + buf[ic].x) && y == (buf[ic+1].y + buf[ic].y)) n++; }
+                else    { if(x == (buf[ic].x<<1) && y == (buf[ic].y<<1)) n++; }
+                //printf("x = %d buf = %d buf1 = %d y = %d buf = %d buf1 = %d ic = %d i = %d n = %d\n",
+                //       x, buf[ic].x<<1, buf[ic+1].x + buf[ic].x, y, buf[ic].y<<1, buf[ic+1].y + buf[ic].y, ic, i, n);
+            }
+            //if(dma -1 != last - first) buf[ic].yx = buf[ic+1].yx;
+        }
+    }
+    //printf("dma = %d n = %d x = %d y = %d x1 = %d y1 = %d\n", dma, n, buf[first].x, buf[first].y, buf[last].x, buf[last].y);
     return n*100/dma;
 }
 
@@ -2525,11 +2716,11 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                         // x = 329 y = 264 x = 812 y = 542
 
                         if(con[yx1]) {
-                            //For test only --------------------------------------
                             if(d1) add_dir3(con, yx1, -d1, w);
                             grad[yx1] = 255; //con[yx1] = 255;
                             npix++;
                             //For test only --------------------------------------
+#ifdef DEBUG
                             if(check_vertex(grad, yx1, 255, w)) {
                                 printf("seg_find_intersect7: x = %d y = %d yx = %d d1 = %d\n", yx1%w, yx1/w, yx1, d1);
                                 if((yx1%w) > 1 && (yx1/w > 1)){
@@ -2538,6 +2729,7 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
                                     print_con_grad(grad, con, yx1, w);
                                 }
                             }
+#endif
                             //Check for circle
                             if(yx == yx1) cr = 1;
                             break;
@@ -2566,67 +2758,58 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
     printf("Numbers of intersection  = %d\n", npix);
 
 }
-/*
-void seg_find_intersect4(uint8 *grad, uint8 *con, uint8 *di, uint32 w, uint32 h)
-{
-    uint32 y, y1, x, yx, yw, yx1, yx2, i, h2 = h-2, w2 = w-2, max;
-    int d1, d2, npix = 0, cr;
 
-    //Make border
-    //The right direction for last row
-    //yw = w*(h-2);
-    //for(x=2; x < w1-1; x++) con[yw + x] = 64;
-    //for(x=2; x < w1; x++) di[yw + x] = 128;
-    for(y=2; y < h2; y++){
-        yw = y*w;
-        for(x=2; x < w2; x++){
-            yx = yw + x;
-            if(grad[yx] && !con[yx]){
-                if(loc_max(grad, yx, w)){
-                    //printf("x = %d y = %d\n", x, y);
-                    yx1 = yx; yx2 = yx; cr = 0;
-                    con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-                    d1 = dir(grad, yx1, w, 0, &max);
-                    d2 = dir(grad, yx1, w, d1, &max);
+void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
+{
+    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h2 = h-2, w2 = w-2, max;//, yxl = 0;
+    int d1, d2, d3, npix = 0, cr;
+    int cn, ck = 0;
+    int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
+
+    for(i=0; i < lmaxc; i++){
+        if(!con[hist[i]]){
+            yx = hist[i];
+            yx1 = yx; cr = 0; cn = 0;
+            //Store first search direction
+            //d1 = dir_near(con, grad, dr, yx1, 0, w);
+            //Store second search direction
+            d2 = d1;
+            if(!con[yx1+d1]){
+                grad[yx1] = 253;
+                //Start first search direction
+                while(!cr && cn < 2){
                     while(1){
-                        //if(!d1){ con[yx1] = 128;  grad[yx1] = 255; break; }//}
-                        add_dir1(&di[yx1], d1, w);
-                        //printf("d1 = %d di = %d \n", d1, di[yx1]);
                         yx1 = yx1 + d1;
+
                         if(con[yx1]) {
-                            con[yx1] = 255; grad[yx1] = 255;
+                            if(d1) add_dir3(con, yx1, -d1, w);
+                            grad[yx1] = 255; //con[yx1] = 255;
                             npix++;
                             //Check for circle
                             if(yx == yx1) cr = 1;
                             break;
                         }
-                        con[yx1] = grad[yx1]; grad[yx1] = 254; //con[yx1] = 64;
-                        d1 = dir(grad, yx1, w, -d1, &max);
-                    }
-                    if(!cr){
-                        while(1){
-                            //if(!d2){ con[yx2] = 128;  grad[yx2] = 254; break;}//
-                            yx2 = yx2 + d2;
-                            add_dir1(&di[yx2], -d2, w);
-                            if(con[yx2]) {
-                                con[yx2] = 255; grad[yx2] = 255;
-                                npix++;
-                                break;
-                            }
-                            con[yx2] = grad[yx2];  grad[yx2] = 254; //con[yx2] = 64;
-                            d2 = dir(grad, yx2, w, -d2, &max);
+                        add_dir3(con, yx1, -d1, w);
+                        grad[yx1] = 253; //con[yx1] = 255;
+                        d1 = dir3(con, grad, dr, yx1, -d1, w);
 
+                        if(!d1) {
+                            grad[yx1] = 255; //con[yx1] = 255;
+                            npix++;
+                            break;
                         }
                     }
+                    cn++;
+                    yx1 = yx;
+                    d1 = dir3(con, grad, dr, yx1, d2, w);
                 }
-                //break;
             }
         }
     }
     printf("Numbers of intersection  = %d\n", npix);
 
 }
-*/
+
 static inline uint32 get_next_vertex(uint8 *con, Line_buff *buf, int dx, int dy, uint32 x, uint32 y, uint32 w)
 //Return 0 if curve ended not vertex
 {
@@ -2731,14 +2914,44 @@ static inline void finish_two_dirs(Vertex *vx1, Vertex *vx2, Line_buff *buf1, Li
         vx1->yx[n1] = buf1->yx;
         vx2->yx[n2] = buf2->yx;
     }
-    /*
-    if(vx1->yx[n1] == 0 ||vx2->yx[n2] == 0) {
-        printf("finish_two_dirs: vx1->yx[n1] = %d  vx2->yx[n2] = %d\n", vx1->yx[n1], vx2->yx[n2]);
-        printf("finish_two_dirs: buf1->yx = %d  buf2->yx = %d\n", buf1->yx, buf2->yx);
-        printf("x1 = %d y1 = %d x2 = %d y2 = %d\n", vx1->x, vx1->y, vx2->x, vx2->y);
-    }*/
-}
 
+}
+/*
+static inline void finish_two_dirs1(Vertex *vx1, Vertex *vx2, Line_buff *buf1, Line_buff *buf2, Vector *v)
+{
+    uint8 n;
+    int dx, dy;
+    //New algorithm
+
+    dx = buf1->x - vx1->x; dy = buf1->y - vx1->y;
+    if      (dx == -1 && dy ==  0) n = 0;
+    else if (dx == -1 && dy == -1) n = 1;
+    else if (dx ==  0 && dy == -1) n = 2;
+    else if (dx ==  1 && dy == -1) n = 3;
+    else if (dx ==  1 && dy ==  0) n = 4;
+    else if (dx ==  1 && dy ==  1) n = 5;
+    else if (dx ==  0 && dy ==  1) n = 6;
+    else if (dx == -1 && dy ==  1) n = 7;
+
+    if(x1 != buf1->x || y1 != buf1->y){
+        vx1->di ^= (1<<n);
+        dx = x1 - vx1->x; dy = y1 - vx1->y;
+        if      (dx == -1 && dy ==  0) n = 0;
+        else if (dx == -1 && dy == -1) n = 1;
+        else if (dx ==  0 && dy == -1) n = 2;
+        else if (dx ==  1 && dy == -1) n = 3;
+        else if (dx ==  1 && dy ==  0) n = 4;
+        else if (dx ==  1 && dy ==  1) n = 5;
+        else if (dx ==  0 && dy ==  1) n = 6;
+        else if (dx == -1 && dy ==  1) n = 7;
+
+        vx1->di |= (1<<n);
+    }
+    vx1->cn |= (1<<n);
+    vx1->vp[n1] = vx2;
+    vx1->yx[n1] = buf1->yx;
+}
+*/
 static inline uint32  check_direction(int dr1, int dr2, int *dr)
 {
     uint8 i, n1, n2;
@@ -2773,7 +2986,9 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
     dyx2 = yx2 - vx2->x - vx2->y*w;
     for(i=0; i < 8; i++) if(dyx2 == dr[i]) { n2 = i; break; }
 
+#ifdef DEBUG
     if(n1 == 8 || n2 == 8) printf("!!!!!!!!!!Problem n1 = %d n2 = %d\n", n1, n2);
+#endif
 
     //Check if two lines from one vertex are closed and have the same direction
     //if(vx1->vp[n1]) {
@@ -2783,7 +2998,7 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
                 printf("finish_two_dirs1: %p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
                        vx1->vp[n1], n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx2->x, vx2->y, vx1->di, vx1->cn);
                 print_pointer(vx1);
-                printf("nt = %d vx1->di&(1<<nt) = %d\n", (n1 == 7) ? 0 : n1 + 1, vx1->di&(1<<((n1 == 7) ? 0 : n1 + 1)));
+                //printf("nt = %d vx1->di&(1<<nt) = %d\n", (n1 == 7) ? 0 : n1 + 1, vx1->di&(1<<((n1 == 7) ? 0 : n1 + 1)));
         }
 
         nt = n1;
@@ -2819,10 +3034,12 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
         }
 
         nt = n2;
-        nt = (nt == 0) ? 7 : nt - 1;
+        //nt = (nt == 0) ? 7 : nt - 1;
+        nt = (nt == 7) ? 0 : nt + 1;
         if(vx2->di&(1<<nt)){
             nt = n2;
-            nt = (nt == 7) ? 0 : nt + 1;
+            //nt = (nt == 7) ? 0 : nt + 1;
+            nt = (nt == 0) ? 7 : nt - 1;
             //if(vx2->vp[nt]) {
 #ifdef DEBUG
             if(vx2->di&(1<<nt)) {
@@ -2916,6 +3133,36 @@ static inline uint32 finish_two_dirs1(Vertex *vx1, Vertex *vx2, uint32 yx1, uint
     return 0;
 }
 
+static inline uint32 finish_two_dirs2(Vertex *vx1, Vertex *vx2, uint32 yx1, uint32 yx2, int *dr, uint32 w)
+{
+    uint8 n1 = 8, n2 = 8, nt, i, d;
+    int dyx, dyx1, dyx2, dx, dy, yxt, lm1, lm2;
+
+    dyx1 = yx1 - vx1->x - vx1->y*w;
+    for(i=0; i < 8; i++) if(dyx1 == dr[i]) { n1 = i; break; }
+
+    dyx2 = yx2 - vx2->x - vx2->y*w;
+    for(i=0; i < 8; i++) if(dyx2 == dr[i]) { n2 = i; break; }
+
+#ifdef DEBUG
+    if((vx1->di&(1<<n1)) || (vx2->di&(1<<n2)))
+        printf("finish_two_dirs1: Problem %p n1 = %d x1 = %d y1 = %d  vx1->vp[n1]->x = %d vx1->vp[n1]->y = %d vx2->x = %d vx2->y = %d di = %d cn = %d\n",
+               vx1->vp[n1], n1, vx1->x, vx1->y, vx1->vp[n1]->x, vx1->vp[n1]->y, vx2->x, vx2->y, vx1->di, vx1->cn);
+#endif
+
+
+    vx1->n++;
+    if(!(vx1->di&(1<<n1))) vx1->di |= (1<<n1);
+    vx1->vp[n1] = vx2;
+    vx1->yx[n1] = yx1;
+
+    vx2->n++;
+    if(!(vx2->di&(1<<n2))) vx2->di |= (1<<n2);
+    vx2->vp[n2] = vx1;
+    vx2->yx[n2] = yx2;
+    return 0;
+}
+
 static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
 {
     uint32 i = npix-1, j = 0, j1, dl, mid, len, lx, ly, yx, ln, cl;
@@ -2928,6 +3175,9 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
     } else if (i < 4){
         check_line1(buf, 0, i, w);
         buf[0].in = 1;
+
+        //if(buf[0].x + buf[0].y*w != buf[0].yx) printf("lines_approximation: first position changes less < 4 j = %d n = %d \n", j++, npix);
+        //if(buf[i].x + buf[i].y*w != buf[i].yx) printf("lines_approximation: last  position changes less < 4 j = %d n = %d \n", j  , npix);
         //Less than 5 pixeles in the line
         //buf[0].np = i-1;
         return 1;
@@ -2938,7 +3188,11 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
         while(1){
             if(j == i){
                 //for(j=0; j < i+1; j++) printf("buf[%3d].in = %d np = %d\n",j, buf[j].in, buf[j].np);
-                if(!dl) return 1;
+                if(!dl) {
+                    //if(buf[0].x + buf[0].y*w != buf[0].yx) printf("lines_approximation: first position changes \n");
+                    //if(buf[i].x + buf[i].y*w != buf[i].yx) printf("lines_approximation: last  position changes \n");
+                    return 1;
+                }
                 j = 0; dl = 0;
             }
             //printf("buf[j].in = %d\n",buf[j].in);
@@ -2958,7 +3212,10 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
                     check_line1(buf, j, j1, w);
                     buf[j].in = 1;
                 } else {
-                    if(ln == len) cl = check_line1(buf, j, j1, w);
+                    if(ln == len) {
+                        cl = check_line1(buf, j, j1, w);
+                        //printf("cl = %d\n",cl);
+                    }
                     else cl = 0;
 
                     if(cl > 60){
@@ -2976,72 +3233,96 @@ static inline uint32 lines_approximation(Line_buff *buf, uint32 npix, uint32 w)
             }
             j = j1;
         }
+
      }
 }
 
-static inline uint32 lines_approximation1(Line_buff *buf, uint32 npix, uint32 w)
+static inline uint32 lines_approximation1(uint8 *con, Line_buff *buf, uint32 npix, uint32 w)
 {
-    uint32 i = npix-1, j = 0, j1, dl, mid, len, lx, ly, yx, ln, cl;
-    //Pointer to the last pixel in the array to start vectorization algorithm.
+    uint32 i = npix-1, j = 0, j1, dl, mid, len, lx, ly, yx, ln, cl, lf, rt;
     buf[0].np = i;
 
-    if(i < 2){
-        printf("i = %d Problem: the vertexs is near !!!!!\n", i);
-        return 0;
-    } else if (i < 4){
-        //Less than 5 pixeles in the line
-        check_line1(buf, 0, i, w);
-        buf[0].in = 1;
-        //buf[0].np = i-1;
-        return 1;
-    } else {
-        //More than 5 pixeles in the line
-        //Find the line length in pixels
-        j = 0; j1 = 0; dl = 0;
-        while(1){
-            if(j == i){
-                //for(j=0; j < i+1; j++) printf("buf[%3d].in = %d np = %d\n",j, buf[j].in, buf[j].np);
-                if(!dl) return 1;
-                j = 0; dl = 0;
-            }
-            //printf("buf[j].in = %d\n",buf[j].in);
-            j1 = buf[j].np;
-            if(!buf[j].in){
-                //The segment length
-                ln = j1-j+1;
-                lx = abs(buf[j].x - buf[j1].x);
-                ly = abs(buf[j].y - buf[j1].y);
-                len = lx > ly ? lx + 1 : ly + 1;
-                //Curve length
+    //The first pass
+    j = 0; j1 = 0; dl = 0;
+    while(1){
+        if(j == i){
+            if(!dl) break;
+            j = 0; dl = 0;
+        }
+        //printf("buf[j].in = %d\n",buf[j].in);
+        j1 = buf[j].np;
+        if(!buf[j].in){
+            //The segment length
+            ln = j1-j+1;
+            lx = abs(buf[j].x - buf[j1].x);
+            ly = abs(buf[j].y - buf[j1].y);
+            len = lx > ly ? lx + 1 : ly + 1;
+            //Curve length
 
-                //printf("i = %d j = %d j1 = %d ln = %d len = %d cl = %d dl = %d buf[j].in = %d  \n", i, j, j1, ln, len, cl, dl, buf[j].in);
-                //printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",buf[j].x, buf[j].y, buf[j1].x, buf[j1].y);
-
-                if (j1-j < 4){
-                    check_line1(buf, j, j1, w);
-                    buf[j].in = 1;
-                } else {
-                    if(ln == len) cl = check_line1(buf, j, j1, w);
-                    else cl = 0;
-
-                    if(cl > 60){
-                        buf[j].in = 1;
-                        //printf("Finish\n");
-                    } else {
-                        //Divid cuver
-                        mid = j + (ln>>1);
-                        buf[j].np = mid;
-                        buf[mid].np = j1;
-                        dl++;
-                        //printf("Divid\n");
-                    }
+            if(ln == len) {
+                cl = check_line3(buf, j, j1, &lf, &rt, w);
+                if(j  == 0 && !lf) {
+                    cl = 0;
+                }
+                if(j1 == i && !rt) {
+                    cl = 0;
                 }
             }
-            j = j1;
-        }
-     }
-}
+            else cl = 0;
 
+            if(cl > 60){
+                buf[j].in = 1;
+                //printf("Finish\n");
+            } else {
+                //Divid cuver
+                mid = j + (ln>>1);
+                buf[j].np = mid;
+                buf[mid].np = j1;
+                dl++;
+                //printf("Divid\n");
+            }
+        }
+        j = j1;
+    }
+    /*
+    printf("Old i = %d \n", i);
+    j = 0;
+    while(j != i){
+        printf("j = %d buf[%d] = %d \n", j, j, buf[j].np);
+        j = buf[j].np;
+    }*/
+
+    //The second pass
+    dl = 0;
+    j = buf[0].np; j1 = buf[buf[j].np].np;
+    while(!(j == i || j1 == i || buf[j].np == i)){
+
+        //The segment length
+        ln = j1-j+1;
+        lx = abs(buf[j].x - buf[j1].x);
+        ly = abs(buf[j].y - buf[j1].y);
+        len = lx > ly ? lx + 1 : ly + 1;
+
+        if(ln == len && check_line3(buf, j, j1, &lf, &rt, w) > 60) {
+            buf[j].np = j1;
+            j1 = buf[j1].np;
+            dl++;
+        }
+        else {
+            if(dl) { j = j1; j1 = buf[buf[j1].np].np; dl = 0;}
+            else   { j = buf[j].np; j1 = buf[j1].np; }
+        }
+    }
+
+    /*
+    printf("New i = %d \n", i);
+    j = 0;
+    while(j != i){
+        printf("j = %d buf[%d] = %d \n", j, j, buf[j].np);
+        j = buf[j].np;
+    } */
+    return 1;
+}
 
 static inline uint8 find_vertex(uint8 *con, uint8 *di, int8 *buf, int *dx, int *dy, int *d, int *d1, uint32 *x, uint32 *y, uint32 *cc, uint32 *pow, uint32 w)
 {
@@ -3275,7 +3556,6 @@ uint32 seg_vertex3(uint8 *con, uint8 *di, Vertex *vx, Vertex **vp, Vertex **vpn,
             con[vp[j]->y*w + vp[j]->x+1] = 255;
         }
     }
-
     return vxc;
 }
 
@@ -3322,22 +3602,17 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
 
                     i = get_next_vertex1(con, grad, buf, dx, dy, x, y, w);
                     yx1 = buf[i-1].x + buf[i-1].y*w;
-                    if(i < 3) printf("next pixel i = %d x = %d y = %d x = %d y = %d con = %d grad = %d\n", i, x, y, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
+                    //printf("yx1 = %d x = %d y = %d\n", yx1,  buf[i-1].x, buf[i-1].y);
 
-                    //if((yx1 == 1308 + 884*w) || (yx1 == 1306 + 886*w)) {
-                    //    printf("New pixel x = %d y = %d n = %d di = %d cn = %d\n", vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
-                    //    print_around(con, yx2, w);
-                    //     print_pointer(vx2);
-                    // }
-                    //Check if the last vertex have n > 1
-                    //printf("yx1 = %d vp[yx1] = %p\n", yx1, vp[yx1]);
+                    if(i < 3) printf("next pixel i = %d x = %d y = %d x = %d y = %d con = %d grad = %d\n", i, x, y, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
 
                     if(grad[yx1] == 255) j = get_num_dir(con[yx1]);
                     else j = vp[yx1]->n;
 
+                    //Check if the last vertex have more than one neighbour if not remove it
                     if(j > 1){
-                        //Check if the last vertex have more than one neighbour
-                        lines_approximation(buf, i, w);
+                        //lines_approximation(buf, i, w);
+                        lines_approximation1(con, buf, i, w);
                         j = 0; vx1 = vxp;
                         yx1 = buf[j].x + buf[j].y*w;
                         //nd1 = nd; vc1 = vxc;
@@ -3398,15 +3673,14 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
                     } else {
                         //Remove direction
                         remove_dir3(vxp, dx, dy);
+                        //printf("Remove dir\n");
                     }
                 }
-
             }
         }
     }
 
-    printf("Numbers of vertexs  = %d\n", vxc);
-
+#ifdef DEBUG
     for(j=0; j < vxc; j++) {
         if(vx[j].di != vx[j].cn) {
             printf("%d  x = %d y = %d %o %o %o n = %d\n", j, vx[j].x,  vx[j].y, vx[j].di, vx[j].cn, vx[j].cn^vx[j].di, vx[j].n);
@@ -3418,7 +3692,154 @@ uint32 seg_vertex4(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vp
         }
         //Check for near vertex
     }
+#endif
 
+    printf("Numbers of vertexs  = %d\n", vxc);
+    return vxc;
+}
+
+uint32 seg_vertex5(uint8 *grad, uint8 *con, Vertex *vx, Vertex **vp, Vertex **vpn, uint32 *yxn, Line_buff *buf, uint32 w, uint32 h)
+{
+    uint32 i, j, j1, y, x, x1, y1, x2, y2, yx, yx1, yx2,  yw, nd, nd1, nd2, yxd, h1 = h-1, w1 = w-1;
+    uint32  vxc = 0, lnc = 0, pow, vc1, vc2;
+    int d,  dx, dy;
+    uint8 tm;
+    Vertex *vxp, vt, *vx1, *vx2;
+    //It's a fake vertex for return 0 func get_next_dir2
+    vt.di = 0; vt.cn = 0;
+
+    //printf("w = %d h = %d w*h>>4 = %d\n", w, h, w*h>>4 );
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            ////New vertex or old vertex
+            if(grad[yx] > 253) {
+                //printf("x = %d y = %d con = %d grad = %d vxc = %d\n", yx%w, yx/w, con[yx], grad[yx], vxc);
+                if(grad[yx] == 255) {
+                    //Check if vertex have more than one neighbour
+                    //vx[vxc].n = set_dir(con, yx, &vx[vxc].di, w);
+                    vx[vxc].n = get_num_dir(con[yx]);
+                    if(vx[vxc].n > 1) {
+                        new_vertex1(con, &vx[vxc], vp, &vpn[lnc], &yxn[lnc+=8], x, y, yx, w);
+                        vxp = &vx[vxc];
+                        grad[yx] = 254; vxc++;
+                    } else vxp = &vt;
+                } else vxp = vp[yx];
+                //x = 1449 y = 264  x = 1448 y = 264
+                /*
+                if((yx == 1449 + 264*w) || (yx == 1448 + 264*w)) {
+                    printf("New pixel vxc = %d x = %d y = %d n = %d di = %d cn = %d\n", vxc, vxp->x, vxp->y, vxp->n, vxp->di, vxp->cn);
+                    print_around(con, yx, w);
+                    print_around(grad, yx, w);
+                    print_con_grad(grad, con, yx, w);
+                }*/
+
+                while(get_next_dir2(vxp, &dx, &dy)){
+                    //printf("Next dir dx = %d dy = %d\n", dx, dy);
+                    //x1 = x; y1 = y; yx1 = yx;
+
+                    i = get_next_vertex1(con, grad, buf, dx, dy, x, y, w);
+                    yx1 = (buf[i-1].x>>1) + (buf[i-1].y>>1)*w;
+
+                    if(i < 3) printf("next pixel i = %d x = %d y = %d x = %d y = %d con = %d grad = %d\n", i, x, y, buf[i-1].x, buf[i-1].y, con[yx1], grad[yx1]);
+
+                    //if((yx1 == 1308 + 884*w) || (yx1 == 1306 + 886*w)) {
+                    //    printf("New pixel x = %d y = %d n = %d di = %d cn = %d\n", vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
+                    //    print_around(con, yx2, w);
+                    //     print_pointer(vx2);
+                    // }
+                    //Check if the last vertex have n > 1
+                    //printf("yx1 = %d vp[yx1] = %p\n", yx1, vp[yx1]);
+
+                    if(grad[yx1] == 255) j = get_num_dir(con[yx1]);
+                    else j = vp[yx1]->n;
+
+                    if(j > 1){
+                        //Check if the last vertex have more than one neighbour
+                        lines_approximation(buf, i, w);
+                        j = 0; vx1 = vxp;
+                        yx1 = (buf[j].x>>1) + (buf[j].y>>1)*w;
+                        //nd1 = nd; vc1 = vxc;
+                        while(1){
+                            j1 = buf[j].np;
+                            yx2 = (buf[j1].x>>1) + (buf[j1].y>>1)*w;
+                            //printf("yx2 = %d \n", yx2);
+                            //The end of vertexes
+                            if(j1 == i-1){
+                                if(grad[yx2] == 255) {
+                                    vx2 = &vx[vxc];
+                                    //vx2->n = set_dir(con, yx2, &vx2->di, w);
+                                    vx2->n = get_num_dir(con[yx2]);
+                                    new_vertex1(con, vx2, vp, &vpn[lnc], &yxn[lnc+=8], buf[j1].x>>1, buf[j1].y>>1, yx2, w);
+                                    finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                    //x = 1308 y = 884 x = 1306 y = 886
+
+                                    grad[yx2] = 254; vxc++;
+                                    //printf("yx2 = %d vp[yx2] = %p vx2 = %p\n", yx2, vp[yx2], vx2);
+                                } else {
+                                    //printf("yx2 = %d\n", yx2);
+                                    vx2 = vp[yx2];
+                                    //printf("vp = %p\n", vp[yx2]);
+                                    finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                    if(vx1 == vx2){
+                                        printf("Old pixel: i = %d  p = %p x = %d y = %d n = %d di = %d cn = %d\n", i, vx2, vx2->x, vx2->y, vx2->n, vx2->di, vx2->cn);
+                                        print_around(con, yx2, w);
+                                        print_around(grad, yx2, w);
+                                        print_pointer(vx2);
+                                    }
+                                }
+                                /*Check
+                                j = 0;
+                                while(1){
+                                    printf("%3d x = %d y = %d np = %d in = %d di = %d cn = %d n = %d\n",
+                                           j, buf[j].x, buf[j].y, buf[j].np, buf[j].in, vp[buf[j].x + buf[j].y*w]->di,
+                                           vp[buf[j].x + buf[j].y*w]->cn, vp[buf[j].x + buf[j].y*w]->n);
+                                    j = buf[j].np;
+                                    if(j == i-1) break;
+                                }*/
+                                break;
+                            } else {
+                                vx2 = &vx[vxc];
+                                //vx2->n = set_dir(con, yx2, &vx2->di, w)
+                                vx2->n = get_num_dir(con[yx2]);
+                                new_vertex1(con, vx2, vp, &vpn[lnc],  &yxn[lnc+=8], buf[j1].x, buf[j1].y, yx2, w);
+                                finish_two_dirs(vx1, vx2, &buf[j+1], &buf[j1-1]);
+                                grad[yx2] = 254; vxc++;
+                                /*
+                                if(vx1->x + vx1->y*w == 218 + 6*w) {
+                                    printf("Satart pixel x = %d y = %d n = %d di = %d cn = %d\n", vx1->x, vx1->y, vx1->n, vx1->di, vx1->cn);
+                                    print_around(con, vx1->x + vx1->y*w, w);
+                                    print_pointer(vx1);
+                                }*/
+                            }
+                            j = j1; yx1 = yx2; vx1 = vx2;
+                        }
+                    } else {
+                        //Remove direction
+                        remove_dir3(vxp, dx, dy);
+                    }
+                }
+
+            }
+        }
+    }
+
+#ifdef DEBUG
+    for(j=0; j < vxc; j++) {
+        if(vx[j].di != vx[j].cn) {
+            printf("%d  x = %d y = %d %o %o %o n = %d\n", j, vx[j].x,  vx[j].y, vx[j].di, vx[j].cn, vx[j].cn^vx[j].di, vx[j].n);
+            //printf("%d n = %d %o %o %o\n", j, vp[j]->n, vp[j]->di, vp[j]->cn, vp[j]->cn^vp[j]->di);
+            //con[vx[j].y*w + vx[j].x-w] = 255;
+            //con[vx[j].y*w + vx[j].x-1] = 255;
+            //con[vx[j].y*w + vx[j].x+w] = 255;
+            //con[vx[j].y*w + vx[j].x+1] = 255;
+        }
+        //Check for near vertex
+    }
+#endif
+
+    printf("Numbers of vertexs  = %d\n", vxc);
     return vxc;
 }
 
@@ -4019,7 +4440,7 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
             vx = &vx2[i];//vc = 0;
 #ifdef DEBUG
             //Check if vertex is in another line
-            if(get_cn_num(vx->cn) == 1) if(img[vx->x + vx->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx->x, vx->y);
+            //if(get_cn_num(vx->cn) == 1) if(img[vx->x + vx->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx->x, vx->y);
 #endif
 
             //vp1 = vp[i];
@@ -4031,10 +4452,10 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
             //finish_dir2(vx, nd);
             nd1 =  find_pointer1(vx1, vx);
 
+#ifdef DEBUG
             //Check if vertex is in another line
-            if(!vx1->cn) if(img[vx1->x + vx1->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx1->x, vx1->y);
-
-
+            //if(!vx1->cn) if(img[vx1->x + vx1->y*w]) printf("Vertex is in another line x = %d y = %d\n", vx1->x, vx1->y);
+#endif
             finish_dir1(vx1, nd1);
             //finish_dir2(vx1, nd1);
 
@@ -4199,7 +4620,7 @@ uint32 seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir
     if(get){ *pc = 0; xy[(*pc)++] = 0; xy[(*pc)++] = 0; }
 
     for(i=0; i < vxc; i++){
-        while(vx2[i].n  && get_dir2(&vx2[i], &nd)){
+        while(vx2[i].n && get_dir2(&vx2[i], &nd)){
             //Start new region
             //printf("New region\n");
             vx = &vx2[i]; nd2 = nd; sq = 0; fn = 0;
@@ -4249,7 +4670,7 @@ uint32 seg_regions(uint8 *con, Vertex *vx2, uint32 vxc, Vertex **vp2, uint8 *dir
 
             if(sq > 0 ){
                 vp2[rc] = &vx2[i]; dir[rc++] = nd2;
-                if(i<10) printf("Start n = %d x = %d y = %d sum = %d\n", vx2[i].n, vx2[i].x, vx2[i].y, fn);
+                //if(i<100) printf("Start n = %d x = %d y = %d sum = %d\n", vx2[i].n, vx2[i].x, vx2[i].y, fn);
 
             } //else (*pc) -= (lc<<1);
             sqr += sq;
@@ -4423,19 +4844,34 @@ uint32 seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uin
 
 #ifdef DEBUG
             //Check if vertex is in another line
-            if(!vp[yx1]) if(img[yx1]) printf("seg_restore_vertex: Vertex is in another line x = %d y = %d\n", yx1%w, yx1/w);
-            if(!vp[yx2]) if(img[yx2]) printf("seg_restore_vertex: Vertex is in another line x = %d y = %d\n", yx2%w, yx2/w);
+            if(!vp[yx1]) if(img[yx1]) {
+                printf("seg_restore_vertex: Vertex is in another line x = %d y = %d\n", yx1%w, yx1/w);
+                img[yx1] = 255;
+                //img[yx1+1] = 255;
+                //img[yx1-1] = 255;
+                //img[yx1+w] = 255;
+                //img[yx1-w] = 255;
+            }
+            if(!vp[yx2]) if(img[yx2]) {
+                printf("seg_restore_vertex: Vertex is in another line x = %d y = %d\n", yx2%w, yx2/w);
+                img[yx2] = 255;
+                //img[yx2+1] = 255;
+                //img[yx2-1] = 255;
+                //img[yx2+w] = 255;
+                //img[yx2-w] = 255;
+            }
 #endif
 
             draw_line_2(img, &v, w, 50, yxa);
             lc++;
-            img[yx1] = 200;
-            img[yx2] = 200;
+            img[yx1] = 100;
+            img[yx2] = 100;
 
             if(!vp[yx1]) new_vertex2(&vx[vxc++], vp, &vpn[lnc], &yxn[lnc+=8], v.x1, v.y1, yx1, w);
             if(!vp[yx2]) {
                 new_vertex2(&vx[vxc++], vp, &vpn[lnc], &yxn[lnc+=8], v.x2, v.y2, yx2, w);
-                yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                //yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                yx = finish_two_dirs2(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
                 if(yx) {
                     img[yx] =  255;
                     //img[yx+1] =  255;
@@ -4444,7 +4880,8 @@ uint32 seg_restore_vertex(uint8 *img, Vertex *vx, Vertex **vp, Vertex **vpn, uin
                     //img[yx-w] =  255;
                 }
             } else {
-                yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                //yx = finish_two_dirs1(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
+                yx = finish_two_dirs2(vp[yx1], vp[yx2], yxa[0], yxa[1], dr, w);
                 if(yx) {
                     img[yx] =  255;
                     //img[yx+1] =  255;
