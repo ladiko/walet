@@ -545,59 +545,420 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
 /*
    All RGB cameras use one of these Bayer grids:
 
-	BGGR  0         GRBG 1          GBRG  2         RGGB 3
-	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
-	0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
-	1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
-	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
-	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+    BGGR  0         GRBG 1          GBRG  2         RGGB 3
+      0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+    0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+    1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+    2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+    3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8;
-	int16 *l0, *l1, *l2, *tm;
-	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
-	//printf("bpp = %d shift = %d\n", bpp, shift);
+    int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8;
+    int16 *l0, *l1, *l2, *tm;
+    l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+    //printf("bpp = %d shift = %d\n", bpp, shift);
 
-	switch(bay){
-		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
-		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
-	}
-	h2 = h1-1;
-	//Create 3 rows buffer for transform
-	l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
-	l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
+    switch(bay){
+        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+    }
+    h2 = h1-1;
+    //Create 3 rows buffer for transform
+    l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
+    l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
 
-	for(y=ys, yw=0; y < h1; y++, yw+=w){
-		wy = (y == h2) ? yw - w : yw + w;
-		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
+    for(y=ys, yw=0; y < h1; y++, yw+=w){
+        wy = (y == h2) ? yw - w : yw + w;
+        l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
 
-		for(x=xs, x1=0; x < w1; x++, x1++){
-			wy 	= x1 + yw;
-			x2 = x1 + 1;
-			xwy3 = wy*3;
+        for(x=xs, x1=0; x < w1; x++, x1++){
+            wy 	= x1 + yw;
+            x2 = x1 + 1;
+            xwy3 = wy*3;
 
-			if(!(y&1) && !(x&1)){
-				rgb[xwy3] 	= 	lb1((l1[x2] + shift)>>sh);
-				rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
-				rgb[xwy3+2] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
-			}else if (!(y&1) && (x&1)){
-				rgb[xwy3] = 	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
-				rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
-				rgb[xwy3+2] =	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
-			}else if ((y&1) && !(x&1)){
-				rgb[xwy3] = 	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
-				rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
-				rgb[xwy3+2] =	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
-			}else {
-				rgb[xwy3] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
-				rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
-				rgb[xwy3+2] = 	lb1((l1[x2] + shift)>>sh);
-			}
-		}
-		tm = l0; l0 = l1; l1 = l2; l2 = tm;
-	}
-	return rgb;
+            if(!(y&1) && !(x&1)){
+                rgb[xwy3] 	= 	lb1((l1[x2] + shift)>>sh);
+                rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
+                rgb[xwy3+2] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
+            }else if (!(y&1) && (x&1)){
+                rgb[xwy3] = 	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
+                rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
+                rgb[xwy3+2] =	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
+            }else if ((y&1) && !(x&1)){
+                rgb[xwy3] = 	lb1((((l0[x2] + l2[x2])>>1) + shift)>>sh);
+                rgb[xwy3+1] = 	lb1((l1[x2] + shift)>>sh);
+                rgb[xwy3+2] =	lb1((((l1[x2-1] + l1[x2+1])>>1) + shift)>>sh);
+            }else {
+                rgb[xwy3] = 	lb1((((l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2) + shift)>>sh);
+                rgb[xwy3+1] = 	lb1((((l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2) + shift)>>sh);
+                rgb[xwy3+2] = 	lb1((l1[x2] + shift)>>sh);
+            }
+        }
+        tm = l0; l0 = l1; l1 = l2; l2 = tm;
+    }
+    return rgb;
+}
+
+void utils_bayer_to_RGB24_white_balance(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+    BGGR  0         GRBG 1          GBRG  2         RGGB 3
+      0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+    0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+    1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+    2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+    3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+    int x, x1, x2, xs, ys, y = 0, yx, yw = 0, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8;
+    int16 *l0, *l1, *l2, *tm;
+    uint32 sumr = 0, sumb = 0, sumr1 = 0, sumb1 = 0, cr = 0, cb = 0;
+    double r = 0., b = 0., sr = 1, sb = 1;
+
+    //GBRG
+    //printf("bpp = %d shift = %d\n", bpp, shift);
+
+    switch(bay){
+        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h  ; break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w  ; h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w  ; h1 = h  ; break;}
+    }
+
+    for(y=0; y < h; y+=2){
+        yw = y*w;
+        for(x=0; x < w; x+=2){
+            yx = yw + x;
+            //img1[yx+w] = (int16)((double)(img[yx+w]+shift)*r) - shift;
+            //img1[yx+1] = (int16)((double)(img[yx+1]+shift)*b) - shift;
+            img1[yx+w] = img[yx+w];
+            img1[yx+1] = img[yx+1];
+
+            //img1[yx]   = img[yx];
+            //img1[yx+w+1]   = img[yx+w+1];
+            sumr1 += abs(((img[yx] + img[yx+w+1])>>1) - img1[yx+w]);
+            sumb1 += abs(((img[yx] + img[yx+w+1])>>1) - img1[yx+1]);
+        }
+    }
+
+    while(cr < 2 || cb < 2) {
+        r = r + sr; b = b + sb;
+        sumr = 0; sumb = 0;
+        for(y=0; y < h; y+=2){
+            yw = y*w;
+            for(x=0; x < w; x+=2){
+                yx = yw + x;
+                //img1[yx+w] = (int16)((double)(img[yx+w]+shift)*r) - shift;
+                //img1[yx+1] = (int16)((double)(img[yx+1]+shift)*b) - shift;
+                img1[yx+w] = img[yx+w]+r;
+                img1[yx+1] = img[yx+1]+b;
+                sumr += abs(((img[yx] + img[yx+w+1])>>1) - img1[yx+w]);
+                sumb += abs(((img[yx] + img[yx+w+1])>>1) - img1[yx+1]);
+
+                //img1[yx+w] = img[yx+w];
+                //img1[yx+1] = img[yx+1];
+                img1[yx]   = img[yx];
+                img1[yx+w+1]  = img[yx+w+1];
+            }
+        }
+        if(sumr > sumr1) { sr = -sr; cr++; }
+        if(sumb > sumb1) { sb = -sb; cb++; }
+        sumr1 = sumr; sumb1 = sumb;
+        printf("sumr = %d sumb = %d r = %f b = %f cr = %d cb = %d\n", sumr, sumb, r, b, cr, cb);
+    }
+}
+
+void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp, uint32 low, uint32 top)
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+    BGGR  0         GRBG 1          GBRG  2         RGGB 3
+      0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+    0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+    1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+    2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+    3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
+    double a, b, c;
+
+    //GBRG
+    //printf("bpp = %d shift = %d\n", bpp, shift);
+
+    switch(bay){
+        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h  ; break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w  ; h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w  ; h1 = h  ; break;}
+    }
+    //for(i=0; i < size; i++){
+    //    img1[yx1] = 0;
+    //}
+
+    for(y=0; y < h-sp; y+=2){
+        yw = y*w;
+        for(x=0; x < w-sp; x+=2){
+            yx = yw + x;
+            max  = 0; min  = 4095;
+            maxg = 0; ming = 4095;
+            maxr = 0; minr = 4095;
+            maxb = 0; minb = 4095;
+            maxy = 0; miny = 4095;
+            for(y1=0; y1 < sp; y1+=2){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < sp; x1+=2){
+                    yx1 = yw1 + x1;
+                    if(img[yx1]+shift > maxg) maxg = img[yx1]+shift;
+                    if(img[yx1]+shift < ming) ming = img[yx1]+shift;
+                    if(img[yx1+w+1]+shift > maxg) maxg = img[yx1+w+1]+shift;
+                    if(img[yx1+w+1]+shift < ming) ming = img[yx1+w+1]+shift;
+
+                    if(img[yx1+w]+shift > maxr) maxr = img[yx1+w]+shift;
+                    if(img[yx1+w]+shift < minr) minr = img[yx1+w]+shift;
+
+                    if(img[yx1+1]+shift > maxb) maxb = img[yx1+1]+shift;
+                    if(img[yx1+1]+shift < minb) minb = img[yx1+1]+shift;
+
+                    if((img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2 > maxy)
+                        maxy = (img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2;
+                    if((img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2 < miny)
+                        miny = (img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2;
+
+                    min = (minr > minb) ? (minb > ming ? ming : minb) : (minr > ming ? ming : minr);
+                    max = (maxr > maxb) ? (maxr > maxg ? maxr : maxg) : (maxb > maxg ? maxb : maxg);
+                    /*
+                    img1[yx1+w]    = img[yx1+w];      //R
+                    img1[yx1+1]    = img[yx1+1];      //B
+                    img1[yx1]      = img[yx1];        //G
+                    img1[yx1+w+1]  = img[yx1+w+1];    //G
+                    */
+                }
+            }
+            //printf("Ymai=%4d Yma=%4d Yd=%4d  Rmi=%4d Rma=%4d Rd=%4d  Gmi=%4d Gma=%4d Gd=%4d  Bmi=%4d Bma=%4d Bd=%4d\n",
+            //       min, max, max-min, minr, maxr, maxr-minr, ming, maxg, maxg-ming, minb, maxb, maxb-minb);
+
+            diff = max - min;
+
+            //New
+            c = 256./(double)(top - low);
+            df = ((max+min)>>1) - low;
+            dfn = c*df;
+
+            if(diff > 128) {
+                a = 128./(double)diff;
+                diff = 128;
+            } else {
+                a = 1.;
+            }
+            //df = (max+min)>>1;
+
+            st = dfn - (diff>>1);
+            if(dfn < (diff>>1)) st = 0;
+            if(dfn + (diff>>1) > 255)  st = 255 - diff;
+            //printf("low = %d top = %d min = %d max = %d df = %d dfn = %d diff = %d st = %d a = %f\n",
+            //       low, top, min, max, df, dfn, diff, st, a);
+
+            //Old
+            /*
+            if(diff > 256){
+                st = 0; a = 256./(double)diff;
+            } else {
+                ll = min - low + top - max; df = 256 - diff;
+                //printf("min = %d max = %d diff = %d ll = %d df = %d\n", min, max, diff, ll, df);
+                a = 1.;
+                if(!df) st = 0;
+                else { st = ll/df; st = min/st; }
+            }
+            */
+
+            for(y1=0; y1 < sp; y1+=2){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < sp; x1+=2){
+                    yx1 = yw1 + x1;
+                    /*
+                    img1[yx1] += st + a*(img[yx1]+shift - min);
+                    img1[yx1+1] += st + a*(img[yx1+1]+shift - min);
+                    img1[yx1+w] += st + a*(img[yx1+w]+shift - min);
+                    img1[yx1+w+1] += st + a*(img[yx1+w+1]+shift - min);
+                    */
+
+                    Y = (img[yx1] + img[yx1+1] + img[yx1+w] + img[yx1+w+1] + (shift<<2))>>2;
+                    Y1 = st + a*(Y - min);
+                    b = (double)Y1/(double)Y;
+                    img1[yx1] += Y1 + (int)((double)(img[yx1]+shift - Y)*b);
+                    img1[yx1+1] += Y1 + (int)((double)(img[yx1+1]+shift - Y)*b);
+                    img1[yx1+w] += Y1 + (int)((double)(img[yx1+w]+shift - Y)*b);
+                    img1[yx1+w+1] += Y1 + (int)((double)(img[yx1+w+1]+shift - Y)*b);
+
+                    //img1[yx1] = st + a*(img[yx1] + shift - min) - 128;
+                    //printf("%d max = %d min = %d diff = %d ll = %d df = %d, st = %d Y = %d Y1 = %d b = %f img = %d del = %d img = %d \n",
+                    //       yx1, max, min, diff, ll, df, st, Y , Y1, b, img[yx1]+shift, (int)((double)(img[yx1]+shift - Y)*b), img1[yx1]+128);
+                }
+            }
+        }
+    }
+    for(i=0; i < size; i++){
+        img1[i] = (img1[i]>>2) - 128;
+    }
+}
+
+void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
+{
+/*
+   All RGB cameras use one of these Bayer grids:
+
+    BGGR  0         GRBG 1          GBRG  2         RGGB 3
+      0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+    0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+    1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+    2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+    3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
+    double aw, ah, c;
+    int ws = 80, hs = 60, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
+    uint32 hist[4096], look[4096],  sum, b;
+    double wt[ws*hs];
+
+    ah = 0.5/(double)(hs2-1);
+    aw = 0.5/(double)(ws2-1);
+
+    //Make weight matrix
+    for(y=0; y < hs2; y++){
+        yw = y*ws;
+        for(x=0; x < ws2; x++){
+            yx = yw +x;
+            wt[yx] = x*aw + y*ah;
+        }
+        for(x=ws2; x < ws; x++){
+            yx = yw +x;
+            wt[yx] = (ws-1-x)*aw + y*ah;
+        }
+    }
+    for(y=hs2; y < hs; y++){
+        yw = y*ws;
+        for(x=0; x < ws2; x++){
+            yx = yw +x;
+            wt[yx] = x*aw + (hs-1-y)*ah;
+        }
+        for(x=ws2; x < ws; x++){
+            yx = yw +x;
+            wt[yx] = (ws-1-x)*aw + (hs-1-y)*ah;
+        }
+    }
+    /*
+    for(y=0; y < hs; y++){
+        yw = y*ws;
+        for(x=0; x < ws; x++){
+            yx = yw +x;
+            printf("%f ", wt[yx]);
+        }
+        printf("\n\n");
+    }*/
+
+
+    //GBRG
+    //printf("bpp = %d shift = %d\n", bpp, shift);
+
+    //for(i=0; i < size; i++){
+    //    img1[yx1] = 0;
+    //}
+
+    for(y=0; y < h; y+=hs){
+        yw = y*w;
+        for(x=0; x < w; x+=ws){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*(4096));
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    hist[img[yx1]+shift]++;
+                }
+            }
+            //Make LUT table integral
+            //b = (1<<31)/sz;
+            sum = 0;
+            max = sz>>8;
+
+            for(i = 0; i < hz; i++) {
+                if(hist[i] > max) {
+                    sum += hist[i] - max;
+                    hist[i] = max;
+                }
+            }
+            b = (1<<31)/(sz - sum);
+
+            sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23;}//   printf("%d ", look[i]);}
+
+            //printf("\n");
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    img1[yx1] += look[(img[yx1]+shift)]*wt[y1*ws + x1];
+                }
+            }
+        }
+    }
+
+    for(y=hs2; y < h-hs2; y+=hs){
+        yw = y*w;
+        for(x=ws2; x < w-ws2; x+=ws){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*(4096));
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    hist[img[yx1]+shift]++;
+                }
+            }
+            //Make LUT table integral
+            //b = (1<<31)/sz;
+            sum = 0;
+            max = sz>>8;
+
+            for(i = 0; i < hz; i++) {
+                if(hist[i] > max) {
+                    sum += hist[i] - max;
+                    hist[i] = max;
+                }
+            }
+            b = (1<<31)/(sz - sum);
+
+            sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23;}//   printf("%d ", look[i]);}
+
+            //printf("\n");
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    img1[yx1] += look[(img[yx1]+shift)]*wt[y1*ws + x1];
+                }
+            }
+        }
+    }
+
+    for(i=0; i < size; i++){
+        img1[i] = img1[i] - 128;
+    }
+
 }
 
 /**	\brief Bilinear algorithm for bayer to 3 image R, G, B interpolation use 3 rows buffer.
@@ -1096,15 +1457,16 @@ void utils_RGB_to_RGB24(uint8 *img, int16 *r, int16 *g, int16 *b, uint32 w, uint
 
 uint8* utils_RGB_to_RGB24_8(uint8 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, uint32 bpp)
 {
-	uint32 i, i3, size = w*h;
-	for(i=0; i<size; i++) {
-		i3 = i*3;
-		img[i3]   = lb1(r[i]);
-		img[i3+1] = lb1(g[i]);
-		img[i3+2] = lb1(b[i]);
-	}
-	return img;
+    uint32 i, i3, size = w*h;
+    for(i=0; i<size; i++) {
+        i3 = i*3;
+        img[i3]   = lb1(r[i]);
+        img[i3+1] = lb1(g[i]);
+        img[i3+2] = lb1(b[i]);
+    }
+    return img;
 }
+
 
 /** \brief Convert YUV444 image to RGB.
 	\param rgb 	The output RGB image.
@@ -1302,38 +1664,22 @@ void fill_hist(int16 *img, uint32 *h, uint32 size, uint32 bits)
     for(i=0; i < (1<<bits); i++) printf("%d  %d\n", i, h[i]);
 }
 
-void make_lookup(int16 *img, uint32 *h, uint32 *look, uint32 size, uint32 ibit, uint32 hbit)
+void make_hist(int16 *img, uint32 *h, uint32 size, uint32 ibit, uint32 *low, uint32 *top)
 {
-    uint32 i, df = ibit-hbit, hz = 1<<hbit, sum, low, top, shift = 1<<(ibit-1);
-    double lowt = 0.01, topt = 0.01, a;
-    memset(h, 0, sizeof(uint32)*(1<<hbit));
-    memset(look, 0, sizeof(uint32)*(1<<hbit));
+    uint32 i, hz = 1<<ibit, sum, shift = 1<<(ibit-1);
+    uint32 th = size/256;
+    memset(h, 0, sizeof(uint32)*(1<<ibit));
 
-    for(i=0; i < size; i++) h[(img[i]+shift)>>df]++;
+    for(i=0; i < size; i++) h[img[i]+shift]++;
     //for(i=0; i < hz; i++) printf("look[%d] = %d\n", i, h[i]);
 
     sum = 0;
-    for(i=0; (double)sum/(double)size < lowt ; i++) sum += h[i];
-    low = i;
+    for(i=0; sum < th; i++) sum += h[i];
+    *low = i;
     sum = 0;
-    for(i=hz-1; (double)sum/(double)size < topt ; i--) sum += h[i];
-    top = i;
+    for(i=hz-1; sum < th ; i--) sum += h[i];
+    *top = i;
 
-    a = 255./(double)(top - low);
-    printf("low = %d top = %d a = %f\n", low, top, a);
-
-    //Make LUT table liniar
-    /*
-    for(i = 0; i < low; i++) look[i] = 0;
-    for(i = low; i < top; i++) look[i] = (uint32)(a*(double)(i-low));
-    for(i = top; i < hz; i++) look[i] = 255;
-    */
-    //Make LUT table integral
-    sum = 0;
-    for(i = 0; i < hz; i++) { sum += h[i]; look[i] = (uint32)(255.*(double)sum/(double)size); }
-
-
-    //for(i=0; i < hz; i++) printf("look[%d] = %d\n", i, look[i]);
 }
 
 void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
