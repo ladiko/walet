@@ -124,6 +124,10 @@ void util_copy_border(uint8 *img, uint8 *img1, uint32 b, uint32 w, uint32 h);
 void make_lookup(int16 *img, uint32 *h, uint32 *look, uint32 size, uint32 ibit, uint32 hbit);
 void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit);
 void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit);
+void utils_bayer_to_RGB24_white_balance(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp);
+void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp, uint32 low, uint32 top);
+void make_hist(int16 *img, uint32 *h, uint32 size, uint32 ibit, uint32 *low, uint32 *top);
+void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp);
 
 #ifdef __cplusplus
 }

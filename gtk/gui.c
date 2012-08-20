@@ -535,17 +535,31 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 	int i, sz = f0->img[0].w*f0->img[0].h;
 	uint32 *y = f0->hist, *r = &y[1<<gw->wc.bpp], *g = &r[1<<gw->wc.bpp], *b = &g[1<<gw->wc.bpp];
     uint32 h[4096], look[4096];
+    uint32 low, top;
 
     //utils_bayer_to_RGB		(f0->b.pic, f0->R16.pic, f0->G16.pic, f0->B16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
     //utils_bayer_to_YUV444	(f0->b.pic, f0->Y16.pic, f0->U16.pic, f0->V16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
     //make_lookup(f0->img[0].p, h, look, f0->b.w*f0->b.h, 12, 12);
-    make_lookup1(f0->img[0].p, h, look, f0->b.w, f0->b.h, 12, 12);
-    //make_lookup1(f0->b.pic, h, look, f0->b.w, f0->b.h, 12, 12);
-    bits12to8(f0->b.pic, f0->d.pic, look, f0->b.w, f0->b.h, 12, 12);
+    //utils_bayer_to_RGB24_white_balance(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+
+    make_hist(f0->b.pic, h, f0->b.w*f0->b.h, 12, &low, &top);
+    printf("low = %d top = %d\n", low, top);
+    utils_bayer_local_hdr(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12, low, top);
+
+
+    //utils_bayer_local_hdr1(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
 
     new_buffer (gw->orig[1], f0->b.w, f0->b.h);
     utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[1]);
+
+    //make_lookup1(f0->img[0].p, h, look, f0->b.w, f0->b.h, 12, 12);
+    make_lookup1(f0->d.pic, h, look, f0->b.w, f0->b.h, 12, 12);
+    bits12to8(f0->d.pic, f0->b.pic, look, f0->b.w, f0->b.h, 12, 12);
+
+    new_buffer (gw->orig[2], f0->b.w, f0->b.h);
+    utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
+    gtk_widget_queue_draw(gw->drawingarea[2]);
 
 }
 
