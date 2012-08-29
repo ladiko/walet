@@ -670,7 +670,7 @@ void utils_bayer_to_RGB24_white_balance(int16 *img, int16 *img1, uint32 w, uint3
     }
 }
 
-void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp, uint32 low, uint32 top)
+void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp, int low, int top)
 {
 /*
    All RGB cameras use one of these Bayer grids:
@@ -683,9 +683,10 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
     3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
     int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
-    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
-    int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
-    double a, b, c;
+    int max, min, ll, df, st, diff, diffn, sp = 4, Y[4], Y1, dfn;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny, avr, avrn, st1, th;
+    int b, d, tmp, in;
+    double a, c;
 
     //GBRG
     //printf("bpp = %d shift = %d\n", bpp, shift);
@@ -699,20 +700,25 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
     //for(i=0; i < size; i++){
     //    img1[yx1] = 0;
     //}
+    b = (1<<30)/(top - low);
+    printf("b = %d top = %d low = %d\n", b, top, low);
 
-    for(y=0; y < h-sp; y+=2){
+    for(y=0; y < h; y+=2){
         yw = y*w;
-        for(x=0; x < w-sp; x+=2){
+        for(x=0; x < w; x+=2){
             yx = yw + x;
             max  = 0; min  = 4095;
             maxg = 0; ming = 4095;
             maxr = 0; minr = 4095;
             maxb = 0; minb = 4095;
             maxy = 0; miny = 4095;
+            avr = 0;
+            i=0;
             for(y1=0; y1 < sp; y1+=2){
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < sp; x1+=2){
                     yx1 = yw1 + x1;
+
                     if(img[yx1]+shift > maxg) maxg = img[yx1]+shift;
                     if(img[yx1]+shift < ming) ming = img[yx1]+shift;
                     if(img[yx1+w+1]+shift > maxg) maxg = img[yx1+w+1]+shift;
@@ -731,20 +737,25 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
 
                     min = (minr > minb) ? (minb > ming ? ming : minb) : (minr > ming ? ming : minr);
                     max = (maxr > maxb) ? (maxr > maxg ? maxr : maxg) : (maxb > maxg ? maxb : maxg);
-                    /*
-                    img1[yx1+w]    = img[yx1+w];      //R
-                    img1[yx1+1]    = img[yx1+1];      //B
-                    img1[yx1]      = img[yx1];        //G
-                    img1[yx1+w+1]  = img[yx1+w+1];    //G
-                    */
+
+                    avr += abs(img[yx1]-img[yx1+1]-img[yx1+w]+img[yx1+w+1]);
+
+
+                    Y[i] = ((img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1])>>2) + shift;
+                    if(Y[i] > maxy) maxy = Y[i];
+                    if(Y[i] < miny) miny = Y[i];
+                    i++;
                 }
             }
             //printf("Ymai=%4d Yma=%4d Yd=%4d  Rmi=%4d Rma=%4d Rd=%4d  Gmi=%4d Gma=%4d Gd=%4d  Bmi=%4d Bma=%4d Bd=%4d\n",
             //       min, max, max-min, minr, maxr, maxr-minr, ming, maxg, maxg-ming, minb, maxb, maxb-minb);
+            /*
+            avr = avr>>4;
 
             diff = max - min;
 
             //New
+            b = (1<<31)/(top - low);
             c = 256./(double)(top - low);
             df = ((max+min)>>1) - low;
             dfn = c*df;
@@ -760,10 +771,49 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
             st = dfn - (diff>>1);
             if(dfn < (diff>>1)) st = 0;
             if(dfn + (diff>>1) > 255)  st = 255 - diff;
-            //printf("low = %d top = %d min = %d max = %d df = %d dfn = %d diff = %d st = %d a = %f\n",
-            //       low, top, min, max, df, dfn, diff, st, a);
-
+            printf("low = %d top = %d min = %d max = %d df = %d dfn = %d avr = %d avrn = %d diff = %d diffn = %d\n",
+                   low, top, min, max, df, dfn, avr, (int)(c*avr), diff, (int)(diff*c));
+            */
             //Old
+
+            max = max > top ? top : max;
+            min = min < low ? low : min;
+
+            diff = max - min;
+            dfn = (min + max)>>1;
+            //diff = maxy - miny;
+            th = 100;
+            a = 1.;
+            c = 256./(top - low);
+            //b = (1<<31)/(top - low);
+            //minn = min*c;
+            //maxn = max*c;
+
+
+            //if(min*c)
+            if(diff > th){
+                a = (double)th/(double)diff;
+                diff = th;
+            }
+
+            ll = top - low; df = 256 - diff;
+            //a = 1.;
+            if(!df) st = 0;
+            else {   st = (min-low)*df/(top - low);}
+
+            //printf("low = %d top = %d min = %d max = %d diff = %d df = %d st = %d min = %d max = %d a = %f\n",
+            //       low, top, min, max, diff, df, st, st + (int)(a*(min - min)), st + (int)(a*(max - min)), a);
+
+            /*
+            avr = avr>>4;
+            diffn = (max - min)*b>>22;
+            avrn = avr*b>>22;
+            st1 = (((min+max)>>1) - low);
+            st = st1*b>>22;
+
+            if(!avrn) d = b<<2;
+            else d = b;
+            */
             /*
             if(diff > 256){
                 st = 0; a = 256./(double)diff;
@@ -775,18 +825,79 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
                 else { st = ll/df; st = min/st; }
             }
             */
+            //printf("low = %d top = %d min = %d max = %d avr = %d avrn = %d diff = %d diffn = %d st = %d st1 = %d\n",
+            //       low, top, min, max, avr, avrn, diff, diffn, st, st1);
 
-            for(y1=0; y1 < sp; y1+=2){
+            //st = 0;
+            for(y1=0; y1 < sp; y1+=1){
                 yw1 = yx + y1*w;
-                for(x1=0; x1 < sp; x1+=2){
+                for(x1=0; x1 < sp; x1+=1){
                     yx1 = yw1 + x1;
                     /*
-                    img1[yx1] += st + a*(img[yx1]+shift - min);
-                    img1[yx1+1] += st + a*(img[yx1+1]+shift - min);
-                    img1[yx1+w] += st + a*(img[yx1+w]+shift - min);
-                    img1[yx1+w+1] += st + a*(img[yx1+w+1]+shift - min);
+                    Y = (((img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2)-low);
+                    Y1 = Y*b>>22;
+                    img1[yx1] =   ((img[yx1] + shift - low - Y)*d>>22) + Y1;
+                    img1[yx1+1] =   ((img[yx1+1] + shift - low - Y)*d>>22) + Y1;
+                    img1[yx1+w] =   ((img[yx1+w] + shift - low - Y)*d>>22) + Y1;
+                    img1[yx1+w+1] =   ((img[yx1+w+1] + shift - low - Y)*d>>22) + Y1;
+
+                    */
+                    //printf("img1[yx1] = %d  img1 = %d Y = %d img = %d img - Y = %d (img - Y)*b = %d (img - Y)*b>>23 = %d Y1 = %d b = %d\n",
+                    //       img1[yx1], (((int)img[yx1] + shift - low - Y)*b>>23), Y, img[yx1] + shift - low, img[yx1] + shift - low - Y,
+                    //       (img[yx1] + shift - low - Y)*b, ((img[yx1] + shift - low - Y)*b>>23), Y1, b) ;
+                    tmp = st + a*(img[yx1]+shift - min);
+
+                    img1[yx1] += tmp < 0 ? 0 : (tmp > 255 ? 255 : tmp);
+
+                    /*
+                    img1[yx1] = st + a*(img[yx1]+shift - min);
+                    img1[yx1+1] = st + a*(img[yx1+1]+shift - min);
+                    img1[yx1+w] = st + a*(img[yx1+w]+shift - min);
+                    img1[yx1+w+1] = st + a*(img[yx1+w+1]+shift - min);
+                    */
+                    //printf("img1 = %d\n", img1[yx1]);
+
+
+                    //printf("%d yx1 = %d img = %d shift = %d low = %d c = %f \n",w*h, yx1+w+1, img[yx1], shift, low, c);
+                    /*
+                    img1[yx1] = (img[yx1]+shift-low)>>1;
+                    img1[yx1+1] = (img[yx1+1]+shift-low)>>1;
+                    img1[yx1+w] = (img[yx1+w]+shift-low)>>1;
+                    img1[yx1+w+1] = (img[yx1+w+1]+shift-low)>>1;
                     */
 
+                    /*
+                    tmp = (img[yx1]+shift-low);
+                    tmp = tmp < 0 ? 0 : tmp*b>>23;
+                    img1[yx1] = tmp > 255 ? 255 : tmp;
+
+                    tmp = (img[yx1+1]+shift-low);
+                    tmp = tmp < 0 ? 0 : tmp*b>>23;
+                    img1[yx1+1] = tmp > 255 ? 255 : tmp;
+
+                    tmp = (img[yx1+w]+shift-low);
+                    tmp = tmp < 0 ? 0 : tmp*b>>23;
+                    img1[yx1+w] = tmp > 255 ? 255 : tmp;
+
+                    tmp = (img[yx1+w+1]+shift-low);
+                    tmp = tmp < 0 ? 0 : tmp*b>>23;
+                    img1[yx1+w+1] = tmp > 255 ? 255 : tmp;
+                    */
+                    /*
+                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d df = %d\n",
+                           (img[yx1]+shift-low), (img[yx1+1]+shift-low), (img[yx1+w]+shift-low), (img[yx1+w+1]+shift-low),
+                           ((img[yx1]+shift-low)+(img[yx1+1]+shift-low)+(img[yx1+w]+shift-low)+(img[yx1+w+1]+shift-low))>>2,
+                           max - min);
+                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d df = %d\n",
+                           (int)(c*(img[yx1]+shift-low)), (int)(c*(img[yx1+1]+shift-low)), (int)(c*(img[yx1+w]+shift-low)), (int)(c*(img[yx1+w+1]+shift-low)),
+                           ((int)(c*(img[yx1]+shift-low))+(int)(c*(img[yx1+1]+shift-low))+(int)(c*(img[yx1+w]+shift-low))+(int)(c*(img[yx1+w+1]+shift-low)))>>2,
+                           (int)(c*(max - min)));
+                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d\n\n",
+                           img1[yx1], img1[yx1+1], img1[yx1+w], img1[yx1+w+1],
+                           (img1[yx1]+img1[yx1+1]+img1[yx1+w]+img1[yx1+w+1])>>2);
+                    */
+
+                    /*
                     Y = (img[yx1] + img[yx1+1] + img[yx1+w] + img[yx1+w+1] + (shift<<2))>>2;
                     Y1 = st + a*(Y - min);
                     b = (double)Y1/(double)Y;
@@ -794,6 +905,22 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
                     img1[yx1+1] += Y1 + (int)((double)(img[yx1+1]+shift - Y)*b);
                     img1[yx1+w] += Y1 + (int)((double)(img[yx1+w]+shift - Y)*b);
                     img1[yx1+w+1] += Y1 + (int)((double)(img[yx1+w+1]+shift - Y)*b);
+*/
+                    /*
+                    in = max - min;
+                    Y = (max + min)>>1;
+                    Y1 = (Y - low)*b>>23;
+
+                    if(in*b>>23 < 3) {
+                        a = 5.;
+                    } else {
+                        a = 1.;
+                    }
+                    img1[yx1] = Y1 + (int)((double)(img[yx1]+shift - Y)*a);
+                    img1[yx1+1] = Y1 + (int)((double)(img[yx1+1]+shift - Y)*a);
+                    img1[yx1+w] = Y1 + (int)((double)(img[yx1+w]+shift - Y)*a);
+                    img1[yx1+w+1] = Y1 + (int)((double)(img[yx1+w+1]+shift - Y)*a);
+                    */
 
                     //img1[yx1] = st + a*(img[yx1] + shift - min) - 128;
                     //printf("%d max = %d min = %d diff = %d ll = %d df = %d, st = %d Y = %d Y1 = %d b = %f img = %d del = %d img = %d \n",
@@ -802,7 +929,9 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
             }
         }
     }
+
     for(i=0; i < size; i++){
+        //img1[i] = (img1[i]) - 128;
         img1[i] = (img1[i]>>2) - 128;
     }
 }
@@ -907,12 +1036,12 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] += look[(img[yx1]+shift)]*wt[y1*ws + x1];
+                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
                 }
             }
         }
     }
-
+    /*
     for(y=hs2; y < h-hs2; y+=hs){
         yw = y*w;
         for(x=ws2; x < w-ws2; x+=ws){
@@ -954,7 +1083,64 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
             }
         }
     }
+    */
+    for(i=0; i < size; i++){
+        img1[i] = img1[i] - 128;
+    }
+}
 
+void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
+{
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
+    double aw, ah, c;
+    int ws = 80, hs = 60, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
+    uint32 hist[4096], look[4096], sum, b;
+    double wt[ws*hs];
+
+
+    for(y=0; y < h; y+=hs){
+        yw = y*w;
+        for(x=0; x < w; x+=ws){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*(4096));
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    hist[img[yx1]+shift]++;
+                }
+            }
+            //Make LUT table integral
+            //b = (1<<31)/sz;
+            sum = 0;
+            max = sz>>8;
+
+            for(i = 0; i < hz; i++) {
+                if(hist[i] > max) {
+                    sum += hist[i] - max;
+                    hist[i] = max;
+                }
+            }
+            b = (1<<31)/(sz - sum);
+
+            sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23;}//   printf("%d ", look[i]);}
+
+            //printf("\n");
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
+                }
+            }
+        }
+    }
     for(i=0; i < size; i++){
         img1[i] = img1[i] - 128;
     }
@@ -1664,7 +1850,7 @@ void fill_hist(int16 *img, uint32 *h, uint32 size, uint32 bits)
     for(i=0; i < (1<<bits); i++) printf("%d  %d\n", i, h[i]);
 }
 
-void make_hist(int16 *img, uint32 *h, uint32 size, uint32 ibit, uint32 *low, uint32 *top)
+void make_hist(int16 *img, uint32 *h, uint32 size, uint32 ibit, int *low, int *top)
 {
     uint32 i, hz = 1<<ibit, sum, shift = 1<<(ibit-1);
     uint32 th = size/256;

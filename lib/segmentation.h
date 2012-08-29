@@ -137,6 +137,8 @@ void seg_quant(uint8 *img1, uint8 *img2, uint32 w, uint32 h, uint32 q);
 //void seg_fall_forest(uint8 *img, uint32 *img1, uint32 w, uint32 h);
 void seg_fall_forest1(uint8 *img, uint8 *img1, uint8 *img2, uint32 w, uint32 h);
 void seg_grad1(uint8 *img, uint8 *img1,uint8 *img2, uint32 w, uint32 h, uint32 th);
+uint32  seg_get_or_fill_color2(uint8 *img, uint8 *con, uint8 *col, uint32 *buff, Vertex **vp, uint8 *dir,
+                              uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 
 #ifdef __cplusplus
 }
