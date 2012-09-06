@@ -1933,6 +1933,90 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
 
 }
 
+void test()
+{
+    /*
+    int d = 6, div = 1<<6, div2 = div<<1;
+    int size = 1280*960, size1 = size>>d, size2 = size<<1;
+    int b = (1<<30)/size1;
+
+
+
+    for (i=0; i < size2; i += div2)
+    {
+        temp_data = test_addr[i] | (test_addr[i+1] << 8);
+        hist[temp_data>>3]++;
+    }
+
+
+    int d = 6, div = 1<<6, div2 = div<<1;
+    int x, y, yw, yx, yx1, w = 1280, h = 960, w2 = w<<1;
+    //Если прокатит это преобразование
+    short int *test_addr1 = (short int *)test_addr;
+
+    for (y=0; y < h; y+=div){
+        yw = y*w;
+        for (x=0; x < w; x+=div){
+            yx = yw + x;
+            temp_data = test_addr1[yx];
+            yx1 = yx + 1;
+            temp_data += test_addr1[yx1];
+            yx1 = yx1 + w;
+            temp_data += test_addr1[yx1];
+            yx1 = yx1 - 1;
+            temp_data += test_addr1[yx1];
+            hist[temp_data>>5]++;
+        }
+    }
+
+    for (y=0; y < h; y+=div){
+        yw = y*w;
+        for (x=0; x < w; x+=div){
+            yx = (yw + x)<<1;
+            temp_data = test_addr[yx] | (test_addr[yx+1] << 8);
+            yx1 = yx + 2;
+            temp_data += test_addr[yx1] | (test_addr[yx1+1] << 8);
+            yx1 = yx1 + w2;
+            temp_data += test_addr[yx1] | (test_addr[yx1+1] << 8);
+            yx1 = yx1 - 2;
+            temp_data += test_addr[yx1] | (test_addr[yx1+1] << 8);
+            hist[temp_data>>5]++;
+        }
+    }
+
+    {
+        temp_data = test_addr[i] | (test_addr[i+1] << 8);
+        hist[temp_data>>3]++;
+    }
+
+    sum = 0;
+    gamma_corr_old = 0;
+    gamma_corr = 0;
+
+
+    for(i = 0; i < 512; i++)
+    {
+        sum += hist[i];
+        //gamma_corr = (sum*1023*div)/size;
+        gamma_corr = sum*b>>20;
+
+        //if ((gamma_corr - gamma_corr_old) > 511)
+        //    gamma_corr = gamma_corr_old + 511;
+
+
+        b = (gamma_corr_old << 10) | (gamma_corr - gamma_corr_old);
+
+        CammaR[i] = b;
+        CammaG[i] = b;
+        CammaB[i] = b;
+
+        gamma_corr_old = gamma_corr;
+    }
+    */
+}
+
+
+
 void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
 ///	\fn bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
 ///	\brief Image transform.
