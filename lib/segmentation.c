@@ -265,6 +265,77 @@ void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 
         printf("Finish gradient\n");
 }
 
+void seg_grad4(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
+{
+        /// | |x| |      | | | |      |x| | |      | | |x|
+        /// | |x| |      |x|x|x|      | |x| |      | |x| |
+        /// | |x| |      | | | |      | | |x|      |x| | |
+        ///  g[2]         g[0]         g[1]         g[3]
+        /// Direction
+        ///   n=0          n=2         n=3          n=1
+        /// | | | |      | ||| |      | | |/|      |\| | |
+        /// |-|-|-|      | ||| |      | |/| |      | |\| |
+        /// | | | |      | ||| |      |/| | |      | | |\|
+        /// 255 - intersection
+        /// 254 - vertex
+        /// 253 - direction curve
+        /// 252 - local max
+
+        uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
+        uint8 in, col = 253;
+        uint32 g[8];
+        int max;
+
+        //The up border
+        //img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
+        //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
+        //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
+        //con[w + 1] = 255; for(x=2; x < w2; x++) con[w + x] = 255; con[w + x] = 255;
+
+        for(y=1; y < h1; y++){
+                yw = y*w;
+                //img1[yw + 1] = col; //con[yw + 1] = 255;  //di[yw + 1] = 4; //di[yw + 1] = 32;
+                for(x=1; x < w1; x++){
+                        yx = yw + x;
+
+                        g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+                        g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+                        g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+                        g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+
+                        /*
+                        g[0] = abs(img[yx-2  ] - img[yx+2  ]);
+                        g[1] = abs(img[yx-2-(w<<1)] - img[yx+2+(w<<1)]);
+                        g[2] = abs(img[yx-(w<<1)  ] - img[yx+(w<<1)  ]);
+                        g[3] = abs(img[yx+2-(w<<1)] - img[yx-2+(w<<1)]);
+                        */
+
+                        /*
+                        g[4] = abs(img[yx-2-w  ] - img[yx+2+w  ]);
+                        g[5] = abs(img[yx-1-(w<<1)] - img[yx+1+(w<<1)]);
+                        g[6] = abs(img[yx+1-(w<<1)] - img[yx-1+(w<<1)]);
+                        g[7] = abs(img[yx+2-w] - img[yx-2+w]);
+                        */
+                        max = (g[0] + g[1] + g[2] + g[3])>>1;
+                        //max = (g[0] + g[1] + g[2] + g[3] + g[4] + g[5] + g[6] + g[7])>>2;
+                        img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 1;
+                        //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
+                        //img1[yx] = max>>th;
+                        //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+                        //img1[yx] = max > 252 ? 252 : max;
+                }
+                img1[yx + 1] = col; //con[yx + 1] = 255; //di[yx + 1] = 64; //di[yx + 1] = 2;
+                 //img1[yx + 2] = col1;
+        }
+        //The bottom border
+        yw = y*w;
+        //img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
+        //con[yw + 1] = 255; for(x=2; x < w2; x++) con[yw + x] = 255; con[yw + x] = 255;
+        //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
+        //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+        printf("Finish gradient\n");
+}
+
 static inline uint32 col_shift(uint8 *img, uint32 yx, int *dr)
 {
     uint32 i, min = 255, cn = 0;
@@ -1004,7 +1075,14 @@ static inline uint32 loc_max(uint8 *img, int *dr, uint32 yx, uint32 w)
     else return 0;
     */
 }
-
+/*
+static inline uint32 loc_min(uint8 *img, int *dr, uint32 yx)
+{
+    uint32 i = 0;
+    for(i=0; i < 8; i++) if(img[yx+dr[i]] < img[yx]) return 0;
+    return img[yx];
+}
+*/
 static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
 {
     if(img[yx-1]   < 255 && img[yx-1]  ) return 1;
@@ -2286,6 +2364,19 @@ static inline void get_per_dir(int d, uint32 w, int *ld, int *rd)
         //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
+static inline uint32 loc_min(uint8 *img, uint32 yx, uint32 w)
+{
+    if( img[yx-1] 	>= img[yx] &&
+        img[yx-w]	>= img[yx] &&
+        img[yx+1] 	>= img[yx] &&
+        img[yx+w] 	>= img[yx] &&
+        img[yx-1-w] >= img[yx] &&
+        img[yx+1-w] >= img[yx] &&
+        img[yx-1+w] >= img[yx] &&
+        img[yx+1+w] >= img[yx] ) return 1;
+    else return 0;
+}
+
 static inline uint32 is_new_line3(int d, int *fs, int *sc, int *cfs, int *csc, int *ll)
 {
 	if(!*fs) { *fs = d; (*cfs)++; return 0; }
@@ -2759,54 +2850,103 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
 
 }
 
-void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h)
+static inline uint32 get_clockwise_pix(uint8 *con, uint32 yx, uint32 *nd, int *dr)
+//Find next pixel following clockwise direction
 {
-    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h2 = h-2, w2 = w-2, max;//, yxl = 0;
-    int d1, d2, d3, npix = 0, cr;
-    int cn, ck = 0;
+    uint32 nd1;
+    if(*nd < 8){
+        while(1){
+            *nd = ((*nd) == 7) ? 0 : (*nd) + 1;
+            if(con[yx + dr[*nd]] ) return yx + dr[*nd];
+        }
+    } else {
+        nd1 = 0;
+        while(1){
+            *nd = (nd1 == 7) ? 0 : nd1 + 1;
+            if(!con[yx + dr[nd1]] && con[yx + dr[*nd]]) return yx + dr[*nd];
+            nd1 = *nd;
+        }
+    }
+}
+
+void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32 w, uint32 h)
+{
+    uint32 i, j, k = 0, y, x, yx, yxn, yw, yx1, h1 = h-1, w1 = w-1, num = 1, col = 50, tmp, ip, nd, nr, np;
     int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
 
-    for(i=0; i < lmaxc; i++){
-        if(!con[hist[i]]){
-            yx = hist[i];
-            yx1 = yx; cr = 0; cn = 0;
-            //Store first search direction
-            //d1 = dir_near(con, grad, dr, yx1, 0, w);
-            //Store second search direction
-            d2 = d1;
-            if(!con[yx1+d1]){
-                grad[yx1] = 253;
-                //Start first search direction
-                while(!cr && cn < 2){
-                    while(1){
-                        yx1 = yx1 + d1;
+    uint32 *l2 = &l1[num];
 
-                        if(con[yx1]) {
-                            if(d1) add_dir3(con, yx1, -d1, w);
-                            grad[yx1] = 255; //con[yx1] = 255;
-                            npix++;
-                            //Check for circle
-                            if(yx == yx1) cr = 1;
-                            break;
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            if(!con[yx]  && ( grad[yx] == 1 || loc_min(grad, yx, w))){
+                num = 1; ip = 0; l1[0] = yx; col = (col == 150) ? 50 : col + 1;
+                con[yx] = col;
+                //First loop
+                while(num){
+                    for(j=0; j < num; j++){
+                        tmp = 0;
+                        for(i=0; i < 4; i++){
+                            yx1 = l1[j] + dr[i<<1];
+                            //yx1 = l1[j] + dr[i];
+                            //printf("x = %d y = %d grad = %d con = %d k = %d\n", yx1%w, yx1/w, grad[yx1], con[yx1], k);printf("x = %d y = %d grad = %d con = %d k = %d\n", yx1%w, yx1/w, grad[yx1], con[yx1], k);
+                            if(grad[yx1] >= grad[l1[j]]) {
+                                if(!con[yx1]){
+                                    con[yx1] = col;
+                                    l2[k++] = yx1;
+                                } else {
+                                    //if(con[yx1] != col) con[yx1] = 255;
+                                    //tmp++;
+                                }
+                                //printf("x = %d y = %d grad = %d con = %d k = %d\n", yx1%w, yx1/w, grad[yx1], con[yx1], k);
+                            } else if(grad[yx1] < grad[l1[j]] && !con[yx1]) tmp++;
+                            //} else if(grad[yx1] <= grad[l1[j]] && con[yx1] != col && con[yx1]){
+                               //con[yx1] = 255;
+                            //}
                         }
-                        add_dir3(con, yx1, -d1, w);
-                        grad[yx1] = 253; //con[yx1] = 255;
-                        d1 = dir3(con, grad, dr, yx1, -d1, w);
+                        if(tmp) br[ip++] = l1[j];
+                    }
+                    num = k; k = 0;
+                    l1 = l2; l2 = &l1[num];
+                }
+                //Second loop
 
-                        if(!d1) {
-                            grad[yx1] = 255; //con[yx1] = 255;
-                            npix++;
-                            break;
+                nr = 0;
+                for(j=0; j < ip; j++){
+                    for(i=0; i < 4; i++){
+                        yx1 = br[j] + dr[i<<1];
+                        if(!con[yx1]) {
+
+                            if(con[br[j]] != 255){
+                                con[br[j]] = 255;
+                                //if(con[br[j]] != 128) con[br[j]] = 255;
+                                nr++; np = 0;
+                                nd = 8; yxn = br[j];
+                                while(1){
+                                    np++;
+                                    yxn = get_clockwise_pix(con, yxn, &nd, dr);
+                                    if(con[yxn] != 255) con[yxn] = 255;
+                                    else break;
+                                    nd += 4;
+                                    nd = nd > 7 ? nd - 8 : nd;
+                                }
+                                printf("reg = %d conp = %d\n", nr, np);
+                                //return;
+                                break;
+                            }
+
                         }
                     }
-                    cn++;
-                    yx1 = yx;
-                    d1 = dir3(con, grad, dr, yx1, d2, w);
+
                 }
+                printf("Nreg = %d\n", nr);
+                return;
             }
         }
     }
-    printf("Numbers of intersection  = %d\n", npix);
+
+    printf("Finesh seg_find_intersect8\n");
 
 }
 
@@ -4084,35 +4224,6 @@ static inline uint8 get_clockwise_dir1(Vertex *vx, uint8 nd, uint8 *nd1)
         cn++;
         if(vx->di&(1<<(*nd1))) return cn;
     }
-
-    /*
-    if      (nd == 0) goto m1;
-    else if (nd == 1) goto m2;
-    else if (nd == 2) goto m3;
-    else if (nd == 3) goto m4;
-    else if (nd == 4) goto m5;
-    else if (nd == 5) goto m6;
-    else if (nd == 6) goto m7;
-    else if (nd == 7) goto m8;
-    //return 0;
-
-m1:	if (vx->di&2  ) return 1;
-m2:	if (vx->di&4  ) return 2;
-m3:	if (vx->di&8  ) return 3;
-m4:	if (vx->di&16 ) return 4;
-m5:	if (vx->di&32 ) return 5;
-m6:	if (vx->di&64 ) return 6;
-m7:	if (vx->di&128) return 7;
-m8:	if (vx->di&1  ) return 0;
-    if (vx->di&2  ) return 1;
-    if (vx->di&4  ) return 2;
-    if (vx->di&8  ) return 3;
-    if (vx->di&16 ) return 4;
-    if (vx->di&32 ) return 5;
-    if (vx->di&64 ) return 6;
-    if (vx->di&128) return 7;
-    */
-    //printf("finish d = %d %o %o\n", d, vx->di, vx->cn);
 }
 
 static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
@@ -4126,64 +4237,7 @@ static inline uint8 get_counterclockwise_dir(Vertex *vx, uint8 nd, uint8 *nd1)
         if(vx->di&(1<<(*nd1))) return cn;
     }
 
-    /*
-    if      (nd == 0) goto m1;
-    else if (nd == 1) goto m8;
-    else if (nd == 2) goto m7;
-    else if (nd == 3) goto m6;
-    else if (nd == 4) goto m5;
-    else if (nd == 5) goto m4;
-    else if (nd == 6) goto m3;
-    else if (nd == 7) goto m2;
-    //return 0;
-
-m1:	if (vx->di&128) return 7;
-m2:	if (vx->di&64 ) return 6;
-m3:	if (vx->di&32 ) return 5;
-m4:	if (vx->di&16 ) return 4;
-m5:	if (vx->di&8  ) return 3;
-m6:	if (vx->di&4  ) return 2;
-m7:	if (vx->di&2  ) return 1;
-m8:	if (vx->di&1  ) return 0;
-    if (vx->di&128) return 7;
-    if (vx->di&64 ) return 6;
-    if (vx->di&32 ) return 5;
-    if (vx->di&16 ) return 4;
-    if (vx->di&8  ) return 3;
-    if (vx->di&4  ) return 2;
-    if (vx->di&2  ) return 1;
-    */
 }
-/*
-static inline uint8 get_free_dir(uint8 nd1, uint8 nd2)
-{
-	if      (nd == 0) goto m1;
-	else if (nd == 1) goto m2;
-	else if (nd == 2) goto m3;
-	else if (nd == 3) goto m4;
-	else if (nd == 4) goto m5;
-	else if (nd == 5) goto m6;
-	else if (nd == 6) goto m7;
-	else if (nd == 7) goto m8;
-	//return 0;
-
-	m1:	if (vx->di&64 ) return 1;
-	m2:	if (vx->di&32 ) return 2;
-	m3:	if (vx->di&16 ) return 3;
-	m4:	if (vx->di&8  ) return 4;
-	m5:	if (vx->di&4  ) return 5;
-	m6:	if (vx->di&2  ) return 6;
-	m7:	if (vx->di&1  ) return 7;
-	m8:	if (vx->di&128) return 0;
-		if (vx->di&64 ) return 1;
-		if (vx->di&32 ) return 2;
-		if (vx->di&16 ) return 3;
-		if (vx->di&8  ) return 4;
-		if (vx->di&4  ) return 5;
-		if (vx->di&2  ) return 6;
-		if (vx->di&1  ) return 7;
-}
-*/
 
 static inline uint32 check_is_in_line(Vertex *vx1, Vertex *vx2, Vertex *vx3)
 {
@@ -6550,18 +6604,6 @@ void seg_draw_reg(uint8 *r, uint8 *g, uint8 *b, uint32 *rg, uint8 *col, uint32 w
 	}
 }
 
-static inline uint32 loc_min(uint8 *img, uint32 yx, uint32 w)
-{
-	if( img[yx-1] 	>= img[yx] &&
-		img[yx-w]	>= img[yx] &&
-		img[yx+1] 	>= img[yx] &&
-		img[yx+w] 	>= img[yx] &&
-		img[yx-1-w] >= img[yx] &&
-		img[yx+1-w] >= img[yx] &&
-		img[yx-1+w] >= img[yx] &&
-		img[yx+1+w] >= img[yx] ) return 1;
-	else return 0;
-}
 
 uint32 seg_new_contur(uint8 *grad, uint8 *con, uint32 *l1, uint32 *l2, uint32 w, uint32 h)
 {
