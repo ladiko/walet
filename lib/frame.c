@@ -876,7 +876,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //filter_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
         gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
         tmp = (double)(end-start)/1000000.; time +=tmp;
-        printf("Median filter time    = %f\n", tmp);
+        printf("Median filter time = %f\n", tmp);
 
         //seg_mean_shift(f->dm[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
         //seg_mean_shift_color(f->dm[0].pic, f->dc[0].pic, f->y1[1].pic, (uint32*)g->buf, f->y[1].w, f->y[1].h);
@@ -885,7 +885,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
 
         seg_grad4(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
-        seg_find_intersect8(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)(&g->buf[f->y[1].w*f->y[1].h]), f->y[1].w, f->y[1].h);
+        seg_find_intersect8(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)(&g->buf[f->y[1].w*f->y[1].h]), f->y[1].w, f->y[1].h);
 
         /*
         seg_grad3(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);

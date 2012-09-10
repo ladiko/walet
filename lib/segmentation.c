@@ -2869,10 +2869,11 @@ static inline uint32 get_clockwise_pix(uint8 *con, uint32 yx, uint32 *nd, int *d
     }
 }
 
-void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32 w, uint32 h)
+void seg_find_intersect8(uint8 *img, uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32 w, uint32 h)
 {
-    uint32 i, j, k = 0, y, x, yx, yxn, yw, yx1, h1 = h-1, w1 = w-1, num = 1, col = 50, tmp, ip, nd, nr, np;
+    uint32 i, j, k = 0, y, x, yx, yxn, yw, yx1, h1 = h-1, w1 = w-1, num = 1, col = 50, tmp, ip, nd, nr = 0, np, sq;
     int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
+    uint32 cl, npix;
 
     uint32 *l2 = &l1[num];
 
@@ -2881,8 +2882,9 @@ void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32
         for(x=1; x < w1; x++){
             yx = yw + x;
             if(!con[yx]  && ( grad[yx] == 1 || loc_min(grad, yx, w))){
-                num = 1; ip = 0; l1[0] = yx; col = (col == 150) ? 50 : col + 1;
+                num = 1; ip = 0; l1[0] = yx; col = (col == 150) ? 50 : col + 10;
                 con[yx] = col;
+                cl = 0; npix = 0; nr++;
                 //First loop
                 while(num){
                     for(j=0; j < num; j++){
@@ -2894,6 +2896,7 @@ void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32
                             if(grad[yx1] >= grad[l1[j]]) {
                                 if(!con[yx1]){
                                     con[yx1] = col;
+                                    cl += img[yx1]; npix++;
                                     l2[k++] = yx1;
                                 } else {
                                     //if(con[yx1] != col) con[yx1] = 255;
@@ -2910,8 +2913,11 @@ void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32
                     num = k; k = 0;
                     l1 = l2; l2 = &l1[num];
                 }
-                //Second loop
+                if(!npix) { cl = img[yx]; npix = 1; con[yx] = col;}
+                printf("Color = %d npix = %d\n", cl/npix, npix);
 
+                //Second loop
+                /*
                 nr = 0;
                 for(j=0; j < ip; j++){
                     for(i=0; i < 4; i++){
@@ -2921,18 +2927,20 @@ void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32
                             if(con[br[j]] != 255){
                                 con[br[j]] = 255;
                                 //if(con[br[j]] != 128) con[br[j]] = 255;
-                                nr++; np = 0;
+                                nr++; np = 0; sq = 0;
                                 nd = 8; yxn = br[j];
                                 while(1){
                                     np++;
+                                    //sq += (vx1->y + vx->y)*(vx1->x - vx->x);
                                     yxn = get_clockwise_pix(con, yxn, &nd, dr);
-                                    if(con[yxn] != 255) con[yxn] = 255;
-                                    else break;
+                                    if(yxn == br[j]) break;
+                                    //if(con[yxn] != 255) con[yxn] = 255;
+                                    con[yxn] = 255;
+
                                     nd += 4;
                                     nd = nd > 7 ? nd - 8 : nd;
                                 }
                                 printf("reg = %d conp = %d\n", nr, np);
-                                //return;
                                 break;
                             }
 
@@ -2940,8 +2948,10 @@ void seg_find_intersect8(uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32
                     }
 
                 }
+                */
                 printf("Nreg = %d\n", nr);
-                return;
+                //if(nr == 1000000) return;
+                //return;
             }
         }
     }
