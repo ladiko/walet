@@ -1075,6 +1075,33 @@ static inline uint32 loc_max(uint8 *img, int *dr, uint32 yx, uint32 w)
     else return 0;
     */
 }
+
+static inline uint32 loc_max2(uint8 *img, int *dr, uint32 yx, uint32 w)
+{
+    uint32 tmp = 0;
+    if(img[yx+dr[8 ]] > img[yx] ||
+       img[yx+dr[1 ]] > img[yx] ||
+       img[yx+dr[5 ]] > img[yx] ||
+       img[yx+dr[16]] > img[yx] ) tmp++;
+
+    if(img[yx+dr[10]] > img[yx] ||
+       img[yx+dr[2 ]] > img[yx] ||
+       img[yx+dr[6 ]] > img[yx] ||
+       img[yx+dr[18]] > img[yx] ) tmp++;
+
+    if(img[yx+dr[12]] > img[yx] ||
+       img[yx+dr[3 ]] > img[yx] ||
+       img[yx+dr[7 ]] > img[yx] ||
+       img[yx+dr[20]] > img[yx] ) tmp++;
+
+    if(img[yx+dr[14]] > img[yx] ||
+       img[yx+dr[4 ]] > img[yx] ||
+       img[yx+dr[0 ]] > img[yx] ||
+       img[yx+dr[22]] > img[yx] ) tmp++;
+    //printf("tmp = %d img = %d \n", tmp, img[yx]);
+    if(tmp > 2) return 0;
+    else return img[yx];
+}
 /*
 static inline uint32 loc_min(uint8 *img, int *dr, uint32 yx)
 {
@@ -1116,12 +1143,15 @@ uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32
         yw = y*w;
         for(x=2; x < w2; x++){
             yx = yw + x;
-            max = loc_max(img, dr, yx, w);
-            if(max > th) {
-                img[yx] = 252;
-                //con[yx] = max;
-                hist[255-max]++;
-                buff[i++] = yx;
+            if(img[yx] > th){
+                max = loc_max2(img, dr, yx, w);
+                if(max) {
+                    img[yx] = 252;
+                    //con[yx] = max;
+                    hist[255-max]++;
+                    buff[i++] = yx;
+                    //printf("i = %d max = %d img = %d\n", i, max, img[yx]);
+                }
             }
         }
     }
@@ -1135,6 +1165,36 @@ uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32
     for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
     printf("Local maxs = %d\n",lmaxc);
     return lmaxc;
+
+}
+
+uint32 seg_local_max2(uint8 *img, uint8 *con, uint32 th, uint32 w, uint32 h)
+{
+    uint32 i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2;
+    uint8 max;
+    int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
+                          -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
+                          -2-w, 2-w,
+                          -2, 2,
+                          -2+w, 2+w,
+                          -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
+
+
+    for(y=2; y < h2; y++){
+        yw = y*w;
+        for(x=2; x < w2; x++){
+            yx = yw + x;
+            if(img[yx] > th){
+                max = loc_max2(img, dr, yx, w);
+                if(max) {
+                    img[yx] = 252;
+                    i++;
+                }
+            }
+        }
+    }
+    printf("Local maxs = %d\n",i);
+    return i;
 
 }
 
@@ -2850,6 +2910,78 @@ void seg_find_intersect7(uint8 *grad, uint8 *con, uint32 *hist, uint32 lmaxc, ui
 
 }
 
+void seg_find_intersect9(uint8 *grad, uint8 *con, uint32 w, uint32 h)
+{
+    uint32 y, y1, x, yx, yw, yx1, yx2, yx3, yxt, i, h1 = h-1, w1 = w-1, max;//, yxl = 0;
+    int d1, d2, d3, npix = 0, cr;
+    int cn, ck = 0;
+    int dr[8] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w };
+
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            if(grad[yx] == 252){
+                //printf("x = %d y = %d\n", x, y);
+                //yx = hist[i];
+                yx1 = yx; cr = 0; cn = 0;
+                //con[yx1] = 255;
+                //Store first search direction
+                d1 = dir3(con, grad, dr, yx1, 0, w);
+                //Store second search direction
+                //d2 = dir3(con, grad, dr, yx1, d1, w);
+                d2 = d1;
+                if(!con[yx1+d1]){
+                    grad[yx1] = 253;
+                    //Start first search direction
+                    while(!cr && cn < 2){
+                        while(1){
+                            yx1 = yx1 + d1;
+                            if(con[yx1]) {
+                                if(d1) add_dir3(con, yx1, -d1, w);
+                                grad[yx1] = 255; //con[yx1] = 255;
+                                npix++;
+
+#ifdef DEBUG
+                                if(check_vertex(grad, yx1, 255, w)) {
+                                    printf("seg_find_intersect7: x = %d y = %d yx = %d d1 = %d\n", yx1%w, yx1/w, yx1, d1);
+                                    if((yx1%w) > 1 && (yx1/w > 1)){
+                                        print_around(con, yx1, w);
+                                        print_around(grad, yx1, w);
+                                        print_con_grad(grad, con, yx1, w);
+                                    }
+                                }
+#endif
+                                //Check for circle
+                                if(yx == yx1) cr = 1;
+                                break;
+                            }
+                            //add_dir1(&di[yxt], d1, w);
+                            add_dir3(con, yx1, -d1, w);
+                            grad[yx1] = 253; //con[yx1] = 255;
+                            //d3 = d1; //yxc = 0;
+                            d1 = dir3(con, grad, dr, yx1, -d1, w);
+
+                            if(!d1) {
+                                grad[yx1] = 255; //con[yx1] = 255;
+                                npix++;
+                                break;
+                            }
+                        }
+                        cn++;
+                        //d1 = d2; yx1 = yx;
+                        yx1 = yx;
+                        d1 = dir3(con, grad, dr, yx1, d2, w);
+                        //printf("Change dir\n");
+                    }
+                }
+            }
+        }
+    }
+    printf("Numbers of intersection  = %d\n", npix);
+
+}
+
 static inline uint32 get_clockwise_pix(uint8 *con, uint32 yx, uint32 *nd, int *dr)
 //Find next pixel following clockwise direction
 {
@@ -2913,7 +3045,7 @@ void seg_find_intersect8(uint8 *img, uint8 *grad, uint8 *con, uint32 *l1, uint32
                     num = k; k = 0;
                     l1 = l2; l2 = &l1[num];
                 }
-                if(!npix) { cl = img[yx]; npix = 1; con[yx] = col;}
+                if(!npix) { cl = img[yx]; npix = 1; }
                 printf("Color = %d npix = %d\n", cl/npix, npix);
 
                 //Second loop

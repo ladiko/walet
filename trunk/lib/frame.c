@@ -884,13 +884,17 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         //seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
 
-        seg_grad4(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
-        seg_find_intersect8(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)(&g->buf[f->y[1].w*f->y[1].h]), f->y[1].w, f->y[1].h);
+        //seg_grad4(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
+        //seg_find_intersect8(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)(&g->buf[f->y[1].w*f->y[1].h]), f->y[1].w, f->y[1].h);
 
-        /*
+
         seg_grad3(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
-        lmaxc = seg_local_max1(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 10, f->y[1].w, f->y[1].h);
-        seg_find_intersect7(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
+        //lmaxc = seg_local_max1(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 10, f->y[1].w, f->y[1].h);
+        //seg_find_intersect7(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
+
+        lmaxc = seg_local_max2(f->dg[0].pic, f->dc[0].pic, 10, f->y[1].w, f->y[1].h);
+        seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
+
 
         vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
         rgc = seg_remove_loops1(f->dc[0].pic, f->vx, vxc, f->y[1].w, f->y[1].h);
@@ -898,6 +902,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+        /*
         //  seg_vertex_draw3(f->y1[0].pic, f->vx, vxc, f->y1[0].w, f->y1[0].h, f->y1[1].w, f->y1[1].h);
 
         seg_get_or_fill_color2(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
@@ -933,16 +938,11 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         //Start decode
 
-        //memset(f->vx, 0, sizeof(Vertex)*vxc);
-        //memset(f->vpn, 0, sizeof(Vertex*)*vxc*8);
-        //memset(f->yx, 0, sizeof(uint32)*vxc*8);
-        /*
-
         memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
         memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
         vxc = seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->cbuf, npix, f->y[1].w, f->y[1].h);
         rgc = seg_regions(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, NULL, &npix, f->y[1].w, 0);
-        */
+
 
         /*
         for(i=0; i < f->y[1].w*f->y[1].h; i++) {
