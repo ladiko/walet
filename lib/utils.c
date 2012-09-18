@@ -1929,46 +1929,48 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
     for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23; }
 
 
-    //for(i = 0; i < hz; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
+    for(i = 0; i < hz; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
 
 }
 
-void test()
+
+void  make_lookup2(int16 *img, uint32 *hist, int16 *look, uint32 w, uint32 h)
 {
-    /*
-    int d = 6, div = 1<<6, div2 = div<<1;
-    int size = 1280*960, size1 = size>>d, size2 = size<<1;
-    int b = (1<<30)/size1;
+
+    int i, j, d = 1, div = 1<<d, div2 = div<<1, shift = 1<<11;
+    int size = w*h, size1 = (w>>d)*(h>>d); //size1 = size>>d;
+    int b = (1<<30)/size1, min = size1>>5;
+
+    int x, y, yw, yx, yx1, w2 = w<<1;
+    int temp_data, sum = 0, sum1, gamma_corr_old = 0, gamma_corr = 0;
 
 
-
-    for (i=0; i < size2; i += div2)
-    {
-        temp_data = test_addr[i] | (test_addr[i+1] << 8);
-        hist[temp_data>>3]++;
-    }
-
-
-    int d = 6, div = 1<<6, div2 = div<<1;
-    int x, y, yw, yx, yx1, w = 1280, h = 960, w2 = w<<1;
+    memset(hist, 0, sizeof(uint32)*(4096));
+    memset(look, 0, sizeof(int16)*(1024));
     //Если прокатит это преобразование
-    short int *test_addr1 = (short int *)test_addr;
+    //short int *test_addr1 = (short int *)test_addr;
 
+    for(i=0; i < size; i++) hist[(img[i]+shift)]++;
+
+    /*
     for (y=0; y < h; y+=div){
         yw = y*w;
         for (x=0; x < w; x+=div){
             yx = yw + x;
-            temp_data = test_addr1[yx];
+            temp_data = img[yx]+shift;
             yx1 = yx + 1;
-            temp_data += test_addr1[yx1];
+            temp_data += img[yx1]+shift;
             yx1 = yx1 + w;
-            temp_data += test_addr1[yx1];
+            temp_data += img[yx1]+shift;
             yx1 = yx1 - 1;
-            temp_data += test_addr1[yx1];
-            hist[temp_data>>5]++;
+            temp_data += img[yx1]+shift;
+            //printf("%d ", temp_data>>2);
+            //hist[temp_data>>5]++;
+            hist[temp_data>>2]++;
         }
     }
-
+    */
+    /*
     for (y=0; y < h; y+=div){
         yw = y*w;
         for (x=0; x < w; x+=div){
@@ -1984,37 +1986,61 @@ void test()
         }
     }
 
+    for (i=0; i < size2; i += div2)
     {
         temp_data = test_addr[i] | (test_addr[i+1] << 8);
         hist[temp_data>>3]++;
     }
-
-    sum = 0;
-    gamma_corr_old = 0;
-    gamma_corr = 0;
-
-
-    for(i = 0; i < 512; i++)
-    {
+    */
+    /*
+    for(i = 0; i < 512; i++){
         sum += hist[i];
+        //gamma_corr = (sum*1023*div)/size;
+        if(sum > min){
+            //sum += hist[i];
+
+            gamma_corr+=32;
+
+            look[i<<1] = gamma_corr;
+            look[(i<<1)+1] = 32;
+            //gamma_corr = gamma_corr_old + 32;
+            sum = 0;
+
+        }
+        //gamma_corr_old = gamma_corr;
+    }*/
+
+    for(i = 0; i < 512; i++){
+        //sum1 = 0;
+        //for(j=0; j < 8; j++){
+        //    sum1 += hist[(i<<3)+j];
+        //}
+        if(hist[i] > min){
+
+        } else {
+            sum += hist[i];
+        }
+
         //gamma_corr = (sum*1023*div)/size;
         gamma_corr = sum*b>>20;
 
         //if ((gamma_corr - gamma_corr_old) > 511)
         //    gamma_corr = gamma_corr_old + 511;
 
+        //b = (gamma_corr_old << 10) | (gamma_corr - gamma_corr_old);
 
-        b = (gamma_corr_old << 10) | (gamma_corr - gamma_corr_old);
+        look[(i>>3)<<1] = gamma_corr_old;
+        look[((i>>3)<<1)+1] = gamma_corr - gamma_corr_old;
 
-        CammaR[i] = b;
-        CammaG[i] = b;
-        CammaB[i] = b;
+        //CammaG[i] = b;
+        //CammaB[i] = b;
 
         gamma_corr_old = gamma_corr;
     }
-    */
-}
 
+    for(i = 0; i < 4096; i++) printf("%4d hist = %5d %4d %4d %4d\n", i, hist[i], (i>>3)<<1, look[(i>>3)<<1]<<2, look[((i>>3)<<1)+1]);
+    //for(i = 0; i < 512; i++) printf("%4d hist = %5d   %4d %4d\n", i, hist[i], look[i<<1], look[(i<<1)+1]);
+}
 
 
 void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
@@ -2032,13 +2058,37 @@ void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32
     for(i=0; i < size; i++) img1[i] = look[(img[i]+shift)>>df]-128;
 }
 
+void bits12to8_1(int16 *img, int16 *img1, int16 *look, uint32 w, uint32 h)
+///	\fn bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
+///	\brief Image transform.
+///	\param img	 		The input image.
+///	\param img1	 		The output image.
+///	\param look 		The LUT.
+/// \param w            The image width.
+/// \param h            The image height.
+/// \param ibit         The image bits per pixel.
+/// \param hbit         The histogram bits.
+{
+    int i, size = w*h, top, bot, in, shift = 1<<11;
+
+    for(i=0; i < size; i++) {
+        in = (img[i]+shift)>>3;
+        top = look[in<<1];
+        bot = (look[in+1]*(((img[i]+shift)&7)<<3))>>6;
+        img1[i] = ((top + bot)>>2)-128;
+        //img1[i] =  (top>>1) - 128;
+        //printf("%d %d  ", in, top);
+    }
+    //for(i = 0; i < 512; i++) printf("%d  %d %d\n", i, look[i<<1], look[(i<<1)+1]);
+}
+
 uint8* utils_color_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 col)
 {
-	int i, j, dim = h*w*3;
-	if(col ==  0) for(i=0, j=0; j < dim; j+=3, i++) rgb[j  ] = img[i]; // Red
-	if(col ==  1) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+1] = img[i]; // Red
-	if(col ==  2) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+2] = img[i]; // Red
-	return rgb;
+    int i, j, dim = h*w*3;
+    if(col ==  0) for(i=0, j=0; j < dim; j+=3, i++) rgb[j  ] = img[i]; // Red
+    if(col ==  1) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+1] = img[i]; // Red
+    if(col ==  2) for(i=0, j=0; j < dim; j+=3, i++) rgb[j+2] = img[i]; // Red
+    return rgb;
 }
 
 uint8* utils_draw(uint8 *img, uint8 *rgb, uint32 w, uint32 h)
