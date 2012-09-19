@@ -858,7 +858,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
     Frame *f = &g->frames[fn];
     uint32 i, j, vxc, rgc, lmaxc, npix, sum = 0;
     clock_t start, end;
-    double time=0., tmp;
+    double time=0., tmp, en1, en2, en3, en4;
     struct timeval tv;
 
 
@@ -902,7 +902,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
         seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
-        /*
+
         //  seg_vertex_draw3(f->y1[0].pic, f->vx, vxc, f->y1[0].w, f->y1[0].h, f->y1[1].w, f->y1[1].h);
 
         seg_get_or_fill_color2(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
@@ -913,7 +913,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
-        */
+        seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
 
         /*
         seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
@@ -938,10 +938,34 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
         //Start decode
 
+        /*
         memset(f->dc[0].pic, 0, f->y1[1].w*f->y1[1].h);
         memset(f->vp, 0, sizeof(Vertex*)*f->y[1].w*f->y[1].h);
         vxc = seg_restore_vertex(f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, (uint16*)g->cbuf, npix, f->y[1].w, f->y[1].h);
         rgc = seg_regions(f->dc[0].pic, f->vx, vxc, f->vpt, f->dm[0].pic, NULL, &npix, f->y[1].w, 0);
+        */
+
+        /*
+        utils_remove_border(f->y[1].pic, f->dg[0].pic, f->y[1].w, f->y[1].h);
+        en1 = entropy8(f->dg[0].pic, (uint32*)g->cbuf, f->y[1].w-2, f->y[1].h-2, 8);
+
+        for(i=0; i < (f->y[1].w-2)*(f->y[1].h-2); i++) f->b.pic[i] = f->dg[0].pic[i];
+        prediction_encoder(f->b.pic, f->Y16.pic, (int16*) g->cbuf, f->y[1].w-2, f->y[1].h-2);
+
+        en2 = entropy16(f->Y16.pic, (uint32*)g->cbuf, f->y[1].w-2, f->y[1].h-2, 8);
+
+        utils_subtract1(f->y[1].pic, f->y1[1].pic, f->d.pic, f->y[1].w, f->y[1].h);
+        en3 = entropy16(f->d.pic, (uint32*)g->cbuf, f->y[1].w-2, f->y[1].h-2, 10);
+
+        prediction_encoder(f->d.pic, f->b.pic, (int16*) g->cbuf, f->y[1].w-2, f->y[1].h-2);
+        en4 = entropy16(f->b.pic, (uint32*)g->cbuf, f->y[1].w-2, f->y[1].h-2, 10);
+
+        printf("en1 = %f en2 = %f en3 = %f en3 = %f\n", en1, en2, en3, en4);
+        */
+
+
+        //seg_get_or_fill_color2(NULL, f->dc[0].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+        //                     rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
 
 
         /*

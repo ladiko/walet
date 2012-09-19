@@ -367,6 +367,7 @@ void on_dwt_button_clicked(GtkObject *object, GtkWalet *gw)
 	int i;
 	if(&gw->gop == NULL ) return;
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+
 	if(frame_transform(&gw->gop, gw->gop.cur_gop_frame, &gw->wc)) {
 		gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
 		printf("DWT time = %f\n",(double)(end-start)/1000000.);
@@ -652,6 +653,15 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
     new_buffer (gw->orig[3], fr->y1[1].w, fr->y1[1].h);
     utils_grey_draw8(fr->y1[1].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->y1[1].w, fr->y1[1].h, 0);
     gtk_widget_queue_draw(gw->drawingarea[3]);
+    /*
+    new_buffer (gw->orig[0], fr->y1[1].w-2, fr->y1[1].h-2);
+    utils_grey_draw(fr->d.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), fr->y1[1].w-2, fr->y1[1].h-2, 128);
+    gtk_widget_queue_draw(gw->drawingarea[0]);
+
+    new_buffer (gw->orig[2], fr->y1[1].w-2, fr->y1[1].h-2);
+    utils_grey_draw(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->y1[1].w-2, fr->y1[1].h-2, 128);
+    gtk_widget_queue_draw(gw->drawingarea[2]);
+    */
 /*
     new_buffer (gw->orig[3], fr->y1[0].w, fr->y1[0].h);
     utils_grey_draw8(fr->y1[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->y1[0].w, fr->y1[0].h, 0);
@@ -759,11 +769,12 @@ void on_fill_hist_clicked(GtkObject *object, GtkWalet *gw)
 {
 	Frame *fr = &gw->gop.frames[0];
 	uint32 sz = 256, sz2 = sz<<1, width, height, hh = 200, sum, mx[4];
-	uint32 rgb[sz*4], max=0, maxy=0, i, size = gw->wc.w*gw->wc.h;
+    uint32 rgb[sz*4], max=0, maxy=0, i, size;
 	uint8 *img = gdk_pixbuf_get_pixels(gw->orig[4]->pxb);
 	GdkGC *gc = gdk_gc_new (GDK_DRAWABLE (gw->drawingarea[4]->window));
 	GdkColor color;
 
+    size = gdk_pixbuf_get_width(gw->orig[4]->pxb)*gdk_pixbuf_get_height(gw->orig[4]->pxb);
 
 	//gw->hist = 1;
 	hist = hist ? 0 : 1;
