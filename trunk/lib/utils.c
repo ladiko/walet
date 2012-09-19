@@ -308,7 +308,7 @@ uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
 {
 	int i, j, dim = h*w*3;
 	for(i = 0,  j= 0; j < dim; j+=3, i++){
-		rgb[j]     = img[i] + sh;
+        rgb[j]     = img[i] + sh;
 		rgb[j + 1] = img[i] + sh;
 		rgb[j + 2] = img[i] + sh;
 	}
@@ -3457,8 +3457,9 @@ double entropy8(uint8 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
 	int i;
 
 	for(i=0; i < size; i++) buf[i] = 0;
-	for(i=0; i < sz; i++) buf[img[i]+half]++;
-	//for(i=0; i < size; i++) printf("%d ",  buf[i]);
+    //for(i=0; i < sz; i++) buf[img[i]+half]++;
+    for(i=0; i < sz; i++) buf[img[i]]++;
+    //for(i=0; i < size; i++) printf("%d ",  buf[i]);
 	//printf("\n");
 
 	for(i=0; i < size; i++){
@@ -3484,3 +3485,33 @@ double entropy16(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp)
 	return s/sz;
 }
 
+void utils_subtract1(uint8 *img1, uint8 *img2, int16 *img3, uint32 w, uint32 h)
+{
+    uint32 x, y, yw, yw1, yx, h1 = h-1, w1 = w-1, w2 = w-2;
+
+    for(y=1; y < h1; y++){
+        yw = y*w;  yw1 = (y-1)*w2;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            img3[yw1 + x - 1] = img1[yx] - img2[yx];
+            /*
+            if(img3[yw1 + x - 1]){
+                img3[yw1 + x - 1] = 255;
+                printf("yx = %d\n", yx);
+            }*/
+        }
+    }
+}
+
+void utils_remove_border(uint8 *img1, uint8 *img2, uint32 w, uint32 h)
+{
+    uint32 x, y, yw, yw1, yx, h1 = h-1, w1 = w-1, w2 = w-2;
+
+    for(y=1; y < h1; y++){
+        yw = y*w;  yw1 = (y-1)*w2;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
+            img2[yw1 + x - 1] = img1[yx];
+        }
+    }
+}

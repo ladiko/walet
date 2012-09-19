@@ -956,19 +956,8 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
         if(grad[yx+dr[5]] > max) { max = grad[yx+dr[5]]; in = dr[5]; }
         if(grad[yx+dr[6]] > max) { max = grad[yx+dr[6]]; in = dr[6]; }
         if(grad[yx+dr[7]] > max) { max = grad[yx+dr[7]]; in = dr[7]; }
-        /*
-        if(yx == 1077 + 1174*w) {
-            printf("in1 = %d in = %d max = %d\n",in1, in, max);
-            print_around(con, yx, w);
-            print_around(grad, yx, w);
-
-            print_con_grad(grad, con, yx, w);
-            //for(i=0; i<8;i++) printf("grad = %d\n", grad[yx+dr[i]]);
-        }*/
         return in;
     }
-    // x = 1498 y = 9
-    //if(yx == 1498 + 9*w) printf("max = %d in1 = %d\n", max, in1);
 
     if      (in1 == dr[0]){ tmp[0] = dr[3]; tmp[1] = dr[4]; tmp[2] = dr[5]; }
     else if (in1 == dr[1]){ tmp[0] = dr[4]; tmp[1] = dr[5]; tmp[2] = dr[6]; }
@@ -984,19 +973,8 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
     if(grad[yx+tmp[1]] > max) { max = grad[yx+tmp[1]]; in = tmp[1]; }
     if(grad[yx+tmp[2]] > max) { max = grad[yx+tmp[2]]; in = tmp[2]; }
     //printf("max = %d in = %d\n", max, in);
-    //if(yx == 1498 + 9*w) printf("max = %d in = %d\n", max, in);
-    /*
-    if(yx == 812-1 + (542+1)*w) {
-        printf("befor dir3: x = %d y = %d in1 = %d\n", yx%w, yx/w, in1);
-        print_around(con, yx, w);
-        print_around(grad, yx, w);
-
-        print_con_grad(grad, con, yx, w);
-    }*/
 
     if(con[yx+in]){
-        //if(max == 255) return in;
-        //if(check_max1(grad, dr, yx+in, 255) || (di == find_dir(dr, in) && check_diagonal(grad, dr, yx, di))){
         if(check_diagonal1(con, dr, yx, find_dir(dr, in)) ){
             if(in == tmp[0]) tmp[0] = tmp[2];
             else if(in == tmp[1]) tmp[1] = tmp[2];
@@ -1009,11 +987,6 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
         } else return in;
 
     } else {
-        /*
-        if(check_diagonal1(con, dr, yx, find_dir(dr, in))) {
-            printf("Remove diagonal 1 \n ");
-            print_con_grad(grad, con, yx, w);
-        }*/
         return in;
     }
 
@@ -1099,7 +1072,7 @@ static inline uint32 loc_max2(uint8 *img, int *dr, uint32 yx, uint32 w)
        img[yx+dr[0 ]] > img[yx] ||
        img[yx+dr[22]] > img[yx] ) tmp++;
     //printf("tmp = %d img = %d \n", tmp, img[yx]);
-    if(tmp > 2) return 0;
+    if(tmp > 1) return 0;
     else return img[yx];
 }
 /*
@@ -4680,18 +4653,11 @@ uint32  seg_vertex_draw3(uint8 *img, Vertex *vx2, uint32 vxc, uint32 w, uint32 h
             v.y1 = scale(vx->y, h, ky, sh);
             v.x2 = scale(vx1->x, w, kx, sh);
             v.y2 = scale(vx1->y, h, ky, sh);
-            /*
-                v.x1 = ((vx->x-1)*kx>>sh); 	v.x1 = (v.x1 == w-2) ? v.x1 : v.x1 + 1;
-                v.y1 = ((vx->y-1)*ky>>sh);	v.y1 = (v.y1 == h-2) ? v.y1 : v.y1 + 1;
-                v.x2 = ((vx1->x-1)*kx>>sh); v.x2 = (v.x2 == w-2) ? v.x2 : v.x2 + 1;
-                v.y2 = ((vx1->y-1)*ky>>sh);	v.y2 = (v.y2 == h-2) ? v.y2 : v.y2 + 1;
-                */
 
-            draw_line_1(img, &v, w, 50);
-            img[v.y2*w + v.x2] = 100;
-            img[v.y1*w + v.x1] = 100;
+            draw_line_1(img, &v, w, 1);
+            //img[v.y2*w + v.x2] = 100;
+            //img[v.y1*w + v.x1] = 100;
 
-            //draw_line_dir(img, &v, w);
             lc++;
         }
     }

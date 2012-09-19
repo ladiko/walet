@@ -143,6 +143,7 @@ void seg_find_intersect8(uint8 *img, uint8 *grad, uint8 *con, uint32 *l1, uint32
 void seg_grad4(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th);
 uint32 seg_local_max2(uint8 *img, uint8 *con, uint32 th, uint32 w, uint32 h);
 void seg_find_intersect9(uint8 *grad, uint8 *con, uint32 w, uint32 h);
+void seg_remove(uint8 *img1, uint8 *img2, int16 *img3, uint32 w, uint32 h);
 
 
 
