@@ -549,7 +549,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
 
     //utils_bayer_local_hdr1(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
-    //utils_bayer_local_hdr2(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+    utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
 
     new_buffer (gw->orig[1], f0->b.w, f0->b.h);
     utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
@@ -558,8 +558,8 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     //make_lookup1(f0->b.pic, h, look, f0->b.w, f0->b.h, 12, 12);
     //bits12to8(f0->b.pic, f0->d.pic, look, f0->b.w, f0->b.h, 12, 12);
 
-    make_lookup2(f0->b.pic, h, (int16*)look, f0->b.w, f0->b.h);
-    bits12to8_1(f0->b.pic, f0->d.pic, (int16*)look, f0->b.w, f0->b.h);
+    //make_lookup2(f0->b.pic, h, (int16*)look, f0->b.w, f0->b.h);
+    //bits12to8_1(f0->b.pic, f0->d.pic, (int16*)look, f0->b.w, f0->b.h);
 
     new_buffer (gw->orig[2], f0->b.w, f0->b.h);
     utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);

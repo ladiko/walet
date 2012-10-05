@@ -1147,6 +1147,109 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 
 }
 
+void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
+{
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out;
+    double aw, ah, c;
+    int ws = 15, hs = 15, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
+    uint32 hist[4096], look[4096], sum, b;
+    //double wt[ws*hs];
+
+    memset(img1, 0, sizeof(int16)*(size));
+
+    memset(hist, 0, sizeof(uint32)*4096);
+
+    for(i=0; i < size; i++) hist[img[i]+shift]++;
+    sum = 0;
+    for(i=0; sum < th; i++ ) sum += hist[i];
+    ming = i;
+    sum = 0;
+    for(i=4095; sum < th; i-- ) sum += hist[i];
+    maxg = i;
+
+    printf("min = %d max = %d\n", min, max);
+
+    for(y=0; y < h-hs; y+=2){
+        yw = y*w;
+        for(x=0; x < w-ws; x+=2){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*4096);
+
+            for(y1=y; y1 < hs+y; y1+=1){
+                yw1 = y1*w;
+                for(x1=x; x1 < ws+x; x1+=1){
+                    yx1 = yw1 + x1;
+                    hist[img[yx1]+shift]++;
+                }
+            }
+            //Make LUT table integral
+            /*
+            b = (1<<30)/sz;
+
+            sum = 0; out = 0;
+            for(i = 0; i < hz; i++) {
+                sum += hist[i]; look[i] = sum*b>>22;
+                //printf("%i %d %d  ", i, hist[i], look[i]);
+            } //   printf("%d %d  ",  hist[i], look[i]);}
+
+            //printf("\n");
+            tmp = yx + ht*w + wt;
+            //printf("y = %d x = %d\n", tmp/w, tmp%w);
+            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
+            //printf("y = %d x = %d img = %d min = %d max = %d lt = %d\n",
+            //       tmp/w, tmp%w, img[tmp]+shift, min+1, max, look[(img[tmp]+shift)]);
+
+            //if(!look[(img[tmp]+shift)]) for(i = 0; i < hz; i++) printf("%i %d %d  ", i, hist[i], look[i]);
+
+            tmp += 1;
+            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
+            tmp += w;
+            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
+            tmp -= 1;
+            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
+            */
+
+            for(i=0; !hist[i]; i++ );
+            min = i;
+            for(i=4095; !hist[i]; i-- );
+            max = i;
+
+            tmp = yx + ht*w + wt;
+            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
+            tmp += 1;
+            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
+            tmp += w;
+            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
+            tmp -= 1;
+            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
+
+
+            if(max - min < 256){
+
+            } else {
+
+            }
+
+            /*
+            for(y1=0; y1 < hs+y; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws+x; x1+=1){
+                    yx1 = yw1 + x1;
+                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
+                }
+            }
+            */
+        }
+    }
+    for(i=0; i < size; i++){
+        img1[i] = img1[i] - 128;
+    }
+
+}
+
 /**	\brief Bilinear algorithm for bayer to 3 image R, G, B interpolation use 3 rows buffer.
     \param img	 	The input Bayer image.
  	\param R		The output red image.
@@ -3515,3 +3618,4 @@ void utils_remove_border(uint8 *img1, uint8 *img2, uint32 w, uint32 h)
         }
     }
 }
+
