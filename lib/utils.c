@@ -1150,10 +1150,10 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
 {
     int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
-    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp;
-    int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out;
+    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp, tmp1;
+    int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out, a, cn;
     double aw, ah, c;
-    int ws = 15, hs = 15, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
+    int ws = 128, hs = 128, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
     uint32 hist[4096], look[4096], sum, b;
     //double wt[ws*hs];
 
@@ -1162,56 +1162,123 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     memset(hist, 0, sizeof(uint32)*4096);
 
     for(i=0; i < size; i++) hist[img[i]+shift]++;
+    /*
     sum = 0;
     for(i=0; sum < th; i++ ) sum += hist[i];
     ming = i;
     sum = 0;
     for(i=4095; sum < th; i-- ) sum += hist[i];
     maxg = i;
+    */
+    for(i=0; !hist[i]; i++ ); ming = i;
+    for(i=4095; !hist[i]; i-- ) maxg = i;
 
-    printf("min = %d max = %d\n", min, max);
 
-    for(y=0; y < h-hs; y+=2){
+    printf("min = %d max = %d\n", ming, maxg);
+    b = (1<<30)/sz;
+    //a = (256<<20)/(maxg - ming);
+    max = sz>>8;
+
+    for(y=0; y < h-hs; y+=1){
         yw = y*w;
-        for(x=0; x < w-ws; x+=2){
+        for(x=0; x < w-ws; x+=1){
             yx = yw + x;
             //Make local histogramm
             memset(hist, 0, sizeof(uint32)*4096);
-
+            cn = 0;
+            min = 4095; max = 0;
             for(y1=y; y1 < hs+y; y1+=1){
                 yw1 = y1*w;
                 for(x1=x; x1 < ws+x; x1+=1){
                     yx1 = yw1 + x1;
-                    hist[img[yx1]+shift]++;
+                    tmp = yx1; tmp1 = img[tmp];
+                    hist[tmp1 + shift]++;
+                    //tmp += 1; tmp1 += img[tmp];
+                    //tmp += w; tmp1 += img[tmp];
+                    //tmp -= 1; tmp1 += img[tmp];
+                    //hist[(tmp1>>2) + shift]++;
+                    //tmp1 = (tmp1>>2) + shift;
+
+
+                    //if(tmp1 < min) min = tmp1;
+                    //if(tmp1 > max) max = tmp1;
+                    //if(!hist[tmp1]) { hist[tmp1]++; cn++;}
                 }
             }
             //Make LUT table integral
             /*
-            b = (1<<30)/sz;
-
-            sum = 0; out = 0;
+            sum = 0;
             for(i = 0; i < hz; i++) {
-                sum += hist[i]; look[i] = sum*b>>22;
+                if(hist[i] > max) {
+                    sum += hist[i] - max;
+                    hist[i] = max;
+                }
+            }
+            b = (1<<30)/(sz - sum);
+            */
+            sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
+
+
+            //memset(look, 0, sizeof(uint32)*4096);
+            /*
+            i = (255-cn)*(min-ming)/(maxg - max + min - ming);
+            look[min] = i;
+            sum = 0; out = 0;
+
+            for(i = min+1; i <= max; i++) {
+                if(hist[i]) look[i] = look[i-1] + 1;
+                else look[i] = look[i-1];
+                //sum += hist[i]; look[i] = sum*b>>22;
                 //printf("%i %d %d  ", i, hist[i], look[i]);
             } //   printf("%d %d  ",  hist[i], look[i]);}
 
-            //printf("\n");
-            tmp = yx + ht*w + wt;
-            //printf("y = %d x = %d\n", tmp/w, tmp%w);
-            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
-            //printf("y = %d x = %d img = %d min = %d max = %d lt = %d\n",
-            //       tmp/w, tmp%w, img[tmp]+shift, min+1, max, look[(img[tmp]+shift)]);
-
-            //if(!look[(img[tmp]+shift)]) for(i = 0; i < hz; i++) printf("%i %d %d  ", i, hist[i], look[i]);
-
-            tmp += 1;
-            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
-            tmp += w;
-            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
-            tmp -= 1;
-            img1[tmp] = look[(img[tmp]+shift)]; //*wt[y1*ws + x1];
+            img1[yx] = look[img[yx]+shift];
             */
+            //printf("cn = %d min = %d max = %d diff = %d i = %d en = %d in = %d out = %d\n",
+            //       cn, min, max, max-min, i, i+cn, img[yx]+shift, img1[yx]);
 
+
+            //printf("\n");
+            /*
+            tmp = yx + ht*w + wt; tmp1 = img[tmp];
+            tmp += 1; tmp1 += img[tmp];
+            tmp += w; tmp1 += img[tmp];
+            tmp -= 1; tmp1 += img[tmp];
+
+            tmp1 = (tmp1>>2) + shift;
+            Y = look[tmp1];
+            */
+            /*
+            tmp = yx + ht*w + wt;
+            a = (Y<<20)/(maxg - ming);
+
+            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
+            //printf("y = %d x = %d a = %d Y_old = %d col = %d Y_New = %d col %d",
+            //       (yx + ht*w + wt)/w, (yx + ht*w + wt)%w, a, tmp1, img[tmp] + shift, Y, img1[tmp]);
+            tmp += 1;
+            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
+            //printf(" %d", img1[tmp]);
+            tmp += w;
+            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
+            //printf(" %d", img1[tmp]);
+            tmp -= 1;
+            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
+            //printf(" %d\n", img1[tmp]);
+
+            //printf("y = %d x = %d\n", tmp/w, tmp%w);
+            */
+            tmp = yx + ht*w + wt;
+            img1[tmp] = look[(img[tmp]+shift)];
+            /*
+            tmp += 1;
+            img1[tmp] = look[(img[tmp]+shift)];
+            tmp += w;
+            img1[tmp] = look[(img[tmp]+shift)];
+            tmp -= 1;
+            img1[tmp] = look[(img[tmp]+shift)];
+            */
+            /*
             for(i=0; !hist[i]; i++ );
             min = i;
             for(i=4095; !hist[i]; i-- );
@@ -1225,13 +1292,7 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
             img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
             tmp -= 1;
             img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
-
-
-            if(max - min < 256){
-
-            } else {
-
-            }
+            */
 
             /*
             for(y1=0; y1 < hs+y; y1+=1){
@@ -1252,62 +1313,147 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 
 /**	\brief Bilinear algorithm for bayer to 3 image R, G, B interpolation use 3 rows buffer.
     \param img	 	The input Bayer image.
- 	\param R		The output red image.
- 	\param G		The output green image.
- 	\param b		The output blue image.
- 	\param buff		The temporary 3 rows buffer
-	\param w		The image width.
-	\param h		The image height.
-	\param bay		The Bayer grids pattern.
-	\param shift	The image shift for display.
-	\retval			Output RGB image..
+    \param R		The output red image.
+    \param G		The output green image.
+    \param b		The output blue image.
+    \param buff		The temporary 3 rows buffer
+    \param w		The image width.
+    \param h		The image height.
+    \param bay		The Bayer grids pattern.
+    \param shift	The image shift for display.
+    \retval			Output RGB image..
 */
 void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
 {
-	int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
-	int16 *l0, *l1, *l2, *tm;
-	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+    int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
+    int16 *l0, *l1, *l2, *tm;
+    l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
 
-	switch(bay){
-		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
-		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
-	}
-	h2 = h1-1;
-	//Create 3 rows buffer for transform
-	l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
-	l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
+    switch(bay){
+        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+    }
+    h2 = h1-1;
+    //Create 3 rows buffer for transform
+    l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
+    l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
 
-	for(y=ys, yw=0; y < h1; y++, yw+=w){
-		wy = (y == h2) ? yw - w : yw + w;
-		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
+    for(y=ys, yw=0; y < h1; y++, yw+=w){
+        wy = (y == h2) ? yw - w : yw + w;
+        l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
 
-		for(x=xs, x1=0; x < w1; x++, x1++){
-			wy 	= x1 + yw;
-			x2 = x1 + 1;
-			if(!(y&1) && !(x&1)){
-				R[wy] = l1[x2];
-				G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
-				B[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
-			}else if (!(y&1) && (x&1)){
-				R[wy] = (l1[x2-1] + l1[x2+1])>>1;
-				G[wy] = l1[x2];
-				B[wy] =	(l0[x2] + l2[x2])>>1;
-			}else if ((y&1) && !(x&1)){
-				R[wy] = (l0[x2] + l2[x2])>>1;
-				G[wy] = l1[x2];
-				B[wy] =	(l1[x2-1] + l1[x2+1])>>1;
-			}else {
-				R[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
-				G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
-				B[wy] = l1[x2];
-			}
-			//if(x1 < 10) printf("%3d ", R[wy]);
-		}
-		//printf("\n");
-		tm = l0; l0 = l1; l1 = l2; l2 = tm;
-	}
+        for(x=xs, x1=0; x < w1; x++, x1++){
+            wy 	= x1 + yw;
+            x2 = x1 + 1;
+            if(!(y&1) && !(x&1)){
+                R[wy] = l1[x2];
+                G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+                B[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+            }else if (!(y&1) && (x&1)){
+                R[wy] = (l1[x2-1] + l1[x2+1])>>1;
+                G[wy] = l1[x2];
+                B[wy] =	(l0[x2] + l2[x2])>>1;
+            }else if ((y&1) && !(x&1)){
+                R[wy] = (l0[x2] + l2[x2])>>1;
+                G[wy] = l1[x2];
+                B[wy] =	(l1[x2-1] + l1[x2+1])>>1;
+            }else {
+                R[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+                G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+                B[wy] = l1[x2];
+            }
+            //if(x1 < 10) printf("%3d ", R[wy]);
+        }
+        //printf("\n");
+        tm = l0; l0 = l1; l1 = l2; l2 = tm;
+    }
+}
+
+/**	\brief Directionally Weighted Gradient Based Interpolation
+    \param img	 	The input Bayer image.
+    \param R		The output red image.
+    \param G		The output green image.
+    \param b		The output blue image.
+    \param buff		The temporary 3 rows buffer
+    \param w		The image width.
+    \param h		The image height.
+    \param bay		The Bayer grids pattern.
+    \param shift	The image shift for display.
+    \retval			Output RGB image..
+*/
+void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
+{
+    int i, x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
+    int16 *l[5], *tm;
+
+    l[0] = buff;
+    for(i=1; i < 5; i++) l[i] = &l[i-1][w+4];
+
+    switch(bay){
+        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+    }
+    h2 = h1-1;
+    //Create first 4 rows buffer for transform
+    tm = &img[w<1];
+    l[0][0] = tm[2]; l[0][1] = tm[1];
+    for(x=0; x < w; x++) l[0][x+2] = tm[x];
+    l[0][w+2] = tm[w-1]; l[0][w+3] = tm[w-2];
+
+    tm = &img[w];
+    l[1][0] = tm[2]; l[1][1] = tm[1];
+    for(x=0; x < w; x++) l[1][x+2] = tm[x];
+    l[1][w+2] = tm[w-1]; l[1][w+3] = tm[w-2];
+
+    tm = img;
+    l[2][0] = tm[2]; l[2][1] = tm[1];
+    for(x=0; x < w; x++) l[2][x+2] = tm[x];
+    l[2][w+2] = tm[w-1]; l[2][w+3] = tm[w-2];
+
+    tm = &img[w];
+    l[3][0] = tm[2]; l[3][1] = tm[1];
+    for(x=0; x < w; x++) l[3][x+2] = tm[x];
+    l[3][w+2] = tm[w-1]; l[3][w+3] = tm[w-2];
+
+    for(y=ys, yw=0; y < h1; y++, yw+=w){
+        wy = yw + w2;
+        if(y == h1-2) wy = yw - w;
+        if(y == h1-1) wy = yw - w2;
+
+        tm = &img[wy];
+        l[4][0] = tm[2]; l[4][1] = tm[1];
+        for(x=0; x < w; x++) l[4][x+2] = tm[x];
+        l[4][w+2] = tm[w-1]; l[4][w+3] = tm[w-2];
+
+        for(x=xs, x1=0; x < w1; x++, x1++){
+            wy 	= x1 + yw;
+            x2 = x1 + 1;
+            if(!(y&1) && !(x&1)){
+                //R[wy] = l1[x2];
+                //G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+                //B[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+            }else if (!(y&1) && (x&1)){
+                //R[wy] = (l1[x2-1] + l1[x2+1])>>1;
+                //G[wy] = l1[x2];
+                //B[wy] =	(l0[x2] + l2[x2])>>1;
+            }else if ((y&1) && !(x&1)){
+                //R[wy] = (l0[x2] + l2[x2])>>1;
+                //G[wy] = l1[x2];
+                //B[wy] =	(l1[x2-1] + l1[x2+1])>>1;
+            }else {
+                //R[wy] = (l0[x2+1] + l2[x2-1] + l0[x2-1] + l2[x2+1])>>2;
+                //G[wy] = (l0[x2] + l2[x2] + l1[x2-1] + l1[x2+1])>>2;
+                //B[wy] = l1[x2];
+            }
+            //if(x1 < 10) printf("%3d ", R[wy]);
+        }
+        //printf("\n");
+        tm = l[0]; l[0] = l[1]; l[1] = l[2]; l[2] = l[3]; l[3] = l[4]; l[4] = tm;
+    }
 }
 
 /**	\brief Transform bayer image to YUV444 format.
