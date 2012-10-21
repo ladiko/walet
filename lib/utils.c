@@ -1371,6 +1371,17 @@ void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, u
     }
 }
 
+void inline static bayer_cp_line(int16 *img, int16 *c1, int16 *c2, uint32 w, uint32 off)
+{
+    uint32 i;
+    c2[off-1] = img[1]; c1[off-2] = img[2]; if(off == 3) c2[0] = img[3];
+    for(i=0; i < w; i++) {
+        if(i&1) c2[off+i] = img[i];
+        else c1[off+i] = img[i];
+    }
+    c1[w+off] = img[w-2]; c2[w+off+1] = img[w-3]; if(off == 2) c2[w+off+2] = img[w-4];
+}
+
 /**	\brief Directionally Weighted Gradient Based Interpolation
     \param img	 	The input Bayer image.
     \param R		The output red image.
@@ -1385,49 +1396,48 @@ void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, u
 */
 void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
 {
-    int i, x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
-    int16 *l[5], *tm;
+    int i, j, x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
+    int16 *l[3][5], *tm;
 
-    l[0] = buff;
-    for(i=1; i < 5; i++) l[i] = &l[i-1][w+4];
+    l[0][0] = buff;
+    for(i=1; i < 5; i++) l[0][i] = &l[0][i-1][w+5];
+    l[1][0] = &buff[(w+5)*6];
+    for(i=1; i < 5; i++) l[1][i] = &l[1][i-1][w+5];
+    l[2][0] = &buff[(w+5)*12];
+    for(i=1; i < 5; i++) l[2][i] = &l[2][i-1][w+5];
+
 
     switch(bay){
-        case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
-        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
-        case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
-        case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+        case(BGGR):{
+            bayer_cp_line(&img[w*2], l[2][0], l[1][0], w, 2);
+            bayer_cp_line(&img[w  ], l[1][1], l[0][1], w, 2);
+            bayer_cp_line(&img[0  ], l[2][2], l[1][2], w, 2);
+            bayer_cp_line(&img[w  ], l[1][3], l[0][3], w, 2);
+            break;}
+        case(GRBG):{
+            bayer_cp_line(&img[w*3], l[2][0], l[1][0], w, 2);
+            bayer_cp_line(&img[w*2], l[1][1], l[0][1], w, 2);
+            bayer_cp_line(&img[w  ], l[2][2], l[1][2], w, 2);
+            bayer_cp_line(&img[0  ], l[1][3], l[0][3], w, 2);
+            break;}
+        case(GBRG):{
+            bayer_cp_line(&img[w*2], l[1][0], l[2][0], w, 3);
+            bayer_cp_line(&img[w  ], l[0][1], l[1][1], w, 3);
+            bayer_cp_line(&img[0  ], l[1][2], l[2][2], w, 3);
+            bayer_cp_line(&img[w  ], l[0][3], l[1][3], w, 3);
+            break;}
+        case(RGGB):{
+            bayer_cp_line(&img[w*3], l[1][0], l[2][0], w, 3);
+            bayer_cp_line(&img[w*2], l[0][1], l[1][1], w, 3);
+            bayer_cp_line(&img[w  ], l[1][2], l[2][2], w, 3);
+            bayer_cp_line(&img[0  ], l[0][3], l[1][3], w, 3);
+            break;}
     }
     h2 = h1-1;
     //Create first 4 rows buffer for transform
-    tm = &img[w<1];
-    l[0][0] = tm[2]; l[0][1] = tm[1];
-    for(x=0; x < w; x++) l[0][x+2] = tm[x];
-    l[0][w+2] = tm[w-1]; l[0][w+3] = tm[w-2];
-
-    tm = &img[w];
-    l[1][0] = tm[2]; l[1][1] = tm[1];
-    for(x=0; x < w; x++) l[1][x+2] = tm[x];
-    l[1][w+2] = tm[w-1]; l[1][w+3] = tm[w-2];
-
-    tm = img;
-    l[2][0] = tm[2]; l[2][1] = tm[1];
-    for(x=0; x < w; x++) l[2][x+2] = tm[x];
-    l[2][w+2] = tm[w-1]; l[2][w+3] = tm[w-2];
-
-    tm = &img[w];
-    l[3][0] = tm[2]; l[3][1] = tm[1];
-    for(x=0; x < w; x++) l[3][x+2] = tm[x];
-    l[3][w+2] = tm[w-1]; l[3][w+3] = tm[w-2];
 
     for(y=ys, yw=0; y < h1; y++, yw+=w){
         wy = yw + w2;
-        if(y == h1-2) wy = yw - w;
-        if(y == h1-1) wy = yw - w2;
-
-        tm = &img[wy];
-        l[4][0] = tm[2]; l[4][1] = tm[1];
-        for(x=0; x < w; x++) l[4][x+2] = tm[x];
-        l[4][w+2] = tm[w-1]; l[4][w+3] = tm[w-2];
 
         for(x=xs, x1=0; x < w1; x++, x1++){
             wy 	= x1 + yw;
@@ -1452,7 +1462,9 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
             //if(x1 < 10) printf("%3d ", R[wy]);
         }
         //printf("\n");
-        tm = l[0]; l[0] = l[1]; l[1] = l[2]; l[2] = l[3]; l[3] = l[4]; l[4] = tm;
+        tm = l[0][0]; l[0][0] = l[0][1]; l[0][1] = l[0][2]; l[0][2] = l[0][3]; l[0][3] = l[0][4]; l[0][4] = tm;
+        tm = l[1][0]; l[1][0] = l[1][1]; l[1][1] = l[1][2]; l[1][2] = l[1][3]; l[1][3] = l[1][4]; l[1][4] = tm;
+        tm = l[2][0]; l[2][0] = l[2][1]; l[2][1] = l[2][2]; l[2][2] = l[2][3]; l[2][3] = l[2][4]; l[2][4] = tm;
     }
 }
 
