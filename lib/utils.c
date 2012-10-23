@@ -1392,6 +1392,49 @@ void inline static bayer_cp_fill(int16 *c1, int16 *c2, uint32 w)
     }
 }
 
+inline static int16 g_on_b(int16 *g0, int16 *g1, int16 *g2, int16 *b0, int16 *b2, int16 *b4, uint32 x)
+{
+    uint32 h, v, n, s, w, e, d, max;
+    h = abs(g1[x-1] - g1[x+1]);
+    v = abs(g0[x]   - g2[x]);
+    n = v + abs(b0[x] - b2[x]); max = n;
+    s = v + abs(b2[x] - b4[x]); if(s > max) max = s;
+    w = h + abs(b2[x-2] - b2[x]); if(w > max) max = w;
+    e = h + abs(b2[x+2] - b2[x]); if(e > max) max = e;
+    d = (max<<2) - n - s - w - e;
+    if(d) return ((max - n)*g0[x] + (max - s)*g2[x] + (max - w)*g1[x-1] + (max - e)*g1[x+1])/d;
+    else return g0[x];
+
+}
+
+inline static int16 r_on_b(int16 *r0, int16 *r2, int16 *g0, int16 *g1, int16 *g2, uint32 x)
+{
+    uint32 h, v, n, s, w, e, d, max;
+    h = abs(r0[x-1] - r2[x+1]);
+    v = abs(r0[x+1] - r2[x-1]);
+    n = h + abs(g0[x-1] - g1[x]); max = n;
+    s = h + abs(g2[x+1] - g1[x]); if(s > max) max = s;
+    w = v + abs(g0[x+1] - g1[x]); if(w > max) max = w;
+    e = v + abs(g2[x-1] - g1[x]); if(e > max) max = e;
+    d = (max<<2) - n - s - w - e;
+    if(d) return ((max - n)*r0[x-1] + (max - s)*r2[x+1] + (max - w)*r0[x+1] + (max - e)*r2[x-1])/d;
+    else return r0[x-1];
+}
+
+inline static int16 r_on_g(int16 *r0, int16 *r1, int16 *r2, int16 *g0, int16 *g1, int16 *g2, uint32 x)
+{
+    uint32 h, v, n, s, w, e, d, max;
+    h = abs(r1[x-1] - r1[x+1]);
+    v = abs(r0[x] - r2[x]);
+    n = v + abs(g0[x] - g1[x]); max = n;
+    s = v + abs(g2[x] - g1[x]); if(s > max) max = s;
+    w = h + abs(g1[x-1] - g1[x]); if(w > max) max = w;
+    e = h + abs(g1[x+1] - g1[x]); if(e > max) max = e;
+    d = (max<<2) - n - s - w - e;
+    if(d) return ((max - n)*r0[x] + (max - s)*r2[x] + (max - w)*r1[x-1] + (max - e)*r1[x+1])/d;
+    else return r0[x];
+}
+
 /**	\brief Directionally Weighted Gradient Based Interpolation
     \param img	 	The input Bayer image.
     \param R		The output red image.
@@ -1406,9 +1449,8 @@ void inline static bayer_cp_fill(int16 *c1, int16 *c2, uint32 w)
 */
 void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
 {
-    int i, j, x, yx, x1, x2, xs, ys, yw1, y = 0, wy, w2 = w+4, yw = 0, h1, w1, h2 = h-2, w4 = w+4;
+    int i, j, x, yx, x1, x2, xs, ys, yw1, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+4;
     int16 *r[6], *g[6], *b[6], *tm;
-    uint32 gh, gv, gn, gs, gw, ge, max;
 
     r[0] = buff;
     for(i=1; i < 6; i++) r[i] = &r[i-1][w4];
@@ -1450,55 +1492,57 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
     //bayer_cp_fill(l[0][1], l[0][0], w);
     //Create first 4 rows buffer for transform
 
-    for(y=0, yw1 = w<<1; y < h; y++, yw1+=(w<<1)){
-        yw = y*w2;
+    for(y=2, yw1 = w2; y < h2; y++, yw1+=w2){
+        //yw = y*w2;
         switch(bay){
             case(BGGR):{
-                if(y < h2) {
+                if(y < h) {
                     bayer_cp_line(&img[yw1  ], b[4], g[4], w);
                     bayer_cp_line(&img[yw1+w], g[5], r[5], w);
                 }
                 break;
             }
             case(GRBG):{
-                if(y < h2) {
+                if(y < h) {
                     bayer_cp_line(&img[yw1  ], g[4], r[4], w);
                     bayer_cp_line(&img[yw1+w], b[5], g[5], w);
                 }
                 break;}
             case(GBRG):{
-                if(y < h2) {
+                if(y < h) {
                     bayer_cp_line(&img[yw1  ], g[4], b[4], w);
                     bayer_cp_line(&img[yw1+w], r[5], g[5], w);
                 }
                 break;}
             case(RGGB):{
-                if(y < h2) {
+                if(y < h) {
                     bayer_cp_line(&img[yw1  ], r[4], g[4], w);
                     bayer_cp_line(&img[yw1+w], g[5], b[5], w);
                 }
                 break;}
         }
 
-        for(x=2; x < w1; x++){
-            yx = yw + x;
-            //Green on the blue pixel
-            gh = abs(g[2][x-1] - g[2][x+1]);
-            gv = abs(g[1][x]   - g[3][x]);
-            gn = gv + abs(b[0][x] - b[2][x]); max = gn;
-            gs = gv + abs(b[2][x] - b[4][x]); if(gs > max) max = gs;
-            gw = gh + abs(b[2][x-2] - b[2][x]); if(gw > max) max = gw;
-            ge = gh + abs(b[2][x+2] - b[2][x]); if(ge > max) max = ge;
-            g[2][x] = ((max - gn)*g[1][x] + (max - gs)*g[3][x] + (max - gw)*g[2][x-1] + (max - ge)*g[2][x+1])/
-                         ((max<<2) - gn - gs - gw - ge);
-            //Red on the blue
-
+        //Green on the blue pixel
+        for(x=2; x < w1; x+=2){
+            g[2][x] = g_on_b(g[1], g[2], g[3], b[0], b[2], b[4], x);
+        }
+        //Green on the red pixel
+        for(x=3; x < w1; x+=2){
+            g[3][x] = g_on_b(g[2], g[3], g[4], r[1], r[3], r[5], x);
+        }
+        //Red on the Blue
+        for(x=2; x < w1; x+=2){
+            r[2][x] = r_on_b(r[1], r[3], g[1], g[2], g[3], x);
+        }
+        //Red on the Green
+        for(x=3; x < w1; x+=2){
+            r[2][x] = r_on_g(r[1], r[2], r[3], g[1], g[2], g[3], x);
         }
 
         //printf("\n");
-        //tm = l[0][0]; l[0][0] = l[0][1]; l[0][1] = l[0][2]; l[0][2] = l[0][3]; l[0][3] = l[0][4]; l[0][4] = tm;
-        //tm = l[1][0]; l[1][0] = l[1][1]; l[1][1] = l[1][2]; l[1][2] = l[1][3]; l[1][3] = l[1][4]; l[1][4] = tm;
-        //tm = l[2][0]; l[2][0] = l[2][1]; l[2][1] = l[2][2]; l[2][2] = l[2][3]; l[2][3] = l[2][4]; l[2][4] = tm;
+        r[0] = r[2]; r[1] = r[3]; r[2] = r[4]; r[3] = r[5];
+        g[0] = g[2]; g[1] = g[3]; g[2] = g[4]; g[3] = g[5];
+        b[0] = b[2]; b[1] = b[3]; b[2] = b[4]; b[3] = b[5];
     }
 }
 
