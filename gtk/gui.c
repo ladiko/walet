@@ -522,12 +522,29 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	if(&gw->gop == NULL ) return;
-	//gw->wc.comp = gtk_spin_button_get_value_as_int ((GtkSpinButton *)gw->times_spinbutton);
-	//frame_compress(&gw->gop, gw->gop.cur_gop_frame, &gw->wc, gw->wc.comp);
-	//printf("DISTR = %f\n",utils_dist(gw->gop.frames[0].img[0].img, gw->gop.frames[1].img[0].img, gw->gop.w*gw->gop.h, 1));
-	//printf("APE   = %f\n",utils_ape (gw->gop.frames[0].img[0].img, gw->gop.frames[1].img[0].img, gw->gop.w*gw->gop.h, 1));
-	//printf("PSNR  = %f\n",utils_psnr(gw->gop.frames[0].img[0].img, gw->gop.frames[1].img[0].img, gw->gop.w*gw->gop.h, 1));
+    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp;
+    clock_t start, end;
+    double time=0., tmp;
+    struct timeval tv;
+    Frame *fr = &gw->gop.frames[0];
+    int16 *r = fr->img[0].p, *g = fr->img[1].p, *b = fr->img[2].p;
+
+    if(&gw->gop == NULL ) return;
+
+    utils_bayer_to_RGB_DWGI(fr->b.pic, fr->R16.pic, fr->G16.pic, fr->B16.pic, (int16*) gw->gop.buf, w, h, gw->wc.bg);
+
+    new_buffer (gw->orig[1], w, h);
+    utils_grey_draw(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1<<11);
+    gtk_widget_queue_draw(gw->drawingarea[1]);
+
+    new_buffer (gw->orig[2], w, h);
+    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 1<<11);
+    gtk_widget_queue_draw(gw->drawingarea[2]);
+
+    new_buffer (gw->orig[3], w, h);
+    utils_grey_draw(fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 1<<11);
+    gtk_widget_queue_draw(gw->drawingarea[3]);
+
 }
 
 void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
