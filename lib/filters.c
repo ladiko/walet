@@ -1,9 +1,12 @@
 #include <walet.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <math.h>
+#if !defined(__APPLE__)
+#include <malloc.h>
+#endif
 
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 

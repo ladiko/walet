@@ -2,9 +2,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <math.h>
+#if !defined(__APPLE__)
+#include <malloc.h>
+#endif
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
 
