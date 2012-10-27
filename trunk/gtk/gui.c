@@ -534,15 +534,15 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     utils_bayer_to_RGB_DWGI(fr->b.pic, fr->R16.pic, fr->G16.pic, fr->B16.pic, (int16*) gw->gop.buf, w, h, gw->wc.bg);
 
     new_buffer (gw->orig[1], w, h);
-    utils_grey_draw(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 1<<11);
+    utils_grey_draw(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 128);
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
     new_buffer (gw->orig[2], w, h);
-    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 1<<11);
+    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 128);
     gtk_widget_queue_draw(gw->drawingarea[2]);
 
     new_buffer (gw->orig[3], w, h);
-    utils_grey_draw(fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 1<<11);
+    utils_grey_draw(fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 128);
     gtk_widget_queue_draw(gw->drawingarea[3]);
 
 }
