@@ -1374,44 +1374,44 @@ void utils_bayer_to_RGB(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, u
     }
 }
 
-void inline static bayer_cp_line(int16 *img, int16 *c, uint32 w, BayerGrid bay)
+void inline static bayer_cp_line(int16 *img, int16 *c, uint32 w, uint32 sh, BayerGrid bay)
 {
     uint32 i, l;
     switch(bay){
     case(BGGR):{
-        c[2] = img[2]; c[4] = img[1];
-        for(i=0, l = 6; i < w; i++, l+=3) {
-            if(i&1) c[l+1] = img[i];
-            else c[l+2] = img[i];
+        //c[2] = img[2]; c[4] = img[1];
+        for(i=0, l = sh+2; i < w; i++, l+=3) {
+            if(i&1) c[l-1] = img[i];
+            else c[l] = img[i];
         }
-        c[l+2] = img[w-2]; c[l+4] = img[w-3];
+        //c[l+2] = img[w-2]; c[l+4] = img[w-3];
         break;
     }
     case(GRBG):{
-        c[1] = img[2]; c[3] = img[1];
-        for(i=0, l = 6; i < w; i++, l+=3) {
-            if(i&1) c[l] = img[i];
-            else c[l+1] = img[i];
+        //c[1] = img[2]; c[3] = img[1];
+        for(i=0, l = sh+1; i < w; i++, l+=3) {
+            if(i&1) c[l-1] = img[i];
+            else c[l] = img[i];
         }
-        c[l+1] = img[w-2]; c[l+3] = img[w-3];
+        //c[l+1] = img[w-2]; c[l+3] = img[w-3];
         break;
     }
     case(GBRG):{
-        c[1] = img[2]; c[5] = img[1];
-        for(i=0, l = 6; i < w; i++, l+=3) {
-            if(i&1) c[l+2] = img[i];
-            else c[l+1] = img[i];
-        }
-        c[l+1] = img[w-2]; c[l+5] = img[w-3];
-        break;
-    }
-    case(RGGB):{
-        c[0] = img[2]; c[4] = img[1];
-        for(i=0, l = 6; i < w; i++, l+=3) {
+        //c[1] = img[2]; c[5] = img[1];
+        for(i=0, l = sh+1; i < w; i++, l+=3) {
             if(i&1) c[l+1] = img[i];
             else c[l] = img[i];
         }
-        c[l] = img[w-2]; c[l+4] = img[w-3];
+        //c[l+1] = img[w-2]; c[l+5] = img[w-3];
+        break;
+    }
+    case(RGGB):{
+        //c[0] = img[2]; c[4] = img[1];
+        for(i=0, l = sh; i < w; i++, l+=3) {
+            if(i&1) c[l+1] = img[i];
+            else c[l] = img[i];
+        }
+        //c[l] = img[w-2]; c[l+4] = img[w-3];
         break;
     }
     }
@@ -1483,8 +1483,9 @@ inline static int16 b_on_r(int16 *c0, int16 *c1, int16 *c2, uint32 x)
     e = v + abs(c2[x-3] - c1[x]); if(e > max) max = e;
     d = (max<<2) - n - s - w - e;
     x = x+1; //Blue
-    if(d) return ((max - n)*c0[x-3] + (max - s)*c2[x+3] + (max - w)*c0[x+3] + (max - e)*c2[x-3])/d;
-    else return c0[x-3];
+    //if(d) return ((max - n)*c0[x-3] + (max - s)*c2[x+3] + (max - w)*c0[x+3] + (max - e)*c2[x-3])/d;
+    //else return c0[x-3];
+    return c0[x-3];
 }
 
 inline static int16 r_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x)
@@ -1517,8 +1518,9 @@ inline static int16 b_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x)
     e = h + abs(c1[x+3] - c1[x]); if(e > max) max = e;
     d = (max<<2) - n - s - w - e;
     x = x+1; //Blue
-    if(d) return ((max - n)*c0[x] + (max - s)*c2[x] + (max - w)*c1[x-3] + (max - e)*c1[x+3])/d;
-    else return c0[x];
+    //if(d) return ((max - n)*c0[x] + (max - s)*c2[x] + (max - w)*c1[x-3] + (max - e)*c1[x+3])/d;
+    //else return c0[x];
+    return c0[x];
 }
 
 /**	\brief Directionally Weighted Gradient Based Interpolation
@@ -1545,20 +1547,51 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
     3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
 {
-    int i, j, x, x3, yx, x1, x2, xs, ys, yw1, yw2, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+4;
+    int i, j, x, x3, yx, x1, x2, xs, ys, yw1, yw2, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+5;
     int16 *c[6], *tm;
 
     c[0] = buff;
     for(i=1; i < 6; i++) c[i] = &c[i-1][w4*3];
 
     h1 = h+2; ys = 2; w1 = w+2; xs = 2;
-
-    bayer_cp_line(&img[w*2], c[0], w, bay);
-    bayer_cp_line(&img[w  ], c[1], w, bay);
-    bayer_cp_line(&img[0  ], c[2], w, bay);
-    bayer_cp_line(&img[w  ], c[3], w, bay);
-    bayer_cp_line(&img[w*2], c[4], w, bay);
-    bayer_cp_line(&img[w*3], c[5], w, bay);
+    switch(bay){
+    case(BGGR):{
+        bayer_cp_line(&img[w*2], c[0], w, 6, BGGR);
+        bayer_cp_line(&img[w  ], c[1], w, 6, GRBG);
+        bayer_cp_line(&img[0  ], c[2], w, 6, BGGR);
+        bayer_cp_line(&img[w  ], c[3], w, 6, GRBG);
+        bayer_cp_line(&img[w*2], c[4], w, 6, BGGR);
+        bayer_cp_line(&img[w*3], c[5], w, 6, GRBG);
+        break;
+    }
+    case(GRBG):{
+        bayer_cp_line(&img[w*3], c[0], w, 6, BGGR);
+        bayer_cp_line(&img[w*2], c[0], w, 6, GRBG);
+        bayer_cp_line(&img[w  ], c[1], w, 6, BGGR);
+        bayer_cp_line(&img[0  ], c[2], w, 6, GRBG);
+        bayer_cp_line(&img[w  ], c[3], w, 6, BGGR);
+        bayer_cp_line(&img[w*2], c[4], w, 6, GRBG);
+        break;
+    }
+    case(GBRG):{
+        bayer_cp_line(&img[w*2], c[0], w, 9, GBRG);
+        bayer_cp_line(&img[w  ], c[1], w, 9, RGGB);
+        bayer_cp_line(&img[0  ], c[2], w, 9, GBRG);
+        bayer_cp_line(&img[w  ], c[3], w, 9, RGGB);
+        bayer_cp_line(&img[w*2], c[4], w, 9, GBRG);
+        bayer_cp_line(&img[w*3], c[5], w, 9, RGGB);
+        break;
+    }
+    case(RGGB):{
+        bayer_cp_line(&img[w*3], c[0], w, 9, GBRG);
+        bayer_cp_line(&img[w*2], c[0], w, 9, RGGB);
+        bayer_cp_line(&img[w  ], c[1], w, 9, GBRG);
+        bayer_cp_line(&img[0  ], c[2], w, 9, RGGB);
+        bayer_cp_line(&img[w  ], c[3], w, 9, GBRG);
+        bayer_cp_line(&img[w*2], c[4], w, 9, RGGB);
+        break;
+    }
+    }
     //bayer_cp_fill(l[2][0], l[2][1], w);
     //bayer_cp_fill(l[0][1], l[0][0], w);
     //Create first 4 rows buffer for transform
@@ -1581,8 +1614,30 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         c[2][x3] = r_on_g(c[1], c[2], c[3], x);
     }
     tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
-    yw1 = w<<2;
-    bayer_cp_line(&img[yw1], c[5], w, bay);
+
+    switch(bay){
+    case(BGGR):{
+        yw1 = w*4;
+        bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
+        break;
+    }
+    case(GRBG):{
+        yw1 = w*3;
+        bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
+        break;
+    }
+    case(GBRG):{
+        yw1 = w*4;
+        bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
+        break;
+    }
+    case(RGGB):{
+        yw1 = w*3;
+        bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
+        break;
+    }
+    }
+
     yw2 = 0;
 
     for(y=3; y < h; y++){
@@ -1628,11 +1683,36 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
             R[yw2 + x] = c[2][x3 + 6];
             G[yw2 + x] = c[2][x3 + 7];
             B[yw2 + x] = c[2][x3 + 8];
+            //printf("r %3d g %3d b %3d ", c[2][x3 + 6] + 128, c[2][x3 + 7] + 128, c[2][x3 + 8]+128);
         }
+        //printf("\n");
         yw2 = yw2 + w;
         tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
         yw1 = yw1 + w;
-        if(y < h) bayer_cp_line(&img[yw1], c[5], w, bay);
+        switch(bay){
+        case(BGGR):{
+            if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
+            else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
+            break;
+        }
+        case(GRBG):{
+            if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
+            else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
+            break;
+        }
+        case(GBRG):{
+            if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
+            else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
+            break;
+        }
+        case(RGGB):{
+            if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
+            else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
+            break;
+        }
+        }
+
+        //if(y < h) bayer_cp_line(&img[yw1], c[5], w, bay);
 
     }
 }

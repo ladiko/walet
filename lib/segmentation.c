@@ -5,7 +5,6 @@
 
 void print_around(uint8 *con, uint32 yx, uint32 w)
 {
-
     printf("%3d ",con[yx-2-w*2]);
     printf("%3d ",con[yx-1-w*2]);
     printf("%3d ",con[yx-w*2]);
