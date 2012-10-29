@@ -1562,6 +1562,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[w  ], c[3], w, 6, GRBG);
         bayer_cp_line(&img[w*2], c[4], w, 6, BGGR);
         bayer_cp_line(&img[w*3], c[5], w, 6, GRBG);
+        h1 = h;
         break;
     }
     case(GRBG):{
@@ -1571,6 +1572,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[0  ], c[2], w, 6, GRBG);
         bayer_cp_line(&img[w  ], c[3], w, 6, BGGR);
         bayer_cp_line(&img[w*2], c[4], w, 6, GRBG);
+        h1 = h+1;
         break;
     }
     case(GBRG):{
@@ -1580,6 +1582,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[w  ], c[3], w, 9, RGGB);
         bayer_cp_line(&img[w*2], c[4], w, 9, GBRG);
         bayer_cp_line(&img[w*3], c[5], w, 9, RGGB);
+        h1 = h;
         break;
     }
     case(RGGB):{
@@ -1589,113 +1592,75 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[0  ], c[2], w, 9, RGGB);
         bayer_cp_line(&img[w  ], c[3], w, 9, GBRG);
         bayer_cp_line(&img[w*2], c[4], w, 9, RGGB);
+        h1 = h+1;
         break;
     }
     }
-    //bayer_cp_fill(l[2][0], l[2][1], w);
-    //bayer_cp_fill(l[0][1], l[0][0], w);
-    //Create first 4 rows buffer for transform
 
     //Prepare for the loop
-    //Green on the blue pixel
-    for(x=2, x3 = 7; x < w1; x+=2, x3+=6){
-        c[2][x3] = g_on_b(c[0], c[1], c[2], c[3], c[4], x);
-    }
+    //Green on the blue
+    for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_b(c[0], c[1], c[2], c[3], c[4], x);
     //Green on the red pixel
-    for(x=3, x3 = 10; x < w1; x+=2, x3+=6){
-        c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
-    }
+    for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
     //Red on the Blue
-    for(x=2, x3 = 6; x < w1; x+=2, x3+=6){
-        c[2][x3] = r_on_b(c[1], c[2], c[3], x);
-    }
+    for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
     //Red on the Green
-    for(x=3, x3 = 9; x < w1; x+=2, x3+=6){
-        c[2][x3] = r_on_g(c[1], c[2], c[3], x);
-    }
+    for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
+
     tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
 
     switch(bay){
-    case(BGGR):{
-        yw1 = w*4;
-        bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
-        break;
-    }
-    case(GRBG):{
-        yw1 = w*3;
-        bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
-        break;
-    }
-    case(GBRG):{
-        yw1 = w*4;
-        bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
-        break;
-    }
-    case(RGGB):{
-        yw1 = w*3;
-        bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
-        break;
-    }
+    case(BGGR):{ yw1 = w*4; bayer_cp_line(&img[yw1], c[5], w, 6, BGGR); break; }
+    case(GRBG):{ yw1 = w*3; bayer_cp_line(&img[yw1], c[5], w, 6, BGGR); break; }
+    case(GBRG):{ yw1 = w*4; bayer_cp_line(&img[yw1], c[5], w, 9, GBRG); break; }
+    case(RGGB):{ yw1 = w*3; bayer_cp_line(&img[yw1], c[5], w, 9, GBRG); break; }
     }
 
     yw2 = 0;
-
-    for(y=3; y < h; y++){
-        if(y&1){
-            //Green on the blue pixel
-            for(x=2, x3 = 7; x < w1; x+=2, x3+=6){
-                c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
-            }
+    for(y=0; y < h1; y++){
+        if(!(y&1)){
+            //Green on the blue
+            for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
             //Blue on the Red
-            for(x=3, x3 = 11; x < w1; x+=2, x3+=6){
-                c[2][x3] = b_on_r(c[1], c[2], c[3], x);
-            }
+            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_r(c[1], c[2], c[3], x);
             //Blue on the Green
-            for(x=2, x3 = 8; x < w1; x+=2, x3+=6){
-                c[2][x3] = b_on_g(c[1], c[2], c[3], x);
-            }
+            for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_g(c[1], c[2], c[3], x);
             //Blue on the Green
-            for(x=3, x3 = 11; x < w1; x+=2, x3+=6){
-                c[1][x3] = b_on_g(c[0], c[1], c[2], x);
-            }
-
+            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = b_on_g(c[0], c[1], c[2], x);
         } else {
             //Green on the Red
-            for(x=2, x3 = 7; x < w1; x+=2, x3+=6){
-                c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
-            }
+            for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
             //Red on the Blue
-            for(x=2, x3 = 6; x < w1; x+=2, x3+=6){
-                c[2][x3] = r_on_b(c[1], c[2], c[3], x);
-            }
+            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
             //Red on the Green
-            for(x=3, x3 = 9; x < w1; x+=2, x3+=6){
-                c[2][x3] = r_on_g(c[1], c[2], c[3], x);
-            }
+            for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
             //Red on the Green
-            for(x=2, x3 = 6; x < w1; x+=2, x3+=6){
-                c[1][x3] = r_on_g(c[0], c[1], c[2], x);
-            }
+            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = r_on_g(c[0], c[1], c[2], x);
         }
 
-        for(x=0; x < w; x++){
-            x3 = x*3;
-            R[yw2 + x] = c[2][x3 + 6];
-            G[yw2 + x] = c[2][x3 + 7];
-            B[yw2 + x] = c[2][x3 + 8];
-            //printf("r %3d g %3d b %3d ", c[2][x3 + 6] + 128, c[2][x3 + 7] + 128, c[2][x3 + 8]+128);
-        }
         //printf("\n");
-        yw2 = yw2 + w;
+
         tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
         yw1 = yw1 + w;
         switch(bay){
         case(BGGR):{
+            for(x=0; x < w; x++){
+                x3 = x*3;
+                R[yw2 + x] = c[2][x3 + 6];
+                G[yw2 + x] = c[2][x3 + 7];
+                B[yw2 + x] = c[2][x3 + 8];
+            }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
             else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
             break;
         }
         case(GRBG):{
+            for(x=0; x < w; x++){
+                x3 = x*3;
+                R[yw2 + x] = c[2][x3 + 6];
+                G[yw2 + x] = c[2][x3 + 7];
+                B[yw2 + x] = c[2][x3 + 8];
+            }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
             else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
             break;
@@ -1711,6 +1676,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
             break;
         }
         }
+        yw2 = yw2 + w;
 
         //if(y < h) bayer_cp_line(&img[yw1], c[5], w, bay);
 
