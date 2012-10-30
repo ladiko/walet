@@ -1523,6 +1523,18 @@ inline static int16 b_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x)
     return c0[x];
 }
 
+inline static void copy_color(int16 *R, int16 *G, int16 *B, int16 *c, uint32 w, uint32 sh)
+{
+    uint32 x, x3;
+    for(x=0; x < w; x++){
+        x3 = x*3 + sh;
+        R[x] = c[x3  ];
+        G[x] = c[x3+1];
+        B[x] = c[x3+2];
+    }
+}
+
+
 /**	\brief Directionally Weighted Gradient Based Interpolation
     \param img	 	The input Bayer image.
     \param R		The output red image.
@@ -1644,41 +1656,38 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         yw1 = yw1 + w;
         switch(bay){
         case(BGGR):{
-            for(x=0; x < w; x++){
-                x3 = x*3;
-                R[yw2 + x] = c[2][x3 + 6];
-                G[yw2 + x] = c[2][x3 + 7];
-                B[yw2 + x] = c[2][x3 + 8];
-            }
+            copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 6);
+            yw2 = yw2 + w;
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
             else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
             break;
         }
         case(GRBG):{
-            for(x=0; x < w; x++){
-                x3 = x*3;
-                R[yw2 + x] = c[2][x3 + 6];
-                G[yw2 + x] = c[2][x3 + 7];
-                B[yw2 + x] = c[2][x3 + 8];
+            if(y > 0){
+                copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 6);
+                yw2 = yw2 + w;
             }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
             else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
             break;
         }
         case(GBRG):{
+            copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 9);
+            yw2 = yw2 + w;
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
             else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
             break;
         }
         case(RGGB):{
+            if(y > 0){
+                copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 9);
+                yw2 = yw2 + w;
+            }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
             else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
             break;
         }
         }
-        yw2 = yw2 + w;
-
-        //if(y < h) bayer_cp_line(&img[yw1], c[5], w, bay);
 
     }
 }
