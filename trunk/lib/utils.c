@@ -309,13 +309,24 @@ int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh)
 
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
 {
-	int i, j, dim = h*w*3;
-	for(i = 0,  j= 0; j < dim; j+=3, i++){
+    int i, j, dim = h*w*3;
+    for(i = 0,  j= 0; j < dim; j+=3, i++){
         rgb[j]     = img[i] + sh;
-		rgb[j + 1] = img[i] + sh;
-		rgb[j + 2] = img[i] + sh;
-	}
-	return rgb;
+        rgb[j + 1] = img[i] + sh;
+        rgb[j + 2] = img[i] + sh;
+    }
+    return rgb;
+}
+
+uint8* utils_grey_draw_rgb(int16 *R, int16 *G, int16 *B, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
+{
+    int i, j, dim = h*w*3;
+    for(i = 0,  j= 0; j < dim; j+=3, i++){
+        rgb[j]     = R[i] + sh;
+        rgb[j + 1] = G[i] + sh;
+        rgb[j + 2] = B[i] + sh;
+    }
+    return rgb;
 }
 
 uint8* utils_grey_draw8(uint8 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
@@ -1379,43 +1390,176 @@ void inline static bayer_cp_line(int16 *img, int16 *c, uint32 w, uint32 sh, Baye
     uint32 i, l;
     switch(bay){
     case(BGGR):{
-        //c[2] = img[2]; c[4] = img[1];
-        for(i=0, l = sh+2; i < w; i++, l+=3) {
-            if(i&1) c[l-1] = img[i];
-            else c[l] = img[i];
+        for(i=0; i < sh; i++) c[i] = 0;
+        for(i=0, l = sh; i < w; i++, l+=3) {
+            if(i&1) {
+                c[l]   = 0;
+                c[l+1] = img[i];
+                c[l+2] = 0;
+            } else {
+                c[l  ] = 0;
+                c[l+1] = 0;
+                c[l+2] = img[i];
+            }
         }
-        //c[l+2] = img[w-2]; c[l+4] = img[w-3];
         break;
     }
     case(GRBG):{
-        //c[1] = img[2]; c[3] = img[1];
-        for(i=0, l = sh+1; i < w; i++, l+=3) {
-            if(i&1) c[l-1] = img[i];
-            else c[l] = img[i];
+        for(i=0; i < sh; i++) c[i] = 0;
+        for(i=0, l = sh; i < w; i++, l+=3) {
+            if(i&1) {
+                c[l]   = img[i];
+                c[l+1] = 0;
+                c[l+2] = 0;
+            } else {
+                c[l  ] = 0;
+                c[l+1] = img[i];
+                c[l+2] = 0;
+            }
         }
-        //c[l+1] = img[w-2]; c[l+3] = img[w-3];
         break;
     }
     case(GBRG):{
-        //c[1] = img[2]; c[5] = img[1];
-        for(i=0, l = sh+1; i < w; i++, l+=3) {
-            if(i&1) c[l+1] = img[i];
-            else c[l] = img[i];
+        for(i=0; i < sh; i++) c[i] = 0;
+        for(i=0, l = sh; i < w; i++, l+=3) {
+            if(i&1) {
+                c[l]   = 0;
+                c[l+1] = 0;
+                c[l+2] = img[i];
+            } else {
+                c[l  ] = 0;
+                c[l+1] = img[i];
+                c[l+2] = 0;
+            }
         }
-        //c[l+1] = img[w-2]; c[l+5] = img[w-3];
         break;
     }
     case(RGGB):{
-        //c[0] = img[2]; c[4] = img[1];
+        for(i=0; i < sh; i++) c[i] = 0;
         for(i=0, l = sh; i < w; i++, l+=3) {
-            if(i&1) c[l+1] = img[i];
-            else c[l] = img[i];
+            if(i&1) {
+                c[l]   = 0;
+                c[l+1] = img[i];
+                c[l+2] = 0;
+            } else {
+                c[l  ] = img[i];
+                c[l+1] = 0;
+                c[l+2] = 0;
+            }
         }
-        //c[l] = img[w-2]; c[l+4] = img[w-3];
         break;
     }
     }
 }
+
+static  inline uint32  min_4(uint32 *s)
+{
+    if(s[0] > s[1]){
+        if(s[1] > s[2]) return 2;
+        else return 1;
+    } else {
+        if(s[0] > s[2]) return 2;
+        else return 0;
+    }
+}
+
+inline static int16 g_on_br(int16 *c0, int16 *c1, int16 *c2, int16 *c3, int16 *c4, uint32 x, uint32 col1, uint32 col2)
+{
+    uint32 i, ima, imi, h, v, n[4], cl[4], in[2], max, min, x3 = 3*x;
+    x = x3 + col1; //Green
+    cl[0] = c1[x]; cl[1] = c3[x]; cl[2] = c2[x-3]; cl[3] = c2[x+3];
+    h = abs(cl[2] - cl[3]);
+    v = abs(cl[0] - cl[1]);
+    x = x3 + col2; //Blue
+    n[0] = v + abs(c0[x] - c2[x]);
+    n[1] = v + abs(c2[x] - c4[x]);
+    n[2] = h + abs(c2[x-6] - c2[x]);
+    n[3] = h + abs(c2[x+6] - c2[x]);
+
+    max = n[0]; min = n[0]; ima = 0; imi = 0;
+    for(i=1; i < 4; i++){
+        if      (n[i] >= max) { max = n[i]; ima = i;}
+        else if (n[i] <= min) { min = n[i]; imi = i; }
+    }
+    //x = x3 + col1; //Green
+    i = 0;
+    if(ima != 0 && imi != 0) in[i++] = 0;
+    if(ima != 1 && imi != 1) in[i++] = 1;
+    if(ima != 2 && imi != 2) in[i++] = 2;
+    if(ima != 3 && imi != 3) in[i++] = 3;
+
+    //printf("n = %3d s = %3d w = %3d e = %3d ima = %d imi = %3d n1 = %3d n2 = %3d\n",
+    //       n[0], n[1], n[2], n[3], ima, imi, in[0], in[1]);
+
+    if(n[in[0]] > n[in[1]]) return (cl[imi] + cl[in[1]])>>1;
+    else return (cl[imi] + cl[in[0]])>>1;
+
+}
+
+inline static int16 rb_on_br(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col1, uint32 col2)
+{
+    uint32 i, ima, imi, h, v, n[4], cl[4], in[2], max, min, x3 = 3*x;
+    x = x3 + col1;
+    cl[0] = c0[x-3]; cl[1] = c2[x+3]; cl[2] = c0[x+3]; cl[3] = c2[x-3];
+    h = abs(c0[x-3] - c2[x+3]);
+    v = abs(c0[x+3] - c2[x-3]);
+    x = x3 + col2; //Blue
+    n[0] = h + abs(c0[x-3] - c1[x]);
+    n[1] = h + abs(c2[x+3] - c1[x]);
+    n[2] = v + abs(c0[x+3] - c1[x]);
+    n[3] = v + abs(c2[x-3] - c1[x]);
+
+    max = n[0]; min = n[0]; ima = 0; imi = 0;
+    for(i=1; i < 4; i++){
+        if      (n[i] >= max) { max = n[i]; ima = i;}
+        else if (n[i] <= min) { min = n[i]; imi = i; }
+    }
+    //x = x3 + col1; //Green
+    i = 0;
+    if(ima != 0 && imi != 0) in[i++] = 0;
+    if(ima != 1 && imi != 1) in[i++] = 1;
+    if(ima != 2 && imi != 2) in[i++] = 2;
+    if(ima != 3 && imi != 3) in[i++] = 3;
+
+    //printf("n = %3d s = %3d w = %3d e = %3d ima = %d imi = %3d n1 = %3d n2 = %3d\n",
+    //       n[0], n[1], n[2], n[3], ima, imi, in[0], in[1]);
+
+    if(n[in[0]] > n[in[1]]) return (cl[imi] + cl[in[1]])>>1;
+    else return (cl[imi] + cl[in[0]])>>1;
+}
+
+inline static int16 rb_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col1, uint32 col2)
+{
+    uint32 i, ima, imi, h, v, n[4], cl[4], in[2], max, min, x3 = 3*x;
+    x = x3 + col1;
+    cl[0] = c0[x]; cl[1] = c2[x]; cl[2] = c1[x-3]; cl[3] = c1[x+3];
+    h = abs(c1[x-3] - c1[x+3]);
+    v = abs(c0[x] - c2[x]);
+    x = x3 + col2;
+    n[0] = v + abs(c0[x] - c1[x]);
+    n[1] = v + abs(c2[x] - c1[x]);
+    n[2] = h + abs(c1[x-3] - c1[x]);
+    n[3] = h + abs(c1[x+3] - c1[x]);
+
+    max = n[0]; min = n[0]; ima = 0; imi = 0;
+    for(i=1; i < 4; i++){
+        if      (n[i] >= max) { max = n[i]; ima = i;}
+        else if (n[i] <= min) { min = n[i]; imi = i; }
+    }
+    //x = x3 + col1; //Green
+    i = 0;
+    if(ima != 0 && imi != 0) in[i++] = 0;
+    if(ima != 1 && imi != 1) in[i++] = 1;
+    if(ima != 2 && imi != 2) in[i++] = 2;
+    if(ima != 3 && imi != 3) in[i++] = 3;
+
+    //printf("n = %3d s = %3d w = %3d e = %3d ima = %d imi = %3d n1 = %3d n2 = %3d\n",
+    //       n[0], n[1], n[2], n[3], ima, imi, in[0], in[1]);
+
+    if(n[in[0]] > n[in[1]]) return (cl[imi] + cl[in[1]])>>1;
+    else return (cl[imi] + cl[in[0]])>>1;
+}
+
 
 inline static int16 g_on_b(int16 *c0, int16 *c1, int16 *c2, int16 *c3, int16 *c4, uint32 x)
 {
@@ -1483,9 +1627,8 @@ inline static int16 b_on_r(int16 *c0, int16 *c1, int16 *c2, uint32 x)
     e = v + abs(c2[x-3] - c1[x]); if(e > max) max = e;
     d = (max<<2) - n - s - w - e;
     x = x+1; //Blue
-    //if(d) return ((max - n)*c0[x-3] + (max - s)*c2[x+3] + (max - w)*c0[x+3] + (max - e)*c2[x-3])/d;
-    //else return c0[x-3];
-    return c0[x-3];
+    if(d) return ((max - n)*c0[x-3] + (max - s)*c2[x+3] + (max - w)*c0[x+3] + (max - e)*c2[x-3])/d;
+    else return c0[x-3];
 }
 
 inline static int16 r_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x)
@@ -1518,9 +1661,8 @@ inline static int16 b_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x)
     e = h + abs(c1[x+3] - c1[x]); if(e > max) max = e;
     d = (max<<2) - n - s - w - e;
     x = x+1; //Blue
-    //if(d) return ((max - n)*c0[x] + (max - s)*c2[x] + (max - w)*c1[x-3] + (max - e)*c1[x+3])/d;
-    //else return c0[x];
-    return c0[x];
+    if(d) return ((max - n)*c0[x] + (max - s)*c2[x] + (max - w)*c1[x-3] + (max - e)*c1[x+3])/d;
+    else return c0[x];
 }
 
 inline static void copy_color(int16 *R, int16 *G, int16 *B, int16 *c, uint32 w, uint32 sh)
@@ -1532,6 +1674,23 @@ inline static void copy_color(int16 *R, int16 *G, int16 *B, int16 *c, uint32 w, 
         G[x] = c[x3+1];
         B[x] = c[x3+2];
     }
+}
+
+inline static void print_color(int16 *c0, int16 *c1, int16 *c2, int16 *c3, int16 *c4, int16 *c5, uint32 w)
+{
+    uint32 x, x3, b = 0;
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c0[x3]+b, c0[x3+1]+b, c0[x3+2]+b);}
+    printf("\n");
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c1[x3]+b, c1[x3+1]+b, c1[x3+2]+b);}
+    printf("\n");
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c2[x3]+b, c2[x3+1]+b, c2[x3+2]+b);}
+    printf("\n");
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c3[x3]+b, c3[x3+1]+b, c3[x3+2]+b);}
+    printf("\n");
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c4[x3]+b, c4[x3+1]+b, c4[x3+2]+b);}
+    printf("\n");
+    for(x=0; x < w; x++){ x3 = x*3; printf("%3d %3d %3d | ", c5[x3]+b, c5[x3+1]+b, c5[x3+2]+b);}
+    printf("\n");
 }
 
 
@@ -1574,17 +1733,17 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[w  ], c[3], w, 6, GRBG);
         bayer_cp_line(&img[w*2], c[4], w, 6, BGGR);
         bayer_cp_line(&img[w*3], c[5], w, 6, GRBG);
-        h1 = h;
+        h1 = h; w1 = w+2;
         break;
     }
     case(GRBG):{
         bayer_cp_line(&img[w*3], c[0], w, 6, BGGR);
-        bayer_cp_line(&img[w*2], c[0], w, 6, GRBG);
-        bayer_cp_line(&img[w  ], c[1], w, 6, BGGR);
-        bayer_cp_line(&img[0  ], c[2], w, 6, GRBG);
-        bayer_cp_line(&img[w  ], c[3], w, 6, BGGR);
-        bayer_cp_line(&img[w*2], c[4], w, 6, GRBG);
-        h1 = h+1;
+        bayer_cp_line(&img[w*2], c[1], w, 6, GRBG);
+        bayer_cp_line(&img[w  ], c[2], w, 6, BGGR);
+        bayer_cp_line(&img[0  ], c[3], w, 6, GRBG);
+        bayer_cp_line(&img[w  ], c[4], w, 6, BGGR);
+        bayer_cp_line(&img[w*2], c[5], w, 6, GRBG);
+        h1 = h+1; w1 = w+2;
         break;
     }
     case(GBRG):{
@@ -1594,30 +1753,34 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         bayer_cp_line(&img[w  ], c[3], w, 9, RGGB);
         bayer_cp_line(&img[w*2], c[4], w, 9, GBRG);
         bayer_cp_line(&img[w*3], c[5], w, 9, RGGB);
-        h1 = h;
+        h1 = h; w1 = w+3;
         break;
     }
     case(RGGB):{
         bayer_cp_line(&img[w*3], c[0], w, 9, GBRG);
-        bayer_cp_line(&img[w*2], c[0], w, 9, RGGB);
-        bayer_cp_line(&img[w  ], c[1], w, 9, GBRG);
-        bayer_cp_line(&img[0  ], c[2], w, 9, RGGB);
-        bayer_cp_line(&img[w  ], c[3], w, 9, GBRG);
-        bayer_cp_line(&img[w*2], c[4], w, 9, RGGB);
-        h1 = h+1;
+        bayer_cp_line(&img[w*2], c[1], w, 9, RGGB);
+        bayer_cp_line(&img[w  ], c[2], w, 9, GBRG);
+        bayer_cp_line(&img[0  ], c[3], w, 9, RGGB);
+        bayer_cp_line(&img[w  ], c[4], w, 9, GBRG);
+        bayer_cp_line(&img[w*2], c[5], w, 9, RGGB);
+        h1 = h+1; w1 = w+3;
         break;
     }
     }
-
+    print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
     //Prepare for the loop
     //Green on the blue
     for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_b(c[0], c[1], c[2], c[3], c[4], x);
+    //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_br(c[0], c[1], c[2], c[3], c[4], x, 1, 2);
     //Green on the red pixel
     for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
+    //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 0);
     //Red on the Blue
     for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
+    //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 0, 2);
     //Red on the Green
     for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
+    //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 0, 1);
 
     tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
 
@@ -1628,26 +1791,36 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
     case(RGGB):{ yw1 = w*3; bayer_cp_line(&img[yw1], c[5], w, 9, GBRG); break; }
     }
 
+    printf("\n");
+    print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
     yw2 = 0;
     for(y=0; y < h1; y++){
         if(!(y&1)){
             //Green on the blue
             for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
+            //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 2);
             //Blue on the Red
             for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_r(c[1], c[2], c[3], x);
+            //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 2, 0);
             //Blue on the Green
             for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_g(c[1], c[2], c[3], x);
+            //for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 2, 1);
             //Blue on the Green
             for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = b_on_g(c[0], c[1], c[2], x);
+            //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g(c[0], c[1], c[2], x, 2, 1);
         } else {
             //Green on the Red
-            for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
+            for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
+            //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 0);
             //Red on the Blue
             for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
+            //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 0, 2);
             //Red on the Green
             for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
+            //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 0, 1);
             //Red on the Green
             for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = r_on_g(c[0], c[1], c[2], x);
+            //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g(c[0], c[1], c[2], x, 0, 1);
         }
 
         //printf("\n");
@@ -1656,7 +1829,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         yw1 = yw1 + w;
         switch(bay){
         case(BGGR):{
-            copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 6);
+            copy_color(&R[yw2], &G[yw2], &B[yw2], c[0], w, 6);
             yw2 = yw2 + w;
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
             else    bayer_cp_line(&img[yw1], c[5], w, 6, GRBG);
@@ -1664,7 +1837,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         }
         case(GRBG):{
             if(y > 0){
-                copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 6);
+                copy_color(&R[yw2], &G[yw2], &B[yw2], c[0], w, 6);
                 yw2 = yw2 + w;
             }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 6, BGGR);
@@ -1672,7 +1845,7 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
             break;
         }
         case(GBRG):{
-            copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 9);
+            copy_color(&R[yw2], &G[yw2], &B[yw2], c[0], w, 9);
             yw2 = yw2 + w;
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
             else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
@@ -1680,13 +1853,17 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         }
         case(RGGB):{
             if(y > 0){
-                copy_color(&R[yw2], &G[yw2], &B[yw2], c[2], w, 9);
+                copy_color(&R[yw2], &G[yw2], &B[yw2], c[0], w, 9);
                 yw2 = yw2 + w;
             }
             if(y&1) bayer_cp_line(&img[yw1], c[5], w, 9, GBRG);
             else    bayer_cp_line(&img[yw1], c[5], w, 9, RGGB);
             break;
         }
+        }
+        if(y < 10) {
+            printf("\n");
+            print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
         }
 
     }

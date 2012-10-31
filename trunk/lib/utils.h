@@ -57,7 +57,7 @@ int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh);
 
 double entropy8(uint8 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp);
 double entropy16(int16 *img, uint32 *buf, uint32 w, uint32 h, uint32 bpp);
-
+uint8* utils_grey_draw_rgb(int16 *R, int16 *G, int16 *B, uint8 *rgb, uint32 w, uint32 h, uint32 sh);
 
 //uint8* 		utils_subband_draw		(Image *img, uint8 *rgb, ColorSpace color, uint32 steps);
 //uint8* 		utils_bayer_draw		(uint8 *img, uint8 *rgb, uint32 height, uint32 width,  BayerGrid bay, uint8 bpp);

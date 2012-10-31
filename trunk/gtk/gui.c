@@ -522,7 +522,7 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp;
+    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, size = w*h;
     clock_t start, end;
     double time=0., tmp;
     struct timeval tv;
@@ -531,19 +531,26 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
     if(&gw->gop == NULL ) return;
 
+    for(i=0; i < size; i++) fr->b.pic[i] = fr->b.pic[i] + 128;
+
     utils_bayer_to_RGB_DWGI(fr->b.pic, fr->R16.pic, fr->G16.pic, fr->B16.pic, (int16*) gw->gop.buf, w, h, gw->wc.bg);
 
     new_buffer (gw->orig[1], w, h);
-    utils_grey_draw(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 128);
+    utils_grey_draw(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
     new_buffer (gw->orig[2], w, h);
-    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 128);
+    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[2]);
 
     new_buffer (gw->orig[3], w, h);
-    utils_grey_draw(fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 128);
+    utils_grey_draw(fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[3]);
+
+    new_buffer (gw->orig[1], w, h);
+    utils_grey_draw_rgb(fr->R16.pic, fr->G16.pic, fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
+    gtk_widget_queue_draw(gw->drawingarea[1]);
+
 
 }
 
