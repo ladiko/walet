@@ -1496,6 +1496,12 @@ inline static int16 g_on_br(int16 *c0, int16 *c1, int16 *c2, int16 *c3, int16 *c
 
 }
 
+inline static int16 g_on_br1(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col)
+{
+    x = 3*x + col;
+    return (c0[x] + c2[x] + c1[x-3] + c1[x+3])>>2;
+}
+
 inline static int16 rb_on_br(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col1, uint32 col2)
 {
     uint32 i, ima, imi, h, v, n[4], cl[4], in[2], max, min, x3 = 3*x;
@@ -1526,6 +1532,12 @@ inline static int16 rb_on_br(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 c
 
     if(n[in[0]] > n[in[1]]) return (cl[imi] + cl[in[1]])>>1;
     else return (cl[imi] + cl[in[0]])>>1;
+}
+
+inline static int16 rb_on_br1(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col)
+{
+    x = 3*x + col;
+    return (c0[x-3] + c2[x+3] + c0[x+3] + c2[x-3])>>2;
 }
 
 inline static int16 rb_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col1, uint32 col2)
@@ -1560,6 +1572,11 @@ inline static int16 rb_on_g(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 co
     else return (cl[imi] + cl[in[0]])>>1;
 }
 
+inline static int16 rb_on_g1(int16 *c0, int16 *c1, int16 *c2, uint32 x, uint32 col)
+{
+    x = 3*x + col;
+    return (c0[x] + c2[x] + c1[x-3] + c1[x+3])>>2;
+}
 
 inline static int16 g_on_b(int16 *c0, int16 *c1, int16 *c2, int16 *c3, int16 *c4, uint32 x)
 {
@@ -1770,17 +1787,21 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
     print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
     //Prepare for the loop
     //Green on the blue
-    for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_b(c[0], c[1], c[2], c[3], c[4], x);
+    //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_b(c[0], c[1], c[2], c[3], c[4], x);
     //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_br(c[0], c[1], c[2], c[3], c[4], x, 1, 2);
+    for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[2][x3] = g_on_br1(c[1], c[2], c[3], x, 1);
     //Green on the red pixel
-    for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
+    //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
     //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 0);
+    for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br1(c[2], c[3], c[4], x, 1);
     //Red on the Blue
-    for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
+    //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
     //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 0, 2);
+    for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br1(c[1], c[2], c[3], x, 0);
     //Red on the Green
-    for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
+    //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
     //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 0, 1);
+    for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g1(c[1], c[2], c[3], x, 0);
 
     tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = c[5]; c[5] = tm;
 
@@ -1797,30 +1818,38 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
     for(y=0; y < h1; y++){
         if(!(y&1)){
             //Green on the blue
-            for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
+            //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_b(c[1], c[2], c[3], c[4], c[5], x);
             //for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 2);
+            for(x=2, x3 = 7; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br1(c[2], c[3], c[4], x, 1);
             //Blue on the Red
-            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_r(c[1], c[2], c[3], x);
+            //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_r(c[1], c[2], c[3], x);
             //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 2, 0);
+            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br1(c[1], c[2], c[3], x, 2);
             //Blue on the Green
-            for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_g(c[1], c[2], c[3], x);
+            //for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = b_on_g(c[1], c[2], c[3], x);
             //for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 2, 1);
+            for(x=2, x3 = 8; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g1(c[1], c[2], c[3], x, 2);
             //Blue on the Green
-            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = b_on_g(c[0], c[1], c[2], x);
+            //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = b_on_g(c[0], c[1], c[2], x);
             //for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g(c[0], c[1], c[2], x, 2, 1);
+            for(x=3, x3 = 11; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g1(c[0], c[1], c[2], x, 2);
         } else {
             //Green on the Red
-            for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
+            //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_r(c[1], c[2], c[3], c[4], c[5], x);
             //for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br(c[1], c[2], c[3], c[4], c[5], x, 1, 0);
+            for(x=3, x3 = 10; x < w1; x+=2, x3+=6)  c[3][x3] = g_on_br1(c[2], c[3], c[4], x, 1);
             //Red on the Blue
-            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
+            //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_b(c[1], c[2], c[3], x);
             //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br(c[1], c[2], c[3], x, 0, 2);
+            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_br1(c[1], c[2], c[3], x, 0);
             //Red on the Green
-            for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
+            //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = r_on_g(c[1], c[2], c[3], x);
             //for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g(c[1], c[2], c[3], x, 0, 1);
+            for(x=3, x3 = 9; x < w1; x+=2, x3+=6)  c[2][x3] = rb_on_g1(c[1], c[2], c[3], x, 0);
             //Red on the Green
-            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = r_on_g(c[0], c[1], c[2], x);
+            //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = r_on_g(c[0], c[1], c[2], x);
             //for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g(c[0], c[1], c[2], x, 0, 1);
+            for(x=2, x3 = 6; x < w1; x+=2, x3+=6)  c[1][x3] = rb_on_g1(c[0], c[1], c[2], x, 0);
         }
 
         //printf("\n");
