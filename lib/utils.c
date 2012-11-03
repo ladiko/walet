@@ -1894,6 +1894,140 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
             printf("\n");
             print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
         }
+    }
+}
+
+
+void inline static cp_line_in(int16 *img, int16 *c, uint32 w, uint32 sh)
+{
+    uint32 i, l;
+    for(i=0; i < sh; i++) c[i] = 0;
+    for(i=0, l = sh; i < w; i++, l++)  c[l] = img[i];
+}
+
+void inline static cp_line_out(int16 *img, int16 *c, uint32 w, uint32 sh)
+{
+    uint32 i, l;
+    for(i=0, l = sh; i < w; i++, l++)  img[i] = c[l];
+}
+
+void utils_bayer_denoise(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
+/*
+   All RGB cameras use one of these Bayer grids:
+
+    BGGR  0         GRBG 1          GBRG  2         RGGB 3
+      0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+    0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+    1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+    2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+    3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+ */
+{
+    int i, j, x, x3, yx, x1, x2, xs, ys, yw1, yw2, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+5;
+    int16 *c[6], *tm;
+
+    c[0] = buff;
+    for(i=1; i < 5; i++) c[i] = &c[i-1][w4];
+
+    //h1 = h+2; ys = 2; w1 = w+2; xs = 2;
+    switch(bay){
+    case(BGGR):{
+        cp_line_in(&img[w*2], c[0], w, 2);
+        cp_line_in(&img[w  ], c[1], w, 2);
+        cp_line_in(&img[0  ], c[2], w, 2);
+        cp_line_in(&img[w  ], c[3], w, 2);
+        cp_line_in(&img[w*2], c[4], w, 2);
+        h1 = h; w1 = w+2; yw1 = w*2;
+        break;
+    }
+    case(GRBG):{
+        cp_line_in(&img[w*3], c[0], w, 2);
+        cp_line_in(&img[w*2], c[1], w, 2);
+        cp_line_in(&img[w  ], c[2], w, 2);
+        cp_line_in(&img[0  ], c[3], w, 2);
+        cp_line_in(&img[w  ], c[4], w, 2);
+        h1 = h+1; w1 = w+2; yw1 = w;
+        break;
+    }
+    case(GBRG):{
+        cp_line_in(&img[w*2], c[0], w, 3);
+        cp_line_in(&img[w  ], c[1], w, 3);
+        cp_line_in(&img[0  ], c[2], w, 3);
+        cp_line_in(&img[w  ], c[3], w, 3);
+        cp_line_in(&img[w*2], c[4], w, 3);
+        h1 = h; w1 = w+3; yw1 = w*2;
+        break;
+    }
+    case(RGGB):{
+        cp_line_in(&img[w*3], c[0], w, 3);
+        cp_line_in(&img[w*2], c[1], w, 3);
+        cp_line_in(&img[w  ], c[2], w, 3);
+        cp_line_in(&img[0  ], c[3], w, 3);
+        cp_line_in(&img[w  ], c[4], w, 3);
+        h1 = h+1; w1 = w+3; yw1 = w;
+        break;
+    }
+    }
+    print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
+
+    yw2 = 0;
+    for(y=0; y < h1; y++){
+        if(!(y&1)){
+
+            for(x=2; x < w1; x+=2){
+                //Blue
+                c[2][x]   = noise_rb(c[0], c[1], c[2], c[3], c[4], x);
+                //Green
+                c[2][x+1] = noise_g(c[0], c[1], c[2], c[3], c[4], x+1);
+            }
+        } else {
+            for(x=2; x < w1; x+=2){
+                //Green
+                c[2][x]   = noise_g(c[0], c[1], c[2], c[3], c[4], x);
+                //Red
+                c[2][x+1] = noise_rb(c[0], c[1], c[2], c[3], c[4], x+1);
+            }
+        }
+
+        yw1 = yw1 + w;
+
+        switch(bay){
+        case(BGGR):{
+            cp_line_out(&img[yw2], c[2], w, 2);
+            yw2 = yw2 + w;
+            cp_line_in(&img[yw1], c[4], w, 2);
+            break;
+        }
+        case(GRBG):{
+            if(y > 0){
+                cp_line_out(&img[yw2], c[2], w, 2);
+                yw2 = yw2 + w;
+            }
+            cp_line_in(&img[yw1], c[4], w, 2);
+            break;
+        }
+        case(GBRG):{
+            cp_line_out(&img[yw2], c[2], w, 3);
+            yw2 = yw2 + w;
+            cp_line_in(&img[yw1], c[4], w, 3);
+            break;
+        }
+        case(RGGB):{
+            if(y > 0){
+                cp_line_out(&img[yw2], c[2], w, 3);
+                yw2 = yw2 + w;
+            }
+            cp_line_in(&img[yw1], c[4], w, 3);
+            break;
+        }
+        }
+
+        tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = tm;
+
+        if(y < 10) {
+            printf("\n");
+            print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
+        }
 
     }
 }
