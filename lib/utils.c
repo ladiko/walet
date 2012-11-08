@@ -306,13 +306,13 @@ int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh)
 	return rgb;
 }
 
-uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 sh)
+uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 bpp)
 {
-    int i, j, dim = h*w*3;
+    int i, j, dim = h*w*3, sh = 1<<bpp-1, sh1 = bpp - 8 - 2;
     for(i = 0,  j= 0; j < dim; j+=3, i++){
-        rgb[j]     = img[i] + sh;
-        rgb[j + 1] = img[i] + sh;
-        rgb[j + 2] = img[i] + sh;
+        rgb[j]     = (img[i] + sh)>>sh1;
+        rgb[j + 1] = (img[i] + sh)>>sh1;
+        rgb[j + 2] = (img[i] + sh)>>sh1;
     }
     return rgb;
 }
@@ -1942,16 +1942,16 @@ void utils_bayer_denoise(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 
 
             for(x=2; x < w1; x+=2){
                 //Blue
-                c[2][x]   = noise_rb(c[0], c[1], c[2], c[3], c[4], x);
+                //c[2][x]   = noise_rb(c[0], c[1], c[2], c[3], c[4], x);
                 //Green
-                c[2][x+1] = noise_g(c[0], c[1], c[2], c[3], c[4], x+1);
+                //c[2][x+1] = noise_g(c[0], c[1], c[2], c[3], c[4], x+1);
             }
         } else {
             for(x=2; x < w1; x+=2){
                 //Green
-                c[2][x]   = noise_g(c[0], c[1], c[2], c[3], c[4], x);
+                //c[2][x]   = noise_g(c[0], c[1], c[2], c[3], c[4], x);
                 //Red
-                c[2][x+1] = noise_rb(c[0], c[1], c[2], c[3], c[4], x+1);
+                //c[2][x+1] = noise_rb(c[0], c[1], c[2], c[3], c[4], x+1);
             }
         }
 
@@ -2524,8 +2524,10 @@ void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 	//printf("utils_image_copy : bpp = %d shift = %d\n", bpp, shift);
 
 	if(bpp > 8) for(i=0; i<size; i++) {
-		img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
-		//img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
+        //For Aptina sensor
+        //img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
+        //For Sony sensor
+        img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
 		//printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
 	}
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
