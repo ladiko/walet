@@ -288,7 +288,6 @@ void shift_w_to_b(int8 *in, uint8 *out, int shift, uint32 size)
 	int tmp;
 	for(i=0; i < size; i++) {
 		tmp = in[i] + shift;
-		if(in[i] < -128 || in[i] > 127) printf("out[i] = %d\n", in[i]);
 		out[i] = in[i] + shift;
 	}
 }
@@ -1898,17 +1897,18 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
 }
 
 
-void inline static cp_line_in(int16 *img, int16 *c, uint32 w, uint32 sh)
+void inline static cp_line_in(int16 *img, int16 *c, uint32 w)
 {
-    uint32 i, l;
-    for(i=0; i < sh; i++) c[i] = 0;
-    for(i=0, l = sh; i < w; i++, l++)  c[l] = img[i];
+    uint32 i;
+    c[0] = img[2]; c[1] = img[1];
+    for(i=0; i < w; i++)  c[i+2] = img[i];
+    c[i+2] = img[w-2]; c[i+3] = img[w-3];
 }
 
-void inline static cp_line_out(int16 *img, int16 *c, uint32 w, uint32 sh)
+void inline static cp_line_out(int16 *img, int16 *c, uint32 w)
 {
-    uint32 i, l;
-    for(i=0, l = sh; i < w; i++, l++)  img[i] = c[l];
+    uint32 i;
+    for(i=0; i < w; i++)  img[i] = c[i+2];
 }
 
 void utils_bayer_denoise(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h, BayerGrid bay)
@@ -1923,54 +1923,20 @@ void utils_bayer_denoise(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 
     3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
 {
-    int i, j, x, x3, yx, x1, x2, xs, ys, yw1, yw2, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+5;
+    int i, j, x, x3, yx, x1, x2, xs, ys, yw1, yw2, y = 0, y1, wy, w2 = w<<1, yw = 0, h1, w1 = w+2, h2 = h+2, w4 = w+4;
     int16 *c[6], *tm;
 
     c[0] = buff;
     for(i=1; i < 5; i++) c[i] = &c[i-1][w4];
 
-    //h1 = h+2; ys = 2; w1 = w+2; xs = 2;
-    switch(bay){
-    case(BGGR):{
-        cp_line_in(&img[w*2], c[0], w, 2);
-        cp_line_in(&img[w  ], c[1], w, 2);
-        cp_line_in(&img[0  ], c[2], w, 2);
-        cp_line_in(&img[w  ], c[3], w, 2);
-        cp_line_in(&img[w*2], c[4], w, 2);
-        h1 = h; w1 = w+2; yw1 = w*2;
-        break;
-    }
-    case(GRBG):{
-        cp_line_in(&img[w*3], c[0], w, 2);
-        cp_line_in(&img[w*2], c[1], w, 2);
-        cp_line_in(&img[w  ], c[2], w, 2);
-        cp_line_in(&img[0  ], c[3], w, 2);
-        cp_line_in(&img[w  ], c[4], w, 2);
-        h1 = h+1; w1 = w+2; yw1 = w;
-        break;
-    }
-    case(GBRG):{
-        cp_line_in(&img[w*2], c[0], w, 3);
-        cp_line_in(&img[w  ], c[1], w, 3);
-        cp_line_in(&img[0  ], c[2], w, 3);
-        cp_line_in(&img[w  ], c[3], w, 3);
-        cp_line_in(&img[w*2], c[4], w, 3);
-        h1 = h; w1 = w+3; yw1 = w*2;
-        break;
-    }
-    case(RGGB):{
-        cp_line_in(&img[w*3], c[0], w, 3);
-        cp_line_in(&img[w*2], c[1], w, 3);
-        cp_line_in(&img[w  ], c[2], w, 3);
-        cp_line_in(&img[0  ], c[3], w, 3);
-        cp_line_in(&img[w  ], c[4], w, 3);
-        h1 = h+1; w1 = w+3; yw1 = w;
-        break;
-    }
-    }
-    print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
+    cp_line_in(&img[w*2], c[0], w);
+    cp_line_in(&img[w  ], c[1], w);
+    cp_line_in(&img[0  ], c[2], w);
+    cp_line_in(&img[w  ], c[3], w);
+    cp_line_in(&img[w*2], c[4], w);
+    //print_color(c[0], c[1], c[2], c[3], c[4], c[5], 10);
 
-    yw2 = 0;
+
     for(y=0; y < h1; y++){
         if(!(y&1)){
 
@@ -1990,37 +1956,6 @@ void utils_bayer_denoise(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 
         }
 
         yw1 = yw1 + w;
-
-        switch(bay){
-        case(BGGR):{
-            cp_line_out(&img[yw2], c[2], w, 2);
-            yw2 = yw2 + w;
-            cp_line_in(&img[yw1], c[4], w, 2);
-            break;
-        }
-        case(GRBG):{
-            if(y > 0){
-                cp_line_out(&img[yw2], c[2], w, 2);
-                yw2 = yw2 + w;
-            }
-            cp_line_in(&img[yw1], c[4], w, 2);
-            break;
-        }
-        case(GBRG):{
-            cp_line_out(&img[yw2], c[2], w, 3);
-            yw2 = yw2 + w;
-            cp_line_in(&img[yw1], c[4], w, 3);
-            break;
-        }
-        case(RGGB):{
-            if(y > 0){
-                cp_line_out(&img[yw2], c[2], w, 3);
-                yw2 = yw2 + w;
-            }
-            cp_line_in(&img[yw1], c[4], w, 3);
-            break;
-        }
-        }
 
         tm = c[0]; c[0] = c[1]; c[1] = c[2]; c[2] = c[3]; c[3] = c[4]; c[4] = tm;
 
@@ -2471,9 +2406,9 @@ uint8* utils_RGB_to_RGB24_8(uint8 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, 
     uint32 i, i3, size = w*h;
     for(i=0; i<size; i++) {
         i3 = i*3;
-        img[i3]   = lb1(r[i]);
-        img[i3+1] = lb1(g[i]);
-        img[i3+2] = lb1(b[i]);
+        img[i3]   = r[i];
+        img[i3+1] = g[i];
+        img[i3+2] = b[i];
     }
     return img;
 }
@@ -2943,7 +2878,7 @@ uint8* utils_reg_draw(uint32 *img, uint8 *rgb, uint32 w, uint32 h)
 uint8* utils_cat(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 bits)
 {
 	int i, dim = h*w, sh = bits-8;
-	for(i = 0; i < dim; i++) img1[i] = img[i]<0 ? 0 : rnd(img[i]>>sh);
+    for(i = 0; i < dim; i++) img1[i] = img[i];
 	return img1;
 }
 

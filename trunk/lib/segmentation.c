@@ -7575,9 +7575,7 @@ void seg_grad2(uint8 *img, uint8 *img1, uint32 w, uint32 h, uint32 th)
 	}
 }
 
-
-
-static inline void dir1(uint8 *img, uint32 w, uint yx, int dx, int dy, int *dx1, int *dy1)
+static inline void dir1(uint8 *img, uint32 w, uint32 yx, int dx, int dy, int *dx1, int *dy1)
 //Check for pixel
 {
         uint32 max = 0;
