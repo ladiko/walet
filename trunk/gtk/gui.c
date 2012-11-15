@@ -561,8 +561,8 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     uint32 *y = f0->hist, *r = &y[1<<gw->wc.bpp], *g = &r[1<<gw->wc.bpp], *b = &g[1<<gw->wc.bpp];
 
     //For local HDR
-    /*
-    uint32 h[4096], look[4096];
+
+    //uint32 h[4096], look[4096];
     int low, top;
     //utils_bayer_to_RGB		(f0->b.pic, f0->R16.pic, f0->G16.pic, f0->B16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
     //utils_bayer_to_YUV444	(f0->b.pic, f0->Y16.pic, f0->U16.pic, f0->V16.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h,  gw->wc.bg);
@@ -573,12 +573,13 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     //printf("low = %d top = %d\n", low, top);
     //utils_bayer_local_hdr(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12, low, top);
 
-
-    //utils_bayer_local_hdr1(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
-    utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+    filter_median_bayer_buf(f0->b.pic, f0->d.pic, (int16*)gw->gop.buf, w, h);
+    for(i=0; i<sz; i++ ) f0->b.pic[i] = f0->d.pic[i];
+    utils_bayer_local_hdr1(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+    //utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
 
     new_buffer (gw->orig[1], f0->b.w, f0->b.h);
-    utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
+    utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 12);
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
     //make_lookup1(f0->b.pic, h, look, f0->b.w, f0->b.h, 12, 12);
@@ -590,8 +591,8 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     new_buffer (gw->orig[2], f0->b.w, f0->b.h);
     utils_bayer_to_RGB24(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[2]);
-    */
 
+    /*
     filter_median_bayer_buf(f0->b.pic, f0->d.pic, (int16*)gw->gop.buf, w, h);
 
     new_buffer (gw->orig[1], w, h);
@@ -604,7 +605,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     new_buffer (gw->orig[3], w, h);
     utils_grey_draw(f0->img[1].p, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, gw->wc.bpp);
     gtk_widget_queue_draw(gw->drawingarea[3]);
-
+    */
 }
 
 void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
