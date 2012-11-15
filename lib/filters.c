@@ -250,8 +250,8 @@ void filter_median_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
     \param	img		The input image.
     \param	img1    The output image.
     \param	buff    The 5 lines + 18(int16) buffer.
-    \param	w	The image width.
-    \param  h	image height.
+    \param	w       The image width.
+    \param  h       The image height.
 */
 void filter_median_bayer_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
 {

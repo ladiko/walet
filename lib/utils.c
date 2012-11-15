@@ -1038,10 +1038,10 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                     hist[i] = max;
                 }
             }
-            b = (1<<31)/(sz - sum);
+            b = (1<<30)/(sz - sum);
 
             sum = 0;
-            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23;}//   printf("%d ", look[i]);}
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
 
             //printf("\n");
 
@@ -1049,7 +1049,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
+                    img1[yx1] = look[(img[yx1]+shift)]*wt[y1*ws + x1];
                 }
             }
         }
@@ -1166,7 +1166,7 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp, tmp1;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out, a, cn;
     double aw, ah, c;
-    int ws = 128, hs = 128, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
+    int ws = 32, hs = 32, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
     uint32 hist[4096], look[4096], sum, b;
     //double wt[ws*hs];
 
@@ -2525,9 +2525,9 @@ void utils_image_copy(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 
 	if(bpp > 8) for(i=0; i<size; i++) {
         //For Aptina sensor
-        //img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
+        img[i] = ((buff[(i<<1)]) | buff[(i<<1)+1]<<8) - shift;
         //For Sony sensor
-        img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
+        //img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]) - shift;
 		//printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
 	}
 	else 		for(i=0; i<size; i++) img[i] = buff[i] - shift;
