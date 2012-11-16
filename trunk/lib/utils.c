@@ -1049,7 +1049,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] = look[(img[yx1]+shift)]*wt[y1*ws + x1];
+                    img1[yx1] = look[(img[yx1]+shift)];//*wt[y1*ws + x1];
                 }
             }
         }
@@ -2668,7 +2668,7 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
     */
 
     //Make LUT table integral
-    b = (1<<31)/size;
+    b = (1<<30)/size;
 
     //Check if one bin in historgamm more then one bin in LUT------------------------------------
 
@@ -2681,20 +2681,33 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
             hist[i] = max;
         }
     }
-    b = (1<<31)/(size - sum);
+    b = (1<<30)/(size - sum);
 
     //---------------------------------------------------------------------------------------------
     sum = 0;
     //With double
     //for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = (uint32)(255.*(double)sum/(double)size); }
     //With int
-    for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23; }
+    for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22; }
 
 
     for(i = 0; i < hz; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
 
 }
 
+void util_make_hdr(int16 *in, int16 *inm, int16 *im8, int16 *out, int16 *df, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, th = 10;
+    for(y=0; y < h; y++){
+        yw = y*w;
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            //out[yx] = im8[yx];
+            out[yx] = im8[yx] + (in[yx] - inm[yx])*th/(df[yx]+1);
+
+        }
+    }
+}
 
 void  make_lookup2(int16 *img, uint32 *hist, int16 *look, uint32 w, uint32 h)
 {
