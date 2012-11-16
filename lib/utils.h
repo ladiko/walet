@@ -133,7 +133,7 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 
 void utils_subtract1(uint8 *img1, uint8 *img2, int16 *img3, uint32 w, uint32 h);
 void utils_remove_border(uint8 *img1, uint8 *img2, uint32 w, uint32 h);
-
+void util_make_hdr(int16 *in, int16 *inm, int16 *im8, int16 *out, int16 *df, uint32 w, uint32 h);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

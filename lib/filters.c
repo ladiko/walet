@@ -306,6 +306,67 @@ void filter_median_bayer_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uin
     }
 }
 
+/**	\brief	Adaptive median filter for bayer image.
+    \param	img		The input image.
+    \param	img1    The output image.
+    \param	buff    The 5 lines + 18(int16) buffer.
+    \param	w       The image width.
+    \param  h       The image height.
+*/
+void filter_median_bayer_grad(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
+{
+    uint32 i, y, x, x2, xs, yx, yw, yw1, h1 = h-2, sh = 2, w2 = w + (sh<<1), ws = w<<1;
+    int16 *s[2][3], *l[5], *tm, max, min, med;
+
+    s[0][0] = buff, s[0][1] = &s[0][0][3], s[0][2] = &s[0][1][3];
+    s[1][0] = &s[0][2][3], s[1][1] = &s[1][0][3], s[1][2] = &s[1][1][3];
+    l[0] = &s[1][2][3];
+    for(i=1; i < 5; i++) l[i] = &l[i-1][w2];
+
+    //Prepare buffer
+    cp_line(&img[w*2], l[0], w, sh);
+    cp_line(&img[w  ], l[1], w, sh);
+    cp_line(&img[0  ], l[2], w, sh);
+    cp_line(&img[w  ], l[3], w, sh);
+
+    for(y=0; y < h; y++){
+        yw = y*w;
+        yw1 = y < h1 ? yw + ws : yw;
+        cp_line(&img[yw1], l[4], w, sh);
+
+        sort_16(s[0][0], l[0][0], l[2][0], l[4][0]);
+        sort_16(s[0][1], l[0][2], l[2][2], l[4][2]);
+
+        sort_16(s[1][0], l[0][1], l[2][1], l[4][1]);
+        sort_16(s[1][1], l[0][3], l[2][3], l[4][3]);
+
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            x2 = x + 4;
+            if(x&1) i = 1;
+            else i = 0;
+
+            sort_16(s[i][2], l[0][x2], l[2][x2], l[4][x2]);
+            max = max_3_16(s[i][0][2], s[i][1][2], s[i][2][2]);
+            min = min_3_16(s[i][0][0], s[i][1][0], s[i][2][0]);
+            med = median_3_16(  max_3_16    (s[i][0][0], s[i][1][0], s[i][2][0]),
+                                median_3_16 (s[i][0][1], s[i][1][1], s[i][2][1]),
+                                min_3_16    (s[i][0][2], s[i][1][2], s[i][2][2]));
+            xs = x+sh;
+            //if(l[2][xs] == max || l[2][xs] == min)  img1[yx] = med;
+            //else img1[yx] = l[2][xs];
+            img1[yx] = med;
+            img2[yx] = max-min;
+            //if(img1[yx] == med)
+            //printf(" yx = %d min = %d med = %d max = %d img[x] = %d img1[x] = %d\n",
+            //       yx, min+shift, med+shift, max+shift, l[2][xs]+shift, img1[yx]+shift);
+
+            tm = s[i][0]; s[i][0] = s[i][1]; s[i][1] = s[i][2]; s[i][2] = tm;
+        }
+        tm = l[0]; l[0] = l[1]; l[1] = l[2]; l[2] = l[3]; l[3] = l[4]; l[4] = tm;
+    }
+}
+
 void filter_fast_median(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 {
     // s[0]  s[1]  s[2]

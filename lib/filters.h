@@ -30,6 +30,7 @@ void filter_median_16(int16 *img, int16 *img1, uint32 w, uint32 h);
 
 void filter_median_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h);
 void filter_median_bayer_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h);
+void filter_median_bayer_grad(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
