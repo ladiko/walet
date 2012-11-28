@@ -2697,7 +2697,7 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
 
 void util_make_hdr(int16 *in, int16 *inm, int16 *im8, int16 *out, int16 *df, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, th = 10;
+    int x, y, yw, yx, th = 50;
     for(y=0; y < h; y++){
         yw = y*w;
         for(x=0; x < w; x++){
