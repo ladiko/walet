@@ -93,8 +93,11 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	if (wc->icol == BAYER ){
 	    f->b.w = w; f->b.h = h;
 	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(int16));
-	    f->d.w = w; f->d.h = h;
-	    f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
+        f->d.w = w; f->d.h = h;
+        f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
+
+        f->in.w = w; f->in.h = h;
+        f->in.pic = (int *)calloc(f->in.w*f->in.h, sizeof(int));
 
 	    f->Y16.w = w; f->Y16.h = h;
 	    f->Y16.pic = (int16 *)calloc(f->Y16.w*f->Y16.h, sizeof(int16));
