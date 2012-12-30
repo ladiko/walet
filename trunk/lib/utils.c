@@ -1054,6 +1054,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
             }
         }
     }
+
     /*
     for(y=hs2; y < h-hs2; y+=hs){
         yw = y*w;
@@ -1166,7 +1167,7 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp, tmp1;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out, a, cn;
     double aw, ah, c;
-    int ws = 32, hs = 32, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
+    int ws = 128, hs = 8, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
     uint32 hist[4096], look[4096], sum, b;
     //double wt[ws*hs];
 
@@ -1186,12 +1187,13 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     for(i=0; !hist[i]; i++ ); ming = i;
     for(i=4095; !hist[i]; i-- ) maxg = i;
 
-
+    sz = w+h;
+    //sz = h;
     printf("min = %d max = %d\n", ming, maxg);
     b = (1<<30)/sz;
     //a = (256<<20)/(maxg - ming);
     max = sz>>8;
-
+    /*
     for(y=0; y < h-hs; y+=1){
         yw = y*w;
         for(x=0; x < w-ws; x+=1){
@@ -1206,18 +1208,36 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                     yx1 = yw1 + x1;
                     tmp = yx1; tmp1 = img[tmp];
                     hist[tmp1 + shift]++;
-                    //tmp += 1; tmp1 += img[tmp];
-                    //tmp += w; tmp1 += img[tmp];
-                    //tmp -= 1; tmp1 += img[tmp];
-                    //hist[(tmp1>>2) + shift]++;
-                    //tmp1 = (tmp1>>2) + shift;
-
-
-                    //if(tmp1 < min) min = tmp1;
-                    //if(tmp1 > max) max = tmp1;
-                    //if(!hist[tmp1]) { hist[tmp1]++; cn++;}
                 }
             }
+
+            sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
+
+            tmp = yx + ht*w + wt;
+            img1[tmp] = look[(img[tmp]+shift)];
+        }
+    }
+    */
+    for(y=0; y < h; y+=1){
+        yw = y*w;
+        for(x=0; x < w; x+=1){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*4096);
+            cn = 0;
+            min = 4095; max = 0;
+
+            for(y1=0; y1 < h; y1+=1){
+                yw1 = y1*w + x;
+                hist[img[yw1] + shift]++;
+            }
+
+            for(x1=0; x1 < w; x1+=1){
+                 yw1 = yw + x1;
+                 hist[img[yw1] + shift]++;
+            }
+
             //Make LUT table integral
             /*
             sum = 0;
@@ -1230,94 +1250,13 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
             b = (1<<30)/(sz - sum);
             */
             sum = 0;
-            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22; }//   printf("%d ", look[i]);}
 
-
-            //memset(look, 0, sizeof(uint32)*4096);
-            /*
-            i = (255-cn)*(min-ming)/(maxg - max + min - ming);
-            look[min] = i;
-            sum = 0; out = 0;
-
-            for(i = min+1; i <= max; i++) {
-                if(hist[i]) look[i] = look[i-1] + 1;
-                else look[i] = look[i-1];
-                //sum += hist[i]; look[i] = sum*b>>22;
-                //printf("%i %d %d  ", i, hist[i], look[i]);
-            } //   printf("%d %d  ",  hist[i], look[i]);}
-
-            img1[yx] = look[img[yx]+shift];
-            */
-            //printf("cn = %d min = %d max = %d diff = %d i = %d en = %d in = %d out = %d\n",
-            //       cn, min, max, max-min, i, i+cn, img[yx]+shift, img1[yx]);
-
-
-            //printf("\n");
-            /*
-            tmp = yx + ht*w + wt; tmp1 = img[tmp];
-            tmp += 1; tmp1 += img[tmp];
-            tmp += w; tmp1 += img[tmp];
-            tmp -= 1; tmp1 += img[tmp];
-
-            tmp1 = (tmp1>>2) + shift;
-            Y = look[tmp1];
-            */
-            /*
-            tmp = yx + ht*w + wt;
-            a = (Y<<20)/(maxg - ming);
-
-            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
-            //printf("y = %d x = %d a = %d Y_old = %d col = %d Y_New = %d col %d",
-            //       (yx + ht*w + wt)/w, (yx + ht*w + wt)%w, a, tmp1, img[tmp] + shift, Y, img1[tmp]);
-            tmp += 1;
-            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
-            //printf(" %d", img1[tmp]);
-            tmp += w;
-            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
-            //printf(" %d", img1[tmp]);
-            tmp -= 1;
-            img1[tmp] = (img[tmp]+shift-ming)*a>>20;
-            //printf(" %d\n", img1[tmp]);
-
-            //printf("y = %d x = %d\n", tmp/w, tmp%w);
-            */
-            tmp = yx + ht*w + wt;
-            img1[tmp] = look[(img[tmp]+shift)];
-            /*
-            tmp += 1;
-            img1[tmp] = look[(img[tmp]+shift)];
-            tmp += w;
-            img1[tmp] = look[(img[tmp]+shift)];
-            tmp -= 1;
-            img1[tmp] = look[(img[tmp]+shift)];
-            */
-            /*
-            for(i=0; !hist[i]; i++ );
-            min = i;
-            for(i=4095; !hist[i]; i-- );
-            max = i;
-
-            tmp = yx + ht*w + wt;
-            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
-            tmp += 1;
-            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
-            tmp += w;
-            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
-            tmp -= 1;
-            img1[tmp] = 255*(img[tmp] + shift - min)/(max-min);
-            */
-
-            /*
-            for(y1=0; y1 < hs+y; y1+=1){
-                yw1 = yx + y1*w;
-                for(x1=0; x1 < ws+x; x1+=1){
-                    yx1 = yw1 + x1;
-                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
-                }
-            }
-            */
+            //tmp = yx + ht*w + wt;
+            img1[yx] = look[(img[yx]+shift)];
         }
     }
+
     for(i=0; i < size; i++){
         img1[i] = img1[i] - 128;
     }
@@ -2690,28 +2629,27 @@ void make_lookup1(int16 *img, uint32 *hist, uint32 *look, uint32 w, uint32 h, ui
     //With int
     for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22; }
 
-
     for(i = 0; i < hz; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
-
 }
 
 void util_make_hdr(int16 *in, int16 *inm, int16 *im8, int16 *out, int16 *df, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, th = 50;
+    int x, y, yw, yx, th = 200;
     for(y=0; y < h; y++){
         yw = y*w;
         for(x=0; x < w; x++){
             yx = yw + x;
             //out[yx] = im8[yx];
+            //if(df[yx] < 100) out[yx] = im8[yx] + (in[yx] - inm[yx]);
+            //else out[yx] = im8[yx];
             out[yx] = im8[yx] + (in[yx] - inm[yx])*th/(df[yx]+1);
-
+            //out[yx] = df[yx] > th ? im8[yx] : 0;
         }
     }
 }
 
-void  make_lookup2(int16 *img, uint32 *hist, int16 *look, uint32 w, uint32 h)
+void make_lookup2(int16 *img, uint32 *hist, int16 *look, uint32 w, uint32 h)
 {
-
     int i, j, d = 1, div = 1<<d, div2 = div<<1, shift = 1<<11;
     int size = w*h, size1 = (w>>d)*(h>>d); //size1 = size>>d;
     int b = (1<<30)/size1, min = size1>>5;

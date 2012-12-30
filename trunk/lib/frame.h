@@ -4,6 +4,7 @@
 typedef struct{
 	Pic16s		b;		//Bayer image 16 bits
 	Pic16s		d;		//Bayer image abter DWT -> quantization -> IDWT for test only
+    Pic32u      in;     //The integral image
 
 	Pic16s		R16, G16, B16;		//Bayer image 16 bits
 	Pic8u		R8, G8, B8;		//Bayer image 16 bits

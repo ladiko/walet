@@ -356,6 +356,7 @@ void filter_median_bayer_grad(int16 *img, int16 *img1, int16 *img2, int16 *buff,
             //if(l[2][xs] == max || l[2][xs] == min)  img1[yx] = med;
             //else img1[yx] = l[2][xs];
             img1[yx] = med;
+            //img1[yx] = max;
             img2[yx] = max-min;
             //if(img1[yx] == med)
             //printf(" yx = %d min = %d med = %d max = %d img[x] = %d img1[x] = %d\n",
