@@ -99,7 +99,10 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
         f->in.w = w; f->in.h = h;
         f->in.pic = (int *)calloc(f->in.w*f->in.h, sizeof(int));
 
-	    f->Y16.w = w; f->Y16.h = h;
+        f->hs.w = w; f->hs.h = h;
+        f->hs.pic = (int *)calloc(f->hs.w*f->hs.h, sizeof(int));
+
+        f->Y16.w = w; f->Y16.h = h;
 	    f->Y16.pic = (int16 *)calloc(f->Y16.w*f->Y16.h, sizeof(int16));
 	    f->U16.w = w; f->U16.h = h;
 	    f->U16.pic = (int16 *)calloc(f->U16.w*f->U16.h, sizeof(int16));
@@ -869,6 +872,8 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 
         gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+        seg_integral(f->y[1].pic, f->in.pic, f->y[1].w, f->y[1].h);
+
         filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
 
         //filter_fast_median(f->y[1].pic, f->di[0].pic, f->y[1].w, f->y[1].h);
@@ -890,12 +895,14 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         //seg_grad4(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
         //seg_find_intersect8(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)(&g->buf[f->y[1].w*f->y[1].h]), f->y[1].w, f->y[1].h);
 
+        seg_hessian(f->in.pic, f->hs.pic, f->y[1].w, f->y[1].h);
 
         seg_grad3(f->dm[0].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
         //lmaxc = seg_local_max1(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, (uint32*)&g->buf[f->y[1].w*f->y[1].h], 10, f->y[1].w, f->y[1].h);
         //seg_find_intersect7(f->dg[0].pic, f->dc[0].pic, (uint32*)g->buf, lmaxc, f->y[1].w, f->y[1].h);
 
-        lmaxc = seg_local_max2(f->dg[0].pic, f->dc[0].pic, 10, f->y[1].w, f->y[1].h);
+        lmaxc = seg_local_max2(f->dg[0].pic, 10, f->y[1].w, f->y[1].h);
+        /*
         seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
 
 
@@ -917,6 +924,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
         seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
                              rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
         seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
+        */
 
         /*
         seg_get_or_fill_color(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,

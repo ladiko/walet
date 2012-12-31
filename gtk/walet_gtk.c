@@ -169,7 +169,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 		printf("video/x-raw-bayer\n");
 		//frame_copy(&gw->gop, 1, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 		if(gw->wc.bpp == 8){
-			gw->wc.bg			= RGGB;		/// Bayer grid pattern RGGB
+            gw->wc.bg = RGGB;		/// Bayer grid pattern RGGB
 			for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 			new_buffer (gw->orig[0], f0->b.w, f0->b.h);
@@ -187,7 +187,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 				gtk_widget_queue_draw(gw->drawingarea[2]);
 				//printf("Bits per pixel = %f\n", entropy(f0->img[i].p, (uint32*)gw->gop.buf, f0->img[i].w, f0->img[i].h, gw->wc.bpp));
 			} else if(gw->wc.ccol == CS420){
-				//printf("y x = %d y = %d %p u x = %d y = %d\n", f0->y[0].w, f0->y[0].h, f0->y[0].pic, f0->u[0].w, f0->u[0].h);
+                printf("w = %d h = %d \n", f0->y[0].w, f0->y[0].h);
 
 				new_buffer (gw->orig[3], f0->y[0].w, f0->y[0].h);
 				utils_grey_draw8( f0->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->y[0].w, f0->y[0].h, 0);

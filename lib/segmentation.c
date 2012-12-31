@@ -142,197 +142,286 @@ static void print_con_grad(uint8 *grad, uint8 *con, uint32 yx, uint32 w)
     print_5(grad, con, yx + 2*w, w);
 }
 
+/** \brief Make the integral matrix.
+    \param img	The pointer to a input image.
+    \param in 	The pointer to a integral matrix.
+    \param w	The image width.
+    \param h	The imahe height.
+*/
+void seg_integral(uint8 *img, uint32 *in, uint32 w, uint32 h)
+{
+    uint32 x, y=0, yw, yx;
+    //uint32 sum = 0;
+
+    in[0] = img[0];
+    for(x=1; x < w; x++){
+        in[x] = in[x-1] + img[x];
+    }
+    for(y=1; y < h; y++){
+        yw = y*w;
+        in[yw] = in[yw-w] + img[yw];
+        for(x=1; x < w; x++){
+            yx = yw + x;
+            in[yx] = in[yx-1] + in[yx-w] - in[yx-1-w] + img[yx];
+        }
+    }
+    /*
+    for(x=0; x < w*h; x++){
+        sum += img[x];
+    }
+    printf("Check the integral matrix = %d sum = %d\n", in[w*h-1], sum);
+    */
+}
+
+/** \brief Calculate the determinant of Hessian.
+    \param in 	The pointer to a integral matrix.
+    \param hs	The pointer to a output Determinat of Hessian.
+    \param w	The image width.
+    \param h	The imahe height.
+*/
+void seg_hessian(uint32 *in, uint32 *hs, uint32 w, uint32 h)
+{
+    //  Dxx                          Dyy                          Dxy
+    //  0  0  0  0  0  0  0  0  0    0  0  1  1  1  1  1  0  0    0  0  0  0  0  0  0  0  0
+    //  0  0  0  0  0  0  0  0  0    0  0  1  1  1  1  1  0  0    0  1  1  1  0 -1 -1 -1  0
+    //  1  1  1 -2 -2 -2  1  1  1    0  0  1  1  1  1  1  0  0    0  1  1  1  0 -1 -1 -1  0
+    //  1  1  1 -2 -2 -2  1  1  1    0  0 -2 -2 -2 -2 -2  0  0    0  1  1  1  0 -1 -1 -1  0
+    //  1  1  1 -2 -2 -2  1  1  1    0  0 -2 -2 -2 -2 -2  0  0    0  0  0  0  0  0  0  0  0
+    //  1  1  1 -2 -2 -2  1  1  1    0  0 -2 -2 -2 -2 -2  0  0    0 -1 -1 -1  0  1  1  1  0
+    //  1  1  1 -2 -2 -2  1  1  1    0  0  1  1  1  1  1  0  0    0 -1 -1 -1  0  1  1  1  0
+    //  0  0  0  0  0  0  0  0  0    0  0  1  1  1  1  1  0  0    0 -1 -1 -1  0  1  1  1  0
+    //  0  0  0  0  0  0  0  0  0    0  0  1  1  1  1  1  0  0    0  0  0  0  0  0  0  0  0
+    //
+    //  det = Dxx*Dyy - Dxy*Dxy
+
+    uint32 x, y, yw, yx;
+    uint32 w2 = w*2, w3 = w*3, w4 = w*4, w5 = w*5;
+    int dxx1, dxx2, dxx3, dyy1, dyy2, dyy3, dxy1, dxy2, dxy3, dxy4;
+    int dxx, dyy, dxy, det;
+
+    for(y=5; y < h-5; y++){
+        yw = y*w;
+        for(x=5; x < w-5; x++){
+            yx = yw + x;
+
+            dxx1 = in[yx+w2-2] + in[yx-w3-5] - in[yx-w3-2] - in[yx+w2-5];
+            dxx2 = in[yx+w2+1] + in[yx-w3-2] - in[yx-w3+1] - in[yx+w2-2];
+            dxx3 = in[yx+w2+4] + in[yx-w3+1] - in[yx-w3+4] - in[yx+w2+1];
+            dxx = dxx1 + dxx3 - dxx2*2;
+            //printf("dxx1 = %d dxx2 = %d dxx3 =%d dxx = %d\n", dxx1, dxx2, dxx3, dxx);
+
+            dyy1 = in[yx-w2+2] + in[yx-w5-3] - in[yx-w5+2] - in[yx-w2-3];
+            dyy2 = in[yx+w +2] + in[yx-w2-3] - in[yx-w2+2] - in[yx+w -3];
+            dyy3 = in[yx+w4+2] + in[yx+w -3] - in[yx+w +2] - in[yx+w4-3];
+            dyy = dyy1 + dyy3 - dyy2*2;
+            //printf("dyy1 = %d dyy2 = %d dyy3 =%d dyy = %d\n", dyy1, dyy2, dyy3, dyy);
+
+            dxy1 = in[yx-w -1] + in[yx-w4-4] - in[yx-w4-1] - in[yx-w -4];
+            dxy2 = in[yx-w +3] + in[yx-w4  ] - in[yx-w4+3] - in[yx-w   ];
+            dxy3 = in[yx+w3-1] + in[yx   -4] - in[yx   -1] - in[yx+w3-4];
+            dxy4 = in[yx+w3+3] + in[yx     ] - in[yx   +3] - in[yx+w3  ];
+            dxy = dxy1 - dxy2 - dxy3 + dxy4;
+            //printf("dxy1 = %d dxy2 = %d dxy3 =%d dxy4 =%d dxy = %d\n", dxy1, dxy2, dxy3, dxy4, dxy);
+            hs[yx] = abs(dxx*dyy - dxy*dxy);
+
+            //det = dxx*dyy - dxy*dxy;
+            //img[yx] = abs(det) > 255 ? 255 : abs(det);
+            //img[yx] = abs(det)>> 14;
+            //printf("yx = %d img = %d\n", yx, det);
+        }
+    }
+}
 
 void seg_grad(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
 {
-        /// | |x| |      | | | |      |x| | |      | | |x|
-        /// | |x| |      |x|x|x|      | |x| |      | |x| |
-        /// | |x| |      | | | |      | | |x|      |x| | |
-        ///  g[2]         g[0]         g[1]         g[3]
-        /// Direction
-        ///   n=0          n=2         n=3          n=1
-        /// | | | |      | ||| |      | | |/|      |\| | |
-        /// |-|-|-|      | ||| |      | |/| |      | |\| |
-        /// | | | |      | ||| |      |/| | |      | | |\|
-        uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
-        uint8 in, col = 253;
-        uint32 g[4];
-        int max;
+    /// | |x| |      | | | |      |x| | |      | | |x|
+    /// | |x| |      |x|x|x|      | |x| |      | |x| |
+    /// | |x| |      | | | |      | | |x|      |x| | |
+    ///  g[2]         g[0]         g[1]         g[3]
+    /// Direction
+    ///   n=0          n=2         n=3          n=1
+    /// | | | |      | ||| |      | | |/|      |\| | |
+    /// |-|-|-|      | ||| |      | |/| |      | |\| |
+    /// | | | |      | ||| |      |/| | |      | | |\|
+    uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
+    uint8 in, col = 253;
+    uint32 g[4];
+    int max;
 
-        //Make the up border
-        for(x=1; x < w1; x++) img1[w + x] = col;
-        con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
-        //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
-        for(x=1; x < w2; x++) di[w + x] = 16; di[w + x] = 64;
+    //Make the up border
+    for(x=1; x < w1; x++) img1[w + x] = col;
+    con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
+    //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
+    for(x=1; x < w2; x++) di[w + x] = 16; di[w + x] = 64;
 
-        for(y=2; y < h2; y++){
-                yw = y*w;
-                img1[yw + 1] = col; con[yw + 1] = 64;  di[yw + 1] = 4; //di[yw + 1] = 32;
-                for(x=2; x < w2; x++){
-                        yx = yw + x;
-                        g[0] = abs(img[yx-1  ] - img[yx+1  ]);
-                        g[1] = abs(img[yx-1-w] - img[yx+1+w]);
-                        g[2] = abs(img[yx-w  ] - img[yx+w  ]);
-                        g[3] = abs(img[yx+1-w] - img[yx-1+w]);
-
-                        max = (g[0] + g[1] + g[2] + g[3])>>1;
-                        img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
-                        //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
-                        //img1[yx] = max>>th;
-                        //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
-                        //img1[yx] = max > 252 ? 252 : max;
-                }
-                img1[yx + 1] = col; con[yx + 1] = 64; di[yx + 1] = 64; //di[yx + 1] = 2;
-                 //img1[yx + 2] = col1;
-        }
-        //Make the bottom border
+    for(y=2; y < h2; y++){
         yw = y*w;
-        for(x=1; x < w1; x++) img1[yw + x] = col;
-        con[yw+1] = 255; for(x=2; x < w2; x++) con[yw + x] = 64; con[yw + x] = 255;
-        //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
-        di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+        img1[yw + 1] = col; con[yw + 1] = 64;  di[yw + 1] = 4; //di[yw + 1] = 32;
+        for(x=2; x < w2; x++){
+            yx = yw + x;
+            g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+            g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+            g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+            g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+
+            max = (g[0] + g[1] + g[2] + g[3])>>1;
+            img1[yx] = (max-th) > 0 ? (max > 252 ? 252 : max) : 0;
+            //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
+            //img1[yx] = max>>th;
+            //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+            //img1[yx] = max > 252 ? 252 : max;
+        }
+        img1[yx + 1] = col; con[yx + 1] = 64; di[yx + 1] = 64; //di[yx + 1] = 2;
+        //img1[yx + 2] = col1;
+    }
+    //Make the bottom border
+    yw = y*w;
+    for(x=1; x < w1; x++) img1[yw + x] = col;
+    con[yw+1] = 255; for(x=2; x < w2; x++) con[yw + x] = 64; con[yw + x] = 255;
+    //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
+    di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
 }
 
 void seg_grad3(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
 {
-        /// | |x| |      | | | |      |x| | |      | | |x|
-        /// | |x| |      |x|x|x|      | |x| |      | |x| |
-        /// | |x| |      | | | |      | | |x|      |x| | |
-        ///  g[2]         g[0]         g[1]         g[3]
-        /// Direction
-        ///   n=0          n=2         n=3          n=1
-        /// | | | |      | ||| |      | | |/|      |\| | |
-        /// |-|-|-|      | ||| |      | |/| |      | |\| |
-        /// | | | |      | ||| |      |/| | |      | | |\|
-        /// 255 - intersection
-        /// 254 - vertex
-        /// 253 - direction curve
-        /// 252 - local max
+    /// | |x| |      | | | |      |x| | |      | | |x|
+    /// | |x| |      |x|x|x|      | |x| |      | |x| |
+    /// | |x| |      | | | |      | | |x|      |x| | |
+    ///  g[2]         g[0]         g[1]         g[3]
+    /// Direction
+    ///   n=0          n=2         n=3          n=1
+    /// | | | |      | ||| |      | | |/|      |\| | |
+    /// |-|-|-|      | ||| |      | |/| |      | |\| |
+    /// | | | |      | ||| |      |/| | |      | | |\|
+    /// 255 - intersection
+    /// 254 - vertex
+    /// 253 - direction curve
+    /// 252 - local max
 
-        uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
-        uint8 in, col = 253;
-        uint32 g[8];
-        int max;
+    uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
+    uint8 in, col = 253;
+    uint32 g[8];
+    int max;
 
-        //The up border
-        img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
-        //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
-        //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
-        con[w + 1] = 80; for(x=2; x < w2; x++) con[w + x] = 17; con[w + x] = 65;
+    //The up border
+    img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
+    //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
+    //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
+    con[w + 1] = 80; for(x=2; x < w2; x++) con[w + x] = 17; con[w + x] = 65;
 
-        for(y=2; y < h2; y++){
-                yw = y*w;
-                img1[yw + 1] = col; con[yw + 1] = 68;  //di[yw + 1] = 4; //di[yw + 1] = 32;
-                for(x=2; x < w2; x++){
-                        yx = yw + x;
+    for(y=2; y < h2; y++){
+        yw = y*w;
+        img1[yw + 1] = col; con[yw + 1] = 68;  //di[yw + 1] = 4; //di[yw + 1] = 32;
+        for(x=2; x < w2; x++){
+            yx = yw + x;
 
-                        g[0] = abs(img[yx-1  ] - img[yx+1  ]);
-                        g[1] = abs(img[yx-1-w] - img[yx+1+w]);
-                        g[2] = abs(img[yx-w  ] - img[yx+w  ]);
-                        g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+            g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+            g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+            g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+            g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
-                        /*
+            /*
                         g[0] = abs(img[yx-2  ] - img[yx+2  ]);
                         g[1] = abs(img[yx-2-(w<<1)] - img[yx+2+(w<<1)]);
                         g[2] = abs(img[yx-(w<<1)  ] - img[yx+(w<<1)  ]);
                         g[3] = abs(img[yx+2-(w<<1)] - img[yx-2+(w<<1)]);
                         */
 
-                        /*
+            /*
                         g[4] = abs(img[yx-2-w  ] - img[yx+2+w  ]);
                         g[5] = abs(img[yx-1-(w<<1)] - img[yx+1+(w<<1)]);
                         g[6] = abs(img[yx+1-(w<<1)] - img[yx-1+(w<<1)]);
                         g[7] = abs(img[yx+2-w] - img[yx-2+w]);
                         */
-                        max = (g[0] + g[1] + g[2] + g[3])>>1;
-                        //max = (g[0] + g[1] + g[2] + g[3] + g[4] + g[5] + g[6] + g[7])>>2;
-                        img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 0;
-                        //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
-                        //img1[yx] = max>>th;
-                        //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
-                        //img1[yx] = max > 252 ? 252 : max;
-                }
-                img1[yx + 1] = col; con[yx + 1] = 68; //di[yx + 1] = 64; //di[yx + 1] = 2;
-                 //img1[yx + 2] = col1;
+            max = (g[0] + g[1] + g[2] + g[3])>>1;
+            //max = (g[0] + g[1] + g[2] + g[3] + g[4] + g[5] + g[6] + g[7])>>2;
+            img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 0;
+            //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
+            //img1[yx] = max>>th;
+            //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+            //img1[yx] = max > 252 ? 252 : max;
         }
-        //The bottom border
-        yw = y*w;
-        img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
-        con[yw + 1] = 20; for(x=2; x < w2; x++) con[yw + x] = 17; con[yw + x] = 5;
-        //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
-        //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
-        printf("Finish gradient\n");
+        img1[yx + 1] = col; con[yx + 1] = 68; //di[yx + 1] = 64; //di[yx + 1] = 2;
+        //img1[yx + 2] = col1;
+    }
+    //The bottom border
+    yw = y*w;
+    img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
+    con[yw + 1] = 20; for(x=2; x < w2; x++) con[yw + x] = 17; con[yw + x] = 5;
+    //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
+    //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+    printf("Finish gradient\n");
 }
 
 void seg_grad4(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th)
 {
-        /// | |x| |      | | | |      |x| | |      | | |x|
-        /// | |x| |      |x|x|x|      | |x| |      | |x| |
-        /// | |x| |      | | | |      | | |x|      |x| | |
-        ///  g[2]         g[0]         g[1]         g[3]
-        /// Direction
-        ///   n=0          n=2         n=3          n=1
-        /// | | | |      | ||| |      | | |/|      |\| | |
-        /// |-|-|-|      | ||| |      | |/| |      | |\| |
-        /// | | | |      | ||| |      |/| | |      | | |\|
-        /// 255 - intersection
-        /// 254 - vertex
-        /// 253 - direction curve
-        /// 252 - local max
+    /// | |x| |      | | | |      |x| | |      | | |x|
+    /// | |x| |      |x|x|x|      | |x| |      | |x| |
+    /// | |x| |      | | | |      | | |x|      |x| | |
+    ///  g[2]         g[0]         g[1]         g[3]
+    /// Direction
+    ///   n=0          n=2         n=3          n=1
+    /// | | | |      | ||| |      | | |/|      |\| | |
+    /// |-|-|-|      | ||| |      | |/| |      | |\| |
+    /// | | | |      | ||| |      |/| | |      | | |\|
+    /// 255 - intersection
+    /// 254 - vertex
+    /// 253 - direction curve
+    /// 252 - local max
 
-        uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
-        uint8 in, col = 253;
-        uint32 g[8];
-        int max;
+    uint32 y, x, yx, yw, w1 = w-1, h1 = h-1, w2 = w-2, h2 = h-2;
+    uint8 in, col = 253;
+    uint32 g[8];
+    int max;
 
-        //The up border
-        //img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
-        //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
-        //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
-        //con[w + 1] = 255; for(x=2; x < w2; x++) con[w + x] = 255; con[w + x] = 255;
+    //The up border
+    //img1[w + 1] = 255; for(x=2; x < w2; x++) img1[w + x] = col; img1[w + x] = 255;
+    //con[w+1] = 255; for(x=2; x < w2; x++) con[w + x] = 64; con[w + x] = 255;
+    //for(x=1; x < w2; x++) di[w + x] = 8; di[w + x] = 2;
+    //con[w + 1] = 255; for(x=2; x < w2; x++) con[w + x] = 255; con[w + x] = 255;
 
-        for(y=1; y < h1; y++){
-                yw = y*w;
-                //img1[yw + 1] = col; //con[yw + 1] = 255;  //di[yw + 1] = 4; //di[yw + 1] = 32;
-                for(x=1; x < w1; x++){
-                        yx = yw + x;
+    for(y=1; y < h1; y++){
+        yw = y*w;
+        //img1[yw + 1] = col; //con[yw + 1] = 255;  //di[yw + 1] = 4; //di[yw + 1] = 32;
+        for(x=1; x < w1; x++){
+            yx = yw + x;
 
-                        g[0] = abs(img[yx-1  ] - img[yx+1  ]);
-                        g[1] = abs(img[yx-1-w] - img[yx+1+w]);
-                        g[2] = abs(img[yx-w  ] - img[yx+w  ]);
-                        g[3] = abs(img[yx+1-w] - img[yx-1+w]);
+            g[0] = abs(img[yx-1  ] - img[yx+1  ]);
+            g[1] = abs(img[yx-1-w] - img[yx+1+w]);
+            g[2] = abs(img[yx-w  ] - img[yx+w  ]);
+            g[3] = abs(img[yx+1-w] - img[yx-1+w]);
 
-                        /*
+            /*
                         g[0] = abs(img[yx-2  ] - img[yx+2  ]);
                         g[1] = abs(img[yx-2-(w<<1)] - img[yx+2+(w<<1)]);
                         g[2] = abs(img[yx-(w<<1)  ] - img[yx+(w<<1)  ]);
                         g[3] = abs(img[yx+2-(w<<1)] - img[yx-2+(w<<1)]);
                         */
 
-                        /*
+            /*
                         g[4] = abs(img[yx-2-w  ] - img[yx+2+w  ]);
                         g[5] = abs(img[yx-1-(w<<1)] - img[yx+1+(w<<1)]);
                         g[6] = abs(img[yx+1-(w<<1)] - img[yx-1+(w<<1)]);
                         g[7] = abs(img[yx+2-w] - img[yx-2+w]);
                         */
-                        max = (g[0] + g[1] + g[2] + g[3])>>1;
-                        //max = (g[0] + g[1] + g[2] + g[3] + g[4] + g[5] + g[6] + g[7])>>2;
-                        img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 1;
-                        //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
-                        //img1[yx] = max>>th;
-                        //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
-                        //img1[yx] = max > 252 ? 252 : max;
-                }
-                img1[yx + 1] = col; //con[yx + 1] = 255; //di[yx + 1] = 64; //di[yx + 1] = 2;
-                 //img1[yx + 2] = col1;
+            max = (g[0] + g[1] + g[2] + g[3])>>1;
+            //max = (g[0] + g[1] + g[2] + g[3] + g[4] + g[5] + g[6] + g[7])>>2;
+            img1[yx] = (max-th) > 0 ? (max > 251 ? 251 : max) : 1;
+            //printf("img = %d max = %d th = %d max-th = %d\n", img1[yx], max, th, max-th);
+            //img1[yx] = max>>th;
+            //max = (((g[0] + g[1] + g[2] + g[3])>>2)>>th)<<th;
+            //img1[yx] = max > 252 ? 252 : max;
         }
-        //The bottom border
-        yw = y*w;
-        //img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
-        //con[yw + 1] = 255; for(x=2; x < w2; x++) con[yw + x] = 255; con[yw + x] = 255;
-        //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
-        //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
-        printf("Finish gradient\n");
+        img1[yx + 1] = col; //con[yx + 1] = 255; //di[yx + 1] = 64; //di[yx + 1] = 2;
+        //img1[yx + 2] = col1;
+    }
+    //The bottom border
+    yw = y*w;
+    //img1[yw + 1] = 255; for(x=2; x < w2; x++) img1[yw + x] = col; img1[yw + x] = 255;
+    //con[yw + 1] = 255; for(x=2; x < w2; x++) con[yw + x] = 255; con[yw + x] = 255;
+    //di[yw+1] = 32; for(x=2; x < w1; x++) di[yw + x] = 128;
+    //di[yw+1] = 4; for(x=2; x < w1; x++) di[yw + x] = 1;
+    printf("Finish gradient\n");
 }
 
 static inline uint32 col_shift(uint8 *img, uint32 yx, int *dr)
@@ -1034,37 +1123,33 @@ static inline uint32 loc_max(uint8 *img, int *dr, uint32 yx, uint32 w)
     uint32 i = 0;
     for(i=0; i < 24; i++) if(img[yx+dr[i]] > img[yx]) return 0;
     return img[yx];
-    /*
-    if( img[yx+dr[0]] <= img[yx] &&
-        img[yx+dr[1]] <= img[yx] &&
-        img[yx+dr[2]] <= img[yx] &&
-        img[yx+dr[3]] <= img[yx] &&
-        img[yx+dr[4]] <= img[yx] &&
-        img[yx+dr[5]] <= img[yx] &&
-        img[yx+dr[6]] <= img[yx] &&
-        img[yx+dr[7]] <= img[yx]
-            ) return img[yx];
-    else return 0;
-    */
 }
 
 static inline uint32 loc_max2(uint8 *img, int *dr, uint32 yx, uint32 w)
 {
+    //Direction dr[24]
+    //
+    //  8  9 10 11 12
+    // 13  1  2  3 14
+    // 15  0     4 16
+    // 17  7  6  5 18
+    // 19 20 21 22 23
+    //
     uint32 tmp = 0;
     if(img[yx+dr[8 ]] > img[yx] ||
        img[yx+dr[1 ]] > img[yx] ||
        img[yx+dr[5 ]] > img[yx] ||
-       img[yx+dr[16]] > img[yx] ) tmp++;
+       img[yx+dr[23]] > img[yx] ) tmp++;
 
     if(img[yx+dr[10]] > img[yx] ||
        img[yx+dr[2 ]] > img[yx] ||
        img[yx+dr[6 ]] > img[yx] ||
-       img[yx+dr[18]] > img[yx] ) tmp++;
+       img[yx+dr[21]] > img[yx] ) tmp++;
 
     if(img[yx+dr[12]] > img[yx] ||
        img[yx+dr[3 ]] > img[yx] ||
        img[yx+dr[7 ]] > img[yx] ||
-       img[yx+dr[20]] > img[yx] ) tmp++;
+       img[yx+dr[19]] > img[yx] ) tmp++;
 
     if(img[yx+dr[14]] > img[yx] ||
        img[yx+dr[4 ]] > img[yx] ||
@@ -1140,24 +1225,31 @@ uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32
 
 }
 
-uint32 seg_local_max2(uint8 *img, uint8 *con, uint32 th, uint32 w, uint32 h)
+uint32 seg_local_max2(uint8 *img, uint32 th, uint32 w, uint32 h)
 {
+    //Direction dr[24]
+    //
+    //  8  9 10 11 12
+    // 13  1  2  3 14
+    // 15  0     4 16
+    // 17  7  6  5 18
+    // 19 20 21 22 23
+    //
+    int dr[24] = {  -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
+                    -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
+                    -2-w, 2-w,
+                    -2, 2,
+                    -2+w, 2+w,
+                    -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
     uint32 i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2;
     uint8 max;
-    int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
-                          -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
-                          -2-w, 2-w,
-                          -2, 2,
-                          -2+w, 2+w,
-                          -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
-
 
     for(y=2; y < h2; y++){
         yw = y*w;
         for(x=2; x < w2; x++){
             yx = yw + x;
             if(img[yx] > th){
-                max = loc_max2(img, dr, yx, w);
+                max = loc_max(img, dr, yx, w);
                 if(max) {
                     img[yx] = 252;
                     i++;
