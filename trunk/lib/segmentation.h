@@ -20,6 +20,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 //New segmentation interface
+void seg_integral(uint8 *img, uint32 *in, uint32 w, uint32 h);
+void seg_hessian(uint32 *in, uint32 *hs, uint32 w, uint32 h);
+
 uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h);
 
 void seg_find_intersect	(uint8 *grad, uint8 *con, uint8 *di, uint32 *hist, uint32 lmaxc, uint32 w, uint32 h);
@@ -141,7 +144,7 @@ uint32  seg_get_or_fill_color2(uint8 *img, uint8 *con, uint8 *col, uint32 *buff,
                               uint32 rgc, uint32 w, uint32 h, uint32 w1, uint32 h1, uint32 get);
 void seg_find_intersect8(uint8 *img, uint8 *grad, uint8 *con, uint32 *l1, uint32 *br, uint32 w, uint32 h);
 void seg_grad4(uint8 *img, uint8 *img1, uint8 *con, uint8 *di, uint32 w, uint32 h, int th);
-uint32 seg_local_max2(uint8 *img, uint8 *con, uint32 th, uint32 w, uint32 h);
+uint32 seg_local_max2(uint8 *img, uint32 th, uint32 w, uint32 h);
 void seg_find_intersect9(uint8 *grad, uint8 *con, uint32 w, uint32 h);
 void seg_remove(uint8 *img1, uint8 *img2, int16 *img3, uint32 w, uint32 h);
 
