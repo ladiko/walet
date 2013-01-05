@@ -573,7 +573,7 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
     //printf("low = %d top = %d\n", low, top);
     //utils_bayer_local_hdr(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12, low, top);
 
-    filter_median_bayer_buf(f0->b.pic, f0->d.pic, (int16*)gw->gop.buf, w, h);
+    filter_median_bayer_ad(f0->b.pic, f0->d.pic, (int16*)gw->gop.buf, w, h);
     for(i=0; i<sz; i++ ) f0->b.pic[i] = f0->d.pic[i];
     //utils_bayer_local_hdr1(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
     utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
@@ -672,7 +672,7 @@ void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 	gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 	frame_segmetation(&gw->gop, 0, &gw->wc);
 	gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-	printf("seg_find_clusters_2d time = %f\n",(double)(end-start)/1000000.);
+    printf("frame_segmetation time = %f\n",(double)(end-start)/1000000.);
 
     //new_buffer (gw->orig[0], fr->y[0].w, fr->y[0].h);
     //utils_grey_draw8(fr->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), fr->y[0].w, fr->y[0].h, 0);

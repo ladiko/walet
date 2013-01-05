@@ -222,7 +222,8 @@ void seg_hessian(uint32 *in, uint32 *hs, uint32 w, uint32 h)
             dxy4 = in[yx+w3+3] + in[yx     ] - in[yx   +3] - in[yx+w3  ];
             dxy = dxy1 - dxy2 - dxy3 + dxy4;
             //printf("dxy1 = %d dxy2 = %d dxy3 =%d dxy4 =%d dxy = %d\n", dxy1, dxy2, dxy3, dxy4, dxy);
-            hs[yx] = abs(dxx*dyy - dxy*dxy);
+            //hs[yx] = abs(dxx*dyy - dxy*dxy);
+            hs[yx] = abs(dxy);
 
             //det = dxx*dyy - dxy*dxy;
             //img[yx] = abs(det) > 255 ? 255 : abs(det);
@@ -1113,12 +1114,25 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
 
 
 /*	\brief	Check is a pixel the local maximum.
-	\param	img		The pointer to gradient image.
-	\param	yx		The pixel coordinate (yx = y*w + x)
-	\param  w		The image width.
-	\retval			1 if local max, 0 - if not
+    \param	img		The pointer to gradient image.
+    \param	yx		The pixel coordinate (yx = y*w + x)
+    \param  w		The image width.
+    \retval			1 if local max, 0 - if not
 */
 static inline uint32 loc_max(uint8 *img, int *dr, uint32 yx, uint32 w)
+{
+    uint32 i = 0;
+    for(i=0; i < 24; i++) if(img[yx+dr[i]] > img[yx]) return 0;
+    return img[yx];
+}
+
+/*	\brief	Check is a pixel the local maximum.
+    \param	img		The pointer to gradient image.
+    \param	yx		The pixel coordinate (yx = y*w + x)
+    \param  w		The image width.
+    \retval			1 if local max, 0 - if not
+*/
+static inline uint32 loc_max32(uint32 *img, int *dr, uint32 yx, uint32 w)
 {
     uint32 i = 0;
     for(i=0; i < 24; i++) if(img[yx+dr[i]] > img[yx]) return 0;
@@ -1180,52 +1194,7 @@ static inline uint32 check_vertex1(uint8 *img, uint32 yx, uint32 w)
     return 0;
 }
 
-
-uint32 seg_local_max1(uint8 *img, uint8 *con, uint32 *lmax, uint32 *buff, uint32 th, uint32 w, uint32 h)
-{
-    uint32 hist[256], hist1[256], i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2, lmaxc;
-    uint8 max;
-    int dr[24] = { -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
-                          -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
-                          -2-w, 2-w,
-                          -2, 2,
-                          -2+w, 2+w,
-                          -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
-
-
-    memset(hist ,0, sizeof(uint32)<<8);
-    memset(hist1,0, sizeof(uint32)<<8);
-
-    for(y=2; y < h2; y++){
-        yw = y*w;
-        for(x=2; x < w2; x++){
-            yx = yw + x;
-            if(img[yx] > th){
-                max = loc_max2(img, dr, yx, w);
-                if(max) {
-                    img[yx] = 252;
-                    //con[yx] = max;
-                    hist[255-max]++;
-                    buff[i++] = yx;
-                    //printf("i = %d max = %d img = %d\n", i, max, img[yx]);
-                }
-            }
-        }
-    }
-    lmaxc = i;
-    //for(i=0; i < 255; i++) printf("%3d = %7d\n",i, hist[i]);
-
-    //Make cumulitive probability array
-    hist1[0] = 0;
-    for(i=0; i < 255; i++) hist1[i+1] = hist1[i] + hist[i];
-    //Sort the array
-    for(i=0; i < lmaxc; i++) lmax[hist1[255-img[buff[i]]]++] = buff[i];
-    printf("Local maxs = %d\n",lmaxc);
-    return lmaxc;
-
-}
-
-uint32 seg_local_max2(uint8 *img, uint32 th, uint32 w, uint32 h)
+uint32 seg_local_max(uint8 *img, uint32 th, uint32 w, uint32 h)
 {
     //Direction dr[24]
     //
@@ -1259,7 +1228,42 @@ uint32 seg_local_max2(uint8 *img, uint32 th, uint32 w, uint32 h)
     }
     printf("Local maxs = %d\n",i);
     return i;
+}
 
+uint32 seg_local_max32(uint32 *hs, uint8 *img, uint32 th, uint32 w, uint32 h)
+{
+    //Direction dr[24]
+    //
+    //  8  9 10 11 12
+    // 13  1  2  3 14
+    // 15  0     4 16
+    // 17  7  6  5 18
+    // 19 20 21 22 23
+    //
+    int dr[24] = {  -1, -1-w, -w, +1-w, 1, 1+w, w, -1+w,
+                    -2-(w<<1), -1-(w<<1), -(w<<1), 1-(w<<1), 2-(w<<1),
+                    -2-w, 2-w,
+                    -2, 2,
+                    -2+w, 2+w,
+                    -2+(w<<1), -1+(w<<1), (w<<1), 1+(w<<1), 2+(w<<1)};
+    uint32 i = 0, y, x, yw, yx, h2 = h-2, w2 = w-2;
+    uint8 max;
+
+    for(y=2; y < h2; y++){
+        yw = y*w;
+        for(x=2; x < w2; x++){
+            yx = yw + x;
+            if(hs[yx] > th){
+                max = loc_max32(hs, dr, yx, w);
+                if(max) {
+                    img[yx] = 252;
+                    i++;
+                }
+            }
+        }
+    }
+    printf("Local maxs = %d\n",i);
+    return i;
 }
 
 static inline uint32 draw_line_3(uint8 *r, uint8 *g, uint8 *b, Vector *v, uint32 w, uint8 *lc)
