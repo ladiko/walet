@@ -191,14 +191,14 @@ void inline static cp_line(int16 *img, int16 *l, uint32 w, uint32 sh)
     for(i=0; i < sh; i++) l[i+sh+w] = img[w-sh-i];
 }
 
-/**	\brief	Adaptive median filter for image.
+/**	\brief	Adaptive median filter.
     \param	img		The input image.
     \param	img1    The output image.
     \param	buff    The 3 lines + 9(int16) buffer.
     \param	w       The image width.
     \param  h       The image height.
 */
-void filter_median_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
+void filter_median_ad(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
 {
     // s[0]   s[1]  s[2]
     //|-----|-----|-----|
@@ -246,6 +246,66 @@ void filter_median_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
     }
 }
 
+/**	\brief	Adaptive median filter.
+    \param	img		The input image.
+    \param	img1    The output of median filtered image.
+    \param	img2    The output of different image (max - min).
+    \param	buff    The 3 lines + 9(int16) buffer.
+    \param	w       The image width.
+    \param  h       The image height.
+*/
+void filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
+{
+    // s[0]   s[1]  s[2]
+    //|-----|-----|-----|
+    //|     |     |     |
+    //|-----|-----|-----|
+    //|     | yx  |     |
+    //|-----|-----|-----|
+    //|     |     |     |
+    //|-----|-----|-----|
+    uint32 i, y, x, x2, xs, yx, yw, yw1, h1 = h-1, sh = 1, w2 = w + (sh<<1), sh1 = sh+1;
+    int16 *s[3], *l[3], *tm, max, min, med;
+
+    s[0] = buff, s[1] = &s[0][3], s[2] = &s[1][3];
+    l[0] = &s[2][3];
+    for(i=1; i < 3; i++) l[i] = &l[i-1][w2];
+
+    //Prepare buffer
+    cp_line(&img[w], l[0], w, sh);
+    cp_line(&img[0], l[1], w, sh);
+
+    for(y=0; y < h; y++){
+        yw = y*w;
+        yw1 = y < h1 ? yw + w : yw - w;
+        cp_line(&img[yw1], l[2], w, sh);
+
+        sort_16(s[0], l[0][0], l[1][0], l[2][0]);
+        sort_16(s[1], l[0][1], l[1][1], l[2][1]);
+
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            x2 = x + sh1;
+            sort_16(s[2], l[0][x2], l[1][x2], l[2][x2]);
+            max = max_3_16(s[0][2], s[1][2], s[2][2]);
+            min = min_3_16(s[0][0], s[1][0], s[2][0]);
+            med = median_3_16(  max_3_16    (s[0][0], s[1][0], s[2][0]),
+                                median_3_16 (s[0][1], s[1][1], s[2][1]),
+                                min_3_16    (s[0][2], s[1][2], s[2][2]));
+            xs = x+sh;
+            //if(l[1][xs] == max || l[1][xs] == min)  img1[yx] = med;
+            //else img1[yx] = l[1][xs];
+            img1[yx] = med;
+            //img1[yx] = max;
+            img2[yx] = max-min;
+
+
+            tm = s[0]; s[0] = s[1]; s[1] = s[2]; s[2] = tm;
+        }
+        tm = l[0]; l[0] = l[1]; l[1] = l[2]; l[2] = tm;
+    }
+}
+
 /**	\brief	Adaptive median filter for bayer image.
     \param	img		The input image.
     \param	img1    The output image.
@@ -253,7 +313,7 @@ void filter_median_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
     \param	w       The image width.
     \param  h       The image height.
 */
-void filter_median_bayer_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
+void filter_median_bayer_ad(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
 {
     uint32 i, y, x, x2, xs, yx, yw, yw1, h1 = h-2, sh = 2, w2 = w + (sh<<1), ws = w<<1;
     int16 *s[2][3], *l[5], *tm, max, min, med;
@@ -306,14 +366,15 @@ void filter_median_bayer_buf(int16 *img, int16 *img1, int16 *buff, uint32 w, uin
     }
 }
 
-/**	\brief	Adaptive median filter for bayer image.
+/**	\brief	Median filter for bayer image.
     \param	img		The input image.
-    \param	img1    The output image.
+    \param	img1    The output median filtered image.
+    \param	img2    The output of different image (max - min).
     \param	buff    The 5 lines + 18(int16) buffer.
     \param	w       The image width.
     \param  h       The image height.
 */
-void filter_median_bayer_grad(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
+void filter_median_bayer_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
 {
     uint32 i, y, x, x2, xs, yx, yw, yw1, h1 = h-2, sh = 2, w2 = w + (sh<<1), ws = w<<1;
     int16 *s[2][3], *l[5], *tm, max, min, med;
@@ -498,7 +559,7 @@ void filter_median_bilinear(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 }
 
 
-void filter_median_bayer(int16 *img, int16 *img1, uint32 w, uint32 h)
+void filter_median_bayer1(int16 *img, int16 *img1, uint32 w, uint32 h)
 {
 	// s[0]  s[1]  s[2]
 	//|-----|-----|-----|
