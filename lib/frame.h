@@ -4,26 +4,26 @@
 typedef struct{
 	Pic16s		b;		//Bayer image 16 bits
 	Pic16s		d;		//Bayer image abter DWT -> quantization -> IDWT for test only
-    Pic32u      in;     //The integral image
-    Pic32u      hs;     //Determinat of Hessian
+    //Pic32u      in;     //The integral image
+    //Pic32u      hs;     //Determinat of Hessian
 
-	Pic16s		R16, G16, B16;		//Bayer image 16 bits
+    Pic16s		R16, G16, B16;	//Bayer image 16 bits
 	Pic8u		R8, G8, B8;		//Bayer image 16 bits
-	Pic16s		Y16, U16, V16;		//Bayer image abter DWT -> quantization -> IDWT for test only
+    Pic16s		Y16, U16, V16;	//Bayer image abter DWT -> quantization -> IDWT for test only
 
 	Pic8u 		*R;		//Red color image
 	Pic8u 		*G;		//Green color image
 	Pic8u 		*B;		//Blue color image
-	Pic8u 		*R1;		//Red color image for test only.
-	Pic8u 		*G1;		//Green color image for test only.
-	Pic8u 		*B1;		//Blue color image for test only.
+    Pic8u 		*R1;	//Red color image for test only.
+    Pic8u 		*G1;	//Green color image for test only.
+    Pic8u 		*B1;	//Blue color image for test only.
 
 	Pic8u 		*y;		//Y color image
 	Pic8u 		*u;		//U color image
 	Pic8u 		*v;		//V color image
-	Pic8u 		*y1;		//Y color image
-	Pic8u 		*u1;		//U color image
-	Pic8u 		*v1;		//V color image
+    Pic8u 		*y1;	//Y color image
+    Pic8u 		*u1;	//U color image
+    Pic8u 		*v1;	//V color image
 
 	Pic8u		*dw;	//The down sampling Y images for resize only
 	Pic8u		*dm;	//The image after median filter.
@@ -33,7 +33,7 @@ typedef struct{
 	Pic32u		*rg;	//For region counting
 	//Pic16s	C[4];	// C[0] - Y component after first BDWT, C[1-3] color component after first BDWT
 	//Level	*L[4];		//The levels of DWT transform
-	Image 		*img;		//Pointer to images
+    Image 		*img;		//Pointer to images
 	uint32 		qst;	//The number of quantization steps.
 
 	//For white balancing
@@ -43,7 +43,7 @@ typedef struct{
 	// New segmentation interface
     //Line	 	*ln;		// The Line array
     //Line	 	**lp;		// The pointer to Line array
-    Line_buff    *lbuf;      // The line buffer for segmentation
+    Line_buff   *lbuf;      // The line buffer for segmentation
 	Vertex		*vx;		// The vertex array
     Vertex		**vp;		// The pointer to Vertex array
 	Vertex		**vpn;		// The pointer to neighbor Vertex array
@@ -52,20 +52,20 @@ typedef struct{
 
 	//Old interface
 	//Pic8u rgb; // Scaled image for each color
-	Pic8u Y;	// The Y color componets
-	Pic8u grad;	// The gradient
+    //Pic8u Y;	// The Y color componets
+    //Pic8u grad;	// The gradient
 
 	//For visualization only
-	Pic8u line;	//Draw lines
-	Pic8u edge;	//Draw edges
-	Pic8u vec;	//Draw motion vectors
+    //Pic8u line;	//Draw lines
+    //Pic8u edge;	//Draw edges
+    //Pic8u vec;	//Draw motion vectors
 	//uchar 	*mmb;	//The motion much buffer
 
-	Pixel	*pixs;		//The array of the pixeles
-	Edge	*edges;		//The array of edges
-	uint32 	nedge;		//The number of edges
-	uint32 	size;	//The number of pixels.
-	uint8 *buf;	//The pointer to temporary buffer in GOP structure
+    //Pixel	*pixs;		//The array of the pixeles
+    //Edge	*edges;		//The array of edges
+    //uint32 	nedge;		//The number of edges
+    //uint32 	size;	//The number of pixels.
+    //uint8 *buf;	//The pointer to temporary buffer in GOP structure
 	uint32 	state;	//The state of frame
 	// For test only
 

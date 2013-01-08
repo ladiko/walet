@@ -80,7 +80,7 @@ static void resize_init32(Pic32u **p, uint32 w, uint32 h, uint32 steps)
 	}
 }
 
-/*	\brief	Frame initialization.
+/**	\brief	Frame initialization.
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
@@ -96,11 +96,11 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
         f->d.w = w; f->d.h = h;
         f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
 
-        f->in.w = w; f->in.h = h;
-        f->in.pic = (int *)calloc(f->in.w*f->in.h, sizeof(int));
+        //f->in.w = w; f->in.h = h;
+        //f->in.pic = (int *)calloc(f->in.w*f->in.h, sizeof(int));
 
-        f->hs.w = w; f->hs.h = h;
-        f->hs.pic = (int *)calloc(f->hs.w*f->hs.h, sizeof(int));
+        //f->hs.w = w; f->hs.h = h;
+        //f->hs.pic = (int *)calloc(f->hs.w*f->hs.h, sizeof(int));
 
         f->Y16.w = w; f->Y16.h = h;
 	    f->Y16.pic = (int16 *)calloc(f->Y16.w*f->Y16.h, sizeof(int16));
@@ -218,7 +218,7 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->state = 0;
 }
 
-/*	\brief	Copy and transform input frame
+/**	\brief	Copy and transform input frame
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
@@ -232,8 +232,9 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 	Frame *f = &g->frames[fn];
 
 	if(wc->icol == BAYER) {
-		utils_image_copy(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
-		if(wc->bpp == 8){
+        //utils_image_copy(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
+        utils_image_copy_n(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
+        if(wc->bpp == 8){
 			if(wc->ccol == BAYER){
 				dwt_53_2d_one(f->b.pic, f->img[0].p, f->img[1].p, f->img[2].p, f->img[3].p, (int16*)g->buf, f->b.w, f->b.h);
 			} else if(wc->ccol == CS444) {
@@ -276,7 +277,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 	printf("Finish frame input \n");
 }
 
-/*	\brief	Transform the frame to RGB24 color space.
+/**	\brief	Transform the frame to RGB24 color space.
 	\param	g	The GOP structure.
 	\param	fn	The frame number.
 	\param	wc	The walet config structure.
@@ -374,16 +375,16 @@ uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 	} else if(wc->dec == VECTORIZE){
 		if(wc->ccol == RGBY){
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x(f->R[i-1].pic, f->R[i].pic, g->buf, f->R[i-1].w, f->R[i-1].h);
+                utils_resize_down_2x(f->R[i-1].pic, f->R[i].pic, g->buf, f->R[i-1].w, f->R[i-1].h);
 			}
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x(f->G[i-1].pic, f->G[i].pic, g->buf, f->G[i-1].w, f->G[i-1].h);
+                utils_resize_down_2x(f->G[i-1].pic, f->G[i].pic, g->buf, f->G[i-1].w, f->G[i-1].h);
 			}
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x(f->B[i-1].pic, f->B[i].pic, g->buf, f->B[i-1].w, f->B[i-1].h);
+                utils_resize_down_2x(f->B[i-1].pic, f->B[i].pic, g->buf, f->B[i-1].w, f->B[i-1].h);
 			}
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+                utils_resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
 			}
 		}
 		else if(wc->ccol == CS420){
@@ -391,14 +392,14 @@ uint32 frame_transform(GOP *g, uint32 fn, WaletConfig *wc)
 			//	resize_down_2x_(f->y[i-1].pic, f->y[i].pic, g->buf, f->y[i-1].w, f->y[i-1].h);
 			//}
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x_(f->u[i-1].pic, f->u[i].pic, g->buf, f->u[i-1].w, f->u[i-1].h);
+                utils_resize_down_2x_(f->u[i-1].pic, f->u[i].pic, g->buf, f->u[i-1].w, f->u[i-1].h);
 			}
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x_(f->v[i-1].pic, f->v[i].pic, g->buf, f->v[i-1].w, f->v[i-1].h);
+                utils_resize_down_2x_(f->v[i-1].pic, f->v[i].pic, g->buf, f->v[i-1].w, f->v[i-1].h);
 			}
-			resize_down_2x_(f->y[0].pic, f->dw[0].pic, g->buf, f->y[0].w, f->y[0].h);
+            utils_resize_down_2x_(f->y[0].pic, f->dw[0].pic, g->buf, f->y[0].w, f->y[0].h);
 			for(i=1; i < wc->steps; i++) {
-				resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
+                utils_resize_down_2x_(f->dw[i-1].pic, f->dw[i].pic, g->buf, f->dw[i-1].w, f->dw[i-1].h);
 			}
 
 		}
@@ -704,10 +705,10 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 				printf("image %d\n", i);
 				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
 				*size += f->img[i].isz;
-			}
-		else
-			for(i=0; i < 3; i++)  {
-				f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
+            }
+        else
+            for(i=0; i < 3; i++)  {
+                f->img[i].isz = image_range_encode(&f->img[i], wc->steps, wc->bpp, &g->buf[*size], g->ibuf, wc->rt);
 				*size += f->img[i].isz;
 			}
 		f->state |= RANGE_ENCODER;
@@ -716,7 +717,7 @@ uint32 frame_range_encode(GOP *g, uint32 fn, WaletConfig *wc,  uint32 *size)
 }
 
 /**	\brief	Frame range decoder.
-	\param	g		The GOP structure.
+    \param	g		The GOP structure.
 	\param	fn		The frame number.
 	\param	wc		The walet config structure.
 	\param	size	The size of encoded frame in bytes.
@@ -869,8 +870,40 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
 
 
     if(wc->ccol == CS420){
+        //filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
 
-        resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
+        utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
+
+        filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
+
+        seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
+
+        lmaxc = seg_local_max(f->dg[0].pic, 10, f->y[1].w, f->y[1].h);
+
+        seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
+
+        vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
+
+        rgc = seg_remove_loops1(f->dc[0].pic, f->vx, vxc, f->y[1].w, f->y[1].h);
+
+        rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
+
+        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+
+        seg_get_or_fill_color2(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+                             rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
+        memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
+
+        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+
+        seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+                             rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
+        seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
+
+    }
+    if(wc->ccol == 1000){
+
+        utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 
         gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
         //seg_integral(f->y[1].pic, f->in.pic, f->y[1].w, f->y[1].h);
@@ -949,7 +982,7 @@ uint32 frame_match(GOP *g, uint32 fn1, uint32 fn2, WaletConfig *wc)
 
 	if(check_state(f1->state, SEGMENTATION) && check_state(f2->state, SEGMENTATION)){
 		if(wc->ccol == BAYER){
-			seg_compare(f1->pixs,  f1->edges, f1->nedge, f1->grad.pic, f2->grad.pic, f1->Y.pic, f2->Y.pic, g->buf, f1->grad.w, f1->grad.h, wc->mv);
+            //seg_compare(f1->pixs,  f1->edges, f1->nedge, f1->grad.pic, f2->grad.pic, f1->Y.pic, f2->Y.pic, g->buf, f1->grad.w, f1->grad.h, wc->mv);
 			//for(i=0; i < sq; i++) frm2->pix[0].pic[i] = 0;
 			//seg_mvector_copy(frm1->pixs, frm1->grad[0].pic, frm1->Y[0].pic, frm2->line.pic, frm1->grad[0].width, frm1->grad[0].height);
 		}

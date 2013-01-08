@@ -7,6 +7,17 @@ extern "C"
 {
 #endif /* __cplusplus */
 
+void utils_image_copy_n(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp);
+uint8* utils_grey_draw8_n(uint8 *img, uint8 *rgb, uint32 w, uint32 h);
+uint8* utils_gray16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
+uint8* utils_rgb16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
+
+void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
+void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
+void utils_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h);
+void utils_bayer_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h);
+
+
 uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);
 uint8* utils_bayer_to_rgb_grad	(int16 *img, uint8 *rgb, uint32 w, uint32 h, BayerGrid bay, int shift);
 uint8* utils_dwt_image_draw(Image *img, uint8 *rgb, uint32 steps);

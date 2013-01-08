@@ -130,7 +130,7 @@ typedef enum {
 typedef enum {
 	ADAP	= 0,	///Adaptive range coder.
 	NADAP	= 1,	///Nonadaptive range coder.
-    FAST	= 2	///Nonadaptive fast range coder.
+    FAST	= 2     ///Nonadaptive fast range coder.
 } RangeType;
 
 /*
@@ -251,7 +251,7 @@ struct Vector {
 	 uint16		x2, y2;		//X coordinate
 };
 //----------------------------------------------------------------------
-
+/*
 struct Pixel {
 	 uint16		x;		//X coordinate
 	 uint16		y;		//Y coordinate
@@ -335,7 +335,7 @@ struct Corner {
 	uint32 		diff;		//The different from neighborhood pixeles
 	Region		*reg;		//Pointer to the region
 };
-
+*/
 
 typedef struct { 	// Unsigned picture 8bit
 	uint16 w;
