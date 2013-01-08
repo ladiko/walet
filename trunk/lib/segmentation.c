@@ -7831,6 +7831,8 @@ static inline int dir2(uint8 *img, uint32 w, uint32 yx, int dyx, uint32 max)
 	return 0;
 }
 
+
+/*
 static inline void new_pix(Pixel *pix, uint8 img, uint32 x, uint32 y)
 {
 	pix->nin = 0; pix->nout = 0; pix->x = x; pix->y = y; //pix->draw = 1; //pix->end = 0;
@@ -7852,6 +7854,7 @@ static inline void change_line(Pixel *pix, Pixel *pix1, uint8 pow, uint16 npix)
 	pix->out = pix1;  pix->nout = 1; pix->pow = pow;  //pix->pow[pix->nout] = pow; pix->pow[pix->nout] = pow;
 	pix1->nin = 1; pix1->pow = pow; pix->npix = npix;
 }
+*/
 /*
 void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 {
@@ -7889,6 +7892,7 @@ void seg_local_max( Pixel *pix, uint32 *npix, uint8 *img, uint32 w, uint32 h)
 	printf("Numbers of pixels  = %d\n", *npix);
 }
 */
+/*
 void seg_point(uint8 *con, uint32 w, uint32 h)
 {
 	uint32 y, y1, x, yx, in, sq = w*h - w, w1 = w-1;
@@ -7975,37 +7979,18 @@ static inline uint32 check_corner(int dx1, int dy1, int dx2, int dy2)
 	if(dx1 && dy1) if((dx1 == -dx2) || (dy1 == -dy2)) return 1;
 	return 0;
 }
-
+*/
+/*
 static inline void set_dir_one(Pixel *pix, uint8 *img, uint32 yx, uint32 w, int dyx)
 {
 	uint8 dir;
 	pix[yx + dyx].cp = &pix[yx];
 	img[yx + dyx] = 255;
-	/*
-	if     (-1   == dyx) pix[yx].dir += 1;
-	else if(-1-w == dyx) pix[yx].dir += 2;
-	else if(  -w == dyx) pix[yx].dir += 4;
-	else if(+1-w == dyx) pix[yx].dir += 8;
-	else if(+1   == dyx) pix[yx].dir += 16;
-	else if(+1+w == dyx) pix[yx].dir += 32;
-	else if(  +w == dyx) pix[yx].dir += 64;
-	else if(-1+w == dyx) pix[yx].dir += 128;
-	*/
 }
 
 static inline void set_dir_all(Pixel *pix, uint8 *img, uint32 yx, uint32 w)
 {
 	uint8 dir;
-	/*
-	if(img[yx-1  ] > 253) { pix[yx].dir += 1; 	pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
-	if(img[yx-1-w] > 253) { pix[yx].dir += 2;	pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
-	if(img[yx  -w] > 253) { pix[yx].dir += 4;	pix[yx  -w].cp = &pix[yx]; img[yx  -w] = 255;}
-	if(img[yx+1-w] > 253) { pix[yx].dir += 8;	pix[yx+1-w].cp = &pix[yx]; img[yx+1-w] = 255;}
-	if(img[yx+1  ] > 253) { pix[yx].dir += 16;	pix[yx+1  ].cp = &pix[yx]; img[yx+1  ] = 255;}
-	if(img[yx+1+w] > 253) { pix[yx].dir += 32;	pix[yx+1+w].cp = &pix[yx]; img[yx+1+w] = 255;}
-	if(img[yx  +w] > 253) { pix[yx].dir += 64;	pix[yx  +w].cp = &pix[yx]; img[yx  +w] = 255;}
-	if(img[yx-1+w] > 253) { pix[yx].dir += 128;	pix[yx-1+w].cp = &pix[yx]; img[yx-1+w] = 255;}
-	*/
 	if(img[yx-1  ] > 253) { pix[yx-1  ].cp = &pix[yx]; img[yx-1  ] = 255;}
 	if(img[yx-1-w] > 253) { pix[yx-1-w].cp = &pix[yx]; img[yx-1-w] = 255;}
 	if(img[yx  -w] > 253) { pix[yx  -w].cp = &pix[yx]; img[yx  -w] = 255;}
@@ -8119,6 +8104,7 @@ static inline uint32 find_lines(Pixel *pix, uint8 *img, uint32 x, uint32 y, uint
 		}
     }
 }
+*/
 /*
 uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
@@ -8146,20 +8132,10 @@ uint32 seg_pixels(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 
 }
 */
-
+/*
 static inline uint32 get_dir1(uint8 *img, uint32 yx, uint32 w, uint8 dir, int *dm)
 {
 	uint8 i;
-	/*
-	if(img[yx-1  ] > 253 && !(dir&1  )) { dm[i] = -1;   i++; }
-	if(img[yx-1-w] > 253 && !(dir&2  )) { dm[i] = -1-w; i++; }
-	if(img[yx  -w] > 253 && !(dir&4  )) { dm[i] =   -w; i++; }
-	if(img[yx+1-w] > 253 && !(dir&8  )) { dm[i] =  1-w; i++; }
-	if(img[yx+1  ] > 253 && !(dir&16 )) { dm[i] =  1;   i++; }
-	if(img[yx+1+w] > 253 && !(dir&32 )) { dm[i] =  1+w; i++; }
-	if(img[yx  +w] > 253 && !(dir&64 )) { dm[i] =  w;   i++; }
-	if(img[yx-1+w] > 253 && !(dir&128)) { dm[i] = -1+w; i++; }
-	*/
 	if(img[yx-1  ] == 255) { dm[i] = -1;   i++; }
 	if(img[yx-1-w] == 255) { dm[i] = -1-w; i++; }
 	if(img[yx  -w] == 255) { dm[i] =   -w; i++; }
@@ -8228,6 +8204,7 @@ uint32 seg_region(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 	return npix;
 
 }
+*/
 /*
 uint32 seg_line(Pixel *pix, Edge *edges, uint8 *img, uint32 w, uint32 h)
 {
@@ -8293,6 +8270,7 @@ uint32 seg_points(uint8 *img, uint32 w, uint32 h)
 	return nedge;
 }
 */
+/*
 void seg_reduce_line(Pixel *pix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 y, x, yx, w1 = w-1, h1 = h-1;
@@ -8436,7 +8414,8 @@ void seg_draw_edges(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, 
 	printf("Numbers of lines   = %6d\n", nline);
 	printf("Numbers of edges   = %6d\n", nedge);
 }
-
+*/
+/*
 void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32 w, uint32 h, uint32 px, uint32 col)
 {
 	uint32 i, j, in, k, npix = 0, nline = 0, color, po;
@@ -8468,20 +8447,6 @@ void seg_draw_edges_des(Pixel *pix, Edge *edge, uint32 nedge, uint8 *img, uint32
 		npix++;
 		//}
 	}
-	/*
-	for(i=0; i < nedge; i++){
-		if(edge[i].pixs > px){
-			in = edge[i].yxs;
-			color = col ? col : pix[in].pow<<1;
-			for(j=0; j <= edge[i].lines; j++){
-				img[in] = color;
-				//img[in] = 250;
-				//img[in + pix[in].yx] = color;
-				//img[in - pix[in].yx] = color;
-				if(edge[i].lines != j) in = pix[in].out->x + pix[in].out->y*w;
-			}
-		}
-	}*/
 
 	printf("Draw \n");
 	printf("Numbers of pixels  = %6d\n", npix);
@@ -8590,7 +8555,8 @@ static inline uint32 diff3x5( uint8 *img1, uint8 *img2, uint32 yx1, uint32 yx2, 
 	sad[2] = (s[2] + s[3] + s[4])/9;
 	return (s[0] + s[1] + s[2] + s[3] + s[4])/15;
 }
-
+*/
+/*
 static inline uint16 block_match1(uint8 *grad, uint8 *img1, uint8 *img2, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint32 yx2, uint32 *xo, uint32 *yo, uint32 w, uint32 h, uint32 st, uint32 th)
 {
 	int x, y, yx, yx1 = x1 + y1*w, sad[3], diff, npix = 0;
@@ -8677,12 +8643,6 @@ static inline uint16 double_block_match(uint8 *grad, uint8 *img1, uint8 *img2, u
 	ay = ay1 >= (ay2 + y1 - y2) ? ay1 : (ay2 + y1 - y2);
 	bx = bx1 <= (bx2 + x1 - x2) ? bx1 : (bx2 + x1 - x2);
 	by = by1 <= (by2 + y1 - y2) ? by1 : (by2 + y1 - y2);
-	/*
-	ax = (ax1 < ax2) ? ax1 : x1 - x2 + ax2;
-	ay = (ay1 < ay2) ? ay1 : y1 - y2 + ay2;
-	bx = (bx2 < bx1) ? bx1 : x1 - x2 + bx2;
-	by = (by2 < by1) ? by1 : y1 - y2 + by2;
-	*/
 	//printf("ay1 = %d ay2 = %d\n",ay1,  ay2);
 	//printf("ax = %d bx = %d ay = %d by = %d x1 = %d y1 = %d xy1 = %d x2 = %d y2 = %d xy2 = %d\n",ax, bx, ay, by, x1, y1, yx1, x2, y2, yx2);
 
@@ -8760,24 +8720,6 @@ static inline void block_match_new(uint8 *grad, uint8 *img1, uint8 *img2, uint8 
 	//printf("\n");
 	//printf("%3d npix = %3d diff = %5d sad0 = %5d sad1 = %5d sad2 = %5d minimum\n", th, npix, min[0]/15, min[1]/9, min[2]/9, min[3]/9);
 	//if(!npix) { *xo = x1; *yo = y1;}
-	/*
-	for(y=ay, ym = st+ay-y2; y <= by; y++, ym++){
-		for(x=ax, xm = st+ax-x2; x <= bx; x++, xm++) printf("%3d ", mmb[ym*w1 + xm]);
-		printf("\n");
-	} printf("\n");
-	for(y=ay, ym = st+ay-y2; y <= by; y++, ym++){
-		for(x=ax, xm = st+ax-x2; x <= bx; x++, xm++) printf("%3d ", sd[0][ym*w1 + xm]);
-		printf("\n");
-	} printf("\n");
-	for(y=ay, ym = st+ay-y2; y <= by; y++, ym++){
-		for(x=ax, xm = st+ax-x2; x <= bx; x++, xm++) printf("%3d ", sd[1][ym*w1 + xm]);
-		printf("\n");
-	} printf("\n");
-	for(y=ay, ym = st+ay-y2; y <= by; y++, ym++){
-		for(x=ax, xm = st+ax-x2; x <= bx; x++, xm++) printf("%3d ", sd[2][ym*w1 + xm]);
-		printf("\n");
-	} printf("\n");
-	*/
 	return;
 }
 
@@ -8873,18 +8815,6 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, uint8 *grad1, uint8 *grad
 	for(i=0; i < nedge; i++){
 		p = &pix[edge[i].yxs];
 		block_match_new(grad2, img1, img2, mb[0], p->x, p->y, p->x, p->y, p->yx, w, h, mvs, 253);
-		/*
-		//For testing only-------------------------------------------------------------------------
-		find_local_min1(mb[0], &min[0], &xm, &ym, wm[0]);
-		printf("match 1 min = %3d x = %4d y = %4d x1 = %4d y1 = %4d\n", min[0], xm, ym, p->x, p->y);
-		find_local_min1(sad[0], &min[0], &xm, &ym, wm[0]);
-		printf("sad   0 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		find_local_min1(sad[1], &min[0], &xm, &ym, wm[0]);
-		printf("sad   1 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		find_local_min1(sad[2], &min[0], &xm, &ym, wm[0]);
-		printf("sad   2 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		///-----------------------------------------------------------------------------------------
-		*/
 		p1 = p->out;
 		if(p->npix < 4 && p1->nout){
 			printf("< 4 %6d npix = %d nout = %d line = %d\n", i, p->npix, p->nout, edge[i].lines);
@@ -8900,18 +8830,6 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, uint8 *grad1, uint8 *grad
 			//j=2;
 		}
 		if(abs(p1->x - p->x) < 3 &&  abs(p1->y - p->y) < 3) min10++;
-		/*
-		//For testing only---------------------------------------------------------------------------
-		find_local_min1(mb[1], &min[1], &xm, &ym, wm[0]);
-		printf("match 2 min = %3d x = %4d y = %4d x2 = %4d y2 = %4d\n", min[1], xm, ym, p1->x, p1->y);
-		find_local_min1(sad[0], &min[1], &xm, &ym, wm[0]);
-		printf("sad   0 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		find_local_min1(sad[1], &min[1], &xm, &ym, wm[0]);
-		printf("sad   1 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		find_local_min1(sad[2], &min[1], &xm, &ym, wm[0]);
-		printf("sad   2 min = %3d x = %4d y = %4d\n", min[0], xm, ym);
-		///-----------------------------------------------------------------------------------------
-		*/
 		min_add(mb[0], mb[1], sum, sqm[0]);
 		find_local_min1(sum, &min[2], &xm, &ym, wm[0]);
 		//printf("sum     min = %3d x = %4d y = %4d x2 = %4d y2 = %4d\n", min[2], xm, ym, p->x-mvs+xm, p->y-mvs+ym);
@@ -8974,26 +8892,9 @@ void seg_compare(Pixel *pix, Edge *edge, uint32 nedge, uint8 *grad1, uint8 *grad
 	//printf("nedge = %d min < 10 = %d %f min12 < min0 = %d %f min01 = %d %f\n",
 	//		nedge, min10, (float)min10/(float)nedge, min12, (float)min12/(float)nedge, min01, (float)min01/(float)nedge);
 
-	/*
-	for(y=2; y < h1; y++){
-		for(x=2; x < w1; x++){
-			yx = y*w + x;
-			if(grad1[yx] == 255 && pix[yx].nout){
-				x1 = pix[yx].x; y1 = pix[yx].y; yx1 = pix[yx].yx;
-				x2 = pix[yx].out->x; y2 = pix[yx].out->y; yx2 = pix[yx].out->yx;
-
-				//printf("yx = %d\n", yx);
-				pix[yx].mach = double_block_match(grad2, img1, img2, x1, y1, yx1, x2, y2, yx2, &xo, &yo, w, h, mvs, 253);
-				//pix[yx].mach = block_match1(grad2, img1, img2, x, y, x, y, pix[edge[i].yxe].yx, &xo, &yo, w, h, 12, 0);
-				pix[yx].vx = xo - x;
-				pix[yx].vy = yo - y;
-				grad1[yx] = 253;
-				npix++;
-			}
-		}
-	}*/
 }
-
+*/
+/*
 void seg_draw_vec(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 {
 	uint32 i, j, k, sq = w*h, pixs = 0, nline = 0;
@@ -9008,13 +8909,6 @@ void seg_draw_vec(Pixel *pix, uint32 npix, uint8 *img, uint32 w, uint32 h)
 			nline++;
 		}
 	}
-	/*
-	for(i=0; i < w*h; i++){
-		if(pix[i].nout || pix[i].nin){
-			img[i] = 255;
-			pixs++;
-		}
-	}*/
 
 	printf("Numbers of pixels  = %d\n", pixs);
 	printf("Numbers of lines   = %d\n", nline);
@@ -9184,19 +9078,6 @@ void seg_fall_forest2(uint8 *img, uint8 *img1, uint32 w, uint32 h)
 					//img[yx+1+w] <= img[yx]
 					) img1[yx] = 0;
 			}
-			/*
-			if(img[yx]) {
-				min = img[yx];
-                if(img[yx-1  ] < min) { min = img[yx-1  ]; dyx = -1;}
-                //if(img[yx-1-w] < min) { min = img[yx-1-w]; dyx = -1-w;}
-                if(img[yx  -w] < min) { min = img[yx  -w]; dyx = -w;}
-                //if(img[yx+1-w] < min) { min = img[yx+1-w]; dyx =  1-w;}
-                if(img[yx+1  ] < min) { min = img[yx+1  ]; dyx = 1;}
-                //if(img[yx+1+w] < min) { min = img[yx+1+w]; dyx =  1+w;}
-                if(img[yx  +w] < min) { min = img[yx  +w]; dyx = w;}
-                //if(img[yx-1+w] < min) { min = img[yx-1+w]; dyx = -1+w;}
-                img1[yx+dyx] =0;
- 			}*/
 		}
 	}
 }
@@ -9225,17 +9106,7 @@ void seg_fall_forest1(uint8 *img, uint8 *img1, uint8 *img2, uint32 w, uint32 h)
 			if( img[yx] > img[yx+1-w] && img[yx] > img[yx-1+w]) { img2[yx] = 255; } else img2[yx] = 0;
 			if( img[yx] > img[yx-1  ] && img[yx] > img[yx+1  ]) { img2[yx] = 255; } else img2[yx] = 0;
 			if( img[yx] > img[yx-1-w] && img[yx] > img[yx+1+w]) { img2[yx] = 255; } else img2[yx] = 0;
-			/*
-			if(img[yx]) {
-				switch(img1[yx]){
-					case 0 : { if( img[yx] > img[yx-w  ] && img[yx] > img[yx+w  ]) img2[yx] = 255; else img2[yx] = 0; break; }
-					case 1 : { if( img[yx] > img[yx+1-w] && img[yx] > img[yx-1+w]) img2[yx] = 255; else img2[yx] = 0; break; }
-					case 2 : { if( img[yx] > img[yx-1  ] && img[yx] > img[yx+1  ]) img2[yx] = 255; else img2[yx] = 0; break; }
-					case 3 : { if( img[yx] > img[yx-1-w] && img[yx] > img[yx+1+w]) img2[yx] = 255; else img2[yx] = 0; break; }
-				}
-			}
-			*/
 		}
 	}
 }
-
+*/

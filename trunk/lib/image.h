@@ -32,9 +32,10 @@ extern "C" {
 
 void prediction_encoder(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
 void prediction_decoder(int16 *in, int16 *out, uint32 w, uint32 h);
-void resize_up_2x	(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
 
-void resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
+//void resize_up_2x	(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h);
+
+//void resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 
 //New interface
 void 	image_init			(Image *im, uint32 width, uint32 height, uint32 bpp, uint32 steps, uint32 dec);

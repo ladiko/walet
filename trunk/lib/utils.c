@@ -9,6 +9,334 @@
 #include <malloc.h>
 #endif
 
+/** \brief Copy image from the buffer
+    \param in       The input buffer.
+    \param out		The output image.
+    \param w		The image width.
+    \param h		The image height.
+    \param bpp		The bits per pixel.
+*/
+void utils_image_copy_n(uint8 *in, int16 *out, uint32 w, uint32 h, uint32 bpp)
+{
+    uint32 i, size = w*h;
+
+    if(bpp > 8){
+        for(i=0; i<size; i++) {
+            //For Aptina sensor
+            //out[i] = ((in[(i<<1)]) | in[(i<<1)+1]<<8);
+            //For Sony sensor
+            out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
+            //printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
+        }
+    } else
+        for(i=0; i<size; i++) out[i] = in[i];
+}
+
+/**	\brief Draw a gray 8 bits image
+    \param in	 	The input image.
+    \param out	 	The output RGB buffer.
+    \param w 		The image width.
+    \param h 		The image height.
+    \retval         The output RGB buffer.
+*/
+uint8* utils_grey_draw8_n(uint8 *in, uint8 *out, uint32 w, uint32 h)
+{
+    int i, j, dim = h*w*3;
+    for(i = 0,  j= 0; j < dim; j+=3, i++){
+        out[j]     = in[i];
+        out[j + 1] = in[i];
+        out[j + 2] = in[i];
+    }
+    return out;
+}
+
+/**	\brief Transform 16 bits image to grey 8 bits in rgb24 format.
+    \param in	 		The input 16 bits image.
+    \param out	 		The output rgb24 image.
+    \param w 			The image width.
+    \param h 			The image height.
+    \param bpp          The bits per pixel.
+    \param par          If 0 - direct, 1 - with scale, 2 - with scale and shift,
+                        3 - from min to max, 4 - with shift from min to max.
+    \retval             The output RGB buffer.
+*/
+uint8* utils_gray16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par)
+{
+    int i, j, sz = w*h, dim = h*w*3, sh = bpp - 8, shift = 1<<(bpp-1);
+    int df, tmp, max, min;
+
+    if(par == 0){
+        for(i = 0,  j= 0; j < dim; j+=3, i++) out[j] = out[j+1] = out[j+2] = in[i];
+    } else if(par == 1){
+        for(i = 0,  j= 0; j < dim; j+=3, i++) out[j] = out[j+1] = out[j+2] = in[i] >> sh;
+    } else if(par == 2){
+        for(i = 0,  j= 0; j < dim; j+=3, i++) out[j] = out[j+1] = out[j+2] = (in[i] + shift) >> sh;
+    } else if(par == 3){
+        max = in[0]; min = in[0];
+        for(i=1; i < sz; i++){
+            if      (in[i] > max) max = in[i];
+            else if (in[i] < min) min = in[i];
+        }
+        df = max - min;
+        printf("min = %d max = %d \n", min, max);
+        for(i = 0,  j= 0; j < dim; j+=3, i++){
+            tmp = ((in[i] - min)<<8)/df;
+            out[j] = out[j+1] = out[j+2] = tmp;
+        }
+
+    } else if(par == 4){
+        max = in[i]; min = in[i];
+        for(i=1; i < sz; i++){
+            if      (in[i] > max) max = in[i];
+            else if (in[i] < min) min = in[i];
+        }
+        df = max - min;
+
+        for(i = 0,  j= 0; j < dim; j+=3, i++){
+            tmp = ((in[i] - min + shift)<<8)/df;
+            out[j] = out[j+1] = out[j+2] = tmp;
+        }
+    }
+    return out;
+}
+
+/**	\brief Transform 16 bits rgb24 image to grey 8 bits rgb24 image.
+    \param in	 		The input 16 bits rgb24 image.
+    \param out	 		The output 8 bits rgb24 image.
+    \param w 			The image width.
+    \param h 			The image height.
+    \param bpp          The bits per pixel.
+    \param par          If 0 - direct, 1 - with scale, 2 - with scale and shift,
+                        3 - from min to max, 4 - with shift from min to max.
+    \retval             The output RGB buffer.
+*/
+uint8* utils_rgb16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par)
+{
+    int i, j, sz = w*h, dim = h*w*3, sh = bpp - 8, shift = 1<<(bpp-1);
+    int df, tmp, max, min;
+
+    if(par == 0){
+        for(i = 0; i < dim; i++) out[i] = in[i];
+    } else if(par == 1){
+        for(i = 0; i < dim; i++) out[i] = in[i] >> sh;
+    } else if(par == 2){
+        for(i = 0; i < dim; i++) out[i] = (in[i] + shift) >> sh;
+    } else if(par == 3){
+        max = in[0]; min = in[0];
+        for(i=1; i < dim; i++){
+            if      (in[i] > max) max = in[i];
+            else if (in[i] < min) min = in[i];
+        }
+        df = max - min;
+        printf("min = %d max = %d \n", min, max);
+        for(i = 0; i < dim; i++) out[i] = ((in[i] - min)<<8)/df;
+    } else if(par == 4){
+        max = in[i]; min = in[i];
+        for(i=1; i < dim; i++){
+            if      (in[i] > max) max = in[i];
+            else if (in[i] < min) min = in[i];
+        }
+        df = max - min;
+
+        for(i = 0; i < dim; i++) out[i] = ((in[i] - min + shift)<<8)/df;
+    }
+    return out;
+}
+
+/**	\brief Zoom out image twice.
+    \param in	 		The input image.
+    \param out	 		The output image.
+    \param buff	 		The temporary buffer, should include 1 row.
+    \param w 			The image width.
+    \param h 			The image height.
+*/
+void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, yw1, w1 = w>>1, h1 = h>>1;
+    int16 *l = (int16*)buff;
+
+    for(y=0; y < h1; y++){
+        yw = y*w1;
+        yw1 = (y<<1)*w;
+        for(x=0; x < w1; x++) l[x]  = in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+        yw1 = yw1 + w;
+        for(x=0; x < w1; x++) l[x] += in[yw1 + (x<<1)] + in[yw1 + (x<<1)+1];
+
+        for(x=0; x < w1; x++){
+            yx = yw + x;
+            out[yx] = l[x]>>2;
+        }
+    }
+}
+
+/**	\brief Zoom out image.
+    \param in	 		The input image.
+    \param out	 		The output image.
+    \param buff	 		The temporary buffer, should include 1 row of image.
+    \param zoom 		The zoom parameter 1 - no zoom, 2 - twice, 3 - three times ...
+    \param w 			The image width.
+    \param h 			The image height.
+*/
+void utils_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h)
+{
+    int i, j, x, x1, y, y1, yw, yx, sq = zoom*zoom, w1 = w/zoom;
+    uint32 max = 1<<31, sh = 0;
+
+    memset(buff, 0, sizeof(uint32)*w1);
+    //Find zoom value when / can changed to >>
+    for(i=2; i < max; i<<=1) if((i|zoom) == i) sh++;
+
+    for(y=0, y1=0; y < h; y+=zoom, y1++){
+
+        for(j=0; j < zoom; j++){
+            yw = (y+j)*w;
+            for(x=0, x1=0; x < w; x+=zoom, x1++){
+                yx = yw + x;
+                for(i=0; i < zoom; i++) buff[x1] += in[yx+i];
+                if(j == zoom-1) {
+                    out[y1*w1 + x1] =  sh ? buff[x1]>>zoom : buff[x1]/sq;
+                    buff[x1] = 0;
+                }
+            }
+        }
+    }
+}
+
+/**	\brief Zoom out of bayer image and convert to rgb24 format.
+    \param in	 	The input bayer image.
+    \param out	 	The output image in r,g,b,r1,g1,b1... format.
+    \param buff	 	The temporary buffer, should include 2 row of bayer image.
+    \param zoom 	The zoom parameter 1 - 2x, 2 - 4x, 3 - 6x times ...
+    \param bay		The Bayer grids pattern.
+    \param w 		The image width.
+    \param h 		The image height.
+*/
+void utils_bayer_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h)
+{
+    /*
+       All RGB cameras use one of these Bayer grids:
+
+        BGGR  0         GRBG 1          GBRG  2         RGGB 3
+          0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5	  0 1 2 3 4 5
+        0 B G B G B G	0 G R G R G R	0 G B G B G B	0 R G R G R G
+        1 G R G R G R	1 B G B G B G	1 R G R G R G	1 G B G B G B
+        2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
+        3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
+     */
+    int i, j, x, x1, y, y1, yw, yx, sq = zoom*zoom, zoom2 = zoom<<1, w1 = w/zoom2;
+    uint32 max = 1<<31, sh = 0;
+    uint32 *c[4];   //Three color buffer
+
+    c[0] = buff; c[1] = &c[0][w1]; c[2] = &c[1][w1]; c[3] = &c[2][w1];
+
+    memset(c[0], 0, sizeof(uint32)*w1<<2);
+
+    //Find zoom value when / can changed to >>
+    for(i=1; i < max; i<<=1) if((i|zoom) == i) sh++;
+    zoom = (zoom == 1) ? 0 : zoom;
+    printf("zoom = %d sh = %d\n", zoom, sh);
+
+    for(y=0, y1=0; y < h; y+=zoom2, y1++){
+
+        for(j=0; j < zoom2; j+=2){
+            yw = (y+j)*w;
+            for(x=0, x1=0; x < w; x+=zoom2, x1++){
+                yx = yw + x;
+                for(i=0; i < zoom2; i+=2) {
+                    c[0][x1] += in[yx+i];
+                    c[1][x1] += in[yx+i+1];
+                    c[2][x1] += in[yx+i+w];
+                    c[3][x1] += in[yx+i+w+1];
+                }
+                if(j == zoom2-2) {
+                    switch(bay){
+                    case(BGGR):{
+                        out[(y1*w1+x1)*3]   = sh ? c[3][x1]>>zoom : c[3][x1]/sq;
+                        out[(y1*w1+x1)*3+1] = sh ? (c[1][x1]+c[2][x1])>>(zoom+1) : (c[1][x1]+c[2][x1])/(sq*2);
+                        out[(y1*w1+x1)*3+2] = sh ? c[0][x1]>>zoom : c[0][x1]/sq;
+                        break;
+                    }
+                    case(GRBG):{
+                        out[(y1*w1+x1)*3]   = sh ? c[1][x1]>>zoom : c[01][x1]/sq;
+                        out[(y1*w1+x1)*3+1] = sh ? (c[0][x1]+c[3][x1])>>(zoom+1) : (c[0][x1]+c[3][x1])/(sq*2);
+                        out[(y1*w1+x1)*3+2] = sh ? c[2][x1]>>zoom : c[2][x1]/sq;
+                        break;
+                    }
+                    case(GBRG):{
+                        out[(y1*w1+x1)*3]   = sh ? c[2][x1]>>zoom : c[2][x1]/sq;
+                        out[(y1*w1+x1)*3+1] = sh ? (c[0][x1]+c[3][x1])>>(zoom+1) : (c[0][x1]+c[3][x1])/(sq*2);
+                        out[(y1*w1+x1)*3+2] = sh ? c[1][x1]>>zoom : c[1][x1]/sq;
+                        break;
+                    }
+                    case(RGGB):{
+                        out[(y1*w1+x1)*3]   = sh ? c[0][x1]>>zoom : c[0][x1]/sq;
+                        out[(y1*w1+x1)*3+1] = sh ? (c[1][x1]+c[2][x1])>>(zoom+1) : (c[1][x1]+c[2][x1])/(sq*2);
+                        out[(y1*w1+x1)*3+2] = sh ? c[3][x1]>>zoom : c[3][x1]/sq;
+                        break;
+                    }
+                    }
+                    c[0][x1] = c[1][x1] = c[2][x1] = c[3][x1] = 0;
+                }
+            }
+        }
+    }
+}
+
+void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, yw1, yw2, wn, hn;
+    int16 *l = (int16*)buff;
+
+    wn = ((w-2)>>1); hn = ((h-2)>>1);
+
+    for(y=0; y < hn; y++){
+        yw = (y+1)*(wn+2);
+        yw1 = (y<<1)*w + w;
+        for(x=0; x < wn; x++) l[x]  = in[yw1 + (x<<1)+1] + in[yw1 + (x<<1)+2];
+        yw1 = yw1 + w;
+        for(x=0; x < wn; x++) l[x] += in[yw1 + (x<<1)+1] + in[yw1 + (x<<1)+2];
+
+        for(x=0; x < wn; x++){
+            yx = yw + x+1;
+            out[yx] = l[x]>>2;
+        }
+    }
+}
+
+/**	\brief Resize image up to two times on x and y (bilinear interpolation).
+    \param in	 		The input image.
+    \param out	 		The output image.
+    \param buff	 		The temporary buffer, should include 1 row.
+    \param w 			The width of bigger image.
+    \param h 			The height of bigger image.
+*/
+void utils_resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
+{
+    int x, x2, y, yw, yx, yw1, w2 = (w>>1) + (w&1);
+    int16 *l0 = buff, *l1 = &buff[w2+2], *l2 = &buff[(w2+2)<<1], *tm;
+
+    l0[0] = in[0]; for(x=0; x < w2; x++) l0[x+1] = in[x]; l0[x+1] = in[x-1];
+    l1[0] = in[0]; for(x=0; x < w2; x++) l1[x+1] = in[x]; l1[x+1] = in[x-1];
+    for(y=0; y < h; y++){
+        yw = y*w;
+        if(!(y&1)) {
+            if(y > 0) { tm = l0; l0 = l1; l1 = l2; l2 = tm; }
+            yw1 = (y == h-1) ? (y>>1)*w2 : ((y>>1)+1)*w2;
+            l2[0] = in[yw1]; for(x=0; x < w2; x++) l2[x+1] = in[x+yw1]; l2[x+1] = in[x-1+yw1];
+            //printf("y = %d yw1 = %d \n", y, yw1);
+        }
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            x2 = (x>>1) + 1;
+            //out[yx] = l1[x2];
+            if(!(x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l0[x2]*3 + l0[x2-1])>>4;
+            else if ((x&1) && !(y&1)) out[yx] = (l1[x2]*9 + l1[x2+1]*3 + l0[x2]*3 + l0[x2+1])>>4;
+            else if (!(x&1) && (y&1)) out[yx] = (l1[x2]*9 + l1[x2-1]*3 + l2[x2]*3 + l2[x2-1])>>4;
+            else out[yx] = (l1[x2]*9 + l1[x2+1]*3 + l2[x2]*3 + l2[x2+1])>>4;
+        }
+    }
+}
+
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
 
 // Red and blue pattern for bayer median filter
@@ -846,98 +1174,9 @@ void utils_bayer_local_hdr(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGri
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < sp; x1+=1){
                     yx1 = yw1 + x1;
-                    /*
-                    Y = (((img[yx1]+img[yx1+1]+img[yx1+w]+img[yx1+w+1] + (shift<<2))>>2)-low);
-                    Y1 = Y*b>>22;
-                    img1[yx1] =   ((img[yx1] + shift - low - Y)*d>>22) + Y1;
-                    img1[yx1+1] =   ((img[yx1+1] + shift - low - Y)*d>>22) + Y1;
-                    img1[yx1+w] =   ((img[yx1+w] + shift - low - Y)*d>>22) + Y1;
-                    img1[yx1+w+1] =   ((img[yx1+w+1] + shift - low - Y)*d>>22) + Y1;
-
-                    */
-                    //printf("img1[yx1] = %d  img1 = %d Y = %d img = %d img - Y = %d (img - Y)*b = %d (img - Y)*b>>23 = %d Y1 = %d b = %d\n",
-                    //       img1[yx1], (((int)img[yx1] + shift - low - Y)*b>>23), Y, img[yx1] + shift - low, img[yx1] + shift - low - Y,
-                    //       (img[yx1] + shift - low - Y)*b, ((img[yx1] + shift - low - Y)*b>>23), Y1, b) ;
                     tmp = st + a*(img[yx1]+shift - min);
 
                     img1[yx1] += tmp < 0 ? 0 : (tmp > 255 ? 255 : tmp);
-
-                    /*
-                    img1[yx1] = st + a*(img[yx1]+shift - min);
-                    img1[yx1+1] = st + a*(img[yx1+1]+shift - min);
-                    img1[yx1+w] = st + a*(img[yx1+w]+shift - min);
-                    img1[yx1+w+1] = st + a*(img[yx1+w+1]+shift - min);
-                    */
-                    //printf("img1 = %d\n", img1[yx1]);
-
-
-                    //printf("%d yx1 = %d img = %d shift = %d low = %d c = %f \n",w*h, yx1+w+1, img[yx1], shift, low, c);
-                    /*
-                    img1[yx1] = (img[yx1]+shift-low)>>1;
-                    img1[yx1+1] = (img[yx1+1]+shift-low)>>1;
-                    img1[yx1+w] = (img[yx1+w]+shift-low)>>1;
-                    img1[yx1+w+1] = (img[yx1+w+1]+shift-low)>>1;
-                    */
-
-                    /*
-                    tmp = (img[yx1]+shift-low);
-                    tmp = tmp < 0 ? 0 : tmp*b>>23;
-                    img1[yx1] = tmp > 255 ? 255 : tmp;
-
-                    tmp = (img[yx1+1]+shift-low);
-                    tmp = tmp < 0 ? 0 : tmp*b>>23;
-                    img1[yx1+1] = tmp > 255 ? 255 : tmp;
-
-                    tmp = (img[yx1+w]+shift-low);
-                    tmp = tmp < 0 ? 0 : tmp*b>>23;
-                    img1[yx1+w] = tmp > 255 ? 255 : tmp;
-
-                    tmp = (img[yx1+w+1]+shift-low);
-                    tmp = tmp < 0 ? 0 : tmp*b>>23;
-                    img1[yx1+w+1] = tmp > 255 ? 255 : tmp;
-                    */
-                    /*
-                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d df = %d\n",
-                           (img[yx1]+shift-low), (img[yx1+1]+shift-low), (img[yx1+w]+shift-low), (img[yx1+w+1]+shift-low),
-                           ((img[yx1]+shift-low)+(img[yx1+1]+shift-low)+(img[yx1+w]+shift-low)+(img[yx1+w+1]+shift-low))>>2,
-                           max - min);
-                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d df = %d\n",
-                           (int)(c*(img[yx1]+shift-low)), (int)(c*(img[yx1+1]+shift-low)), (int)(c*(img[yx1+w]+shift-low)), (int)(c*(img[yx1+w+1]+shift-low)),
-                           ((int)(c*(img[yx1]+shift-low))+(int)(c*(img[yx1+1]+shift-low))+(int)(c*(img[yx1+w]+shift-low))+(int)(c*(img[yx1+w+1]+shift-low)))>>2,
-                           (int)(c*(max - min)));
-                    printf("G = %4d B = %4d R = %4d G = %4d Y = %4d\n\n",
-                           img1[yx1], img1[yx1+1], img1[yx1+w], img1[yx1+w+1],
-                           (img1[yx1]+img1[yx1+1]+img1[yx1+w]+img1[yx1+w+1])>>2);
-                    */
-
-                    /*
-                    Y = (img[yx1] + img[yx1+1] + img[yx1+w] + img[yx1+w+1] + (shift<<2))>>2;
-                    Y1 = st + a*(Y - min);
-                    b = (double)Y1/(double)Y;
-                    img1[yx1] += Y1 + (int)((double)(img[yx1]+shift - Y)*b);
-                    img1[yx1+1] += Y1 + (int)((double)(img[yx1+1]+shift - Y)*b);
-                    img1[yx1+w] += Y1 + (int)((double)(img[yx1+w]+shift - Y)*b);
-                    img1[yx1+w+1] += Y1 + (int)((double)(img[yx1+w+1]+shift - Y)*b);
-*/
-                    /*
-                    in = max - min;
-                    Y = (max + min)>>1;
-                    Y1 = (Y - low)*b>>23;
-
-                    if(in*b>>23 < 3) {
-                        a = 5.;
-                    } else {
-                        a = 1.;
-                    }
-                    img1[yx1] = Y1 + (int)((double)(img[yx1]+shift - Y)*a);
-                    img1[yx1+1] = Y1 + (int)((double)(img[yx1+1]+shift - Y)*a);
-                    img1[yx1+w] = Y1 + (int)((double)(img[yx1+w]+shift - Y)*a);
-                    img1[yx1+w+1] = Y1 + (int)((double)(img[yx1+w+1]+shift - Y)*a);
-                    */
-
-                    //img1[yx1] = st + a*(img[yx1] + shift - min) - 128;
-                    //printf("%d max = %d min = %d diff = %d ll = %d df = %d, st = %d Y = %d Y1 = %d b = %f img = %d del = %d img = %d \n",
-                    //       yx1, max, min, diff, ll, df, st, Y , Y1, b, img[yx1]+shift, (int)((double)(img[yx1]+shift - Y)*b), img1[yx1]+128);
                 }
             }
         }
@@ -2054,7 +2293,6 @@ void utils_bayer_to_YUV420_16(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *b
 	\param h		The image height.
 	\param bay		The Bayer grids pattern.
 */
-
 void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff, uint32 w, uint32 h, BayerGrid bay){
 /*
    All RGB cameras use one of these Bayer grids:
@@ -2756,16 +2994,16 @@ void make_lookup2(int16 *img, uint32 *hist, int16 *look, uint32 w, uint32 h)
 }
 
 
+/**	\brief Image transform.
+    \param img	 		The input image.
+    \param img1	 		The output image.
+    \param look 		The LUT.
+    \param w            The image width.
+    \param h            The image height.
+    \param ibit         The image bits per pixel.
+    \param hbit         The histogram bits.
+*/
 void bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
-///	\fn bits12to8(int16 *img, int16 *img1, uint32 *look, uint32 w, uint32 h, uint32 ibit, uint32 hbit)
-///	\brief Image transform.
-///	\param img	 		The input image.
-///	\param img1	 		The output image.
-///	\param look 		The LUT.
-/// \param w            The image width.
-/// \param h            The image height.
-/// \param ibit         The image bits per pixel.
-/// \param hbit         The histogram bits.
 {
     uint32 i, df = ibit-hbit, shift = 1<<(ibit-1), size = w*h;
     for(i=0; i < size; i++) img1[i] = look[(img[i]+shift)>>df]-128;
