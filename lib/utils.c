@@ -169,7 +169,7 @@ void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h
     }
 }
 
-/**	\brief Zoom out image.
+/**	\brief Zoom out the gray 16 bits image.
     \param in	 		The input image.
     \param out	 		The output image.
     \param buff	 		The temporary buffer, should include 1 row of image.
@@ -177,7 +177,7 @@ void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h
     \param w 			The image width.
     \param h 			The image height.
 */
-void utils_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h)
+void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h)
 {
     int i, j, x, x1, y, y1, yw, yx, sq = zoom*zoom, w1 = w/zoom;
     uint32 max = 1<<31, sh = 0;
@@ -202,6 +202,49 @@ void utils_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w
     }
 }
 
+/**	\brief Zoom out the rgb24 16 bits image.
+    \param in	 		The input image.
+    \param out	 		The output image.
+    \param buff	 		The temporary buffer, should include 1 row of image.
+    \param zoom 		The zoom parameter 1 - no zoom, 2 - twice, 3 - three times ...
+    \param w 			The image width.
+    \param h 			The image height.
+*/
+void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h)
+{
+    int i, j, x, x1, y, y1, yw, yx, sq = zoom*zoom, w1 = w/zoom;
+    uint32 max = 1<<31, sh = 0;
+    uint32 *buff1, *buff2;
+
+    buff1 = &buff[w1]; buff2 = &buff1[w1];
+
+    memset(buff, 0, sizeof(uint32)*w1*3);
+
+    //Find zoom value when / can changed to >>
+    for(i=2; i < max; i<<=1) if((i|zoom) == i) sh++;
+
+    for(y=0, y1=0; y < h; y+=zoom, y1++){
+
+        for(j=0; j < zoom; j++){
+            yw = (y+j)*w;
+            for(x=0, x1=0; x < w; x+=zoom, x1++){
+                yx = yw + x;
+                for(i=0; i < zoom; i++) {
+                    buff [x1] += in[(yx+i)*3  ];
+                    buff1[x1] += in[(yx+i)*3+1];
+                    buff2[x1] += in[(yx+i)*3+2];
+                }
+                if(j == zoom-1) {
+                    out[(y1*w1+x1)*3  ] =  sh ? buff [x1]>>zoom : buff [x1]/sq;
+                    out[(y1*w1+x1)*3+1] =  sh ? buff1[x1]>>zoom : buff1[x1]/sq;
+                    out[(y1*w1+x1)*3+2] =  sh ? buff2[x1]>>zoom : buff2[x1]/sq;
+                    buff[x1] = buff1[x1] = buff2[x1] = 0;
+                }
+            }
+        }
+    }
+}
+
 /**	\brief Zoom out of bayer image and convert to rgb24 format.
     \param in	 	The input bayer image.
     \param out	 	The output image in r,g,b,r1,g1,b1... format.
@@ -211,7 +254,7 @@ void utils_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w
     \param w 		The image width.
     \param h 		The image height.
 */
-void utils_bayer_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h)
+void utils_zoom_out_bayer(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h)
 {
     /*
        All RGB cameras use one of these Bayer grids:
@@ -280,6 +323,156 @@ void utils_bayer_zoom_out(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, Ba
             }
         }
     }
+}
+
+/**	\brief Calculate the white balance multiplier for read and blue coloro of 16 bits rgb24 image.
+    \param in	The input 16 bits rgb24 image.
+    \param rm   The pointer to the red multiplier.
+    \param bm   The pointer to the blue multiplier.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
+{
+    int i, j, size = w*h, size3 = h*w*3;
+    uint32 d, d1;
+
+    float s = -0.01, m;
+
+    d = 0; m = 1.;
+    for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i]*m);
+    for(j=0; ;j++){
+        m = m + s;
+        d1 = 0;
+        for(i = 0; i < size3; i+=3) d1 += abs(in[i+1] - in[i]*m);
+        printf("j = %d d = %d d1 = %d m = %f\n", j, d, d1, m);
+        if(!j && d1 > d) s = -s;
+        if( j && d1 > d) break;
+        d = d1;
+    }
+    *rm = m;
+
+    d = 0; m = 1.;
+    for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i+2]*m);
+    for(j=0; ;j++){
+        m = m + s;
+        d1 = 0;
+        for(i = 0; i < size3; i+=3) d1 += abs(in[i+1] - in[i+2]*m);
+        printf("j = %d d = %d d1 = %d m = %f\n", j, d, d1, m);
+        if(!j && d1 > d) s = -s;
+        if( j && d1 > d) break;
+        d = d1;
+    }
+    *bm = m;
+
+    //bd = 0;
+    /*
+    for(i = 0; i < dim; i+=3) {
+        out[i] = in[i]*rm;
+        out[i+1] = in[i+1];
+        out[i+2] = in[i+2]*bm;
+    }
+    */
+}
+
+/**	\brief White balance 16 bits rgb24 image.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bits The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
+{
+    int i, j, sz = w*h, size3 = h*w*3, sh = 3, zoom = 1<<sh, w1 = w>>sh, h1 = h>>sh, max = (1<<bits)-1;
+    float rm, bm;
+
+    utils_zoom_out_rgb24(in, buff, (uint32*)&buff[w1*h1*3], zoom, w, h);
+    utils_wb(buff, &rm, &bm, w1, h1);
+
+    for(i = 0; i < size3; i+=3) {
+        out[i]   = in[i]*rm;    out[i] = out[i] > max ? max : out[i];
+        out[i+1] = in[i+1];
+        out[i+2] = in[i+2]*bm;  out[i+2] = out[i+2] > max ? max : out[i+2];
+    }
+}
+
+/**	\brief Transform image in rgb24 format to 8bits in the same format
+    \param in	 	The input image.
+    \param out	 	The output image.
+    \param buff     The temporary buffer.
+    \param bits     The input image bits per pixel.
+    \param w        The image width.
+    \param h        The image height.
+*/
+void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 w, uint32 h)
+{
+    uint32 i, df = bits-8, hmax = 1<<bits, sum, low, top;
+    uint32  size = w*h, size3 = h*w*3, b, max;
+    double lowt = 0.01, topt = 0.01, a;
+    uint8 *look = buff;
+    uint32 *hist = (uint32*)&buff[hmax];
+
+    memset(look, 0, sizeof(uint8 )*hmax);
+    memset(hist, 0, sizeof(uint32)*hmax);
+
+    for(i=0; i < size3; i++) hist[in[i]]++;
+
+    //Make LUT table liniar
+
+    sum = 0;
+    for(i=0; (double)sum/(double)size < lowt ; i++) sum += hist[i];
+    low = i;
+    sum = 0;
+    for(i=hmax-1; (double)sum/(double)size < topt ; i--) sum += hist[i];
+    top = i;
+
+    a = 255./(double)(top - low);
+
+    for(i = 0; i < low; i++) look[i] = 0;
+    for(i = low; i < top; i++) look[i] = (uint32)(a*(double)(i-low));
+    for(i = top; i < hmax; i++) look[i] = 255;
+
+    /*
+    //Make LUT table integral
+    b = (1<<30)/size3;
+
+    //Check if one bin in historgamm more then one bin in LUT------------------------------------
+    sum = 0;
+    max = size3>>8;
+
+    for(i = 0; i < hmax; i++) {
+        if(hist[i] > max) {
+            sum += hist[i] - max;
+            hist[i] = max;
+        }
+    }
+    b = (1<<30)/(size3 - sum);
+
+    //---------------------------------------------------------------------------------------------
+    sum = 0;
+    for(i = 0; i < hmax; i++) { sum += hist[i]; look[i] = sum*b>>22; }
+    */
+
+    //for(i = 0; i < hmax; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
+    //printf("low = %d top = %d hmax = %d a = %f\n", low, top, hmax, a);
+
+
+    for(i=0; i < size3; i++) out[i] = look[in[i]];
+}
+
+/**	\brief Image transform.
+    \param img	 		The input image.
+    \param img1	 		The output image.
+    \param look 		The LUT.
+    \param w            The image width.
+    \param h            The image height.
+*/
+void utils_bits12to8(int16 *img, uint8 *img1, uint32 *look, uint32 w, uint32 h)
+{
+    uint32 i, sz = w*h;
+    for(i=0; i < sz; i++) img1[i] = look[img[i]];
 }
 
 void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h)
