@@ -173,7 +173,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
 			new_buffer (gw->orig[0], f0->b.w, f0->b.h);
-            //utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
+            utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
 			gtk_widget_queue_draw(gw->drawingarea[0]);
 
 			if(gw->wc.ccol == RGBY ){
@@ -228,11 +228,22 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             gtk_widget_queue_draw(gw->drawingarea[1]);
 
             //utils_zoom_out(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 5, f0->b.w, f0->b.h);
-            utils_bayer_zoom_out(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f0->b.w, f0->b.h);
+            utils_zoom_out_bayer(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f0->b.w, f0->b.h);
+            utils_wb_rgb24(f0->d.pic, f0->Y16.pic, (int16*)gw->gop.buf, 12, f0->b.w/2, f0->b.h/2);
+
+            //utils_wb_rgb16(f0->d.pic, f0->d.pic, f0->b.w/8, f0->b.h/8);
+
+            //utils_make_lookup(f0->d.pic, (uint32*)gw->gop.buf, (uint32*)&gw->gop.buf[1<<16], f0->b.w/8*3, f0->b.h/8, 8, 12);
+            //utils_bits12to8(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (uint32*)&gw->gop.buf[1<<16], uint32 w, uint32 h);
 
             new_buffer (gw->orig[2], f0->b.w/2, f0->b.h/2);
             utils_rgb16_rgb8(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
             gtk_widget_queue_draw(gw->drawingarea[2]);
+
+            new_buffer (gw->orig[3], f0->b.w/2, f0->b.h/2);
+            utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, f0->b.w/2, f0->b.h/2);
+            //utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
+            gtk_widget_queue_draw(gw->drawingarea[3]);
         }
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);

@@ -867,9 +867,21 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
     clock_t start, end;
     double time=0., tmp, en1, en2, en3, en4;
     struct timeval tv;
-
+    //float i1,j1,result;
 
     if(wc->ccol == CS420){
+        gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+        /*
+        for(i1=0;i1<1;i1+=0.0002)
+            for(j1=0;j1<1;j1+=0.0002)
+            {
+                result+=i1*j1;
+            }
+        */
+        gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+        tmp = (double)(end-start)/1000000.; time +=tmp;
+        printf("Test = %f\n", tmp);
+
         //filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
 
         utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
