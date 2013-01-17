@@ -337,7 +337,15 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     int i, j, size = w*h, size3 = h*w*3;
     uint32 d, d1;
 
-    float s = -0.01, m;
+    float s = -0.01, m, th = 0.1;
+    // New algorithm for white balancing
+    //Get only pixeles with (G-R)/G and (G-B)/G differene less then threshoud
+    for(i = 0; i < size3; i+=3) {
+        if((float)(abs(in[i+1] - in[i]))/(float)(in[i+1]) > th){
+            //printf("dif = %f th = %f\n", (float)(abs(in[i+1] - in[i]))/(float)(in[i+1]), th);
+            in[i] = in[i+1] = in[i+2] = 0;
+        }
+    }
 
     d = 0; m = 1.;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i]*m);
@@ -364,15 +372,6 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
         d = d1;
     }
     *bm = m;
-
-    //bd = 0;
-    /*
-    for(i = 0; i < dim; i+=3) {
-        out[i] = in[i]*rm;
-        out[i+1] = in[i+1];
-        out[i+2] = in[i+2]*bm;
-    }
-    */
 }
 
 /**	\brief White balance 16 bits rgb24 image.
@@ -403,24 +402,64 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     \param out	 	The output image.
     \param buff     The temporary buffer.
     \param bits     The input image bits per pixel.
+    \param b        If b = 0 - liniar, b = 100 - integral image transform.
     \param w        The image width.
     \param h        The image height.
 */
-void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 w, uint32 h)
+void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 b, uint32 w, uint32 h)
 {
-    uint32 i, df = bits-8, hmax = 1<<bits, sum, low, top;
-    uint32  size = w*h, size3 = h*w*3, b, max;
+    int i, j, st, lp, df = bits-8, hmax = 1<<bits, sum, sum1, low, top;
+    int  size = w*h, size3 = h*w*3, max, min, d = 1<<8;
     double lowt = 0.01, topt = 0.01, a;
-    uint8 *look = buff;
+    uint8 *lut = buff;
     uint32 *hist = (uint32*)&buff[hmax];
+    int p[d+1];
 
-    memset(look, 0, sizeof(uint8 )*hmax);
+    memset(lut, 0, sizeof(uint8 )*hmax);
     memset(hist, 0, sizeof(uint32)*hmax);
+    memset(p, 0, sizeof(int)*d);
 
     for(i=0; i < size3; i++) hist[in[i]]++;
+    //New algorithm
+    //Find min and max value of histogram
+    for(i=0; !hist[i]; i++);
+    p[0] = i;
+    printf("min = %d\n", i);
+    for(i=hmax-1; !hist[i]; i--);
+    p[d] = i;
+    printf("max = %d\n", i);
+
+
+    for(st=1, d=256; st < 9; st++, d>>=1){
+        for(j=0; j < 256; j+=d){
+            for(i=p[j], sum1=0; i < p[j+d]; i++) sum1 +=  hist[i];
+            sum1>>=1;
+            for(i=p[j], sum=0; sum < sum1; i++){
+                sum += hist[i];
+                //printf("i = %d sum = %d\n", i, sum);
+            }
+            //for(i=p[j], sum=0; sum < (size3>>st); i++){
+            //    sum += hist[i];
+                //printf("i = %d sum = %d\n", i, sum);
+            //}
+            lp = (p[j+d] + p[j])>>1;
+            p[j+(d>>1)] = lp + (i - lp)*b/100;
+            //printf("size = %d st = %d d = %d j = %d lp = %d ip = %d p[%d] = %d p[%d] = %d\n",
+            //       size3>>st, st, d, j, lp, i, j+d, p[j+d], j, p[j]);
+        }
+    }
+    for(i = 0; i <= 256; i++) printf("p[%d] = %d\n", i, p[i]);
+
+    //Make LUT
+    for(j=0; j < 256; j++){
+        for(i=p[j]; i < p[j+1]; i++){
+            lut[i] = j;
+        }
+    }
+
 
     //Make LUT table liniar
-
+    /*
     sum = 0;
     for(i=0; (double)sum/(double)size < lowt ; i++) sum += hist[i];
     low = i;
@@ -430,11 +469,11 @@ void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, ui
 
     a = 255./(double)(top - low);
 
-    for(i = 0; i < low; i++) look[i] = 0;
-    for(i = low; i < top; i++) look[i] = (uint32)(a*(double)(i-low));
-    for(i = top; i < hmax; i++) look[i] = 255;
+    for(i = 0; i < low; i++) lut[i] = 0;
+    for(i = low; i < top; i++) lut[i] = (uint32)(a*(double)(i-low));
+    for(i = top; i < hmax; i++) lut[i] = 255;
 
-    /*
+
     //Make LUT table integral
     b = (1<<30)/size3;
 
@@ -452,14 +491,13 @@ void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, ui
 
     //---------------------------------------------------------------------------------------------
     sum = 0;
-    for(i = 0; i < hmax; i++) { sum += hist[i]; look[i] = sum*b>>22; }
+    for(i = 0; i < hmax; i++) { sum += hist[i]; lut[i] = sum*b>>22; }
     */
 
-    //for(i = 0; i < hmax; i++) printf("%d hist = %d look = %d\n", i, hist[i], look[i]);
+    //for(i = 0; i < hmax; i++) printf("%d hist = %d lut = %d\n", i, hist[i], look[i]);
     //printf("low = %d top = %d hmax = %d a = %f\n", low, top, hmax, a);
 
-
-    for(i=0; i < size3; i++) out[i] = look[in[i]];
+    for(i=0; i < size3; i++) out[i] = lut[in[i]];
 }
 
 /**	\brief Image transform.
@@ -1089,6 +1127,7 @@ uint8* utils_bayer_to_RGB24(int16 *img, uint8 *rgb, int16 *buff, uint32 w, uint3
     int x, x1, x2, xs, ys, y = 0, wy, xwy3, w2 = w<<1, yw = 0, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8;
     int16 *l0, *l1, *l2, *tm;
     l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+    shift = 0;
     //printf("bpp = %d shift = %d\n", bpp, shift);
 
     switch(bay){
@@ -2266,7 +2305,6 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
         }
     }
 }
-
 
 void inline static cp_line_in(int16 *img, int16 *c, uint32 w)
 {
