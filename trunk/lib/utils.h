@@ -13,9 +13,11 @@ uint8* utils_gray16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, 
 uint8* utils_rgb16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
 void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h);
 void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
-void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 w, uint32 h);
+void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 b, uint32 w, uint32 h);
 
 void utils_bits12to8(int16 *img, uint8 *img1, uint32 *look, uint32 w, uint32 h);
+
+void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
 
 void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
@@ -54,7 +56,7 @@ void 	utils_RGB24_to_YUV444(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, 
 void 	utils_RGB24_to_YUV420(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp, uint32 pad);
 uint8* 	utils_YUV444_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp);
 uint8* 	utils_YUV420_to_RGB24(uint8 *rgb, int16 *Y, int16 *U, int16 *V, uint32 w, uint32 h, uint32 bpp);
-void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
+//void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
 
 void 	utils_bayer_to_RGB_fast	(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, BayerGrid bay, uint32 sh);
 void 	utils_bayer_to_RGB_fast_(int16 *img, uint8 *r, uint8 *g, uint8 *b, uint32 w, uint32 h, BayerGrid bay, uint32 sh);
