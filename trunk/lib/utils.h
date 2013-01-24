@@ -13,7 +13,7 @@ uint8* utils_gray16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, 
 uint8* utils_rgb16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
 void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h);
 void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
-void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 b, uint32 w, uint32 h);
+void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uint32 bits, const uint32 b, const uint32 w, const uint32 h);
 
 void utils_bits12to8(int16 *img, uint8 *img1, uint32 *look, uint32 w, uint32 h);
 
