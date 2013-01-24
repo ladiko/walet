@@ -1,5 +1,4 @@
 #include <walet.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 //#include <malloc.h>
@@ -8,6 +7,9 @@
 #if !defined(__APPLE__)
 #include <malloc.h>
 #endif
+
+#define YY(r, g, b) (((306*((r) - (g)) + 117*((b) - (g)))>>10) + (g))
+#define clip(x) (((x) > 255) ? 255 : (x))
 
 /** \brief Copy image from the buffer
     \param in       The input buffer.
@@ -337,7 +339,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     int i, j, size = w*h, size3 = h*w*3;
     uint32 d, d1;
 
-    float s = -0.01, m, th = 0.1;
+    float s = -0.05, m, th = 0.5;
     // New algorithm for white balancing
     //Get only pixeles with (G-R)/G and (G-B)/G differene less then threshoud
     for(i = 0; i < size3; i+=3) {
@@ -389,6 +391,7 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 
     utils_zoom_out_rgb24(in, buff, (uint32*)&buff[w1*h1*3], zoom, w, h);
     utils_wb(buff, &rm, &bm, w1, h1);
+    printf("rm = %f bm = %f\n", rm, bm);
 
     for(i = 0; i < size3; i+=3) {
         out[i]   = in[i]*rm;    out[i] = out[i] > max ? max : out[i];
@@ -400,26 +403,39 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 /**	\brief Transform image in rgb24 format to 8bits in the same format
     \param in	 	The input image.
     \param out	 	The output image.
-    \param buff     The temporary buffer.
+    \param buff     The temporary buffer (size = 6*(1<<bits)).
     \param bits     The input image bits per pixel.
     \param b        If b = 0 - liniar, b = 100 - integral image transform.
     \param w        The image width.
     \param h        The image height.
 */
-void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, uint32 b, uint32 w, uint32 h)
+void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uint32 bits,
+                             const uint32 b, const uint32 w, const uint32 h)
 {
-    int i, j, st, lp, df = bits-8, hmax = 1<<bits, sum, sum1, low, top;
-    int  size = w*h, size3 = h*w*3, max, min, d = 1<<8;
+    int y, y1, i, j, st, lp, df = bits-8, hmax = 1<<bits, sum, sum1, low, top, mll, tmp, sp;
+    int  size = w*h, size3 = h*w*3, max, min, d = 1<<8, sh = 16;
     double lowt = 0.01, topt = 0.01, a;
-    uint8 *lut = buff;
-    uint32 *hist = (uint32*)&buff[hmax];
+
+    //The LUT array hmax bytes
+    //uint8 *lut = buff;
+    //Histogramm array 4*hmax bytes
+    uint32 *hist = (uint32*)buff;
+    //The multiplier array 2*hmax bytes
+    int16 *ml = (int16*)&hist[hmax];
     int p[d+1];
 
-    memset(lut, 0, sizeof(uint8 )*hmax);
+    //memset(lut, 0, sizeof(uint8)*hmax);
     memset(hist, 0, sizeof(uint32)*hmax);
-    memset(p, 0, sizeof(int)*d);
+    memset(p, 0, sizeof(int)*(d+1));
 
-    for(i=0; i < size3; i++) hist[in[i]]++;
+    //for(i=0; i < size3; i++) hist[in[i]]++;
+
+    for(i=0; i < size3; i+=3) {
+        //printf("YY = %d", YY(in[i], in[i+1], in[i+2]));
+        hist[YY(in[i], in[i+1], in[i+2])]++;
+    }
+    //for(i = 0; i < hmax; i++) printf("%d hist = %d \n", i, hist[i]);
+
     //New algorithm
     //Find min and max value of histogram
     for(i=0; !hist[i]; i++);
@@ -429,34 +445,38 @@ void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, ui
     p[d] = i;
     printf("max = %d\n", i);
 
-
     for(st=1, d=256; st < 9; st++, d>>=1){
         for(j=0; j < 256; j+=d){
-            for(i=p[j], sum1=0; i < p[j+d]; i++) sum1 +=  hist[i];
+            for(i=p[j], sum1=0; i < p[j+d]; i++) sum1 += hist[i];
+            //sp = sum1/d;
+            //for(i=p[j]; i < p[j+d]; i++) if(hist[i] > sp) { hist[i] = sp; sum1 -= (sp-hist[i]); }
+
             sum1>>=1;
             for(i=p[j], sum=0; sum < sum1; i++){
                 sum += hist[i];
                 //printf("i = %d sum = %d\n", i, sum);
             }
-            //for(i=p[j], sum=0; sum < (size3>>st); i++){
-            //    sum += hist[i];
-                //printf("i = %d sum = %d\n", i, sum);
-            //}
             lp = (p[j+d] + p[j])>>1;
-            p[j+(d>>1)] = lp + (i - lp)*b/100;
-            //printf("size = %d st = %d d = %d j = %d lp = %d ip = %d p[%d] = %d p[%d] = %d\n",
-            //       size3>>st, st, d, j, lp, i, j+d, p[j+d], j, p[j]);
+            p[j+(d>>1)] = lp + (i - lp)*(int)b/100;
+            //printf("size = %d st = %d d = %d j = %d lp = %d ip = %d p[%d] = %d p[%d] = %d p[%d] = %d\n",
+            //       size3>>st, st, d, j, lp, i, j+d, p[j+d], j, p[j], j+(d>>1), p[j+(d>>1)]);
         }
     }
     for(i = 0; i <= 256; i++) printf("p[%d] = %d\n", i, p[i]);
 
     //Make LUT
     for(j=0; j < 256; j++){
+        //mll = (j<<sh)/p[j+1];
         for(i=p[j]; i < p[j+1]; i++){
-            lut[i] = j;
+            //lut[i] = j;
+            if(i) ml[i] = (j<<sh)/i;
+            //ml[i] = mll;
         }
     }
-
+    ml[p[j]] = ml[p[j]-1];
+    printf("p[255] = %d\n", p[255]);
+    //ml[p[j]] = mll;
+    //lut[p[j]] = 255;
 
     //Make LUT table liniar
     /*
@@ -494,10 +514,22 @@ void utils_transorm_to_8bits(int16 *in, uint8 *out, uint8 *buff, uint32 bits, ui
     for(i = 0; i < hmax; i++) { sum += hist[i]; lut[i] = sum*b>>22; }
     */
 
-    //for(i = 0; i < hmax; i++) printf("%d hist = %d lut = %d\n", i, hist[i], look[i]);
-    //printf("low = %d top = %d hmax = %d a = %f\n", low, top, hmax, a);
+    for(i = 0; i < hmax; i++) printf("%d hist = %d ml = %d\n", i, hist[i], ml[i]);
 
-    for(i=0; i < size3; i++) out[i] = lut[in[i]];
+    for(i=0; i < size3; i+=3) {
+        y = YY(in[i], in[i+1], in[i+2]);
+        //y1 = lut[y];
+        //out[i  ] = out[i+1] = out[i+2] = y1;
+        //out[i  ] = (in[i  ]*y1)/y;
+        //out[i+1] = (in[i+1]*y1)/y;
+        //out[i+2] = (in[i+2]*y1)/y;
+        tmp = in[i  ]*ml[y]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        tmp = in[i+1]*ml[y]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        tmp = in[i+2]*ml[y]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+
+    }
+
+    //for(i=0; i < size3; i++) out[i] = lut[in[i]];
 }
 
 /**	\brief Image transform.
@@ -591,7 +623,7 @@ int g[9][2] = {
 #define lh(step, x, y) img[x*step + (step>>1)*width  + y*step*width];
 #define hh(step, x, y) img[x*step + (step>>1) + (step>>1)*width  + y*step*width];
 
-#define clip(x)		abs(x);
+//#define clip(x)		abs(x);
 #define lb(x) (((x+128) < 0) ? 0 : (((x+128) > 255) ? 255 : (x+128)))
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 #define oe(a,x)	(a ? x&1 : (x+1)&1)
