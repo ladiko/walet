@@ -209,12 +209,13 @@ void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uin
     \param out	 		The output image.
     \param buff	 		The temporary buffer, should include 1 row of image.
     \param zoom 		The zoom parameter 1 - no zoom, 2 - twice, 3 - three times ...
+    \param shift 		The value removed from each color
     \param w 			The image width.
     \param h 			The image height.
 */
-void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h)
+void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h)
 {
-    int i, j, x, x1, y, y1, yw, yx, sq = zoom*zoom, w1 = w/zoom;
+    int i, j, x, x1, y, y1, yw, yx, yxi, sq = zoom*zoom, w1 = w/zoom;
     uint32 max = 1<<31, sh = 0;
     uint32 *buff1, *buff2;
 
@@ -232,14 +233,16 @@ void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, ui
             for(x=0, x1=0; x < w; x+=zoom, x1++){
                 yx = yw + x;
                 for(i=0; i < zoom; i++) {
-                    buff [x1] += in[(yx+i)*3  ];
-                    buff1[x1] += in[(yx+i)*3+1];
-                    buff2[x1] += in[(yx+i)*3+2];
+                    yxi = (yx+i)*3;
+                    buff [x1] += (in[yxi  ] - shift);
+                    buff1[x1] += (in[yxi+1] - shift);
+                    buff2[x1] += (in[yxi+2] - shift);
                 }
                 if(j == zoom-1) {
-                    out[(y1*w1+x1)*3  ] =  sh ? buff [x1]>>zoom : buff [x1]/sq;
-                    out[(y1*w1+x1)*3+1] =  sh ? buff1[x1]>>zoom : buff1[x1]/sq;
-                    out[(y1*w1+x1)*3+2] =  sh ? buff2[x1]>>zoom : buff2[x1]/sq;
+                    yxi = (y1*w1+x1)*3;
+                    out[yxi  ] =  sh ? buff [x1]>>zoom : buff [x1]/sq;
+                    out[yxi+1] =  sh ? buff1[x1]>>zoom : buff1[x1]/sq;
+                    out[yxi+2] =  sh ? buff2[x1]>>zoom : buff2[x1]/sq;
                     buff[x1] = buff1[x1] = buff2[x1] = 0;
                 }
             }
@@ -327,7 +330,7 @@ void utils_zoom_out_bayer(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, Ba
     }
 }
 
-/**	\brief Calculate the white balance multiplier for read and blue coloro of 16 bits rgb24 image.
+/**	\brief Calculate the white balance multiplier for read and blue color of 16 bits rgb24 image.
     \param in	The input 16 bits rgb24 image.
     \param rm   The pointer to the red multiplier.
     \param bm   The pointer to the blue multiplier.
@@ -339,11 +342,12 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     int i, j, size = w*h, size3 = h*w*3;
     uint32 d, d1;
 
-    float s = -0.05, m, th = 0.5;
+    float s = -0.01, m, th = 0.5;
     // New algorithm for white balancing
-    //Get only pixeles with (G-R)/G and (G-B)/G differene less then threshoud
+    //Get only pixeles with (G-R)/G and (G-B)/G difference less then threshoud
     for(i = 0; i < size3; i+=3) {
-        if((float)(abs(in[i+1] - in[i]))/(float)(in[i+1]) > th){
+        if((float)(abs(in[i+1] - in[i  ]))/(float)(in[i+1]) > th ||
+           (float)(abs(in[i+1] - in[i+2]))/(float)(in[i+1]) > th){
             //printf("dif = %f th = %f\n", (float)(abs(in[i+1] - in[i]))/(float)(in[i+1]), th);
             in[i] = in[i+1] = in[i+2] = 0;
         }
@@ -388,8 +392,11 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 {
     int i, j, sz = w*h, size3 = h*w*3, sh = 3, zoom = 1<<sh, w1 = w>>sh, h1 = h>>sh, max = (1<<bits)-1;
     float rm, bm;
+    //Find the lowest color value
+    //for(i=1; i < size3; i++) if (in[i] < min) min = in[i];
 
-    utils_zoom_out_rgb24(in, buff, (uint32*)&buff[w1*h1*3], zoom, w, h);
+    utils_zoom_out_rgb24(in, buff, (uint32*)&buff[w1*h1*3], zoom, 0, w, h);
+
     utils_wb(buff, &rm, &bm, w1, h1);
     printf("rm = %f bm = %f\n", rm, bm);
 
@@ -432,7 +439,8 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
 
     for(i=0; i < size3; i+=3) {
         //printf("YY = %d", YY(in[i], in[i+1], in[i+2]));
-        hist[YY(in[i], in[i+1], in[i+2])]++;
+        //hist[YY(in[i], in[i+1], in[i+2])]++;
+        hist[in[i]]++; hist[in[i+1]]++; hist[in[i+2]]++;
     }
     //for(i = 0; i < hmax; i++) printf("%d hist = %d \n", i, hist[i]);
 
@@ -448,8 +456,9 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
     for(st=1, d=256; st < 9; st++, d>>=1){
         for(j=0; j < 256; j+=d){
             for(i=p[j], sum1=0; i < p[j+d]; i++) sum1 += hist[i];
-            //sp = sum1/d;
-            //for(i=p[j]; i < p[j+d]; i++) if(hist[i] > sp) { hist[i] = sp; sum1 -= (sp-hist[i]); }
+            //Remove holes in histogramm
+            sp = sum1/d;
+            for(i=p[j]; i < p[j+d]; i++) if(hist[i] > sp) { hist[i] = sp; sum1 -= (sp-hist[i]); }
 
             sum1>>=1;
             for(i=p[j], sum=0; sum < sum1; i++){
@@ -514,18 +523,18 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
     for(i = 0; i < hmax; i++) { sum += hist[i]; lut[i] = sum*b>>22; }
     */
 
-    for(i = 0; i < hmax; i++) printf("%d hist = %d ml = %d\n", i, hist[i], ml[i]);
+    //for(i = 0; i < hmax; i++) printf("%d hist = %d ml = %d\n", i, hist[i], ml[i]);
 
     for(i=0; i < size3; i+=3) {
+        /*
         y = YY(in[i], in[i+1], in[i+2]);
-        //y1 = lut[y];
-        //out[i  ] = out[i+1] = out[i+2] = y1;
-        //out[i  ] = (in[i  ]*y1)/y;
-        //out[i+1] = (in[i+1]*y1)/y;
-        //out[i+2] = (in[i+2]*y1)/y;
         tmp = in[i  ]*ml[y]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
         tmp = in[i+1]*ml[y]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
         tmp = in[i+2]*ml[y]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        */
+        tmp = in[i  ]*ml[in[i  ]]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        tmp = in[i+1]*ml[in[i+1]]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        tmp = in[i+2]*ml[in[i+2]]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
 
     }
 
@@ -1464,7 +1473,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
     3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h;//shift = 1<<(bpp-1),
     int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
     double aw, ah, c;
@@ -1527,7 +1536,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    hist[img[yx1]+shift]++;
+                    hist[img[yx1]]++;
                 }
             }
             //Make LUT table integral
@@ -1552,7 +1561,7 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] = look[(img[yx1]+shift)];//*wt[y1*ws + x1];
+                    img1[yx1] = look[(img[yx1])];//*wt[y1*ws + x1];
                 }
             }
         }
@@ -1601,34 +1610,34 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
         }
     }
     */
-    for(i=0; i < size; i++){
-        img1[i] = img1[i] - 128;
-    }
+    //for(i=0; i < size; i++){
+    //    img1[i] = img1[i] - 128;
+   // }
 }
 
 void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
 {
-    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h; //shift = 1<<(bpp-1),
     int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
     double aw, ah, c;
-    int ws = 80, hs = 60, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
+    int ws = 128, hs = 128, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
     uint32 hist[4096], look[4096], sum, b;
     double wt[ws*hs];
 
 
-    for(y=0; y < h; y+=hs){
+    for(y=0; y < h-hs; y+=hs){
         yw = y*w;
-        for(x=0; x < w; x+=ws){
+        for(x=0; x < w-ws; x+=ws){
             yx = yw + x;
             //Make local histogramm
-            memset(hist, 0, sizeof(uint32)*(4096));
+            memset(hist, 0, sizeof(uint32)*4096);
 
             for(y1=0; y1 < hs; y1+=1){
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    hist[img[yx1]+shift]++;
+                    hist[img[yx1]]++;
                 }
             }
             //Make LUT table integral
@@ -1638,39 +1647,40 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 
             for(i = 0; i < hz; i++) {
                 if(hist[i] > max) {
-                    sum += hist[i] - max;
+                    sum += (hist[i] - max);
                     hist[i] = max;
                 }
             }
-            b = (1<<31)/(sz - sum);
+            b = (1<<30)/(sz - sum);
 
             sum = 0;
-            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>23;}//   printf("%d ", look[i]);}
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;} //   printf("%d ", look[i]);}
 
             //printf("\n");
+            //printf("y = %d x = %d\n",y, x);
 
             for(y1=0; y1 < hs; y1+=1){
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] += look[(img[yx1]+shift)]; //*wt[y1*ws + x1];
+                    img1[yx1] = look[(img[yx1])]; //*wt[y1*ws + x1];
                 }
             }
         }
     }
-    for(i=0; i < size; i++){
-        img1[i] = img1[i] - 128;
-    }
+    //for(i=0; i < size; i++){
+   //     img1[i] = img1[i] - 128;
+   // }
 
 }
 
 void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
 {
-    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, shift = 1<<(bpp-1), sh = bpp - 8, size = w*h;
+    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h;//shift = 1<<(bpp-1),
     int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn, tmp, tmp1;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny, out, a, cn;
     double aw, ah, c;
-    int ws = 128, hs = 8, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
+    int ws = 128, hs = 128, wt = (ws>>2)<<1, ht = (hs>>2)<<1, sz = ws*hs, hz = 1<<bpp, th = size>>8;
     uint32 hist[4096], look[4096], sum, b;
     //double wt[ws*hs];
 
@@ -1678,7 +1688,7 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 
     memset(hist, 0, sizeof(uint32)*4096);
 
-    for(i=0; i < size; i++) hist[img[i]+shift]++;
+    for(i=0; i < size; i++) hist[img[i]]++;
     /*
     sum = 0;
     for(i=0; sum < th; i++ ) sum += hist[i];
@@ -1690,13 +1700,13 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
     for(i=0; !hist[i]; i++ ); ming = i;
     for(i=4095; !hist[i]; i-- ) maxg = i;
 
-    sz = w+h;
+    //sz = w+h;
     //sz = h;
     printf("min = %d max = %d\n", ming, maxg);
     b = (1<<30)/sz;
     //a = (256<<20)/(maxg - ming);
     max = sz>>8;
-    /*
+
     for(y=0; y < h-hs; y+=1){
         yw = y*w;
         for(x=0; x < w-ws; x+=1){
@@ -1709,36 +1719,9 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                 yw1 = y1*w;
                 for(x1=x; x1 < ws+x; x1+=1){
                     yx1 = yw1 + x1;
-                    tmp = yx1; tmp1 = img[tmp];
-                    hist[tmp1 + shift]++;
+                    //tmp = yx1; tmp1 = img[tmp];
+                    hist[img[yx1]]++;
                 }
-            }
-
-            sum = 0;
-            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
-
-            tmp = yx + ht*w + wt;
-            img1[tmp] = look[(img[tmp]+shift)];
-        }
-    }
-    */
-    for(y=0; y < h; y+=1){
-        yw = y*w;
-        for(x=0; x < w; x+=1){
-            yx = yw + x;
-            //Make local histogramm
-            memset(hist, 0, sizeof(uint32)*4096);
-            cn = 0;
-            min = 4095; max = 0;
-
-            for(y1=0; y1 < h; y1+=1){
-                yw1 = y1*w + x;
-                hist[img[yw1] + shift]++;
-            }
-
-            for(x1=0; x1 < w; x1+=1){
-                 yw1 = yw + x1;
-                 hist[img[yw1] + shift]++;
             }
 
             //Make LUT table integral
@@ -1753,16 +1736,44 @@ void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
             b = (1<<30)/(sz - sum);
             */
             sum = 0;
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;}//   printf("%d ", look[i]);}
+
+            tmp = yx + ht*w + wt;
+            img1[tmp] = look[(img[tmp])];
+        }
+    }
+    /*
+    for(y=0; y < h; y+=1){
+        yw = y*w;
+        for(x=0; x < w; x+=1){
+            yx = yw + x;
+            //Make local histogramm
+            memset(hist, 0, sizeof(uint32)*4096);
+            cn = 0;
+            min = 4095; max = 0;
+
+            for(y1=0; y1 < h; y1+=1){
+                yw1 = y1*w + x;
+                hist[img[yw1]]++;
+            }
+
+            for(x1=0; x1 < w; x1+=1){
+                 yw1 = yw + x1;
+                 hist[img[yw1]]++;
+            }
+
+            sum = 0;
             for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22; }//   printf("%d ", look[i]);}
 
             //tmp = yx + ht*w + wt;
-            img1[yx] = look[(img[yx]+shift)];
+            img1[yx] = look[img[yx]];
         }
     }
-
-    for(i=0; i < size; i++){
-        img1[i] = img1[i] - 128;
-    }
+    */
+    //for(i=0; i < size; i++){
+        //img1[i] = img1[i] - 128;
+        //img1[i] = img1[i];
+    //}
 
 }
 

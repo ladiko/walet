@@ -575,8 +575,8 @@ void on_median_button_clicked(GtkObject *object, GtkWalet *gw)
 
     //filter_median_bayer_ad(f0->b.pic, f0->d.pic, (int16*)gw->gop.buf, w, h);
     //for(i=0; i<sz; i++ ) f0->b.pic[i] = f0->d.pic[i];
-    //utils_bayer_local_hdr2(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
-    utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+    utils_bayer_local_hdr2(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
+    //utils_bayer_local_hdr3(f0->b.pic, f0->d.pic, f0->b.w, f0->b.h, gw->wc.bg, 12);
 
     new_buffer (gw->orig[1], f0->b.w, f0->b.h);
     utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, 12);

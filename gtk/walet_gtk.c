@@ -211,12 +211,12 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
 			}
 		} else {
-            gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
-            //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
+            //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
+            gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
 			gw->wc.bpp = 12;
 			for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
-            utils_turn_on_180(f0->b.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h);
+            //utils_turn_on_180(f0->b.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h);
 
             new_buffer (gw->orig[0], f0->b.w, f0->b.h);
             utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
@@ -229,6 +229,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 
             //utils_zoom_out(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 5, f0->b.w, f0->b.h);
             utils_zoom_out_bayer(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f0->b.w, f0->b.h);
+            //for(i=0; i< f0->b.w*f0->b.h*3/4; i++) f0->Y16.pic[i] = f0->d.pic[i];
             utils_wb_rgb24(f0->d.pic, f0->Y16.pic, (int16*)gw->gop.buf, 12, f0->b.w/2, f0->b.h/2);
 
             //utils_wb_rgb16(f0->d.pic, f0->d.pic, f0->b.w/8, f0->b.h/8);
@@ -241,7 +242,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             gtk_widget_queue_draw(gw->drawingarea[2]);
 
             new_buffer (gw->orig[3], f0->b.w/2, f0->b.h/2);
-            utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, 100, f0->b.w/2, f0->b.h/2);
+            utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, 50, f0->b.w/2, f0->b.h/2);
             //utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
             gtk_widget_queue_draw(gw->drawingarea[3]);
         }
