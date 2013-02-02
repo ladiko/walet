@@ -1615,46 +1615,65 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
    // }
 }
 
-void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
+void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
 {
-    int i, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h; //shift = 1<<(bpp-1),
-    int max, min, ll, df, st, diff, sp = 4, Y, Y1, dfn;
+    int i, j, k=0, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h; //shift = 1<<(bpp-1),
+    int max1, min1, ll, df, st, diff, sp = 4, Y, Y1, dfn;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
     double aw, ah, c;
     int ws = 128, hs = 128, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
-    uint32 hist[4096], look[4096], sum, b;
-    double wt[ws*hs];
+    int xa, ya, ywa, yxa, ha = h/hs+2, wa = w/ws+2;
+    uint32 hist[4096], look[4096], sum;
+    int16 *max = buff;
+    int16 *min = &max[ha*wa];
+    int16 *avg = &min[ha*wa];
+    int16 *dif = &avg[ha*wa];
+    int16 *lmax = &dif[ha*wa];
+    int *a = (int*)&lmax[ha*wa];
+    int *b = &a[ha*wa];
+
+    int dr[8] = { -1, -1-wa, -wa, +1-wa, 1, 1+wa, wa, -1+wa };
 
 
-    for(y=0; y < h-hs; y+=hs){
-        yw = y*w;
-        for(x=0; x < w-ws; x+=ws){
-            yx = yw + x;
+    for(y=0, ya=1; y < h-hs; y+=hs, ya++){
+        yw = y*w; ywa = ya*wa;
+        for(x=0, xa=1; x < w-ws; x+=ws, xa++){
+            yx = yw + x; yxa = ywa + xa;
             //Make local histogramm
             memset(hist, 0, sizeof(uint32)*4096);
 
+            sum = 0; min1 = 1<<bpp; max1 = 0;
             for(y1=0; y1 < hs; y1+=1){
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    hist[img[yx1]]++;
+                    //hist[img[yx1]]++;
+                    if(img[yx1] < min1) min1 = img[yx1];
+                    else if(img[yx1] > max1) max1 = img[yx1];
+                    sum += img[yx1];
                 }
             }
+            min[yxa] = min1;
+            max[yxa] = max1;
+            avg[yxa] = sum/(hs*ws);
+            dif[yxa] = max1-min1;
+
+            /*
             //Make LUT table integral
             //b = (1<<31)/sz;
             sum = 0;
-            max = sz>>8;
+            max1 = sz>>8;
 
             for(i = 0; i < hz; i++) {
-                if(hist[i] > max) {
-                    sum += (hist[i] - max);
-                    hist[i] = max;
+                if(hist[i] > max1) {
+                    sum += (hist[i] - max1);
+                    hist[i] = max1;
                 }
             }
             b = (1<<30)/(sz - sum);
 
             sum = 0;
-            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22;} //   printf("%d ", look[i]);}
+            for(i = 0; i < hz; i++) { sum += hist[i]; look[i] = sum*b>>22; } //   printf("%d ", look[i]);}
 
             //printf("\n");
             //printf("y = %d x = %d\n",y, x);
@@ -1666,12 +1685,75 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
                     img1[yx1] = look[(img[yx1])]; //*wt[y1*ws + x1];
                 }
             }
+            */
         }
     }
-    //for(i=0; i < size; i++){
-   //     img1[i] = img1[i] - 128;
-   // }
 
+    //Make the borders
+    //Top
+    for(x=1; x < wa-1; x++) {
+        min[x] = min[x+wa]; max[x] = max[x+wa]; avg[x] = avg[x+wa]; dif[x] = dif[x+wa];
+    }
+    //Bottom
+    for(x=1; x < wa-1; x++) {
+        yx = (ha-1)*wa;
+        min[yx] = min[yx-wa]; max[yx] = max[yx-wa]; avg[yx] = avg[yx-wa]; dif[yx] = dif[yx-wa];
+    }
+    //Sides
+    for(y=0; y < ha; y++){
+        yw = y*wa;
+        min[yw] = min[yw+1]; max[yw] = max[yw+1]; avg[yw] = avg[yw+1]; dif[yw] = dif[yw+1];
+        yw = yw + wa - 1;
+        min[yw] = min[yw-1]; max[yw] = max[yw-1]; avg[yw] = avg[yw-1]; dif[yw] = dif[yw-1];
+    }
+
+    for(y=1; y < ha-1; y++){
+        yw = y*wa;
+        for(x=1; x < wa-1; x++){
+            yx = yw + x;
+            min1 = min[yx];
+            for(i=0; i < 8; i++) if(min[yx+dr[i]] < min1) min1 = min[yx+dr[i]];
+            a[yx] = (1<<28)/(avg[yx] - min1);
+            b[yx] = -128*min1/(avg[yx] - min1);
+            //a[yx] = (1<<28)/(avg[yx] - min[yx]);
+            //b[yx] = -128*min[yx]/(avg[yx] - min[yx]);
+            //printf("lmax y = %2d x = %2d dif = %d min = %d max = %d avg = %d a = %d b = %d\n",
+            //       yx/wa, yx%wa, dif[yx], min[yx], max[yx], avg[yx], a[yx], b[yx]);
+            /*
+            j=0;
+            for(i=0; i < 8; i++) if(dif[yx+dr[i]] > dif[yx]) j++;
+            if(!j){
+                lmax[k++] = yx;
+                printf("lmax y = %2d x = %2d dif = %d min = %d max = %d avg = %d\n",
+                       yx/wa, yx%wa, dif[yx], min[yx], max[yx], avg[yx]);
+                for(i=0; i < 8; i++)
+                    printf("     y = %2d x = %2d dif = %d min = %d max = %d avg = %d\n",
+                    (yx+dr[i])/wa, (yx+dr[i])%wa, dif[yx+dr[i]], min[yx+dr[i]], max[yx+dr[i]], avg[yx+dr[i]]);
+            }
+            */
+        }
+    }
+
+    //Image transform
+    for(y=0, ya=1; y < h-hs; y+=hs, ya++){
+        yw = y*w; ywa = ya*wa;
+        for(x=0, xa=1; x < w-ws; x+=ws, xa++){
+            yx = yw + x; yxa = ywa + xa;
+
+            for(y1=0; y1 < hs; y1+=1){
+                yw1 = yx + y1*w;
+                for(x1=0; x1 < ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    img1[yx1] = (a[yxa]*img[yx1]>>21) + b[yxa];
+                    img1[yx1] = img1[yx1] > 255 ? 255 : (img1[yx1] < 0 ? 0 : img1[yx1]);
+                    if(y==0 && x==0){
+                        //printf("in = %d out = %d min = %d avg = %d a = %d b = %d\n",
+                        //       img[yx1], img1[yx1], min[yxa], avg[yxa], a[yxa], b[yxa]);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void utils_bayer_local_hdr3(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
