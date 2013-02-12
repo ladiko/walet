@@ -414,9 +414,9 @@ void filter_median_bayer_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff,
                                 median_3_16 (s[i][0][1], s[i][1][1], s[i][2][1]),
                                 min_3_16    (s[i][0][2], s[i][1][2], s[i][2][2]));
             xs = x+sh;
-            //if(l[2][xs] == max || l[2][xs] == min)  img1[yx] = med;
-            //else img1[yx] = l[2][xs];
-            img1[yx] = med;
+            if(l[2][xs] == max || l[2][xs] == min)  img1[yx] = med;
+            else img1[yx] = l[2][xs];
+            //img1[yx] = med;
             //img1[yx] = max;
             img2[yx] = max-min;
             //if(img1[yx] == med)

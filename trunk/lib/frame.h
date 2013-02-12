@@ -3,7 +3,8 @@
 
 typedef struct{
 	Pic16s		b;		//Bayer image 16 bits
-	Pic16s		d;		//Bayer image abter DWT -> quantization -> IDWT for test only
+    Pic16s		d;		//Bayer image abter DWT -> quantization -> IDWT for test only
+    Pic16s		g;		//Bayer image abter DWT -> quantization -> IDWT for test only
     //Pic32u      in;     //The integral image
     //Pic32u      hs;     //Determinat of Hessian
 
