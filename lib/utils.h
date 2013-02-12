@@ -19,6 +19,9 @@ void utils_bits12to8(int16 *img, uint8 *img1, uint32 *look, uint32 w, uint32 h);
 
 void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *buff, uint32 w, uint32 h, BayerGrid bay);
 
+uint32 utils_read_pgm_whb(FILE **wl, const char *filename, uint32 *w, uint32 *h, uint32 *bpp);
+uint32 utils_read_pgm_img(FILE **wl,uint32 *w, uint32 *h, uint32 *bpp, uint8 *img);
+
 void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h);

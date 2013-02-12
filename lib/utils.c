@@ -1618,11 +1618,11 @@ void utils_bayer_local_hdr1(int16 *img, int16 *img1, uint32 w, uint32 h, BayerGr
 void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h, BayerGrid bay, uint32 bpp)
 {
     int i, j, k=0, x, x1, xs, ys, y, y1, yx, yx1, yw, yw1, h1, w1, h2, sh = bpp - 8, size = w*h; //shift = 1<<(bpp-1),
-    int max1, min1, ll, df, st, diff, sp = 4, Y, Y1, dfn;
+    int max1, min1, ll, df, st, diff, sp = 4, dfn;
     int maxg, ming, maxr, minr, maxb, minb, maxy, miny;
     double aw, ah, c;
     int ws = 128, hs = 128, sz = ws*hs, hz = 1<<bpp, ws2 = ws>>1, hs2 = hs>>1;
-    int xa, ya, ywa, yxa, ha = h/hs+2, wa = w/ws+2;
+    int xa, ya, ywa, yxa, ha = h/hs+2, wa = w/ws+2, Y, yx3, yn;
     uint32 hist[4096], look[4096], sum;
     int16 *max = buff;
     int16 *min = &max[ha*wa];
@@ -1634,13 +1634,12 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint
 
     int dr[8] = { -1, -1-wa, -wa, +1-wa, 1, 1+wa, wa, -1+wa };
 
-
     for(y=0, ya=1; y < h-hs; y+=hs, ya++){
         yw = y*w; ywa = ya*wa;
         for(x=0, xa=1; x < w-ws; x+=ws, xa++){
             yx = yw + x; yxa = ywa + xa;
             //Make local histogramm
-            memset(hist, 0, sizeof(uint32)*4096);
+            //memset(hist, 0, sizeof(uint32)*4096);
 
             sum = 0; min1 = 1<<bpp; max1 = 0;
             for(y1=0; y1 < hs; y1+=1){
@@ -1648,9 +1647,18 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
                     //hist[img[yx1]]++;
-                    if(img[yx1] < min1) min1 = img[yx1];
-                    else if(img[yx1] > max1) max1 = img[yx1];
-                    sum += img[yx1];
+                    yx3 = yx1*3;
+                    Y = YY(img[yx3], img[yx3+1], img[yx3+2]);
+
+                    if(Y < min1) min1 = Y;
+                    else if(Y > max1) max1 = Y;
+                    /*
+                    for(i=0; i < 3; i++){
+                        if(img[yx3+i] < min1) min1 = img[yx3+1];
+                        else if(img[yx3+i] > max1) max1 = img[yx3+i];
+                    }
+                    */
+                    sum += Y;
                 }
             }
             min[yxa] = min1;
@@ -1713,13 +1721,19 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint
             yx = yw + x;
             min1 = min[yx];
             for(i=0; i < 8; i++) if(min[yx+dr[i]] < min1) min1 = min[yx+dr[i]];
-            a[yx] = (1<<28)/(avg[yx] - min1);
-            b[yx] = -128*min1/(avg[yx] - min1);
-            //a[yx] = (1<<28)/(avg[yx] - min[yx]);
-            //b[yx] = -128*min[yx]/(avg[yx] - min[yx]);
-            //printf("lmax y = %2d x = %2d dif = %d min = %d max = %d avg = %d a = %d b = %d\n",
-            //       yx/wa, yx%wa, dif[yx], min[yx], max[yx], avg[yx], a[yx], b[yx]);
-            /*
+            //a[yx] = (1<<28)/(avg[yx] - min1);
+            //b[yx] = -128*min1/(avg[yx] - min1);
+            if(dif[yx] > 255) {
+                a[yx] = (1<<26)/(avg[yx] - min[yx]);
+                b[yx] = -128*min[yx]/(avg[yx] - min[yx]);
+            } else {
+                a[yx] = 1<<19;
+                b[yx] = -(avg[yx] - 128);
+            }
+
+            printf("lmax y = %2d x = %2d dif = %d min = %d max = %d avg = %d a = %d b = %d\n",
+                   yx/wa, yx%wa, dif[yx], min[yx], max[yx], avg[yx], a[yx], b[yx]);
+
             j=0;
             for(i=0; i < 8; i++) if(dif[yx+dr[i]] > dif[yx]) j++;
             if(!j){
@@ -1730,7 +1744,6 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint
                     printf("     y = %2d x = %2d dif = %d min = %d max = %d avg = %d\n",
                     (yx+dr[i])/wa, (yx+dr[i])%wa, dif[yx+dr[i]], min[yx+dr[i]], max[yx+dr[i]], avg[yx+dr[i]]);
             }
-            */
         }
     }
 
@@ -1744,8 +1757,20 @@ void utils_bayer_local_hdr2(int16 *img, int16 *img1, int16 *buff, uint32 w, uint
                 yw1 = yx + y1*w;
                 for(x1=0; x1 < ws; x1+=1){
                     yx1 = yw1 + x1;
-                    img1[yx1] = (a[yxa]*img[yx1]>>21) + b[yxa];
-                    img1[yx1] = img1[yx1] > 255 ? 255 : (img1[yx1] < 0 ? 0 : img1[yx1]);
+                    yx3 = yx1*3;
+                    Y = YY(img[yx3], img[yx3+1], img[yx3+2]);
+
+                    yn = (a[yxa]*Y>>19) + b[yxa];
+                    yn = yn > 255 ? 255 : (yn < 0 ? 0 : yn);
+                    if(Y){
+                        img1[yx3] = img[yx3]*yn/Y; img1[yx3] = img1[yx3] > 255 ? 255 : (img1[yx3] < 0 ? 0 : img1[yx3]);
+                        yx3++;
+                        img1[yx3] = img[yx3]*yn/Y; img1[yx3] = img1[yx3] > 255 ? 255 : (img1[yx3] < 0 ? 0 : img1[yx3]);
+                        yx3++;
+                        img1[yx3] = img[yx3]*yn/Y; img1[yx3] = img1[yx3] > 255 ? 255 : (img1[yx3] < 0 ? 0 : img1[yx3]);
+                    }
+                    //img1[yx1] = (a[yxa]*img[yx1]>>21) + b[yxa];
+                    //img1[yx1] = img1[yx1] > 255 ? 255 : (img1[yx1] < 0 ? 0 : img1[yx1]);
                     if(y==0 && x==0){
                         //printf("in = %d out = %d min = %d avg = %d a = %d b = %d\n",
                         //       img[yx1], img1[yx1], min[yxa], avg[yxa], a[yxa], b[yxa]);
@@ -4688,39 +4713,80 @@ uint32 utils_read_ppm(const char *filename, uint32 *w, uint32 *h, uint32 *bpp, u
     uint8 line[100];
     uint32 byts;
 
-	wl = fopen(filename, "rb");
+    wl = fopen(filename, "rb");
     if(wl == NULL) {
-    	printf("Can't open file %s\n", filename);
-    	return 0;
+        printf("Can't open file %s\n", filename);
+        return 0;
     }
-	//byts = fscanf(wl, "%s%s%s%s%s%s%s", line[0], line[1], line[2], line[3], line[4], line[5], line[6]);
-	byts = fscanf(wl, "%s", line);
-	if (strcmp(line, "P6") != 0) {
-		printf ("It's not PPM file");
-		return 0;
-	}
-	byts = fscanf(wl, "%s", line);
-	if(line[0] == '#'){
-		if(fgets(line, 100, wl) == NULL) { printf("Can't get header\n"); return; }
-	} else {
-		*w = atoi(line);
-		byts = fscanf(wl, "%s", line); *h = atoi(line);
-		byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
-	}
+    //byts = fscanf(wl, "%s%s%s%s%s%s%s", line[0], line[1], line[2], line[3], line[4], line[5], line[6]);
+    byts = fscanf(wl, "%s", line);
+    if (strcmp(line, "P6") != 0) {
+        printf ("It's not PPM file");
+        return 0;
+    }
+    byts = fscanf(wl, "%s", line);
+    if(line[0] == '#'){
+        if(fgets(line, 100, wl) == NULL) { printf("Can't get header\n"); return; }
+    } else {
+        *w = atoi(line);
+        byts = fscanf(wl, "%s", line); *h = atoi(line);
+        byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+    }
 
-	byts = fscanf(wl, "%s", line); *w = atoi(line);
-	byts = fscanf(wl, "%s", line); *h = atoi(line);
-	byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
-	printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
-	fgetc(wl);
+    byts = fscanf(wl, "%s", line); *w = atoi(line);
+    byts = fscanf(wl, "%s", line); *h = atoi(line);
+    byts = fscanf(wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+    printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
+    fgetc(wl);
 
-	//*img = (uint8 *)calloc((*w)*(*h)*(*bpp)*3, sizeof(uint8));
-	byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp)*3,  wl);
-	if(byts != (*w)*(*h)*(*bpp)*3){ printf("Image read error\n");}
-	//printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp)*3);
+    //*img = (uint8 *)calloc((*w)*(*h)*(*bpp)*3, sizeof(uint8));
+    byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp)*3,  wl);
+    if(byts != (*w)*(*h)*(*bpp)*3){ printf("Image read error\n");}
+    //printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp)*3);
     fclose(wl);
-	//fclose(wl);
-	return byts;
+    //fclose(wl);
+    return byts;
+}
+
+uint32 utils_read_pgm_whb(FILE **wl, const char *filename, uint32 *w, uint32 *h, uint32 *bpp)
+{
+    //FILE *wl;
+    uint8 line[100];
+    uint32 byts;
+
+    *wl = fopen(filename, "rb");
+    if(*wl == NULL) {
+        printf("Can't open file %s\n", filename);
+        return 0;
+    }
+
+    byts = fscanf(*wl, "%s", line);
+    if (strcmp(line, "P5") != 0) {
+        printf ("It's not PPM file");
+        return 0;
+    }
+    byts = fscanf(*wl, "%s", line); *w = atoi(line);
+    byts = fscanf(*wl, "%s", line); *h = atoi(line);
+    byts = fscanf(*wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+    printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
+    //printf("wl = %p\n", *wl);
+
+    return byts;
+}
+
+uint32 utils_read_pgm_img(FILE **wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 *img)
+{
+    uint32 byts;
+    //printf("wl = %p\n", *wl);
+
+
+    printf("size = %d\n", (*w)*(*h)*(*bpp));
+    byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp),  *wl);
+    printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp));
+    if(byts != (*w)*(*h)*(*bpp)){ printf("Image read error\n");}
+
+    fclose(*wl);
+    return byts;
 }
 
 void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h)
@@ -4730,7 +4796,7 @@ void utils_rgb2bayer(uint8 *rgb, int16 *bay, uint32 w, uint32 h)
 		for(x=0, x1=0; x < w1; x+=2, x1+=3){
 			yx = y*w1 + x;
 			yx1 = y1*w3 + x1;
-			bay[yx] = rgb[yx1];
+            bay[yx] = rgb[yx1];
 			bay[yx+1] = rgb[yx1+1];
 			bay[yx+w1] = rgb[yx1+1];
 			bay[yx+w1+1] = rgb[yx1+2];

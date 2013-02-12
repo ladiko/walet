@@ -89,12 +89,15 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 {
 	uint32 i, w = wc->w, h = wc->h;
 	Frame *f = &g->frames[fn];
+    printf("w = %d h = %d\n", w, h);
 
 	if (wc->icol == BAYER ){
 	    f->b.w = w; f->b.h = h;
 	    f->b.pic = (int16 *)calloc(f->b.w*f->b.h, sizeof(int16));
         f->d.w = w; f->d.h = h;
         f->d.pic = (int16 *)calloc(f->d.w*f->d.h, sizeof(int16));
+        f->g.w = w; f->g.h = h;
+        f->g.pic = (int16 *)calloc(f->g.w*f->g.h, sizeof(int16));
 
         //f->in.w = w; f->in.h = h;
         //f->in.pic = (int *)calloc(f->in.w*f->in.h, sizeof(int));
@@ -189,32 +192,6 @@ void frame_init(GOP *g, uint32 fn, WaletConfig *wc)
 	f->vpt = (Vertex **)calloc(w*h>>1, sizeof(Vertex*));
     f->yx = (uint32 *)calloc(w*h>>1, sizeof(uint32));
 
-	//Old init
-	//f->size = w*h;
-
-	//f->pixs = (Pixel *)calloc(w*h, sizeof(Pixel));
-	//f->edges = (Edge *)calloc((w>>2)*(h>>2), sizeof(Edge));
-
-	//f->rgb.w  = w;
-	//f->rgb.h = h;
-	//f->rgb.pic = (uint8 *)calloc(f->rgb.w*f->rgb.h*3, sizeof(uint8));
-	//f->Y.w  = w;
-	//f->Y.h = h;
-	//f->Y.pic = (uint8 *)calloc(f->Y.w*f->Y.h*3, sizeof(uint8));
-	//f->grad.w  = w;
-	//f->grad.h = h;
-	//f->grad.pic = (uint8 *)calloc(f->grad.w*f->grad.h*3, sizeof(uint8));
-
-
-	//f->line.w  = w;
-	//f->line.h = h;
-	//f->line.pic = (uint8 *)calloc(f->line.w*f->line.h, sizeof(uint8));
-	//f->edge.w  = w;
-	//f->edge.h = h;
-	//f->edge.pic = (uint8 *)calloc(f->edge.w*f->edge.h, sizeof(uint8));
-	//f->vec.w  = w;
-	//f->vec.h = h;
-	//f->vec.pic = (uint8 *)calloc(f->vec.w*f->vec.h, sizeof(uint8));
 	f->state = 0;
 }
 
@@ -230,7 +207,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 {
 	//uint32 i, size = wc->w*wc->h, size3 = size*3, shift = 1<<(wc->bpp-1);
 	Frame *f = &g->frames[fn];
-
+    printf("w = %d h = %d\n", f->b.w, f->b.h);
 	if(wc->icol == BAYER) {
         //utils_image_copy(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
         utils_image_copy_n(y, f->b.pic, f->b.w, f->b.h, wc->bpp);
@@ -868,50 +845,47 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
     double time=0., tmp, en1, en2, en3, en4;
     struct timeval tv;
     //float i1,j1,result;
+    if(wc->bpp > 8){
+        filter_median_bayer_diff(f->b.pic, f->d.pic, f->g.pic, (int16*)g->buf, f->b.w, f->b.h);
+    } else {
 
-    if(wc->ccol == CS420){
-        gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-        /*
-        for(i1=0;i1<1;i1+=0.0002)
-            for(j1=0;j1<1;j1+=0.0002)
-            {
-                result+=i1*j1;
-            }
-        */
-        gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-        tmp = (double)(end-start)/1000000.; time +=tmp;
-        printf("Test = %f\n", tmp);
+        if(wc->ccol == CS420){
+            gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
+            gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
+            tmp = (double)(end-start)/1000000.; time +=tmp;
+            printf("Test = %f\n", tmp);
 
-        //filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
+            //filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
 
-        utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
+            utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
 
-        filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
+            filter_fast_median(f->y[1].pic, f->dm[0].pic, f->y[1].w, f->y[1].h);
 
-        seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
+            seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
 
-        lmaxc = seg_local_max(f->dg[0].pic, 10, f->y[1].w, f->y[1].h);
+            lmaxc = seg_local_max(f->dg[0].pic, 10, f->y[1].w, f->y[1].h);
 
-        seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
+            seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
 
-        vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
+            vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
 
-        rgc = seg_remove_loops1(f->dc[0].pic, f->vx, vxc, f->y[1].w, f->y[1].h);
+            rgc = seg_remove_loops1(f->dc[0].pic, f->vx, vxc, f->y[1].w, f->y[1].h);
 
-        rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
+            rgc = seg_regions(f->dc[0].pic, f->vx,  vxc, f->vpt, f->dm[0].pic, (uint16*)g->cbuf, &npix, f->y[1].w, 1);
 
-        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+            seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        seg_get_or_fill_color2(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
-                             rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
-        memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
+            seg_get_or_fill_color2(f->y[1].pic, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+                                   rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 1);
+            memset(f->y1[1].pic, 0, f->y1[1].w*f->y1[1].h);
 
-        seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
+            seg_vertex_draw3(f->y1[1].pic, f->vx, vxc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h);
 
-        seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
-                             rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
-        seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
+            seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
+                                   rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
+            seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
 
+        }
     }
     if(wc->ccol == 1000){
 

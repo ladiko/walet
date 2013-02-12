@@ -15,6 +15,7 @@ void walet_encoder_init(GOP *gop, WaletConfig *wc)
 
 	//Temp buffer init
     gop->buf = (uint8 *)calloc(wc->w*wc->h<<3, sizeof(uint8));
+    printf("buffer size = %d\n", wc->w*wc->h<<3);
     gop->cbuf = (uint8 *)calloc(wc->w*wc->h, sizeof(uint8));
     //wc->bpp = (wc->bpp < 15) ? wc->bpp : 14;
 	gop->ibuf = (int *)calloc((1<<(wc->bpp+2))*8, sizeof(int));
@@ -25,7 +26,7 @@ void walet_encoder_init(GOP *gop, WaletConfig *wc)
 	gop->frames = (Frame *)calloc(wc->gop_size, sizeof(Frame));
 
 	for(i=0; i < wc->gop_size; i++) frame_init(gop, i, wc);
-	printf("Frames  init\n");
+    printf("Frames init gop_size = %d  frame = %p b.w = %d b.h = %d\n", wc->gop_size, &gop->frames[0], gop->frames[0].b.w ,gop->frames[0].b.h);
 
 	//Segmentation parts init
 	/*
@@ -44,6 +45,7 @@ void walet_encoder_init(GOP *gop, WaletConfig *wc)
 	gop->cur_gop_frame = 0;
 	gop->state = 1;
 }
+
 //TODO: Free all memory
 void walet_decoder_free(GOP *gop)
 {

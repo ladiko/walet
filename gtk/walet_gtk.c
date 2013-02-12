@@ -212,8 +212,9 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			}
 		} else {
             //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
-            gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
-			gw->wc.bpp = 12;
+            //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
+            gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
+            gw->wc.bpp = 12;
 			for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
             //utils_turn_on_180(f0->b.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h);
@@ -221,6 +222,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             new_buffer (gw->orig[0], f0->b.w, f0->b.h);
             utils_bayer_to_RGB24(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, f0->b.w, f0->b.h, gw->wc.bg, gw->wc.bpp);
             gtk_widget_queue_draw(gw->drawingarea[0]);
+
 
             new_buffer (gw->orig[1], f0->b.w, f0->b.h);
             utils_gray16_rgb8(f0->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f0->b.w, f0->b.h, gw->wc.bpp, 1);
@@ -237,14 +239,16 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             //utils_make_lookup(f0->d.pic, (uint32*)gw->gop.buf, (uint32*)&gw->gop.buf[1<<16], f0->b.w/8*3, f0->b.h/8, 8, 12);
             //utils_bits12to8(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (uint32*)&gw->gop.buf[1<<16], uint32 w, uint32 h);
 
+
             new_buffer (gw->orig[2], f0->b.w/2, f0->b.h/2);
-            utils_rgb16_rgb8(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
+            utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
             gtk_widget_queue_draw(gw->drawingarea[2]);
 
             new_buffer (gw->orig[3], f0->b.w/2, f0->b.h/2);
             utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, 50, f0->b.w/2, f0->b.h/2);
             //utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
             gtk_widget_queue_draw(gw->drawingarea[3]);
+
         }
 	}
 	//ret = gst_element_get_state (GST_ELEMENT (gw->pipeline), &state, NULL, 0);

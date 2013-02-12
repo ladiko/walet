@@ -1109,9 +1109,7 @@ static inline int dir3(uint8 *con, uint8 *grad, int *dr, uint32 yx, int in1, uin
             return in;
         }
     } else return 0;
-
 }
-
 
 /*	\brief	Check is a pixel the local maximum.
     \param	img		The pointer to gradient image.
