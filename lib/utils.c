@@ -21,13 +21,15 @@
 void utils_image_copy_n(uint8 *in, int16 *out, uint32 w, uint32 h, uint32 bpp)
 {
     uint32 i, size = w*h;
+    //uint8 *in1 = &in[1];
 
     if(bpp > 8){
         for(i=0; i<size; i++) {
-            //For Aptina sensor
-            //out[i] = ((in[(i<<1)]) | in[(i<<1)+1]<<8);
-            //For Sony sensor
+            //For Aptina sensor and Sony A55
+            //out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
+            //For Sony A100 sensor
             out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
+            //img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]);
             //printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
         }
     } else
@@ -342,7 +344,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     int i, j, size = w*h, size3 = h*w*3;
     uint32 d, d1;
 
-    float s = -0.01, m, th = 0.5;
+    float s = 0.01, m, th = 0.5;
     // New algorithm for white balancing
     //Get only pixeles with (G-R)/G and (G-B)/G difference less then threshoud
     for(i = 0; i < size3; i+=3) {
@@ -353,7 +355,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
         }
     }
 
-    d = 0; m = 1.;
+    d = 0; m = 2.;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -366,7 +368,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     }
     *rm = m;
 
-    d = 0; m = 1.;
+    d = 0; m = 2.;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i+2]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -399,6 +401,7 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 
     utils_wb(buff, &rm, &bm, w1, h1);
     printf("rm = %f bm = %f\n", rm, bm);
+    //rm = 2.578; bm = 1.430;
 
     for(i = 0; i < size3; i+=3) {
         out[i]   = in[i]*rm;    out[i] = out[i] > max ? max : out[i];
@@ -471,7 +474,7 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
             //       size3>>st, st, d, j, lp, i, j+d, p[j+d], j, p[j], j+(d>>1), p[j+(d>>1)]);
         }
     }
-    for(i = 0; i <= 256; i++) printf("p[%d] = %d\n", i, p[i]);
+    //for(i = 0; i <= 256; i++) printf("p[%d] = %d\n", i, p[i]);
 
     //Make LUT
     for(j=0; j < 256; j++){
@@ -608,6 +611,41 @@ void utils_resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
         }
     }
 }
+
+/**	\brief Automatic Color Enhancement.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bits The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
+{
+    int x, x1, y, y1, yx, yx1, yw, yw1;
+    int hs = 30, ws = 30, R;
+
+    for(y=hs; y < h-hs; y++){
+        yw = y*w;
+        for(x=ws; x < w-ws; x++){
+            yx = yw + x;
+
+            R = 0;
+            for(y1=y-hs; y1 <= y+hs; y1+=1){
+                yw1 = y1*w;
+                for(x1=x-ws; x1 <= x+ws; x1+=1){
+                    yx1 = yw1 + x1;
+                    if(!(x == x1 && y == y1)){
+                        R += (int)((double)(in[yx] - in[yx1])/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
+                    }
+
+                }
+            }
+            out[yx] = R;
+        }
+    }
+}
+
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
 
@@ -1142,7 +1180,6 @@ uint8* utils_bayer_to_Y_fast(int16 *img, uint8 *Y, uint32 w, uint32 h, uint32 sh
 	}
 	return Y;
 }
-
 
 /**	\brief Bilinear algorithm for bayer to RGB interpolation use 3 rows buffer.
     \param img	 	The input Bayer image.
@@ -2687,7 +2724,7 @@ void utils_bayer_to_YUV420(int16 *img, uint8 *Y, uint8 *U, uint8 *V, int16 *buff
  */
 	int x, x1, x2, xs, ys, y = 0, y1, wy, wy1, w2 = w<<1,  w3 = w>>1, yw, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
-	int r, g, b, sh = 128;
+    int r, g, b, sh = 0;
 	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
 
 	switch(bay){
@@ -4765,11 +4802,15 @@ uint32 utils_read_pgm_whb(FILE **wl, const char *filename, uint32 *w, uint32 *h,
         printf ("It's not PPM file");
         return 0;
     }
-    byts = fscanf(*wl, "%s", line); *w = atoi(line);
-    byts = fscanf(*wl, "%s", line); *h = atoi(line);
-    byts = fscanf(*wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+    //printf("byts = %d p = %p\n", byts, (*wl)->_IO_read_ptr);
+
+    byts += fscanf(*wl, "%s", line); *w = atoi(line);
+    byts += fscanf(*wl, "%s", line); *h = atoi(line);
+    byts += fscanf(*wl, "%s", line); *bpp = (atoi(line) > 256) ? 2 : 1;
+    //byts += fscanf(*wl, "%s", line);
     printf("w = %d h = %d bpp = %d\n", *w, *h, *bpp);
-    //printf("wl = %p\n", *wl);
+    //printf("byts = %d p = %p\n", byts, (*wl)->_IO_read_ptr);
+
 
     return byts;
 }
@@ -4779,11 +4820,14 @@ uint32 utils_read_pgm_img(FILE **wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 *i
     uint32 byts;
     //printf("wl = %p\n", *wl);
 
+    //printf("byts = %d p = %p\n", byts, (*wl)->_IO_read_ptr);
+    //printf("size = %d\n", (*w)*(*h)*(*bpp));
+    byts = fread(img, sizeof(uint8), 1,  *wl); //I don't know
 
-    printf("size = %d\n", (*w)*(*h)*(*bpp));
     byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp),  *wl);
-    printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp));
+    //printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp));
     if(byts != (*w)*(*h)*(*bpp)){ printf("Image read error\n");}
+    //printf("byts = %d\n", byts);
 
     fclose(*wl);
     return byts;

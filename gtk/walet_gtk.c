@@ -212,8 +212,8 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
 			}
 		} else {
             //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
-            //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
-            gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
+            gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
+            //gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
             gw->wc.bpp = 12;
 			for(i=0; i< gw->wc.gop_size; i++)  frame_input(&gw->gop, i, &gw->wc, GST_BUFFER_DATA(buffer), NULL, NULL);
 
