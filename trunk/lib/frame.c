@@ -850,11 +850,6 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
     } else {
 
         if(wc->ccol == CS420){
-            gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-            gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
-            tmp = (double)(end-start)/1000000.; time +=tmp;
-            printf("Test = %f\n", tmp);
-
             //filter_median_diff(int16 *img, int16 *img1, int16 *img2, int16 *buff, uint32 w, uint32 h)
 
             utils_resize_down_2x_(f->y[0].pic, f->y[1].pic, g->buf, f->y[0].w, f->y[0].h);
@@ -864,7 +859,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
             seg_grad3(f->y[1].pic, f->dg[0].pic, f->dc[0].pic, f->di[i].pic, f->y[1].w, f->y[1].h, 3);
 
             lmaxc = seg_local_max(f->dg[0].pic, 10, f->y[1].w, f->y[1].h);
-
+            /*
             seg_find_intersect9(f->dg[0].pic, f->dc[0].pic, f->y[1].w, f->y[1].h);
 
             vxc = seg_vertex4(f->dg[0].pic, f->dc[0].pic, f->vx, f->vp, f->vpn, f->yx, f->lbuf, f->y[1].w, f->y[1].h);
@@ -884,6 +879,7 @@ uint32 frame_segmetation(GOP *g, uint32 fn, WaletConfig *wc)
             seg_get_or_fill_color2(NULL, f->y1[1].pic, &g->cbuf[npix<<2], (uint32*)g->buf, f->vpt, f->dm[0].pic,
                                    rgc, f->y[1].w, f->y[1].h, f->y[1].w, f->y[1].h, 0);
             seg_draw_line_one(f->y1[1].pic, f->y[1].w, f->y[1].h);
+            */
 
         }
     }
