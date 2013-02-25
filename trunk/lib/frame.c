@@ -217,7 +217,8 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 			} else if(wc->ccol == CS444) {
 				utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 			} else if(wc->ccol == CS420) {
-				utils_bayer_to_YUV420(f->b.pic, f->y[0].pic, f->u[0].pic, f->v[0].pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+                utils_bayer_to_YUV420(f->b.pic, f->y[0].pic, f->u[0].pic, f->v[0].pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+                //utils_bayer_to_YUV444(f->b.pic, f->Y16.pic, f->U16.pic, f->V16.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 				//utils_bayer_to_YUV420(f->b.pic, f->img[0].d.pic,f->img[1].d.pic, f->img[2].d.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 				//prediction_encoder(f->img[0].p, f->img[0].p, (int16*)g->buf, f->img[0].w, f->img[0].h);
 				//prediction_encoder(f->img[1].p, f->img[1].p, (int16*)g->buf, f->img[1].w, f->img[1].h);
@@ -229,7 +230,7 @@ void frame_input(GOP *g, uint32 fn, WaletConfig *wc, uint8 *y, uint8 *u, uint8 *
 				utils_bayer_to_Y_fast_(f->b.pic, f->dw[0].pic, f->b.w, f->b.h, 128);
 			}
 		} else {
-            utils_bayer_to_YUV444(f->b.pic, f->img[0].p,f->img[1].p, f->img[2].p, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
+            //utils_bayer_to_YUV444(f->b.pic, f->Y16.pic, f->U16.pic, f->V16.pic, (int16*)g->buf, f->b.w, f->b.h, wc->bg);
 		}
 	} else if(wc->icol == CS444 || wc->icol == CS420){
 		utils_image_copy(y, f->img[0].p,  f->img[0].w, f->img[0].h, wc->bpp);
