@@ -26,9 +26,9 @@ void utils_image_copy_n(uint8 *in, int16 *out, uint32 w, uint32 h, uint32 bpp)
     if(bpp > 8){
         for(i=0; i<size; i++) {
             //For Aptina sensor and Sony A55
-            //out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
+            out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
             //For Sony A100 sensor
-            out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
+            //out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
             //img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]);
             //printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
         }
@@ -355,7 +355,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
         }
     }
 
-    d = 0; m = 2.;
+    d = 0; m = 1.;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -368,7 +368,7 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     }
     *rm = m;
 
-    d = 0; m = 2.;
+    d = 0; m = 1.;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i+2]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -623,27 +623,53 @@ void utils_resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
 {
     int x, x1, y, y1, yx, yx1, yw, yw1;
-    int hs = 30, ws = 30, R;
+    int hs = 50, ws = 50, df;
+    //int R, max = 0., min = 0.;
+    double R = 0., max = 0., max1 = 0., dd;
+
+    for(y1=-hs; y1 <= hs; y1+=1){
+        for(x1=-ws; x1 <= ws; x1+=1){
+            if(!(x1 == 0 && y1 == 0)){
+                //df = 1;
+                R += 1./sqrt((double)(y1*y1 + x1*x1));
+            }
+        }
+    }
+    max = R;
+    printf("max = %f\n", max);
 
     for(y=hs; y < h-hs; y++){
         yw = y*w;
         for(x=ws; x < w-ws; x++){
             yx = yw + x;
-
-            R = 0;
+            R = 0.;
             for(y1=y-hs; y1 <= y+hs; y1+=1){
                 yw1 = y1*w;
                 for(x1=x-ws; x1 <= x+ws; x1+=1){
                     yx1 = yw1 + x1;
                     if(!(x == x1 && y == y1)){
-                        R += (int)((double)(in[yx] - in[yx1])/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
+                        df = in[yx] - in[yx1];
+                        df =  (df < -3) ? -1 : ((df > 3) ? 1 : 0);
+                        //df =  (df < 0) ? -1 : ((df > 0) ? 1 : 0);
+                        if(df) R += ((double)df/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
+                        //dd = (double)df/4096.;
+                        //if(df) R += (dd/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
                     }
-
                 }
             }
-            out[yx] = R;
+            //printf("R = %d\n", R);
+            R = R/max;
+            out[yx] = (uint8)(127.5 + 127.5*R);
+            if(R > max1) max1 = R;
+            //if(R < min) min = R;
+            //else if(R > max) max = R;
+            //printf("min = %d max = %d R = %d\n", min, max, R);
+
         }
     }
+    printf("max = %f max1 = %f R = %f\n", max, max1, R);
+    //printf("min = %d max = %d\n", min, max);
+    //printf("min = %f max = %f\n", min, max);
 }
 
 
@@ -663,7 +689,6 @@ int g[9][2] = {
 		{-2, 0,},{-1, 1,},{ 0,-2,},		// G   G   G
 };										//   G   G
 										//     G
-
 
 #define ll(step, x, y) img[x*step + y*step*width];
 #define hl(step, x, y) img[x*step + (step>>1)  + y*step*width];
@@ -2584,16 +2609,16 @@ void utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff
 	2 B G B G B G	2 G R G R G R	2 G B G B G B	2 R G R G R G
 	3 G R G R G R	3 B G B G B G	3 R G R G R G	3 G B G B G B
  */
-	int x, x1, x2, xs, ys, y = 0, wy, w2 = w<<1, yw = 0, h1, w1, h2;
+    int x, x1, x2, xs, ys, y = 0, wy, yw = 0, h1, w1, h2;
 	int16 *l0, *l1, *l2, *tm;
 	int r, g, b;
-	l0 = buff; l1 = &buff[w+2]; l2 = &buff[(w+2)<<1];
+    l0 = buff; l1 = &l0[w+2]; l2 = &l1[w+2];
 
 	switch(bay){
 		case(BGGR):{ xs = 1; ys = 1; w1 = w+1; h1 = h+1; break;}
-		case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h; break;}
-		case(GBRG):{ xs = 0; ys = 1; w1 = w; h1 = h+1; break;}
-		case(RGGB):{ xs = 0; ys = 0; w1 = w; h1 = h;   break;}
+        case(GRBG):{ xs = 1; ys = 0; w1 = w+1; h1 = h;   break;}
+        case(GBRG):{ xs = 0; ys = 1; w1 = w;   h1 = h+1; break;}
+        case(RGGB):{ xs = 0; ys = 0; w1 = w;   h1 = h;   break;}
 	}
 	h2 = h1-1;
 	//Create 3 rows buffer for transform
@@ -2601,11 +2626,11 @@ void utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff
 	l0[0] = img[w+1]; for(x=0; x < w; x++) l0[x+1] = img[w+x];  l0[w+1] = l0[w-1];
 	l1[0] = img[1];   for(x=0; x < w; x++) l1[x+1] = img[x];    l1[w+1] = l1[w-1];
 
-	for(y=ys, yw=0; y < h1; y++, yw+=w){
+    for(y=ys, yw=0; y < h1; y++, yw+=w){
 		wy = (y == h2) ? yw - w : yw + w;
 		l2[0] = img[wy+1]; for(x=0; x < w; x++) l2[x+1] = img[wy + x];  l2[w+1] = l2[w-1];
 
-		for(x=xs, x1=0; x < w1; x++, x1++){
+        for(x=xs, x1=0; x < w1; x++, x1++){
 			wy = x1 + yw;
 			x2 = x1 + 1;
 			//xwy3 = wy + wy + wy;
@@ -2628,8 +2653,9 @@ void utils_bayer_to_YUV444(int16 *img, int16 *Y, int16 *U, int16 *V, int16 *buff
 				b = l1[x2];
 			}
 			Y[wy] = ((306*(r - g) + 117*(b - g))>>10) + g;
-			U[wy] = 578*(b - Y[wy])>>10;
-			V[wy] = 730*(r - Y[wy])>>10;
+            U[wy] = 578*(b - Y[wy])>>10;
+            V[wy] = 730*(r - Y[wy])>>10;
+            //printf("Y = %d x = %d y = %d x = %d y = %d\n", Y[wy], wy%w, wy/w, x, y);
 		}
 		tm = l0; l0 = l1; l1 = l2; l2 = tm;
 	}

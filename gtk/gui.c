@@ -156,8 +156,6 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 	//	if((i&0x7) == 7) printf("\n");
 	//}
 
-
-
 	if(!strcmp(&gw->filename_open[strlen(gw->filename_open)-4],".pgm")){
 
         nf++;
@@ -174,9 +172,9 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
             gw->wc.ccol			= CS420;	/// Color space
             gw->wc.dec			= VECTORIZE;	/// Decorrelation method
 
-            //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
+            gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
             //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
-            gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
+            //gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
             //gw->wc.bpp			= bpp;		/// Image bits per pixel.
             gw->wc.steps		= 4;  		/// DWT steps.
             gw->wc.gop_size		= 2;		/// GOP size
@@ -200,9 +198,9 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         utils_read_pgm_img(&wl, &w, &h, &bpp, gw->gop.buf);
 
         frame_input(&gw->gop, nf, &gw->wc, gw->gop.buf, NULL, NULL);
-        //utils_turn_on_180(f0->b.pic, (int16*)gw->gop.buf, f0->b.w, f0->b.h);
         f[nf] = &gw->gop.frames[nf];
 
+        utils_turn_on_180(f[nf]->b.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h);
         //printf("frame = %p nf = %d w = %d h = %d\n", f0, nf, f0->b.w, gw->gop.frames[0].b.h);
         //printf("nf = %d w = %d h = %d\n", nf, f0->b.w, f0->b.h);
 
@@ -214,10 +212,16 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         //utils_gray16_rgb8(f[nf]->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), f[nf]->b.w, f[nf]->b.h, gw->wc.bpp, 1);
         //gtk_widget_queue_draw(gw->drawingarea[1]);
 
-        //utils_zoom_out(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 5, f0->b.w, f0->b.h);
-        utils_zoom_out_bayer(f[nf]->b.pic, f[nf]->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f[nf]->b.w, f[nf]->b.h);
-        //for(i=0; i< f0->b.w*f0->b.h*3/4; i++) f0->Y16.pic[i] = f0->d.pic[i];
-        utils_wb_rgb24(f[nf]->d.pic, f[nf]->Y16.pic, (int16*)gw->gop.buf, 12, f[nf]->b.w/2, f[nf]->b.h/2);
+
+        //utils_zoom_out_bayer(f[nf]->b.pic, f[nf]->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f[nf]->b.w, f[nf]->b.h);
+        //utils_wb_rgb24(f[nf]->d.pic, f[nf]->R16.pic, (int16*)gw->gop.buf, 12, f[nf]->b.w/2, f[nf]->b.h/2);
+
+        //new_buffer (gw->orig[nf+2], f[nf]->b.w/2, f[nf]->b.h/2);
+        //utils_rgb16_rgb8(f[nf]->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[nf+2]->pxb), f[nf]->b.w/2, f[nf]->b.h/2, gw->wc.bpp, 1);
+        //gtk_widget_queue_draw(gw->drawingarea[nf+2]);
+        printf("nf = %d\n", nf);
+
+        utils_bayer_to_YUV444(f[nf]->b.pic, f[nf]->Y16.pic, f[nf]->U16.pic, f[nf]->V16.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h, gw->wc.bg);
 
         //utils_wb_rgb16(f0->d.pic, f0->d.pic, f0->b.w/8, f0->b.h/8);
 
@@ -225,8 +229,8 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         //utils_bits12to8(f0->d.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (uint32*)&gw->gop.buf[1<<16], uint32 w, uint32 h);
 
 
-        new_buffer (gw->orig[nf+2], f[nf]->b.w/2, f[nf]->b.h/2);
-        utils_rgb16_rgb8(f[nf]->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[nf+2]->pxb), f[nf]->b.w/2, f[nf]->b.h/2, gw->wc.bpp, 1);
+        new_buffer (gw->orig[nf+2], f[nf]->Y16.w, f[nf]->Y16.h);
+        utils_gray16_rgb8(f[nf]->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[nf+2]->pxb), f[nf]->Y16.w, f[nf]->Y16.h, gw->wc.bpp, 1);
         gtk_widget_queue_draw(gw->drawingarea[nf+2]);
 
         //new_buffer (gw->orig[3], f[nf]->b.w/2, f[nf]->b.h/2);
@@ -635,6 +639,31 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
     if(&gw->gop == NULL ) return;
 
+    //new_buffer (gw->orig[1], fr->y[0].w, fr->y[0].h);
+    //utils_grey_draw8(fr->y[0].pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->y[0].w, fr->y[0].h, 0);
+    //gtk_widget_queue_draw(gw->drawingarea[1]);
+
+    //filter_median_ad(fr->Y16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
+    for(i=0; i < size; i++) fr->U16.pic[i] = fr->Y16.pic[i];
+
+
+    new_buffer (gw->orig[1], fr->Y16.w, fr->Y16.h);
+    //utils_grey_draw8(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->Y16.w, fr->Y16.h, 0);
+    utils_gray16_rgb8(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->Y16.w, fr->Y16.h, gw->wc.bpp, 1);
+    gtk_widget_queue_draw(gw->drawingarea[1]);
+
+    //utils_ACE(fr->U16.pic, fr->y1[0].pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_ACE(fr->b.pic, fr->V16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    filter_median_bayer_ad(fr->V16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
+
+    new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
+    utils_bayer_to_RGB24(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
+    //utils_grey_draw8(fr->y1[0].pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->Y16.w, fr->Y16.h, 0);
+    gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
+
+    /*
     for(i=0; i < size; i++) fr->b.pic[i] = fr->b.pic[i] + 128;
 
     utils_bayer_to_RGB_DWGI(fr->b.pic, fr->R16.pic, fr->G16.pic, fr->B16.pic, (int16*) gw->gop.buf, w, h, gw->wc.bg);
@@ -654,7 +683,7 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     new_buffer (gw->orig[1], w, h);
     utils_grey_draw_rgb(fr->R16.pic, fr->G16.pic, fr->B16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[1]);
-
+    */
 
 }
 

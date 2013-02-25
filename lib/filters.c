@@ -237,8 +237,9 @@ void filter_median_ad(int16 *img, int16 *img1, int16 *buff, uint32 w, uint32 h)
                                 median_3_16 (s[0][1], s[1][1], s[2][1]),
                                 min_3_16    (s[0][2], s[1][2], s[2][2]));
             xs = x+sh;
-            if(l[1][xs] == max || l[1][xs] == min)  img1[yx] = med;
-            else img1[yx] = l[1][xs];
+            img1[yx] = med;
+            //if(l[1][xs] == max || l[1][xs] == min)  img1[yx] = med;
+            //else img1[yx] = l[1][xs];
 
             tm = s[0]; s[0] = s[1]; s[1] = s[2]; s[2] = tm;
         }
