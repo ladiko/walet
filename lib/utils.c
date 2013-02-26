@@ -623,7 +623,7 @@ void utils_resize_up_2x(int16 *in, int16 *out, int16 *buff, uint32 w, uint32 h)
 void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
 {
     int x, x1, y, y1, yx, yx1, yw, yw1;
-    int hs = 50, ws = 50, df;
+    int hs = 200, ws = 200, df;
     //int R, max = 0., min = 0.;
     double R = 0., max = 0., max1 = 0., dd;
 
@@ -631,7 +631,7 @@ void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32
         for(x1=-ws; x1 <= ws; x1+=1){
             if(!(x1 == 0 && y1 == 0)){
                 //df = 1;
-                R += 1./sqrt((double)(y1*y1 + x1*x1));
+                R += 1.;///sqrt((double)(y1*y1 + x1*x1));
             }
         }
     }
@@ -649,9 +649,9 @@ void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32
                     yx1 = yw1 + x1;
                     if(!(x == x1 && y == y1)){
                         df = in[yx] - in[yx1];
-                        df =  (df < -3) ? -1 : ((df > 3) ? 1 : 0);
-                        //df =  (df < 0) ? -1 : ((df > 0) ? 1 : 0);
-                        if(df) R += ((double)df/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
+                        //df =  (df < -3) ? -1 : ((df > 3) ? 1 : 0);
+                        df =  (df < 0) ? -1 : ((df >= 0) ? 1 : 0);
+                        if(df) R += (double)df;///sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
                         //dd = (double)df/4096.;
                         //if(df) R += (dd/sqrt((double)((y-y1)*(y-y1) + (x-x1)*(x-x1))));
                     }
@@ -659,6 +659,57 @@ void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32
             }
             //printf("R = %d\n", R);
             R = R/max;
+            out[yx] = (uint8)(127.5 + 127.5*R);
+            if(R > max1) max1 = R;
+            //if(R < min) min = R;
+            //else if(R > max) max = R;
+            //printf("min = %d max = %d R = %d\n", min, max, R);
+
+        }
+    }
+    printf("max = %f max1 = %f R = %f\n", max, max1, R);
+    //printf("min = %d max = %d\n", min, max);
+    //printf("min = %f max = %f\n", min, max);
+}
+
+/**	\brief Fast Automatic Color Enhancement algorithm.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bits The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
+{
+    int x, x1, y, y1, yx, yx1, yw, yw1, hs = 1<<12;
+    int df, sz = w*h;
+    //int R, max = 0., min = 0.;
+    double R = 0., max = 0., max1 = 0., dd;
+    int *hi, *hl, *hr;
+
+    hi = (int*)buff; hl = &hi[hs]; hr = &hl[hs];
+
+    //Fill historgam
+    memset(hi, 0, sizeof(int)*hs);
+
+    for(x=0; x < sz; x++) hi[in[x]]++;
+
+    hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+
+    hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
+
+    for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d\n", x, hi[x], hl[x], hr[x]);
+
+
+
+    for(y=0; y < h; y++){
+        yw = y*w;
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
+           //printf("R = %d\n", R);
+            //R = R/max;
             out[yx] = (uint8)(127.5 + 127.5*R);
             if(R > max1) max1 = R;
             //if(R < min) min = R;
