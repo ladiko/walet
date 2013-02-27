@@ -172,9 +172,9 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
             gw->wc.ccol			= CS420;	/// Color space
             gw->wc.dec			= VECTORIZE;	/// Decorrelation method
 
-            gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
+            //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
             //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony
-            //gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
+            gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
             //gw->wc.bpp			= bpp;		/// Image bits per pixel.
             gw->wc.steps		= 4;  		/// DWT steps.
             gw->wc.gop_size		= 2;		/// GOP size
@@ -200,9 +200,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         frame_input(&gw->gop, nf, &gw->wc, gw->gop.buf, NULL, NULL);
         f[nf] = &gw->gop.frames[nf];
 
-        utils_turn_on_180(f[nf]->b.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h);
-        //printf("frame = %p nf = %d w = %d h = %d\n", f0, nf, f0->b.w, gw->gop.frames[0].b.h);
-        //printf("nf = %d w = %d h = %d\n", nf, f0->b.w, f0->b.h);
+        //utils_turn_on_180(f[nf]->b.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h);
 
         new_buffer (gw->orig[nf], f[nf]->b.w, f[nf]->b.h);
         utils_bayer_to_RGB24(f[nf]->b.pic, gdk_pixbuf_get_pixels(gw->orig[nf]->pxb), (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h, gw->wc.bg, gw->wc.bpp);
