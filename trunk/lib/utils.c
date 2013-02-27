@@ -25,10 +25,10 @@ void utils_image_copy_n(uint8 *in, int16 *out, uint32 w, uint32 h, uint32 bpp)
 
     if(bpp > 8){
         for(i=0; i<size; i++) {
-            //For Aptina sensor and Sony A55
-            out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
-            //For Sony A100 sensor
-            //out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
+            //For Aptina sensor
+            //out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
+            //For Sony sensor
+            out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
             //img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]);
             //printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
         }
@@ -687,6 +687,9 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     //int R, max = 0., min = 0.;
     double R = 0., max = 0., max1 = 0., dd;
     int *hi, *hl, *hr;
+    int b = (1<<30)/sz;
+
+    printf("b = %d\n", b);
 
     hi = (int*)buff; hl = &hi[hs]; hr = &hl[hs];
 
@@ -699,26 +702,18 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 
     hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
 
-    for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d\n", x, hi[x], hl[x], hr[x]);
-
-
+    //for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d\n", x, hi[x], hl[x], hr[x]);
 
     for(y=0; y < h; y++){
         yw = y*w;
         for(x=0; x < w; x++){
             yx = yw + x;
-            R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
-           //printf("R = %d\n", R);
-            //R = R/max;
-            out[yx] = (uint8)(127.5 + 127.5*R);
-            if(R > max1) max1 = R;
-            //if(R < min) min = R;
-            //else if(R > max) max = R;
-            //printf("min = %d max = %d R = %d\n", min, max, R);
-
+            //R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
+            //out[yx] = (uint8)(127.5 + 127.5*R);
+            out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>24);
         }
     }
-    printf("max = %f max1 = %f R = %f\n", max, max1, R);
+    //printf("max = %f max1 = %f R = %f\n", max, max1, R);
     //printf("min = %d max = %d\n", min, max);
     //printf("min = %f max = %f\n", min, max);
 }
@@ -4899,7 +4894,7 @@ uint32 utils_read_pgm_img(FILE **wl, uint32 *w, uint32 *h, uint32 *bpp, uint8 *i
 
     //printf("byts = %d p = %p\n", byts, (*wl)->_IO_read_ptr);
     //printf("size = %d\n", (*w)*(*h)*(*bpp));
-    byts = fread(img, sizeof(uint8), 1,  *wl); //I don't know
+    if(*bpp > 1) byts = fread(img, sizeof(uint8), 1,  *wl); //I don't know
 
     byts = fread(img, sizeof(uint8), (*w)*(*h)*(*bpp),  *wl);
     //printf("byts = %d size = %d\n", byts, (*w)*(*h)*(*bpp));
