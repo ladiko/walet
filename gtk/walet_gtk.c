@@ -230,7 +230,7 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             gtk_widget_queue_draw(gw->drawingarea[1]);
 
             //utils_zoom_out(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 5, f0->b.w, f0->b.h);
-            utils_zoom_out_bayer(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f0->b.w, f0->b.h);
+            utils_zoom_out_bayer16_to_rgb16(f0->b.pic, f0->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f0->b.w, f0->b.h);
             //for(i=0; i< f0->b.w*f0->b.h*3/4; i++) f0->Y16.pic[i] = f0->d.pic[i];
             utils_wb_rgb24(f0->d.pic, f0->Y16.pic, (int16*)gw->gop.buf, 12, f0->b.w/2, f0->b.h/2);
 
