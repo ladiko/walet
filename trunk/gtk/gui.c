@@ -211,7 +211,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         //gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
-        //utils_zoom_out_bayer(f[nf]->b.pic, f[nf]->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f[nf]->b.w, f[nf]->b.h);
+        //utils_zoom_out_bayer16_to_rgb16(f[nf]->b.pic, f[nf]->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, f[nf]->b.w, f[nf]->b.h);
         //utils_wb_rgb24(f[nf]->d.pic, f[nf]->R16.pic, (int16*)gw->gop.buf, 12, f[nf]->b.w/2, f[nf]->b.h/2);
 
         //new_buffer (gw->orig[nf+2], f[nf]->b.w/2, f[nf]->b.h/2);
@@ -642,16 +642,19 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     //gtk_widget_queue_draw(gw->drawingarea[1]);
 
     //filter_median_ad(fr->Y16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
-    for(i=0; i < size; i++) fr->U16.pic[i] = fr->Y16.pic[i];
+    //for(i=0; i < size; i++) fr->U16.pic[i] = fr->Y16.pic[i];
+
+    utils_zoom_out_bayer16_to_rgb16(fr->b.pic, fr->d.pic, (uint32*)gw->gop.buf, 1, gw->wc.bg, fr->b.w, fr->b.h);
+
+    utils_wb_rgb24(fr->d.pic, fr->R16.pic, (int16*)gw->gop.buf, 12, fr->b.w>>1, fr->b.h>>1);
 
 
-    new_buffer (gw->orig[1], fr->Y16.w, fr->Y16.h);
-    //utils_grey_draw8(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->Y16.w, fr->Y16.h, 0);
-    utils_gray16_rgb8(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->Y16.w, fr->Y16.h, gw->wc.bpp, 1);
+    new_buffer (gw->orig[1], fr->R16.w>>1, fr->R16.h>>1);
+    //utils_gray16_rgb8(fr->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->R16.w>>1, fr->R16.h>>1, gw->wc.bpp, 1);
+    utils_rgb16_rgb8(fr->R16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), fr->R16.w>>1, fr->R16.h>>1, gw->wc.bpp, 1);
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
-    //utils_ACE(fr->U16.pic, fr->y1[0].pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    //utils_ACE(fr->b.pic, fr->V16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+
     utils_ACE_fast(fr->b.pic, fr->V16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
     //filter_median_bayer_ad(fr->V16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
 

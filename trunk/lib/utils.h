@@ -28,8 +28,8 @@ uint32 utils_read_pgm_img(FILE **wl,uint32 *w, uint32 *h, uint32 *bpp, uint8 *im
 void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h);
-void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h);
-void utils_zoom_out_bayer(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h);
+void utils_zoom_out_rgb16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h);
+void utils_zoom_out_bayer16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h);
 
 
 uint8* utils_dwt_bayer_draw(GOP *g, uint32 fn, WaletConfig *wc, uint8 *rgb, uint8 steps);

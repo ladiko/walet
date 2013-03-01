@@ -215,7 +215,7 @@ void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uin
     \param w 			The image width.
     \param h 			The image height.
 */
-void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h)
+void utils_zoom_out_rgb16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h)
 {
     int i, j, x, x1, y, y1, yw, yx, yxi, sq = zoom*zoom, w1 = w/zoom;
     uint32 max = 1<<31, sh = 0;
@@ -261,7 +261,7 @@ void utils_zoom_out_rgb24(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, ui
     \param w 		The image width.
     \param h 		The image height.
 */
-void utils_zoom_out_bayer(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h)
+void utils_zoom_out_bayer16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h)
 {
     /*
        All RGB cameras use one of these Bayer grids:
@@ -341,21 +341,50 @@ void utils_zoom_out_bayer(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, Ba
 */
 void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
 {
-    int i, j, size = w*h, size3 = h*w*3;
-    uint32 d, d1;
+    int i, j, sz = w*h, size3 = h*w*3;
+    uint32 d, d1, r = 0, g = 0, b = 0, cn = 0, min, max, mx, Y, hs = 4096, sum, ts = sz*2/10;
+    float s = 0.01, m, mr, mb, th = 0.5;
+    uint32 hi[hs];
 
-    float s = 0.01, m, th = 0.5;
-    // New algorithm for white balancing
-    //Get only pixeles with (G-R)/G and (G-B)/G difference less then threshoud
+    //Gray world algorithm the first step of iteration
+    min = max = in[1];
     for(i = 0; i < size3; i+=3) {
-        if((float)(abs(in[i+1] - in[i  ]))/(float)(in[i+1]) > th ||
-           (float)(abs(in[i+1] - in[i+2]))/(float)(in[i+1]) > th){
-            //printf("dif = %f th = %f\n", (float)(abs(in[i+1] - in[i]))/(float)(in[i+1]), th);
-            in[i] = in[i+1] = in[i+2] = 0;
-        }
+        r += in[i  ];
+        g += in[i+1];
+        b += in[i+2];
+        Y = (306*in[i] + 601*in[i+1] + 117*in[i+2])>>10;
+        hi[Y]++;
+
+        if(Y < min) min = Y;
+        else if(Y > max) max = Y;
     }
 
-    d = 0; m = 1.;
+    sum = 0;
+    for(i=0; i < hs; i++) {
+        sum += hi[i];
+        if(sum > ts) break;
+    }
+
+    mx = i;
+
+    r = r/sz; g = g/sz; b = b/sz;
+    mr = (double)g/(double)r;
+    mb = (double)g/(double)b;
+    printf("mr = %f mb = %f\n",mr, mb);
+
+    // New algorithm for white balancing
+    //Get only pixeles with (G-R)/G and (G-B)/G difference less then threshoud
+
+    for(i = 0; i < size3; i+=3) {
+        Y = (306*in[i] + 601*in[i+1] + 117*in[i+2])>>10;
+
+        if(Y < mx) in[i] = in[i+1] = in[i+2] = 0;
+    }
+
+    printf("cn = %d sz = %d p = %f\n", cn, sz, (double)(sz - cn)/(double)sz);
+
+    //Red color
+    d = 0; m = mr;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -368,7 +397,8 @@ void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h)
     }
     *rm = m;
 
-    d = 0; m = 1.;
+    //Blue color
+    d = 0; m = mb;
     for(i = 0; i < size3; i+=3) d += abs(in[i+1] - in[i+2]*m);
     for(j=0; ;j++){
         m = m + s;
@@ -397,7 +427,7 @@ void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     //Find the lowest color value
     //for(i=1; i < size3; i++) if (in[i] < min) min = in[i];
 
-    utils_zoom_out_rgb24(in, buff, (uint32*)&buff[w1*h1*3], zoom, 0, w, h);
+    utils_zoom_out_rgb16_to_rgb16(in, buff, (uint32*)&buff[w1*h1*3], zoom, 0, w, h);
 
     utils_wb(buff, &rm, &bm, w1, h1);
     printf("rm = %f bm = %f\n", rm, bm);
@@ -710,7 +740,7 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
             yx = yw + x;
             //R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
             //out[yx] = (uint8)(127.5 + 127.5*R);
-            out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>24);
+            out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>23);
         }
     }
     //printf("max = %f max1 = %f R = %f\n", max, max1, R);
