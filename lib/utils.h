@@ -11,8 +11,9 @@ void utils_image_copy_n(uint8 *buff, int16 *img, uint32 w, uint32 h, uint32 bpp)
 uint8* utils_grey_draw8_n(uint8 *img, uint8 *rgb, uint32 w, uint32 h);
 uint8* utils_gray16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
 uint8* utils_rgb16_rgb8(int16 *in, uint8 *out, uint32 w, uint32 h, uint32 bpp, uint32 par);
-void utils_wb(int16 *in, float *rm, float *bm, uint32 w, uint32 h);
-void utils_wb_rgb24(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
+void utils_wb(int16 *in, int *rm, int *bm, uint32 *buff, int sh, uint32 bpp, uint32 w, uint32 h);
+void utils_wb_rgb(int16 *in, int16 *out, int16 *buff, uint32 bpp, uint32 w, uint32 h);
+void utils_wb_bayer(int16 *in, int16 *out, int16 *buff, uint32 bpp, uint32 bg, uint32 w, uint32 h);
 void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uint32 bits, const uint32 b, const uint32 w, const uint32 h);
 
 void utils_bits12to8(int16 *img, uint8 *img1, uint32 *look, uint32 w, uint32 h);
@@ -27,7 +28,7 @@ uint32 utils_read_pgm_img(FILE **wl,uint32 *w, uint32 *h, uint32 *bpp, uint8 *im
 
 void utils_resize_down_2x(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
 void utils_resize_down_2x_(uint8 *in, uint8 *out, uint8 *buff, uint32 w, uint32 h);
-void utils_zoom_out_gray(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h);
+void utils_zoom_out_gray16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 w, uint32 h);
 void utils_zoom_out_rgb16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, uint32 shift, uint32 w, uint32 h);
 void utils_zoom_out_bayer16_to_rgb16(uint16 *in, uint16 *out, uint32 *buff, uint32 zoom, BayerGrid bay, uint32 w, uint32 h);
 
