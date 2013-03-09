@@ -22,6 +22,9 @@ void utils_bayer_to_RGB_DWGI(int16 *img, int16 *R, int16 *G, int16 *B, int16 *bu
 
 void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
 void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
+void utils_ACE_fast_y(int16 *in, int16 *out, int16 *buff, uint32 bg, uint32 bpp, uint32 w, uint32 h);
+
+void utils_BM_denoise(int16 *in, int16 *out, uint32 *buff, uint32 bg, uint32 bpp, uint32 w, uint32 h);
 
 uint32 utils_read_pgm_whb(FILE **wl, const char *filename, uint32 *w, uint32 *h, uint32 *bpp);
 uint32 utils_read_pgm_img(FILE **wl,uint32 *w, uint32 *h, uint32 *bpp, uint8 *img);
