@@ -817,7 +817,6 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 
     //Fill historgam
     memset(hi, 0, sizeof(int)*hs);
-
     for(x=0; x < sz; x++) hi[in[x]]++;
 
     hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
@@ -835,11 +834,155 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
             out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>23);
         }
     }
-    //printf("max = %f max1 = %f R = %f\n", max, max1, R);
-    //printf("min = %d max = %d\n", min, max);
-    //printf("min = %f max = %f\n", min, max);
 }
 
+/**	\brief Fast Automatic Color Enhancement algorithm.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bg   The Bayer grid pattern
+    \param bpp The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_ACE_fast_y(int16 *in, int16 *out, int16 *buff, uint32 bg, uint32 bpp, uint32 w, uint32 h)
+{
+    int x, x1, y, y1, yx, yx1, yw, yw1, hs = 1<<12, Y, Y1;
+    int df, sz = w*h;
+    //int R, max = 0., min = 0.;
+    double c;
+    int *hi, *hl, *hr;
+    int a = (1<<30)/(sz>>2), r, g1, g2, b;
+
+    printf("a = %d\n", a);
+
+    hi = (int*)buff; hl = &hi[hs]; hr = &hl[hs];
+
+    switch(bg){
+    case(BGGR):{ r = w+1; g1 = 1; g2 =   w; b = 0  ; break; }
+    case(GRBG):{ r =   1; g1 = 0; g2 = w+1; b = w  ; break; }
+    case(GBRG):{ r =   w; g1 = 0; g2 = w+1; b = 1  ; break; }
+    case(RGGB):{ r =   0; g1 = 1; g2 =   w; b = w+1; break; }
+    }
+
+    //Fill historgam
+    memset(hi, 0, sizeof(int)*hs);
+
+    for(y=0; y < h; y+=2){
+        yw = y*w;
+        for(x=0; x < w; x+=2){
+            yx = yw + x;
+            Y = (306*in[yx+r] + (601*(in[yx+g1] + in[yx+g2])>>1) + 117*in[yx+b])>>10;
+            hi[Y]++;
+        }
+    }
+
+    //for(x=0; x < hs; x++) printf("%4d %d\n", x, hi[x]);
+
+    hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+    hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
+
+    //for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d\n", x, hi[x], hl[x], hr[x]);
+
+    for(y=0; y < h; y+=2){
+        yw = y*w;
+        for(x=0; x < w; x+=2){
+            yx = yw + x;
+            //R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
+            //out[yx] = (uint8)(127.5 + 127.5*R);
+            Y = (306*in[yx+r] + (601*(in[yx+g1] + in[yx+g2])>>1) + 117*in[yx+b])>>10;
+            Y1 = 128 + (a*(hl[Y] - hr[Y])>>23);
+            c = (double)Y1/(double)Y;
+
+            //out[yx+r ] = out[yx+g1 ] = out[yx+g2 ] = out[yx+b ] = Y1;
+
+            out[yx+r ] = (double)in[yx+r ]*c;
+            out[yx+g1] = (double)in[yx+g1]*c;
+            out[yx+g2] = (double)in[yx+g2]*c;
+            out[yx+b ] = (double)in[yx+b ]*c;
+
+            //printf("r = %4d g1 = %4d g2 = %4d b = %4d  r = %3d g1 = %3d g2 =%3d b = %3d Y = %4d Y1 = %3d x = %f\n",
+            //       in[yx+r], in[yx+g1], in[yx+g2], in[yx+b], out[yx+r], out[yx+g1], out[yx+g2], out[yx+b], Y, Y1, c);
+        }
+    }
+}
+
+/** \brief Make the integral matrix.
+    \param img	The pointer to a input image.
+    \param in 	The pointer to a integral matrix.
+    \param w	The image width.
+    \param h	The imahe height.
+*/
+void utils_integral(int16 *img, uint32 *in, uint32 w, uint32 h)
+{
+    uint32 x, y=0, yw, yx;
+    //uint32 sum = 0;
+
+    in[0] = img[0];
+    for(x=1; x < w; x++){
+        in[x] = in[x-1] + img[x];
+    }
+    for(y=1; y < h; y++){
+        yw = y*w;
+        in[yw] = in[yw-w] + img[yw];
+        for(x=1; x < w; x++){
+            yx = yw + x;
+            in[yx] = in[yx-1] + in[yx-w] - in[yx-1-w] + img[yx];
+        }
+    }
+    /*
+    for(x=0; x < w*h; x++){
+        sum += img[x];
+    }
+    printf("Check the integral matrix = %d sum = %d\n", in[w*h-1], sum);
+    */
+}
+
+/**	\brief The Block Matching denoise  algorithm.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bg   The Bayer grid pattern
+    \param bpp The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_BM_denoise(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, yxr, hs = 4, ws = 4, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp;
+    int i, avr;
+    uint32 *ing = buff;
+    int *hrgb[4];
+    int rgb[4];
+
+    hrgb[0] = (int*)&buff[sizeof(uint32)*w*h]; hrgb[1] = &hrgb[0][his]; hrgb[2] = &hrgb[1][his]; hrgb[3] = &hrgb[2][his];
+
+    //Clear historgam
+    for(i=0; i < 4; i++)  memset(hrgb[i], 0, sizeof(int)*his);
+
+    switch(bg){
+    case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
+    case(GRBG):{ rgb[0] =   1; rgb[1] = 0; rgb[2] = w+1; rgb[3] = w  ; break; }
+    case(GBRG):{ rgb[0] =   w; rgb[1] = 0; rgb[2] = w+1; rgb[3] = 1  ; break; }
+    case(RGGB):{ rgb[0] =   0; rgb[1] = 1; rgb[2] =   w; rgb[3] = w+1; break; }
+    }
+
+    //Make intehral image
+    utils_integral(in, ing, w, h);
+
+    for(y=hs; y < h-hs; y+=2){
+        yw = y*w;
+        for(x=ws; x < w-ws; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                avr = (ing[yxr+ws+whs] + ing[yxr-ws-whs] - ing[yxr+ws-whs] - ing[yxr-ws+whs])/bs;
+                out[yxr] = avr;
+                hrgb[i][avr]++;
+            }
+        }
+    }
+}
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
 
