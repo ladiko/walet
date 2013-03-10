@@ -949,16 +949,27 @@ void utils_integral(int16 *img, uint32 *in, uint32 w, uint32 h)
 */
 void utils_BM_denoise(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, hs = 4, ws = 4, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp;
-    int i, avr;
+    int x, y, yw, yx, yxr, hs = 8, ws = 8, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w;
+    int i, j, k, ih, avr, tm, cna;
     uint32 *ing = buff;
-    int *hrgb[4];
     int rgb[4];
+    int *hrgb, *cn, *hst;
+    //int hrgb[his4+1], cn[his4], *hst;
+    //int *hrgb[4], *cn[4];
 
-    hrgb[0] = (int*)&buff[sizeof(uint32)*w*h]; hrgb[1] = &hrgb[0][his]; hrgb[2] = &hrgb[1][his]; hrgb[3] = &hrgb[2][his];
+    printf("Start!!!\n");
+    hrgb = (int*)&buff[w*h];
+    cn = &hrgb[his4+1];
+
+    printf("Setup historgam\n");
 
     //Clear historgam
-    for(i=0; i < 4; i++)  memset(hrgb[i], 0, sizeof(int)*his);
+    memset(hrgb, 0, sizeof(int)*his4+1);
+    memset(cn, 0, sizeof(int)*his4);
+    printf("Clear historgam\n");
+
+    hst = &hrgb[1];
 
     switch(bg){
     case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
@@ -969,16 +980,247 @@ void utils_BM_denoise(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bp
 
     //Make intehral image
     utils_integral(in, ing, w, h);
+    printf("Finish utils_integral\n");
 
-    for(y=hs; y < h-hs; y+=2){
+    //Fill all color r, g1, g2, b histogram
+    for(y=hs; y < h1-hs; y+=2){
         yw = y*w;
-        for(x=ws; x < w-ws; x+=2){
+        for(x=ws; x < w1-ws; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
                 avr = (ing[yxr+ws+whs] + ing[yxr-ws-whs] - ing[yxr+ws-whs] - ing[yxr-ws+whs])/bs;
+                //printf("%d yxr = %d avr = %d yx1 = %d yx1 = %d yx1 = %d yx1 = %d yx = %d rgb = %d x = %d y = %d\n",
+                //       i, yxr, avr, yxr+ws+whs, yxr-ws-whs, yxr+ws-whs, yxr-ws+whs, yx, rgb[i], yx%w, yx/w);
                 out[yxr] = avr;
-                hrgb[i][avr]++;
+                hst[avr + i*his]++;
+            }
+        }
+    }
+    printf("Fill all color histogram\n");
+
+    //Make integral histogram
+    //avr = 0;
+    //for(j=0; j < his4; j++) avr += hst[j];
+    //printf("%d sum = %d\n", i, avr);
+
+    for(j=1; j < his4; j++) hst[j] = hst[j-1] + hst[j];
+    printf("i = %d j = %d hrgb = %d\n", i, j-1, hst[j-1]);
+    //for(j=his-1; j ; j--) hrgb[i][j] = hrgb[i][j-1];
+
+    printf("Make integral histogram\n");
+
+    //Store yx value in ing[] array
+    for(y=hs; y < h1-hs; y+=2){
+        yw = y*w;
+        for(x=ws; x < w1-ws; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                ih = out[yxr] + i*his;
+                ing[hrgb[ih] + cn[ih]] = yxr;
+                cn[ih]++;
+            }
+        }
+    }
+    printf("Store yx value in ing[] array\n");
+
+    //Calculate the pixel average
+    for(j=0; j < his4; j++) {
+        avr = 0; cna = 0;
+        if(cn[j]) {
+            for(k=0; k < cn[j]; k++) { avr += in[ing[hrgb[j]+k]]; cna++; }
+            hrgb[j] = avr/cna;
+        }
+    }
+    printf("Calculate the pixel average\n");
+
+    //Restore denoise image
+    for(y=hs; y < h1-hs; y+=2){
+        yw = y*w;
+        for(x=ws; x < w1-ws; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                //avr = (ing[yxr+ws+whs] + ing[yxr-ws-whs] - ing[yxr+ws-whs] - ing[yxr-ws+whs])/bs;
+                out[yxr] = hrgb[out[yxr]+i*his];
+            }
+        }
+    }
+}
+
+/**	\brief The Block Matching
+    \param in	The input 16 bits image.
+    \param w    The image width.
+    \param h 	The image height.
+    \param ws   The radius of block in x direction.
+    \param hs   The radius of block in y direction.
+    \param xf   The x coordinate of matching position in image.
+    \param yf   The y coordinate of matching position in image.
+    \param xb   The x coordinate of matching block.
+    \param yb   The y coordinate of matching block.
+*/
+static inline int block_matching_x_y(int16 *in, uint32 w, uint32 h, uint32 ws, uint32 hs, uint32 xf, uint32 yf, uint32 xb, uint32 yb)
+{
+    int x1, y1, x2, y2, yw1, yx1, yw2, yx2, sum = 0, wb = ((ws<<1)+1);
+    for(y1=yf-hs, y2=yb-hs; y1 <= yf+hs; y1++, y2++){
+        yw1 = y1*w; yw2 = y2*wb;
+        for(x1=xf-ws, x2=xb-ws; x1 <= xf+ws; x1++, x2++){
+            yx1 = yw1 + x1; yx2 = yw2 + x2;
+            sum += abs(in[yx1] - in[yx2]);
+        }
+    }
+    return sum;
+}
+
+/**	\brief The Block Matching
+    \param in	The input 16 bits image.
+    \param w    The image width.
+    \param h 	The image height.
+    \param ws   The radius of block in x direction.
+    \param hs   The radius of block in y direction.
+    \param xf   The x coordinate of matching position in image.
+    \param yf   The y coordinate of matching position in image.
+    \param xb   The x coordinate of matching block.
+    \param yb   The y coordinate of matching block.
+*/
+static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, uint32 hs, uint32 xyf, uint32 xyb)
+{
+    int x1, y1, x2, y2, yw1, yx1, yw2, yx2, sum = 0,  wb = ((ws<<1)+1);
+    int yf = xyf/w, xf = xyf%w, yb = xyb/w, xb = xyb%w;
+
+    int sum1 = 0, sum2 = 0, cn = 0;
+    for(y1=yf-hs, y2=yb-hs; y1 <= yf+hs; y1++, y2++){
+        yw1 = y1*w; yw2 = y2*w;
+        for(x1=xf-ws, x2=xb-ws; x1 <= xf+ws; x1++, x2++){
+            yx1 = yw1 + x1; yx2 = yw2 + x2;
+            sum += abs(in[yx1] - in[yx2]);
+            sum1 += in[yx1];
+            sum2 += in[yx2];
+            cn++;
+        }
+    }
+    //printf("sum = %d sum1 = %d yx = %d x = %d y = %d\n", sum1, sum2, xyb, xf, yf);
+    return sum;
+}
+
+/**	\brief The Block Matching denoise  algorithm.
+    \param in	The input 16 bits bayer image.
+    \param out	The output 16 bits bayer image.
+    \param buff	The temporary buffer.
+    \param bg   The Bayer grid pattern
+    \param bpp The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, yxr, yxr1, hs = 8, ws = 8, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w;
+    int i, j, k, ih, avr, avr1, blm, tm, cna,sum;
+    uint32 *ing = buff;
+    int rgb[4];
+    int *hrgb, *cn, *hst;
+    //int hrgb[his4+1], cn[his4], *hst;
+    //int *hrgb[4], *cn[4];
+
+    printf("Start!!!\n");
+    hrgb = (int*)&buff[w*h];
+    cn = &hrgb[his4+1];
+
+    printf("Setup historgam\n");
+
+    //Clear historgam
+    memset(hrgb, 0, sizeof(int)*his4+1);
+    memset(cn, 0, sizeof(int)*his4);
+    printf("Clear historgam\n");
+
+    hst = &hrgb[1];
+
+    switch(bg){
+    case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
+    case(GRBG):{ rgb[0] =   1; rgb[1] = 0; rgb[2] = w+1; rgb[3] = w  ; break; }
+    case(GBRG):{ rgb[0] =   w; rgb[1] = 0; rgb[2] = w+1; rgb[3] = 1  ; break; }
+    case(RGGB):{ rgb[0] =   0; rgb[1] = 1; rgb[2] =   w; rgb[3] = w+1; break; }
+    }
+
+    //Make intehral image
+    utils_integral(in, ing, w, h);
+    printf("Finish utils_integral\n");
+
+    //Fill all color r, g1, g2, b histogram
+
+    for(y=hs+2; y < h1-hs-2; y+=2){
+        yw = y*w;
+        for(x=ws+2; x < w1-ws-2; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                yxr1 = (hs+2)*w + ws + 2 + rgb[i];
+
+                avr1 = (ing[yxr1+ws+whs] + ing[yxr1-ws-whs-w-1] - ing[yxr1+ws-whs-w] - ing[yxr1-ws+whs-1]);
+
+                avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w-1] - ing[yxr +ws-whs-w] - ing[yxr -ws+whs-1]);
+                //blm = block_matching_x_y(in, w, h, ws, hs, x, y, ws+rgb[i], hs+rgb[i])/bs;
+                blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
+                if(abs(avr-avr1)/bs > blm) {
+                //if(y<hs+4 && x<ws+4) {
+                    printf("%d x = %d y = %d blm = %d avr = %d avr = %d avr1 = %d yx = %d\n",
+                           i,  yx%w, yx/w, blm, abs(avr-avr1)/bs, avr, avr1, yxr1);
+                }
+                avr = avr/bs;
+                out[yxr] = avr;
+                hst[avr + i*his]++;
+            }
+        }
+    }
+    printf("Fill all color histogram\n");
+
+    //Make integral histogram
+    //avr = 0;
+    //for(j=0; j < his4; j++) avr += hst[j];
+    //printf("%d sum = %d\n", i, avr);
+
+    for(j=1; j < his4; j++) hst[j] = hst[j-1] + hst[j];
+    printf("i = %d j = %d hrgb = %d\n", i, j-1, hst[j-1]);
+    //for(j=his-1; j ; j--) hrgb[i][j] = hrgb[i][j-1];
+
+    printf("Make integral histogram\n");
+
+    //Store yx value in ing[] array
+    for(y=hs; y < h1-hs; y+=2){
+        yw = y*w;
+        for(x=ws; x < w1-ws; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                ih = out[yxr] + i*his;
+                ing[hrgb[ih] + cn[ih]] = yxr;
+                cn[ih]++;
+            }
+        }
+    }
+    printf("Store yx value in ing[] array\n");
+
+    //Calculate the pixel average
+    for(j=0; j < his4; j++) {
+        avr = 0; cna = 0;
+        if(cn[j]) {
+            for(k=0; k < cn[j]; k++) { avr += in[ing[hrgb[j]+k]]; cna++; }
+            hrgb[j] = avr/cna;
+        }
+    }
+    printf("Calculate the pixel average\n");
+
+    //Restore denoise image
+    for(y=hs; y < h1-hs; y+=2){
+        yw = y*w;
+        for(x=ws; x < w1-ws; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                //avr = (ing[yxr+ws+whs] + ing[yxr-ws-whs] - ing[yxr+ws-whs] - ing[yxr-ws+whs])/bs;
+                out[yxr] = hrgb[out[yxr]+i*his];
             }
         }
     }
