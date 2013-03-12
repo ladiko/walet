@@ -1089,15 +1089,15 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
     int x1, y1, x2, y2, yw1, yx1, yw2, yx2, sum = 0,  wb = ((ws<<1)+1);
     int yf = xyf/w, xf = xyf%w, yb = xyb/w, xb = xyb%w;
 
-    int sum1 = 0, sum2 = 0, cn = 0;
+    //int sum1 = 0, sum2 = 0, cn = 0;
     for(y1=yf-hs, y2=yb-hs; y1 <= yf+hs; y1++, y2++){
         yw1 = y1*w; yw2 = y2*w;
         for(x1=xf-ws, x2=xb-ws; x1 <= xf+ws; x1++, x2++){
             yx1 = yw1 + x1; yx2 = yw2 + x2;
             sum += abs(in[yx1] - in[yx2]);
-            sum1 += in[yx1];
-            sum2 += in[yx2];
-            cn++;
+            //sum1 += in[yx1];
+            //sum2 += in[yx2];
+            //cn++;
         }
     }
     //printf("sum = %d sum1 = %d yx = %d x = %d y = %d\n", sum1, sum2, xyb, xf, yf);
@@ -1188,9 +1188,9 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     printf("Make integral histogram\n");
 
     //Store yx value in ing[] array
-    for(y=hs; y < h1-hs; y+=2){
+    for(y=hs+2; y < h1-hs-2; y+=2){
         yw = y*w;
-        for(x=ws; x < w1-ws; x+=2){
+        for(x=ws+2; x < w1-ws-2; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
@@ -1213,9 +1213,9 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     printf("Calculate the pixel average\n");
 
     //Restore denoise image
-    for(y=hs; y < h1-hs; y+=2){
+    for(y=hs+2; y < h1-hs-2; y+=2){
         yw = y*w;
-        for(x=ws; x < w1-ws; x+=2){
+        for(x=ws+2; x < w1-ws-2; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
