@@ -1122,6 +1122,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     uint32 *ing = buff;
     int rgb[4];
     int *hrgb, *cn, *hst;
+    double sm, sm1;
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
 
@@ -1157,18 +1158,17 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
-                yxr1 = (hs+2)*w + ws + 2 + rgb[i];
-
-                avr1 = (ing[yxr1+ws+whs] + ing[yxr1-ws-whs-w-1] - ing[yxr1+ws-whs-w] - ing[yxr1-ws+whs-1]);
 
                 avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w-1] - ing[yxr +ws-whs-w] - ing[yxr -ws+whs-1]);
-                //blm = block_matching_x_y(in, w, h, ws, hs, x, y, ws+rgb[i], hs+rgb[i])/bs;
+                /*
+                yxr1 = (hs+2)*w + ws + 2 + rgb[i];
+                avr1 = (ing[yxr1+ws+whs] + ing[yxr1-ws-whs-w-1] - ing[yxr1+ws-whs-w] - ing[yxr1-ws+whs-1]);
                 blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
                 if(abs(avr-avr1)/bs > abs(blm)) {
-                //if(y<hs+4 && x<ws+4) {
                     printf("%d x = %d y = %d blm = %d avr = %d avr = %d avr1 = %d yx = %d\n",
                            i,  yx%w, yx/w, blm, abs(avr-avr1)/bs, avr, avr1, yxr1);
                 }
+                */
                 avr = avr/bs;
                 out[yxr] = avr;
                 hst[avr + i*his]++;
@@ -1236,18 +1236,28 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                 ih = out[yxr] + i*his;
                 min = his; max = 0;
                 out[yxr] = in[yxr];
+                sum = 0;
+                sm1 = 1.;
+                for(k=0; k < cn[ih]; k++) {
+                    if(yxr != ing[hrgb[ih]+k]) {
+                        blm = block_matching_xy(in, w, h, ws, hs, yxr, ing[hrgb[ih]+k]);
+                        sm1 += 1./(double)blm;
+                    }
+                }
+                sm = (double)in[ing[yxr]];
                 for(k=0; k < cn[ih]; k++) {
                     blm = block_matching_xy(in, w, h, ws, hs, yxr, ing[hrgb[ih]+k])/bs;
                     avr = out[ing[hrgb[ih]+k]];
                     cna++;
                     if(yxr != ing[hrgb[ih]+k]) {
-                        out[yxr] += in[ing[hrgb[ih]+k]]-in[yxr] > 0  ? in[ing[hrgb[ih]+k]]/blm : -in[ing[hrgb[ih]+k]]/blm;
+                        sm += (double)in[ing[hrgb[ih]+k]]/(double)blm;
                         if(blm < min) min = blm;
                         else if(blm > max) max = blm;
                     }
+                    out[yxr] = sm/sm1;
                 }
-                printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d \n",
-                       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max);
+                printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d sm = %f sm1 = %f\n",
+                       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, sm, sm1);
                 //out[yxr] = hrgb[out[yxr]+i*his];
             }
         }
