@@ -1095,12 +1095,13 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
         for(x1=xf-ws, x2=xb-ws; x1 <= xf+ws; x1++, x2++){
             yx1 = yw1 + x1; yx2 = yw2 + x2;
             sum += abs(in[yx1] - in[yx2]);
+            //sum += in[yx1] - in[yx2];
             //sum1 += in[yx1];
             //sum2 += in[yx2];
             //cn++;
         }
     }
-    //printf("sum = %d sum1 = %d yx = %d x = %d y = %d\n", sum1, sum2, xyb, xf, yf);
+    //printf("sum = %d yx = %d x = %d y = %d\n", sum, xyb, xf, yf);
     return sum;
 }
 
@@ -1117,7 +1118,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
 {
     int x, y, yw, yx, yxr, yxr1, hs = 8, ws = 8, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w;
-    int i, j, k, ih, avr, avr1, blm, tm, cna,sum;
+    int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     uint32 *ing = buff;
     int rgb[4];
     int *hrgb, *cn, *hst;
@@ -1163,7 +1164,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                 avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w-1] - ing[yxr +ws-whs-w] - ing[yxr -ws+whs-1]);
                 //blm = block_matching_x_y(in, w, h, ws, hs, x, y, ws+rgb[i], hs+rgb[i])/bs;
                 blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
-                if(abs(avr-avr1)/bs > blm) {
+                if(abs(avr-avr1)/bs > abs(blm)) {
                 //if(y<hs+4 && x<ws+4) {
                     printf("%d x = %d y = %d blm = %d avr = %d avr = %d avr1 = %d yx = %d\n",
                            i,  yx%w, yx/w, blm, abs(avr-avr1)/bs, avr, avr1, yxr1);
@@ -1201,7 +1202,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
         }
     }
     printf("Store yx value in ing[] array\n");
-
+    /*
     //Calculate the pixel average
     for(j=0; j < his4; j++) {
         avr = 0; cna = 0;
@@ -1221,6 +1222,33 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                 yxr = yx + rgb[i];
                 //avr = (ing[yxr+ws+whs] + ing[yxr-ws-whs] - ing[yxr+ws-whs] - ing[yxr-ws+whs])/bs;
                 out[yxr] = hrgb[out[yxr]+i*his];
+            }
+        }
+    }*/
+
+    //Restore denoise image
+    for(y=hs+2; y < h1-hs-2; y+=2){
+        yw = y*w;
+        for(x=ws+2; x < w1-ws-2; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                ih = out[yxr] + i*his;
+                min = his; max = 0;
+                out[yxr] = in[yxr];
+                for(k=0; k < cn[ih]; k++) {
+                    blm = block_matching_xy(in, w, h, ws, hs, yxr, ing[hrgb[ih]+k])/bs;
+                    avr = out[ing[hrgb[ih]+k]];
+                    cna++;
+                    if(yxr != ing[hrgb[ih]+k]) {
+                        out[yxr] += in[ing[hrgb[ih]+k]]-in[yxr] > 0  ? in[ing[hrgb[ih]+k]]/blm : -in[ing[hrgb[ih]+k]]/blm;
+                        if(blm < min) min = blm;
+                        else if(blm > max) max = blm;
+                    }
+                }
+                printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d \n",
+                       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max);
+                //out[yxr] = hrgb[out[yxr]+i*his];
             }
         }
     }
@@ -5126,9 +5154,9 @@ uint8* malet_to_rgb(uint8 *img, uint8 *rgb, int h, int w, int step)
 	k=0;
 	for(y=0; y < hs[k]; y++ ){
 		for(x=0; x < ws[k]; x++){
-			rgb[3*((y+tly[k])*w + tlx[k] +x)]   = rnd(img[s[k] + y*ws[k] + x]);
-			rgb[3*((y+tly[k])*w + tlx[k] +x)+1] = rnd(img[s[k] + y*ws[k] + x]);
-			rgb[3*((y+tly[k])*w + tlx[k] +x)+2] = rnd(img[s[k] + y*ws[k] + x]);
+            rgb[3*((y+tly[k])*w + tlx[k] +x)]   = img[s[k] + y*ws[k] + x];
+            rgb[3*((y+tly[k])*w + tlx[k] +x)+1] = img[s[k] + y*ws[k] + x];
+            rgb[3*((y+tly[k])*w + tlx[k] +x)+2] = img[s[k] + y*ws[k] + x];
 		}
 	}
 	
