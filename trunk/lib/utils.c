@@ -910,6 +910,7 @@ void utils_ACE_fast_y(int16 *in, int16 *out, int16 *buff, uint32 bg, uint32 bpp,
 /** \brief Make the integral matrix.
     \param img	The pointer to a input image.
     \param in 	The pointer to a integral matrix.
+    \param bg   The Bayer grid pattern
     \param w	The image width.
     \param h	The imahe height.
 */
@@ -935,6 +936,58 @@ void utils_integral(int16 *img, uint32 *in, uint32 w, uint32 h)
         sum += img[x];
     }
     printf("Check the integral matrix = %d sum = %d\n", in[w*h-1], sum);
+    */
+}
+
+/** \brief Make the integral matrix for bayer image.
+    \param img	The pointer to a input image.
+    \param in 	The pointer to a integral matrix.
+    \param w	The image width.
+    \param h	The imahe height.
+*/
+void utils_integral_bayer(int16 *img, uint32 *in, uint32 w, uint32 h)
+{
+    uint32 x, y=0, yw, yx, w2 = w<<1;
+
+    in[0] = img[0];
+    in[1] = img[1];
+    for(x=2; x < w; x++){
+        in[x] = in[x-2] + img[x];
+    }
+
+    in[w]   = img[w];
+    in[w+1] = img[w+1];
+    for(x=2; x < w; x++){
+        yx = w + x;
+        in[yx] = in[yx-2] + img[yx];
+    }
+
+    for(y=2; y < h; y++){
+        yw = y*w;
+        in[yw] = in[yw-w2] + img[yw];
+        in[yw+1] = in[yw-w2+1] + img[yw+1];
+        for(x=2; x < w; x++){
+            yx = yw + x;
+            in[yx] = in[yx-2] + in[yx-w2] - in[yx-2-w2] + img[yx];
+        }
+    }
+
+    /*
+    //For check only
+    uint32 sum;
+    sum = 0;
+    for(y=0; y < h; y+=2){ yw = y*w; for(x=0; x < w; x+=2) {sum += img[yw + x];}}
+    printf("Check the integral sum = %d\n", sum);
+    sum = 0;
+    for(y=0; y < h; y+=2){ yw = y*w; for(x=1; x < w; x+=2) {sum += img[yw + x];}}
+    printf("Check the integral sum = %d\n", sum);
+    sum = 0;
+    for(y=1; y < h; y+=2){ yw = y*w; for(x=0; x < w; x+=2) {sum += img[yw + x];}}
+    printf("Check the integral sum = %d\n", sum);
+    sum = 0;
+    for(y=1; y < h; y+=2){ yw = y*w; for(x=1; x < w; x+=2) {sum += img[yw + x];}}
+    printf("Check the integral sum = %d\n", sum);
+    printf("mat1 = %d mat2 = %d mat3 = %d mat4 = %d\n", in[w*h-w-2], in[w*h-w-1], in[w*h-2], in[w*h-1]);
     */
 }
 
@@ -1116,13 +1169,13 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
 */
 void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, yxr1, hs = 8, ws = 8, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int x, y, yw, yx, yxr, yxr1, hs = 3, ws = 3, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w;
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     uint32 *ing = buff;
     int rgb[4];
     int *hrgb, *cn, *hst;
-    double sm, sm1;
+    double sm, sm1, cf;
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
 
@@ -1148,6 +1201,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
 
     //Make intehral image
     utils_integral(in, ing, w, h);
+    //utils_integral_bayer(in, ing, w, h);
     printf("Finish utils_integral\n");
 
     //Fill all color r, g1, g2, b histogram
@@ -1227,6 +1281,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     }*/
 
     //Restore denoise image
+    /*
     for(y=hs+2; y < h1-hs-2; y+=2){
         yw = y*w;
         for(x=ws+2; x < w1-ws-2; x+=2){
@@ -1234,34 +1289,32 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
                 ih = out[yxr] + i*his;
+
                 min = his; max = 0;
                 out[yxr] = in[yxr];
                 sum = 0;
-                sm1 = 1.;
+                sm1 = 0;
+                sm = 0;
                 for(k=0; k < cn[ih]; k++) {
-                    if(yxr != ing[hrgb[ih]+k]) {
-                        blm = block_matching_xy(in, w, h, ws, hs, yxr, ing[hrgb[ih]+k]);
-                        sm1 += 1./(double)blm;
-                    }
-                }
-                sm = (double)in[ing[yxr]];
-                for(k=0; k < cn[ih]; k++) {
-                    blm = block_matching_xy(in, w, h, ws, hs, yxr, ing[hrgb[ih]+k])/bs;
-                    avr = out[ing[hrgb[ih]+k]];
+                    yxr1 = ing[hrgb[ih]+k];
+                    blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
+                    avr = out[yxr1];
                     cna++;
-                    if(yxr != ing[hrgb[ih]+k]) {
-                        sm += (double)in[ing[hrgb[ih]+k]]/(double)blm;
-                        if(blm < min) min = blm;
-                        else if(blm > max) max = blm;
-                    }
-                    out[yxr] = sm/sm1;
+                    //if(yxr != ing[hrgb[ih]+k]) {
+                    cf = 1./((double)blm+1.);
+                    sm1 += cf;
+                    sm += (double)in[yxr1]*cf;
+                    if(blm < min) min = blm;
+                    else if(blm > max) max = blm;
+                    //}
                 }
-                printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d sm = %f sm1 = %f\n",
-                       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, sm, sm1);
+                out[yxr] = sm/sm1;
+                //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
+                //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
                 //out[yxr] = hrgb[out[yxr]+i*his];
             }
         }
-    }
+    }*/
 }
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
