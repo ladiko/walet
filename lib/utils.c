@@ -1169,8 +1169,8 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
 */
 void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, yxr1, hs = 3, ws = 3, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
-    int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w;
+    int x, y, yw, yx, yxr, yxr1, hs = 4, ws = 4, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     uint32 *ing = buff;
     int rgb[4];
@@ -1200,8 +1200,8 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     }
 
     //Make intehral image
-    utils_integral(in, ing, w, h);
-    //utils_integral_bayer(in, ing, w, h);
+    //utils_integral(in, ing, w, h);
+    utils_integral_bayer(in, ing, w, h);
     printf("Finish utils_integral\n");
 
     //Fill all color r, g1, g2, b histogram
@@ -1213,7 +1213,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
 
-                avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w-1] - ing[yxr +ws-whs-w] - ing[yxr -ws+whs-1]);
+                avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w2-2] - ing[yxr +ws-whs-w2] - ing[yxr -ws+whs-2]);
                 /*
                 yxr1 = (hs+2)*w + ws + 2 + rgb[i];
                 avr1 = (ing[yxr1+ws+whs] + ing[yxr1-ws-whs-w-1] - ing[yxr1+ws-whs-w] - ing[yxr1-ws+whs-1]);
@@ -1223,7 +1223,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                            i,  yx%w, yx/w, blm, abs(avr-avr1)/bs, avr, avr1, yxr1);
                 }
                 */
-                avr = avr/bs;
+                avr = avr/(bs>>2);
                 out[yxr] = avr;
                 hst[avr + i*his]++;
             }
@@ -1281,7 +1281,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     }*/
 
     //Restore denoise image
-    /*
+
     for(y=hs+2; y < h1-hs-2; y+=2){
         yw = y*w;
         for(x=ws+2; x < w1-ws-2; x+=2){
@@ -1314,7 +1314,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                 //out[yxr] = hrgb[out[yxr]+i*his];
             }
         }
-    }*/
+    }
 }
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
