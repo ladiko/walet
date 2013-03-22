@@ -617,7 +617,7 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, size = w*h;
+    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, size = w*h, sg;
     clock_t start, end;
     double time=0., tmp;
     struct timeval tv;
@@ -633,21 +633,30 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
     utils_wb_bayer(fr->b.pic, fr->d.pic, (int16*)gw->gop.buf, gw->wc.bpp, gw->wc.bg, fr->b.w, fr->b.h);
 
-    new_buffer (gw->orig[1], fr->b.w, fr->b.h);
-    utils_bayer_to_RGB24(fr->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, gw->wc.bpp);
-    gtk_widget_queue_draw(gw->drawingarea[1]);
-
-
+    sg = utils_noise_detection(fr->d.pic, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
+    printf("Standard deviation = %d\n", sg);
+    /*
+    new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
+    //utils_bayer_to_RGB24(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 12);
+    utils_gray16_rgb8((int16*)gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 12, 1);
+    //utils_gray16_rgb8(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
+    gtk_widget_queue_draw(gw->drawingarea[3]);
+    */
     gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
     //utils_BM_denoise(fr->d.pic, fr->V16.pic, (uint32*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, fr->Y16.w, fr->Y16.h);
-    utils_BM_denoise_local(fr->d.pic, fr->V16.pic, (uint32*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, fr->Y16.w, fr->Y16.h);
+    utils_BM_denoise_local(fr->d.pic, fr->V16.pic, (uint32*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
     //utils_ACE_fast_y(fr->d.pic, fr->V16.pic, (int16*)gw->gop.buf, gw->wc.bg, bpp, fr->Y16.w, fr->Y16.h);
     //filter_median_bayer_ad(fr->V16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
     gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
     printf("utils_BM_denoise time = %f\n", (double)(end-start)/1000000.);
 
+    new_buffer (gw->orig[1], fr->b.w, fr->b.h);
+    utils_bayer_to_RGB24(fr->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, gw->wc.bpp);
+    gtk_widget_queue_draw(gw->drawingarea[1]);
+
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
     utils_bayer_to_RGB24(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 12);
+    //utils_gray16_rgb8(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 12, 1);
     //utils_gray16_rgb8(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
     gtk_widget_queue_draw(gw->drawingarea[3]);
 

@@ -1158,16 +1158,43 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
     return sum;
 }
 
-/**	\brief The Block Matching denoise  algorithm.
+/**	\brief The noise detection fucnction return the standard deviation.
     \param in	The input 16 bits bayer image.
-    \param out	The output 16 bits bayer image.
     \param buff	The temporary buffer.
     \param bg   The Bayer grid pattern
     \param bpp The image bits per pixel.
     \param w    The image width.
     \param h 	The image height.
 */
-void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 w, uint32 h)
+int utils_noise_detection(int16 *in, int16 *buff, uint32 w, uint32 h)
+{
+    int i, sz = w*h, sg, cn = 0;
+    double df = 0.;
+    filter_median_bayer_diff(in, buff, NULL, &buff[w*h], w, h);
+
+    for(i=0; i < sz; i++){
+        if(buff[i]){
+            buff[i] = buff[i] - in[i];
+            df += buff[i]*buff[i];
+            buff[i] += (1<<11);
+            cn++;
+        }
+    }
+    sg = (int)sqrt(df/(double)cn);
+    return sg;
+}
+
+/**	\brief The Block Matching denoise  algorithm.
+        \param in	The input 16 bits bayer image.
+        \param out	The output 16 bits bayer image.
+        \param buff	The temporary buffer.
+        \param bg   The Bayer grid pattern
+        \param bpp  The image bits per pixel.
+        \param sg   The noise standard deviation.
+        \param w    The image width.
+        \param h 	The image height.
+    */
+void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h)
 {
     int x, y, yw, yx, yxr, yxr1, hs = 4, ws = 4, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
@@ -1178,6 +1205,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     double sm, sm1, cf;
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
+    int xb = ws+200, xe = xb + 200, yb = hs+200, ye = yb + 200;
 
     printf("Start!!!\n");
     hrgb = (int*)&buff[w*h];
@@ -1199,17 +1227,21 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     case(RGGB):{ rgb[0] =   0; rgb[1] = 1; rgb[2] =   w; rgb[3] = w+1; break; }
     }
 
-    //Make intehral image
+    //Make integral image
     //utils_integral(in, ing, w, h);
     utils_integral_bayer(in, ing, w, h);
     printf("Finish utils_integral\n");
 
-    //Fill all color r, g1, g2, b histogram
+    //y = hs+8; x = ws+8;
+    //yw = y*w; yx = yw + x; yxr1 = yx + rgb[0];
+    //avr1  = (ing[yxr1 +ws+whs] + ing[yxr1 -ws-whs-w2-2] - ing[yxr1 +ws-whs-w2] - ing[yxr1 -ws+whs-2])/(bs>>2);
 
-    for(y=hs+2; y < h1-hs-2; y+=2){
+    //Fill all color r, g1, g2, b histogram
+    for(y=yb; y < ye; y+=2){
         yw = y*w;
-        for(x=ws+2; x < w1-ws-2; x+=2){
+        for(x=xb; x < xe; x+=2){
             yx = yw + x;
+            //i = 0;{
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
 
@@ -1224,11 +1256,18 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                 }
                 */
                 avr = avr/(bs>>2);
-                out[yxr] = avr;
                 hst[avr + i*his]++;
+                out[yxr] = avr;
+                //out[yxr] = avr + (his>>1) - avr1;
+                //out[yxr] = avr - avr1;
+                //printf("out = %d avr = %d avr1 = %d his = %d\n", out[yxr], avr, avr1, his>>1);
             }
         }
     }
+    //in[yxr1] = 4095;
+    //in[yxr1+1] = 4095;
+    //in[yxr1+w] = 4095;
+    //in[yxr1+w+1] = 4095;
     printf("Fill all color histogram\n");
 
     //Make integral histogram
@@ -1242,10 +1281,11 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
 
     printf("Make integral histogram\n");
 
+
     //Store yx value in ing[] array
-    for(y=hs+2; y < h1-hs-2; y+=2){
+    for(y=yb; y < ye; y+=2){
         yw = y*w;
-        for(x=ws+2; x < w1-ws-2; x+=2){
+        for(x=xb; x < xe; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
@@ -1256,6 +1296,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
         }
     }
     printf("Store yx value in ing[] array\n");
+
     /*
     //Calculate the pixel average
     for(j=0; j < his4; j++) {
@@ -1282,32 +1323,33 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
 
     //Restore denoise image
 
-    for(y=hs+2; y < h1-hs-2; y+=2){
+    for(y=yb; y < ye; y+=2){
         yw = y*w;
-        for(x=ws+2; x < w1-ws-2; x+=2){
+        for(x=xb; x < xe; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
                 ih = out[yxr] + i*his;
 
-                min = his; max = 0;
-                out[yxr] = in[yxr];
+                //min = his; max = 0;
+                //out[yxr] = in[yxr];
                 sum = 0;
                 sm1 = 0;
                 sm = 0;
                 for(k=0; k < cn[ih]; k++) {
                     yxr1 = ing[hrgb[ih]+k];
                     blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
-                    avr = out[yxr1];
-                    cna++;
+                    //avr = out[yxr1];
+                    //cna++;
                     //if(yxr != ing[hrgb[ih]+k]) {
                     cf = 1./((double)blm+1.);
                     sm1 += cf;
                     sm += (double)in[yxr1]*cf;
-                    if(blm < min) min = blm;
-                    else if(blm > max) max = blm;
-                    //}
+                    //if(blm < min) min = blm;
+                    //else if(blm > max) max = blm;
                 }
+
+                printf("k = %d cn = %d blm = %d\n", k, cn[ih], blm);
                 out[yxr] = sm/sm1;
                 //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
                 //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
@@ -1315,6 +1357,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             }
         }
     }
+
 }
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
