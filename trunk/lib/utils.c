@@ -1205,7 +1205,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     double sm, sm1, cf;
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
-    int xb = ws+200, xe = xb + 200, yb = hs+200, ye = yb + 200;
+    int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
 
     printf("Start!!!\n");
     hrgb = (int*)&buff[w*h];
@@ -1342,8 +1342,15 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                     //avr = out[yxr1];
                     //cna++;
                     //if(yxr != ing[hrgb[ih]+k]) {
+                    //The 1/x function
+                    /*
                     cf = 1./((double)blm+1.);
                     sm1 += cf;
+                    sm += (double)in[yxr1]*cf;
+                    */
+                    // exp(-x2) function
+                    cf = exp(-(double)(blm*blm)/(double)(sg*sg*10));
+                    sm1 += exp(-(double)(blm*blm)/(double)(sg*sg*100));
                     sm += (double)in[yxr1]*cf;
                     //if(blm < min) min = blm;
                     //else if(blm > max) max = blm;
