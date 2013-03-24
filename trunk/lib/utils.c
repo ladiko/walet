@@ -1201,22 +1201,25 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     uint32 *ing = buff;
     int rgb[4];
-    int *hrgb, *cn, *hst;
+    int *hrgb, *cn, *hst, *pnt;
     double sm, sm1, cf;
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
+    int xst, yst, hg = sg*sg*100;
+    xst = yst = 200;
 
     printf("Start!!!\n");
     hrgb = (int*)&buff[w*h];
     cn = &hrgb[his4+1];
+    pnt = &cn[his4];
 
     printf("Setup historgam\n");
 
     //Clear historgam
-    memset(hrgb, 0, sizeof(int)*his4+1);
-    memset(cn, 0, sizeof(int)*his4);
-    printf("Clear historgam\n");
+    //memset(hrgb, 0, sizeof(int)*his4+1);
+    //memset(cn, 0, sizeof(int)*his4);
+    //printf("Clear historgam\n");
 
     hst = &hrgb[1];
 
@@ -1237,67 +1240,71 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     //avr1  = (ing[yxr1 +ws+whs] + ing[yxr1 -ws-whs-w2-2] - ing[yxr1 +ws-whs-w2] - ing[yxr1 -ws+whs-2])/(bs>>2);
 
     //Fill all color r, g1, g2, b histogram
-    for(y=yb; y < ye; y+=2){
-        yw = y*w;
-        for(x=xb; x < xe; x+=2){
-            yx = yw + x;
-            //i = 0;{
-            for(i=0; i < 4; i++){
-                yxr = yx + rgb[i];
+    //yb = hs+2; {
+    for(yb = hs+2; yb < h-hs-2-yst; yb+=yst){
+        //xb = ws+2+xst;{
+        for(xb = ws+2; xb < w-ws-2-xst; xb+=xst){
 
-                avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w2-2] - ing[yxr +ws-whs-w2] - ing[yxr -ws+whs-2]);
-                /*
-                yxr1 = (hs+2)*w + ws + 2 + rgb[i];
-                avr1 = (ing[yxr1+ws+whs] + ing[yxr1-ws-whs-w-1] - ing[yxr1+ws-whs-w] - ing[yxr1-ws+whs-1]);
-                blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
-                if(abs(avr-avr1)/bs > abs(blm)) {
-                    printf("%d x = %d y = %d blm = %d avr = %d avr = %d avr1 = %d yx = %d\n",
-                           i,  yx%w, yx/w, blm, abs(avr-avr1)/bs, avr, avr1, yxr1);
+            printf("Blok xb = %d yb = %d \n", xb, yb);
+            memset(hrgb, 0, sizeof(int)*(his4+1));
+            memset(cn, 0, sizeof(int)*his4);
+
+            for(y=yb; y < yb+yst; y+=2){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x+=2){
+                    yx = yw + x;
+                    for(i=0; i < 4; i++){
+                        yxr = yx + rgb[i];
+
+                        avr  = (ing[yxr +ws+whs] + ing[yxr -ws-whs-w2-2] - ing[yxr +ws-whs-w2] - ing[yxr -ws+whs-2]);
+                        avr = avr/(bs>>2);
+                        hst[avr + i*his]++;
+                        out[yxr] = avr;
+                        //out[yxr] = avr + (his>>1) - avr1;
+                        //out[yxr] = avr - avr1;
+                        /*
+                        if(y == yb && x == xb) {
+                            printf("x = %d y = %d yxr = %d out = %d avr = %d avr1 = %d his = %d\n",
+                                                      x, y, yxr, out[yxr], avr, avr1, his>>1);
+                            printf("rb = %d lt = %d lb = %d rt = %d\n", yxr +ws+whs, yxr -ws-whs-w2-2, yxr +ws-whs-w2, yxr -ws+whs-2);
+                            printf("lt = %d rt = %d lb = %d rb = %d\n",
+                                   ing[yxr -ws-whs-w2-2], ing[yxr +ws-whs-w2], ing[yxr -ws+whs-2], ing[yxr +ws+whs]);
+                        }
+                        */
+                    }
                 }
-                */
-                avr = avr/(bs>>2);
-                hst[avr + i*his]++;
-                out[yxr] = avr;
-                //out[yxr] = avr + (his>>1) - avr1;
-                //out[yxr] = avr - avr1;
-                //printf("out = %d avr = %d avr1 = %d his = %d\n", out[yxr], avr, avr1, his>>1);
             }
-        }
-    }
-    //in[yxr1] = 4095;
-    //in[yxr1+1] = 4095;
-    //in[yxr1+w] = 4095;
-    //in[yxr1+w+1] = 4095;
-    printf("Fill all color histogram\n");
+            printf("Fill all color histogram\n");
 
-    //Make integral histogram
-    //avr = 0;
-    //for(j=0; j < his4; j++) avr += hst[j];
-    //printf("%d sum = %d\n", i, avr);
+            //Make integral histogram
+            //avr = 0;
+            //for(j=0; j < his4; j++) avr += hst[j];
+            //printf("%d sum = %d\n", i, avr);
 
-    for(j=1; j < his4; j++) hst[j] = hst[j-1] + hst[j];
-    printf("i = %d j = %d hrgb = %d\n", i, j-1, hst[j-1]);
-    //for(j=his-1; j ; j--) hrgb[i][j] = hrgb[i][j-1];
+            for(j=1; j < his4; j++) hst[j] = hst[j-1] + hst[j];
+            printf("j = %d hrgb = %d\n", j-1, hst[j-1]);
+            //for(j=his-1; j ; j--) hrgb[i][j] = hrgb[i][j-1];
 
-    printf("Make integral histogram\n");
+            printf("Make integral histogram\n");
 
 
-    //Store yx value in ing[] array
-    for(y=yb; y < ye; y+=2){
-        yw = y*w;
-        for(x=xb; x < xe; x+=2){
-            yx = yw + x;
-            for(i=0; i < 4; i++){
-                yxr = yx + rgb[i];
-                ih = out[yxr] + i*his;
-                ing[hrgb[ih] + cn[ih]] = yxr;
-                cn[ih]++;
+            //Store yx value in ing[] array
+            for(y=yb; y < yb+yst; y+=2){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x+=2){
+                    yx = yw + x;
+                    for(i=0; i < 4; i++){
+                        yxr = yx + rgb[i];
+                        ih = out[yxr] + i*his;
+                        //printf("yxr = %d out[yxr] = %d ih = %d\n", yxr, out[yxr], ih);
+                        pnt[hrgb[ih] + cn[ih]] = yxr;
+                        cn[ih]++;
+                    }
+                }
             }
-        }
-    }
-    printf("Store yx value in ing[] array\n");
+            printf("Store yx value in ing[] array\n");
 
-    /*
+            /*
     //Calculate the pixel average
     for(j=0; j < his4; j++) {
         avr = 0; cna = 0;
@@ -1321,46 +1328,49 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
         }
     }*/
 
-    //Restore denoise image
+            //Restore denoise image
 
-    for(y=yb; y < ye; y+=2){
-        yw = y*w;
-        for(x=xb; x < xe; x+=2){
-            yx = yw + x;
-            for(i=0; i < 4; i++){
-                yxr = yx + rgb[i];
-                ih = out[yxr] + i*his;
+            for(y=yb; y < yb+yst; y+=2){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x+=2){
+                    yx = yw + x;
+                    for(i=0; i < 4; i++){
+                        yxr = yx + rgb[i];
+                        ih = out[yxr] + i*his;
 
-                //min = his; max = 0;
-                //out[yxr] = in[yxr];
-                sum = 0;
-                sm1 = 0;
-                sm = 0;
-                for(k=0; k < cn[ih]; k++) {
-                    yxr1 = ing[hrgb[ih]+k];
-                    blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
-                    //avr = out[yxr1];
-                    //cna++;
-                    //if(yxr != ing[hrgb[ih]+k]) {
-                    //The 1/x function
-                    /*
+                        //min = his; max = 0;
+                        //out[yxr] = in[yxr];
+                        sum = 0;
+                        sm1 = 0;
+                        sm = 0;
+                        for(k=0; k < cn[ih]; k++) {
+                            yxr1 = pnt[hrgb[ih]+k];
+                            blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
+                            //avr = out[yxr1];
+                            //cna++;
+                            //if(yxr != ing[hrgb[ih]+k]) {
+                            //The 1/x function
+                            /*
                     cf = 1./((double)blm+1.);
                     sm1 += cf;
                     sm += (double)in[yxr1]*cf;
                     */
-                    // exp(-x2) function
-                    cf = exp(-(double)(blm*blm)/(double)(sg*sg*10));
-                    sm1 += exp(-(double)(blm*blm)/(double)(sg*sg*100));
-                    sm += (double)in[yxr1]*cf;
-                    //if(blm < min) min = blm;
-                    //else if(blm > max) max = blm;
-                }
+                            // exp(-x2) function
+                            cf = exp(-(double)(blm*blm)/(double)hg);
+                            sm1 += exp(-(double)(blm*blm)/(double)hg);
+                            sm += (double)in[yxr1]*cf;
+                            //if(blm < min) min = blm;
+                            //else if(blm > max) max = blm;
+                        }
 
-                //printf("k = %d cn = %d blm = %d\n", k, cn[ih], blm);
-                out[yxr] = sm/sm1;
-                //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
-                //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
-                //out[yxr] = hrgb[out[yxr]+i*his];
+                        //printf("k = %d cn = %d blm = %d\n", k, cn[ih], blm);
+                        out[yxr] = sm/sm1;
+                        //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
+                        //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
+                        //out[yxr] = hrgb[out[yxr]+i*his];
+                    }
+
+                }
             }
         }
     }
