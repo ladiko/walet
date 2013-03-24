@@ -1356,7 +1356,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                     //else if(blm > max) max = blm;
                 }
 
-                printf("k = %d cn = %d blm = %d\n", k, cn[ih], blm);
+                //printf("k = %d cn = %d blm = %d\n", k, cn[ih], blm);
                 out[yxr] = sm/sm1;
                 //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
                 //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
