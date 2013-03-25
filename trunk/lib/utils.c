@@ -1166,19 +1166,17 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
     \param w    The image width.
     \param h 	The image height.
 */
-int utils_noise_detection(int16 *in, int16 *buff, uint32 w, uint32 h)
+int utils_noise_detection(int16 *in, int16 *med, uint32 w, uint32 h)
 {
-    int i, sz = w*h, sg, cn = 0;
+    int i, sz = w*h, sg, cn = 0, tmp;
     double df = 0.;
-    filter_median_bayer_diff(in, buff, NULL, &buff[w*h], w, h);
+    //filter_median_bayer_diff(in, buff, NULL, &buff[w*h], w, h);
 
     for(i=0; i < sz; i++){
-        if(buff[i]){
-            buff[i] = buff[i] - in[i];
-            df += buff[i]*buff[i];
-            buff[i] += (1<<11);
-            cn++;
-        }
+        tmp = med[i] - in[i];
+        df += tmp*tmp;
+        //buff[i] += (1<<11);
+        cn++;
     }
     sg = (int)sqrt(df/(double)cn);
     return sg;
@@ -1206,7 +1204,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
-    int xst, yst, hg = sg*sg*100;
+    int xst, yst, hg = sg*sg*10;
     xst = yst = 200;
 
     printf("Start!!!\n");
@@ -1282,7 +1280,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             //printf("%d sum = %d\n", i, avr);
 
             for(j=1; j < his4; j++) hst[j] = hst[j-1] + hst[j];
-            printf("j = %d hrgb = %d\n", j-1, hst[j-1]);
+            //printf("j = %d hrgb = %d\n", j-1, hst[j-1]);
             //for(j=his-1; j ; j--) hrgb[i][j] = hrgb[i][j-1];
 
             printf("Make integral histogram\n");
@@ -1302,7 +1300,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                     }
                 }
             }
-            printf("Store yx value in ing[] array\n");
+            printf("Store yx value in array\n");
 
             /*
     //Calculate the pixel average
