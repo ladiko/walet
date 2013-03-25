@@ -1205,7 +1205,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
     int xst, yst, hg = sg*sg*10;
-    xst = yst = 200;
+    xst = yst = 100;
 
     printf("Start!!!\n");
     hrgb = (int*)&buff[w*h];
@@ -1341,9 +1341,11 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
                         sum = 0;
                         sm1 = 0;
                         sm = 0;
+                        //printf("cn = %d\n", cn[ih]);
                         for(k=0; k < cn[ih]; k++) {
                             yxr1 = pnt[hrgb[ih]+k];
                             blm = block_matching_xy(in, w, h, ws, hs, yxr, yxr1)/bs;
+                            //printf("k = %d blm = %d\n", k, blm);
                             //avr = out[yxr1];
                             //cna++;
                             //if(yxr != ing[hrgb[ih]+k]) {
