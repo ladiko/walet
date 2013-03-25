@@ -633,8 +633,6 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
     utils_wb_bayer(fr->b.pic, fr->d.pic, (int16*)gw->gop.buf, gw->wc.bpp, gw->wc.bg, fr->b.w, fr->b.h);
 
-    sg = utils_noise_detection(fr->d.pic, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
-    printf("Standard deviation = %d\n", sg);
     /*
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
     //utils_bayer_to_RGB24(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 12);
@@ -643,8 +641,12 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     gtk_widget_queue_draw(gw->drawingarea[3]);
     */
 
+    filter_median_bayer_diff(fr->d.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
+    sg = utils_noise_detection(fr->d.pic, fr->Y16.pic, fr->b.w, fr->b.h);
+    printf("Standard deviation = %d\n", sg);
+
     gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
-    utils_BM_denoise_local(fr->d.pic, fr->V16.pic, (uint32*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
+    utils_BM_denoise_local(fr->Y16.pic, fr->R16.pic, (uint32*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
     //utils_ACE_fast_y(fr->d.pic, fr->V16.pic, (int16*)gw->gop.buf, gw->wc.bg, bpp, fr->Y16.w, fr->Y16.h);
     //filter_median_bayer_ad(fr->V16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
     gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
@@ -661,9 +663,9 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     gtk_widget_queue_draw(gw->drawingarea[3]);
     */
 
-    utils_ACE_fast(fr->V16.pic, fr->U16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    new_buffer (gw->orig[3], fr->V16.w, fr->Y16.h);
-    utils_bayer_to_RGB24(fr->U16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
+    utils_ACE_fast(fr->R16.pic, fr->b.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
+    utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[3]);
 
 
