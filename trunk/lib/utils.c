@@ -1374,8 +1374,101 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
             }
         }
     }
-
 }
+
+/**	\brief The Block Matching denoise  algorithm.
+        \param in	The input 16 bits bayer image.
+        \param out	The output 16 bits bayer image.
+        \param buff	The temporary buffer.
+        \param bg   The Bayer grid pattern
+        \param bpp  The image bits per pixel.
+        \param sg   The noise standard deviation.
+        \param w    The image width.
+        \param h 	The image height.
+    */
+void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, yxr, yxb, yxr1, st = 3, hs = 2*3, ws = 2*3, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
+    int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
+    int rgb[4];
+    int *hrgb, *cn, *hst, *pnt;
+    double sm, sm1, cf;
+    //int hrgb[his4+1], cn[his4], *hst;
+    //int *hrgb[4], *cn[4];
+    int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
+    int xst, yst, hg = sg*sg*10, tw;
+    xst = yst = 4;
+
+    uint32 *ing = (uint32*)buff;
+    int16 *av[3];
+    av[0] = (int16*)&ing[w*h]; av[1] = &av[0][w*h]; av[2] = &av[1][w*h];
+
+    switch(bg){
+    case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
+    case(GRBG):{ rgb[0] =   1; rgb[1] = 0; rgb[2] = w+1; rgb[3] = w  ; break; }
+    case(GBRG):{ rgb[0] =   w; rgb[1] = 0; rgb[2] = w+1; rgb[3] = 1  ; break; }
+    case(RGGB):{ rgb[0] =   0; rgb[1] = 1; rgb[2] =   w; rgb[3] = w+1; break; }
+    }
+
+    //Make integral image
+    //utils_integral(in, ing, w, h);
+    utils_integral_bayer(in, ing, w, h);
+    printf("Finish utils_integral\n");
+
+    for(y = hs+2; y < h-hs-2; y+=2){
+        yw = y*w;
+        for(x = ws+2; x < w-ws-2; x+=2){
+            yx = yw + x;
+            for(i=0; i < 4; i++){
+                yxr = yx + rgb[i];
+                ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+                av[0][yxr] = avr/bs;
+                ws = 4; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+                av[1][yxr] = avr/bs;
+                ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+                av[2][yxr] = avr/bs;
+
+            }
+        }
+    }
+
+    for(yb = yst+hs+2; yb < h-yst-hs-2; yb+=2){
+        yw = y*w;
+        for(xb = xst+ws+2; xb < w-xst-ws-2; xb+=2){
+
+            for(i=0; i < 4; i++){
+                yxb = yw + x + rgb[i];
+                cf = sm1 = sm = 0;
+
+                for(y=yb-yst; y <= yb+yst; y+=2){
+                    yw = y*w;
+                    for(x=xb-xst; x <= xb+xst; x+=2){
+                        yx = yw + x;
+
+                        yxr = yx + rgb[i];
+
+                        // exp(-x2) function
+                        tw = (av[0][yxb]-av[0][yxr])*(av[0][yxb]-av[0][yxr]);
+                        cf = exp(-(double)tw/(double)hg);
+                        sm1 += exp(-(double)tw/(double)hg);
+                        sm += (double)in[yxb]*cf;
+                        //if(blm < min) min = blm;
+                        //else if(blm > max) max = blm;
+                    }
+                    out[yxr] = sm/sm1;
+                    //printf("%d x = %d y = %d  cn = %d avr = %d in = %d out = %d min = %d max = %d blm = %d sm = %f sm1 = %f\n",
+                    //       i, yxr%w, yxr/w, cn[ih], avr, in[ing[hrgb[ih]+k]], out[yxr], min, max, blm, sm, sm1);
+                    //out[yxr] = hrgb[out[yxr]+i*his];
+                }
+            }
+        }
+    }
+}
+
 
 #define hsh(w,x) ((x == -2) ? -w-w :(x == 2))
 
