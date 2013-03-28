@@ -914,7 +914,7 @@ void utils_ACE_fast_y(int16 *in, int16 *out, int16 *buff, uint32 bg, uint32 bpp,
     \param w	The image width.
     \param h	The imahe height.
 */
-void utils_integral(int16 *img, uint32 *in, uint32 w, uint32 h)
+void utils_integral(int16 *img, int *in, uint32 w, uint32 h)
 {
     uint32 x, y=0, yw, yx;
     //uint32 sum = 0;
@@ -1388,7 +1388,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     */
 void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, yxb, ybw, st = 1, hs = 2*st, ws = 2*st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int x, y, yw, yx, yxr, yxb, ybw, st = 1, hs = 1*st, ws = 1*st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     int rgb[4];
@@ -1398,12 +1398,12 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
     int xst, yst, hg = sg*sg, tw;
-    xst = yst = 8;
+    xst = yst = 6;
 
 
-    uint32 *ing = (uint32*)buff;
-    int16 *av[3];
-    av[0] = (int16*)&ing[w*h]; av[1] = &av[0][w*h]; av[2] = &av[1][w*h];
+    int *ing = (int*)buff;
+    int *av[3];
+    av[0] = &ing[w*h]; av[1] = &av[0][w*h]; //av[2] = &av[1][w*h];
 
     switch(bg){
     case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
@@ -1413,30 +1413,32 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     }
 
     //Make integral image
-    //utils_integral(in, ing, w, h);
-    utils_integral_bayer(in, ing, w, h);
+    utils_integral(in, ing, w, h);
+    //utils_integral_bayer(in, ing, w, h);
     printf("Finish utils_integral\n");
-    /*
+
     for(y = hs+2; y < h-hs-2; y+=2){
         yw = y*w;
         for(x = ws+2; x < w-ws-2; x+=2){
             yx = yw + x;
             for(i=0; i < 4; i++){
                 yxr = yx + rgb[i];
-                ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
-                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
-                av[0][yxr] = avr/bs;
-                ws = 4; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
-                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
-                av[1][yxr] = avr/bs;
-                ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
-                avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
-                av[2][yxr] = avr/bs;
+                ws = 1; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
+                av[0][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+
+                //av[0][yxr] = avr/bs;
+                ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
+                av[1][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2] - av[0][yxr];
+                //av[1][yxr] = avr/bs;
+                //ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                //avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+                //av[2][yxr] = avr/bs;
 
             }
         }
     }
-    */
+
+
     for(yb = yst+hs+2; yb < h-yst-hs-2; yb++){
         ybw = yb*w;
         for(xb = xst+ws+2; xb < w-xst-ws-2; xb++){
@@ -1445,7 +1447,7 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                 yxb = ybw + xb;// + rgb[i];
                 //printf("x = %d y = %d\n", yxb%w, yxb/w);
                 sm1 = sm = 0;
-
+                //printf("Start x = %d y = %d\n", xb, yb);
                 for(y=yb-yst; y <= yb+yst; y+=2){
                     yw = y*w;
                     for(x=xb-xst; x <= xb+xst; x+=2){
@@ -1453,19 +1455,67 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         yxr = yx;// + rgb[i];
                         // exp(-x2) function
                         blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
+                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>5;
                         tw = blm*blm;
                         //tw = (av[0][yxb]-av[0][yxr])*(av[0][yxb]-av[0][yxr]);
                         cf = exp(-(double)tw/(double)hg);
                         sm1 += cf;
                         sm += (double)in[yxr]*cf;
+                        //printf("Start x = %d y = %d blm = %d cf = %f\n", x, y, blm, cf);
                         //if(blm < min) min = blm;
                         //else if(blm > max) max = blm;
-                    }                    
+                    }
                  }
+                //printf("tot = %f\n", sm1);
                 out[yxb] = sm/sm1;
             //}
         }
     }
+
+    //ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+    /*
+    for(yb = yst+hs+2; yb < h-yst-hs-2; yb++){
+        ybw = yb*w;
+        for(xb = xst+ws+2; xb < w-xst-ws-2; xb++){
+
+            //for(i=0; i < 4; i++){
+                yxb = ybw + xb;// + rgb[i];
+                //printf("x = %d y = %d\n", yxb%w, yxb/w);
+                //ws = 1; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                //avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1];
+                //ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+                //avr = ing[yxb+ws+whs] + ing[yxb-ws-whs-w-1] - ing[yxb+ws-whs-w] - ing[yxb-ws+whs-1];
+
+                sm1 = sm = 0;
+                //printf("Start x = %d y = %d\n", xb, yb);
+                for(y=yb-yst; y <= yb+yst; y+=2){
+                    yw = y*w;
+                    for(x=xb-xst; x <= xb+xst; x+=2){
+                        yx = yw + x;
+                        yxr = yx;// + rgb[i];
+                        // exp(-x2) function
+                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
+                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>5;
+                        //blm  = (ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1] - avr)/bs;
+                        //blm  = (av[0][yxr] - av[0][yxb] + av[1][yxr] - av[1][yxb])/bs;
+                        blm  = (av[0][yxr] - av[0][yxb])/bs;
+                        tw = blm*blm;
+                        //tw = (av[0][yxb]-av[0][yxr])*(av[0][yxb]-av[0][yxr]);
+                        cf = exp(-(double)tw/(double)hg);
+                        //cf = exp(-(tw>>9));
+                        sm1 += cf;
+                        sm += (double)in[yxr]*cf;
+                        //printf("Start x = %d y = %d avr = %d blm = %d cf = %f tw = %d\n", x, y, avr, blm, cf, tw);
+                        //if(blm < min) min = blm;
+                        //else if(blm > max) max = blm;
+                    }
+                 }
+                //printf("tot = %f\n", sm1);
+                out[yxb] = sm/sm1;
+            //}
+        }
+    }
+    */
 }
 
 
