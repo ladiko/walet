@@ -1398,12 +1398,19 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
     int xst, yst, hg = sg*sg, tw;
-    xst = yst = 6;
+    xst = yst = 4;
+    int ex[50], smi, smi1;
 
 
     int *ing = (int*)buff;
     int *av[3];
     av[0] = &ing[w*h]; av[1] = &av[0][w*h]; //av[2] = &av[1][w*h];
+
+    //Make lut table to remove exp
+    for(i=0; i < 50; i++){
+        ex[i] = (int)(exp(-(double)i*i/(double)hg)*512);
+        //printf("%3d exp = %d\n", i, ex[i]);
+    }
 
     switch(bg){
     case(BGGR):{ rgb[0] = w+1; rgb[1] = 1; rgb[2] =   w; rgb[3] = 0  ; break; }
@@ -1427,8 +1434,9 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                 av[0][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
 
                 //av[0][yxr] = avr/bs;
-                ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
-                av[1][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2] - av[0][yxr];
+                //ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
+                //av[1][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2] - av[0][yxr];
+
                 //av[1][yxr] = avr/bs;
                 //ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
                 //avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
@@ -1438,7 +1446,7 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
         }
     }
 
-
+    /*
     for(yb = yst+hs+2; yb < h-yst-hs-2; yb++){
         ybw = yb*w;
         for(xb = xst+ws+2; xb < w-xst-ws-2; xb++){
@@ -1471,9 +1479,9 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
             //}
         }
     }
-
+    */
     //ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
-    /*
+
     for(yb = yst+hs+2; yb < h-yst-hs-2; yb++){
         ybw = yb*w;
         for(xb = xst+ws+2; xb < w-xst-ws-2; xb++){
@@ -1486,7 +1494,8 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                 //ws = 2; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
                 //avr = ing[yxb+ws+whs] + ing[yxb-ws-whs-w-1] - ing[yxb+ws-whs-w] - ing[yxb-ws+whs-1];
 
-                sm1 = sm = 0;
+                //sm1 = sm = 0;
+                smi1 = smi = 0;
                 //printf("Start x = %d y = %d\n", xb, yb);
                 for(y=yb-yst; y <= yb+yst; y+=2){
                     yw = y*w;
@@ -1495,27 +1504,31 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         yxr = yx;// + rgb[i];
                         // exp(-x2) function
                         //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
-                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>5;
+                        blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
                         //blm  = (ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1] - avr)/bs;
                         //blm  = (av[0][yxr] - av[0][yxb] + av[1][yxr] - av[1][yxb])/bs;
-                        blm  = (av[0][yxr] - av[0][yxb])/bs;
-                        tw = blm*blm;
-                        //tw = (av[0][yxb]-av[0][yxr])*(av[0][yxb]-av[0][yxr]);
-                        cf = exp(-(double)tw/(double)hg);
-                        //cf = exp(-(tw>>9));
-                        sm1 += cf;
-                        sm += (double)in[yxr]*cf;
+
+                        //blm  = abs(av[0][yxr] - av[0][yxb])>>3;
+                        //tw = blm*blm;
+                        //cf = exp(-(double)tw/(double)hg);
+                        //sm1 += cf;
+                        //sm += (double)in[yxr]*cf;
+
+                        cf = blm > 49 ? 0 : ex[blm];
+                        smi1 += cf;
+                        smi += in[yxr]*cf;
                         //printf("Start x = %d y = %d avr = %d blm = %d cf = %f tw = %d\n", x, y, avr, blm, cf, tw);
                         //if(blm < min) min = blm;
                         //else if(blm > max) max = blm;
                     }
                  }
                 //printf("tot = %f\n", sm1);
-                out[yxb] = sm/sm1;
+                //out[yxb] = sm/sm1;
+                out[yxb] = smi/smi1;
             //}
         }
     }
-    */
+
 }
 
 
