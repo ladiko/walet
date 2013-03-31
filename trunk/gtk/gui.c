@@ -686,6 +686,7 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     utils_ACE_fast(fr->R16.pic, fr->b.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
 
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
+    //utils_gray16_rgb8(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
     utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[3]);
 

@@ -805,6 +805,58 @@ void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32
 void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
 {
     int x, x1, y, y1, yx, yx1, yw, yw1, hs = 1<<12;
+    int df, sz = w*h, tm;
+    //int R, max = 0., min = 0.;
+    double R = 0., max = 0., max1 = 0., dd;
+    int *hi, *hl, *hr, *lt;
+    int b = (1<<30)/sz;
+
+    printf("b = %d\n", b);
+
+    hi = (int*)buff; hl = &hi[hs]; //hr = &hl[hs]; lt = &hr[hs];
+
+    //Fill historgam
+    memset(hi, 0, sizeof(int)*hs);
+    for(x=0; x < sz; x++) hi[in[x]]++;
+
+    hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+
+    //hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
+
+    //Make LUT table
+    for(x=0; x < hs; x++) {
+        hi[x] = 128 + (b*(2*hl[x] - sz)>>23);
+        //lt[x]  = 128 + (b*(hl[x] -  hr[x])>>23);
+        //if(lt[x] < 0 || lt[x] > 255) printf("%4d hi = %d hl = %d hr = %d lt = %d \n", x, hi[x], hl[x], hr[x], lt[x]);
+    }
+
+    //for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d lt = %d\n", x, hi[x], hl[x], hr[x], lt[x]);
+
+
+    for(y=0; y < h; y++){
+        yw = y*w;
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            //For sony A55 sensor check
+            if(in[yx] > hs-1) in[yx] = hs-1;
+            out[yx] = hi[in[yx]];
+            //if(out[yx] < 0 || out[yx] > 255) printf("yx = %d out = %d in = %d lt = %d\n", yx, out[yx], in[yx], lt[in[yx]]);
+            //out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>23);
+        }
+    }
+}
+
+/**	\brief Fast Automatic Color Enhancement algorithm.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bits The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_ACE_fast_local(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
+{
+    int x, x1, y, y1, yx, yx1, yw, yw1, hs = 1<<12;
     int df, sz = w*h;
     //int R, max = 0., min = 0.;
     double R = 0., max = 0., max1 = 0., dd;
