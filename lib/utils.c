@@ -811,25 +811,25 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     int *hi, *hl, *hr, *lt;
     int b = (1<<30)/sz;
 
-    printf("b = %d\n", b);
+    //printf("b = %d\n", b);
 
-    hi = (int*)buff; hl = &hi[hs]; //hr = &hl[hs]; lt = &hr[hs];
+    hi = (int*)buff; //hl = &hi[hs]; hr = &hl[hs]; lt = &hr[hs];
 
     //Fill historgam
     memset(hi, 0, sizeof(int)*hs);
     for(x=0; x < sz; x++) hi[in[x]]++;
 
-    hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+    //hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+    for(x=1; x < hs; x++) hi[x] = hi[x-1] + hi[x];
 
     //hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
 
     //Make LUT table
     for(x=0; x < hs; x++) {
-        hi[x] = 128 + (b*(2*hl[x] - sz)>>23);
+        hi[x] = 128 + (b*((hi[x]<<1) - sz)>>23);
         //lt[x]  = 128 + (b*(hl[x] -  hr[x])>>23);
         //if(lt[x] < 0 || lt[x] > 255) printf("%4d hi = %d hl = %d hr = %d lt = %d \n", x, hi[x], hl[x], hr[x], lt[x]);
     }
-
     //for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d lt = %d\n", x, hi[x], hl[x], hr[x], lt[x]);
 
 
@@ -854,36 +854,56 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     \param w    The image width.
     \param h 	The image height.
 */
-void utils_ACE_fast_local(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h)
+void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h)
 {
-    int x, x1, y, y1, yx, yx1, yw, yw1, hs = 1<<12;
-    int df, sz = w*h;
+    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yw, yw1, hs = 1<<bits;
+    int df, sz = w*h, sz1, tm;
     //int R, max = 0., min = 0.;
     double R = 0., max = 0., max1 = 0., dd;
-    int *hi, *hl, *hr;
-    int b = (1<<30)/sz;
+    int *hi[2];
+    int b;
+    int xst = w>>4, yst = h>>4, nx, ny;
 
-    printf("b = %d\n", b);
+    //printf("b = %d\n", b);
+    //Prepare histogram
+    nx = w/xst; //nx = w%xst ? nx+1 : nx;
+    ny = h/yst; //ny = w%yst ? ny+1 : ny;
+    sz1 = xst*yst;
+    b = (1<<30)/sz1;
 
-    hi = (int*)buff; hl = &hi[hs]; hr = &hl[hs];
+    printf("nx = %d ny = %d w = %d h = %d wc = %d hc = %d\n", nx, ny, w, h, nx*xst, ny*yst);
 
-    //Fill historgam
-    memset(hi, 0, sizeof(int)*hs);
-    for(x=0; x < sz; x++) hi[in[x]]++;
+    hi[0] = buff;
+    hi[1] = &buff[hs*nx];
 
-    hl[0] = 0; hl[1] = hi[0]; for(x=2; x < hs; x++) hl[x] = hl[x-1] + hi[x-1];
+    for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
+        for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
+            sh = hs*xi;
+            memset(&hi[0][sh], 0, sizeof(int)*hs);
+            //printf("Memset\n");
 
-    hr[hs-1] = 0; hr[hs-2] = hi[hs-1]; for(x=hs-3; x >= 0; x--) hr[x] = hr[x+1] + hi[x+1];
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    hi[0][in[yx]+sh]++;
+                }
+            }
+            //printf("Fill histogramm\n");
+            for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
+            //printf("Make LUT\n");
+            //Make LUT table
+            for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
 
-    //for(x=0; x < hs; x++) printf("%4d hi = %d hl = %d hr = %d\n", x, hi[x], hl[x], hr[x]);
-
-    for(y=0; y < h; y++){
-        yw = y*w;
-        for(x=0; x < w; x++){
-            yx = yw + x;
-            //R = (double)(hl[in[yx]] - hr[in[yx]])/(double)sz;
-            //out[yx] = (uint8)(127.5 + 127.5*R);
-            out[yx] = 128 + (b*(hl[in[yx]] - hr[in[yx]])>>23);
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    if(in[yx] > hs-1) in[yx] = hs-1;
+                    out[yx] = hi[0][in[yx]+sh];
+                }
+            }
+            printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
         }
     }
 }
