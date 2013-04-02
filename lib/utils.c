@@ -1245,10 +1245,12 @@ int utils_noise_detection(int16 *in, int16 *med, uint32 w, uint32 h)
     //filter_median_bayer_diff(in, buff, NULL, &buff[w*h], w, h);
 
     for(i=0; i < sz; i++){
-        tmp = med[i] - in[i];
-        df += tmp*tmp;
-        //buff[i] += (1<<11);
-        cn++;
+        if(med[i]) {
+            tmp = med[i] - in[i];
+            df += tmp*tmp;
+            //buff[i] += (1<<11);
+            cn++;
+        }
     }
     sg = (int)sqrt(df/(double)cn);
     return sg;
@@ -1460,7 +1462,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     */
 void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, yxb, ybw, st = 1, hs = 1*st, ws = 1*st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int x, y, yw, yx, yxr, yxb, ybw, st = 1, hs = st, ws = st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     int rgb[4];
@@ -1469,9 +1471,9 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     //int hrgb[his4+1], cn[his4], *hst;
     //int *hrgb[4], *cn[4];
     int xb = ws+200, xe = xb + 200, yb = hs+1000, ye = yb + 200;
-    int xst, yst, hg = sg*sg, tw;
+    int xst, yst, hg = sg*sg<<2, tw;
     xst = yst = 4;
-    int ex[50], smi, smi1;
+    int ex[256], smi, smi1;
 
 
     int *ing = (int*)buff;
@@ -1479,9 +1481,9 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     av[0] = &ing[w*h]; av[1] = &av[0][w*h]; //av[2] = &av[1][w*h];
 
     //Make lut table to remove exp
-    for(i=0; i < 50; i++){
+    for(i=0; i < 256; i++){
         ex[i] = (int)(exp(-(double)i*i/(double)hg)*512);
-        //printf("%3d exp = %d\n", i, ex[i]);
+        printf("%3d exp = %d\n", i, ex[i]);
     }
 
     switch(bg){
@@ -1586,7 +1588,7 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         //sm1 += cf;
                         //sm += (double)in[yxr]*cf;
 
-                        cf = blm > 49 ? 0 : ex[blm];
+                        cf = blm > 255 ? 0 : ex[blm];
                         smi1 += cf;
                         smi += in[yxr]*cf;
                         //printf("Start x = %d y = %d avr = %d blm = %d cf = %f tw = %d\n", x, y, avr, blm, cf, tw);
