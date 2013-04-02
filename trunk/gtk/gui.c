@@ -659,9 +659,9 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     utils_wb_bayer(fr->b.pic, fr->d.pic, (int16*)gw->gop.buf, gw->wc.bpp, gw->wc.bg, fr->b.w, fr->b.h);
 
 
-    //filter_median_bayer_diff(fr->d.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
-    //sg = utils_noise_detection(fr->d.pic, fr->Y16.pic, fr->b.w, fr->b.h);
-    sg = 20;
+    filter_median_bayer_diff(fr->d.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
+    sg = utils_noise_detection(fr->d.pic, fr->Y16.pic, fr->b.w, fr->b.h);
+    //sg = 20;
     printf("Standard deviation = %d\n", sg);
 
     gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
