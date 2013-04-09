@@ -617,7 +617,8 @@ void on_range_enc_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, size = w*h, sg;
+    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, sz = w*h, sg;
+    int tm;
     clock_t start, end;
     double time=0., tmp;
     struct timeval tv;
@@ -660,7 +661,8 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
 
     filter_median_bayer_diff(fr->d.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
-    sg = utils_noise_detection(fr->d.pic, fr->Y16.pic, fr->b.w, fr->b.h);
+    sg = utils_noise_detection(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, gw->wc.bpp, fr->b.w, fr->b.h);
+
     //sg = 20;
     printf("Standard deviation = %d\n", sg);
 
@@ -689,6 +691,16 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     //utils_gray16_rgb8(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
     utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[3]);
+
+    for(i=0; i < sz; i++) {
+        //fr->b.pic[i] = fr->d.pic[i] - fr->Y16.pic[i] + (1<<(bpp-1));
+        tm = fr->d.pic[i] - fr->Y16.pic[i];
+        fr->b.pic[i] = tm < -127 ? 0: (tm > 127 ? 255 : tm+128);
+    }
+    new_buffer (gw->orig[2], fr->Y16.w, fr->Y16.h);
+    utils_gray16_rgb8(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), fr->b.w, fr->b.h, 8, 1);
+    //utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
+    gtk_widget_queue_draw(gw->drawingarea[2]);
 
 
 }
@@ -728,9 +740,9 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
-    utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    //utils_ACE_fast_y(fr->d.pic, fr->V16.pic, (int16*)gw->gop.buf, gw->wc.bg, bpp, fr->Y16.w, fr->Y16.h);
-    //filter_median_bayer_ad(fr->V16.pic, fr->U16.pic, (int16*) gw->gop.buf, fr->Y16.w, fr->Y16.h);
+    //utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_transorm_to_8bits(fr->d.pic, fr->Y16.pic, gw->gop.buf, 12, 100, fr->Y16.w, fr->Y16.h);
+    //utils_ACE_fast(fr->d.pic, fr->Y16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
 
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
     utils_bayer_to_RGB24(fr->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);

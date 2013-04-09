@@ -541,7 +541,7 @@ void utils_wb_bayer(int16 *in, int16 *out, int16 *buff, uint32 bpp, uint32 bg, u
     \param w        The image width.
     \param h        The image height.
 */
-void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uint32 bits,
+void utils_transorm_to_8bits(const int16 *in, int16 *out, uint8 *buff, const uint32 bits,
                              const uint32 b, const uint32 w, const uint32 h)
 {
     int y, y1, i, j, st, lp, df = bits-8, hmax = 1<<bits, sum, sum1, low, top, mll, tmp, sp;
@@ -561,12 +561,15 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
     memset(p, 0, sizeof(int)*(d+1));
 
     //for(i=0; i < size3; i++) hist[in[i]]++;
-
+    /*
     for(i=0; i < size3; i+=3) {
         //printf("YY = %d", YY(in[i], in[i+1], in[i+2]));
         //hist[YY(in[i], in[i+1], in[i+2])]++;
         hist[in[i]]++; hist[in[i+1]]++; hist[in[i+2]]++;
     }
+    */
+
+    for(i=0; i < size; i++) hist[in[i]]++;
     //for(i = 0; i < hmax; i++) printf("%d hist = %d \n", i, hist[i]);
 
     //New algorithm
@@ -649,18 +652,22 @@ void utils_transorm_to_8bits(const int16 *in, uint8 *out, uint8 *buff, const uin
     */
 
     //for(i = 0; i < hmax; i++) printf("%d hist = %d ml = %d\n", i, hist[i], ml[i]);
-
+    /*
     for(i=0; i < size3; i+=3) {
-        /*
-        y = YY(in[i], in[i+1], in[i+2]);
-        tmp = in[i  ]*ml[y]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
-        tmp = in[i+1]*ml[y]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
-        tmp = in[i+2]*ml[y]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
-        */
+
+        //y = YY(in[i], in[i+1], in[i+2]);
+        //tmp = in[i  ]*ml[y]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        //tmp = in[i+1]*ml[y]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+        //tmp = in[i+2]*ml[y]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
+
         tmp = in[i  ]*ml[in[i  ]]>>sh; out[i  ] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
         tmp = in[i+1]*ml[in[i+1]]>>sh; out[i+1] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
         tmp = in[i+2]*ml[in[i+2]]>>sh; out[i+2] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
 
+    }*/
+
+    for(i=0; i < size; i++) {
+       tmp = in[i]*ml[in[i]]>>sh; out[i] = (tmp > 255) ? 255 : tmp;// ((tmp < 0) ? 0 : tmp);
     }
 
     //for(i=0; i < size3; i++) out[i] = lut[in[i]];
@@ -862,7 +869,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     double R = 0., max = 0., max1 = 0., dd;
     int *hi[2];
     int b;
-    int xst = w>>4, yst = h>>4, nx, ny;
+    int xst = w, yst = h, nx, ny;
 
     //printf("b = %d\n", b);
     //Prepare histogram
@@ -1238,21 +1245,45 @@ static inline int block_matching_xy(int16 *in, uint32 w, uint32 h, uint32 ws, ui
     \param w    The image width.
     \param h 	The image height.
 */
-int utils_noise_detection(int16 *in, int16 *med, uint32 w, uint32 h)
+int utils_noise_detection(int16 *in, int16 *med, int *buff, uint32 bpp, uint32 w, uint32 h)
 {
-    int i, sz = w*h, sg, cn = 0, tmp;
+    int i, r, l, sz = w*h, max, sg, cn = 0, tmp, hs = 1<<bpp, half = hs>>1;
     double df = 0.;
+    int *hi = buff;
     //filter_median_bayer_diff(in, buff, NULL, &buff[w*h], w, h);
 
+    //Fill historgam
+    /*
+    memset(hi, 0, sizeof(int)*hs);
+    for(i=0; i < sz; i++) hi[in[i]-med[i]+half]++;
+
+    max = hi[half+1]>>1;
+    for(i=half; hi[i] > max; i++);
+    r = i-half;
+
+    max = hi[half-1]>>1;
+    for(i=half; hi[i] > max; i--);
+    l = half - i;
+    sg = (r+l)>>1;
+
+    for(i=half-50; i < half+50; i++ ) printf("%d hi = %d\n", i, hi[i]);
+    printf("r = %d l = %d sg = %d\n", r, l, sg);
+    */
+
+
     for(i=0; i < sz; i++){
-        if(med[i]) {
+        //if(med[i]) {
             tmp = med[i] - in[i];
             df += tmp*tmp;
+            //df += abs(tmp);
             //buff[i] += (1<<11);
             cn++;
-        }
+        //}
     }
+    //sg = df/cn;
     sg = (int)sqrt(df/(double)cn);
+
+
     return sg;
 }
 
@@ -1462,7 +1493,7 @@ void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uin
     */
 void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h)
 {
-    int x, y, yw, yx, yxr, yxb, ybw, st = 1, hs = st, ws = st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
+    int x, y, yw, yx, yxr, yxb, ybw, st = 2, hs = st, ws = st, whs = w*hs, bs = ((ws<<1)+1)*((hs<<1)+1), his = 1<<bpp, his4 = his<<2;
     int h1 = h&1 ? h-1 : h, w1 = w&1 ? w-1 : w, w2 = w<<1;
     int i, j, k, ih, avr, avr1, blm, tm, cna, sum, min, max;
     int rgb[4];
@@ -1494,6 +1525,7 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
     }
 
     //Make integral image
+
     utils_integral(in, ing, w, h);
     //utils_integral_bayer(in, ing, w, h);
     printf("Finish utils_integral\n");
@@ -1578,10 +1610,12 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         yxr = yx;// + rgb[i];
                         // exp(-x2) function
                         //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
-                        blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
+                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
+
                         //blm  = (ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1] - avr)/bs;
                         //blm  = (av[0][yxr] - av[0][yxb] + av[1][yxr] - av[1][yxb])/bs;
 
+                        blm  = (abs(av[0][yxr] - av[0][yxb]) + abs(in[yxr] - in[yxb]))>>3;
                         //blm  = abs(av[0][yxr] - av[0][yxb])>>3;
                         //tw = blm*blm;
                         //cf = exp(-(double)tw/(double)hg);
