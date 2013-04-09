@@ -244,10 +244,10 @@ static void cb_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad, Gt
             utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[2]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
             gtk_widget_queue_draw(gw->drawingarea[2]);
 
-            new_buffer (gw->orig[3], f0->b.w/2, f0->b.h/2);
-            utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, 50, f0->b.w/2, f0->b.h/2);
+            //new_buffer (gw->orig[3], f0->b.w/2, f0->b.h/2);
+            //utils_transorm_to_8bits(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), gw->gop.buf, 12, 50, f0->b.w/2, f0->b.h/2);
             //utils_rgb16_rgb8(f0->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), f0->b.w/2, f0->b.h/2, gw->wc.bpp, 1);
-            gtk_widget_queue_draw(gw->drawingarea[3]);
+            //gtk_widget_queue_draw(gw->drawingarea[3]);
 
         }
 	}
