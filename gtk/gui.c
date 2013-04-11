@@ -740,8 +740,8 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
-    //utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    utils_transorm_to_8bits(fr->d.pic, fr->Y16.pic, gw->gop.buf, 12, 100, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    //utils_transorm_to_8bits(fr->d.pic, fr->Y16.pic, gw->gop.buf, 12, 100, fr->Y16.w, fr->Y16.h);
     //utils_ACE_fast(fr->d.pic, fr->Y16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
 
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);

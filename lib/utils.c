@@ -863,18 +863,19 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
 */
 void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h)
 {
-    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yw, yw1, hs = 1<<bits;
+    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yxi, yw, yw1, hs = 1<<bits;
     int df, sz = w*h, sz1, tm;
     //int R, max = 0., min = 0.;
-    double R = 0., max = 0., max1 = 0., dd;
+    double R = 0., max1 = 0., dd;
     int *hi[2];
-    int b;
-    int xst = w, yst = h, nx, ny;
+    int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt;
+    int xst = w>>4, yst = h>>4, nx, ny, szs;
 
     //printf("b = %d\n", b);
     //Prepare histogram
     nx = w/xst; //nx = w%xst ? nx+1 : nx;
     ny = h/yst; //ny = w%yst ? ny+1 : ny;
+    //szs = nx*ny;
     sz1 = xst*yst;
     b = (1<<30)/sz1;
 
@@ -882,6 +883,44 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
 
     hi[0] = buff;
     hi[1] = &buff[hs*nx];
+    max = &hi[1][hs*nx]; min = &max[nx*ny]; avr = &min[nx*ny];
+    minin = &avr[nx*ny]; maxin = &minin[nx*ny]; //diff = &maxin[nx*ny];
+
+    ming = 1<<bits; maxg = 0;
+    //Image statictics
+    for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
+        for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
+            yxi = nx*yi + xi;
+            sum = 0; min[yxi] = 1<<bits; max[yxi] = 0;
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    sum += in[yx];
+                    if(in[yx] > max[yxi]) max[yxi] = in[yx];
+                    else if(in[yx] < min[yxi]) min[yxi] = in[yx];
+                }
+            }
+            avr[yxi] = sum/sz1;
+            printf("yx = %d min = %d max = %d avr = %d\n", yxi, min[yxi], max[yxi], avr[yxi]);
+            if(max[yxi] > maxg) { maxg = max[yxi]; maxi = yxi; }
+            else if(min[yxi] < ming) { ming = min[yxi]; mini = yxi; }
+        }
+    }
+
+    //Image statistics analitycs
+    maxt = 0;
+    for(yi=0; yi < ny; yi++){
+        for(xi=0; xi < nx; xi++){
+            yxi = nx*yi + xi;
+            if(max[yxi]-min[yxi] > maxt) { maxt = max[yxi]-min[yxi]; diff = yxi; }
+            if(min[yxi] == ming) minin[i++] = yxi;
+            if(max[yxi] == maxg) maxin[i++] = yxi;
+        }
+    }
+
+    printf("global  %d   %d   min = %d max = %d   min = %d max = %d  %d diff = %d\n",
+           mini, maxi, min[mini], max[mini], min[maxi], max[maxi], diff, max[diff]-min[diff]);
 
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
         for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
@@ -910,7 +949,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                     out[yx] = hi[0][in[yx]+sh];
                 }
             }
-            printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
+            //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
         }
     }
 }
