@@ -68,7 +68,7 @@ typedef struct _GstpgmdecClass GstpgmdecClass;
 struct _Gstpgmdec
 {
 	GstElement element;
-	GstPad *sinkpad, *srcpad;
+    GstPad *sinkpad, *srcpad;
 	//gboolean silent;
 
 	//Properties
@@ -97,12 +97,12 @@ typedef enum {
 	BGGR,
 	GRBG,
 	GBRG,
-	RGGB,
+    RGGB
 }	BayerGrid;
 
 typedef enum {
 	GREY,
-	BAYER,
+    BAYER
 }	ColorSpace;
 
 
