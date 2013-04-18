@@ -1,5 +1,5 @@
 #include 	<gtk/gtk.h>
-#include 	<gst/gst.h>
+//#include 	<gst/gst.h>
 #include 	<gdk-pixbuf/gdk-pixbuf.h>
 #include 	<gdk/gdk.h>
 
@@ -79,8 +79,8 @@ typedef struct  {
 	WaletConfig 	wc;
 	//Gstreamer structures
 	GMainLoop *loop;
-	GstBus *bus;
-	GstElement *pipeline, *msrc, *src, *dec, *fakesink, *pgmdec;
+    //GstBus *bus;
+    //GstElement *pipeline, *msrc, *src, *dec, *fakesink, *pgmdec;
 
 } GtkWalet;
 

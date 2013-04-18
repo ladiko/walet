@@ -6,7 +6,6 @@ int nf = -1;
 int hist = 0;
 #define lb1(x) (((x) < 0) ? 0 : (((x) > 255) ? 255 : (x)))
 
-
 void new_buffer(Pixbuf *orig, guint width, guint height)
 {
     guchar *data;
@@ -331,34 +330,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
 		gtk_widget_queue_draw(gw->drawingarea[nf+1]);
 		//free(img);
 
-	} */else {
-		//printf("Can't open file %s\n", gw->filename_open);
-		printf("Open %s file\n", gw->filename_open);
-		if(gw->gst_init){
-			//gst_pad_push_event(gst_element_get_static_pad(gw->src, "src"), gst_event_new_eos());
-			//g_printf("gst_pad_push_event\n");
-			//g_main_loop_quit (gw->loop);
-			//g_printf("g_main_loop_quit\n");
-			//gst_bus_set_flushing (gw->bus, TRUE);
-			gst_element_set_state (gw->pipeline, GST_STATE_READY);
-			g_printf("gst_element_set_state\n");
-			gst_element_unlink_many (gw->src, gw->dec, gw->fakesink, NULL);
-			g_printf("gst_element_unlink\n");
-			//gst_bin_remove(GST_BIN (gw->pipeline), gw->src);
-			//gst_bin_remove_many(GST_BIN (gw->pipeline), gw->src, gw->dec, gw->fakesink, NULL);
-			g_printf("g_object_set\n");
-			//gst_bin_add(GST_BIN (gw->pipeline), gw->src);
-			g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
-
-		} else {
-			gst_bin_add_many (GST_BIN (gw->pipeline), gw->src, gw->dec, gw->fakesink, NULL);
-			g_object_set (G_OBJECT(gw->src), "location", gw->filename_open, NULL);
-			gst_element_link(gw->src, gw->dec);
-			gw->gst_init = 1;
-		}
-		gst_element_set_state (gw->pipeline, GST_STATE_PLAYING);
-		g_main_loop_run (gw->loop);
-	}
+    } */
 }
 
 void on_save_as_button_clicked(GtkObject *object, GtkWalet *gw)
@@ -750,7 +722,6 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     gtk_widget_queue_draw(gw->drawingarea[3]);
 
 
-
     /*
     for(i=0; i < size; i++) fr->b.pic[i] = fr->b.pic[i] + 128;
 
@@ -851,8 +822,6 @@ void on_check_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_next_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-	GstStateChangeReturn ret;
-	GstState state;
 	uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp;
 	clock_t start, end;
 	double time=0., tmp;

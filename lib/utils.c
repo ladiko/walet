@@ -868,7 +868,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     //int R, max = 0., min = 0.;
     double R = 0., max1 = 0., dd;
     int *hi[2];
-    int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt;
+    int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt, hl;
     int xst = w>>4, yst = h>>4, nx, ny, szs;
 
     //printf("b = %d\n", b);
@@ -887,6 +887,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     minin = &avr[nx*ny]; maxin = &minin[nx*ny]; //diff = &maxin[nx*ny];
 
     ming = 1<<bits; maxg = 0;
+
     //Image statictics
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
         for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
@@ -901,7 +902,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                     else if(in[yx] < min[yxi]) min[yxi] = in[yx];
                 }
             }
-            avr[yxi] = sum/sz1;
+            avr[yxi] = sum;
             printf("yx = %d min = %d max = %d avr = %d\n", yxi, min[yxi], max[yxi], avr[yxi]);
             if(max[yxi] > maxg) { maxg = max[yxi]; maxi = yxi; }
             else if(min[yxi] < ming) { ming = min[yxi]; mini = yxi; }
@@ -922,6 +923,8 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     printf("global  %d   %d   min = %d max = %d   min = %d max = %d  %d diff = %d\n",
            mini, maxi, min[mini], max[mini], min[maxi], max[maxi], diff, max[diff]-min[diff]);
 
+
+
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
         for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
             sh = hs*xi;
@@ -936,20 +939,33 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                 }
             }
             //printf("Fill histogramm\n");
-            for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
-            //printf("Make LUT\n");
-            //Make LUT table
-            for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
+            sum = 0;
+            for(i=sh; i < sh+hs; i++) { sum += hi[0][i]; hi[0][i] = sum*b>>22; }
 
-            for(y=yb; y < yb+yst; y++){
-                yw = y*w;
-                for(x=xb; x < xb+xst; x++){
-                    yx = yw + x;
-                    if(in[yx] > hs-1) in[yx] = hs-1;
-                    out[yx] = hi[0][in[yx]+sh];
+            //Make LUT table ACE algorithm
+            //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
+            //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
+        }
+        if(yi && yi < ny-1){
+            for(xb=xst, xi=1; xi < nx-1; xb+=xst, xi++){
+                sh = hs*xi;
+                for(y=yb; y < yb+yst; y++){
+                    yw = y*w;
+                    hl = (xst>>1);
+                    for(x=xb; x < xb+xst; x++){
+                        yx = yw + x;
+                        if(in[yx] > hs-1) in[yx] = hs-1; // The Sony A55 have pixeles more then 4095
+                        if(x < hl+xb) {
+                            out[yx] = (hi[0][in[yx]+sh]*(hl+1+x-xb) + hi[0][in[yx]+sh-hs]*(hl-x+xb))/xst;
+                        } else {
+                            out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
+                        }
+
+                        //out[yx] = hi[0][in[yx]+sh];
+                    }
                 }
+                //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
             }
-            //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
         }
     }
 }
