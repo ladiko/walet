@@ -1665,12 +1665,12 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         yxr = yx;// + rgb[i];
                         // exp(-x2) function
                         //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
-                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
+                        blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
 
                         //blm  = (ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1] - avr)/bs;
                         //blm  = (av[0][yxr] - av[0][yxb] + av[1][yxr] - av[1][yxb])/bs;
 
-                        blm  = (abs(av[0][yxr] - av[0][yxb]) + abs(in[yxr] - in[yxb]))>>3;
+                        //blm  = (abs(av[0][yxr] - av[0][yxb]) + abs(in[yxr] - in[yxb]))>>3;
                         //blm  = abs(av[0][yxr] - av[0][yxb])>>3;
                         //tw = blm*blm;
                         //cf = exp(-(double)tw/(double)hg);
