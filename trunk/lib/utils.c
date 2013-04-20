@@ -946,6 +946,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
             //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
             //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
         }
+
         if(yi && yi < ny-1){
             for(xb=xst, xi=1; xi < nx-1; xb+=xst, xi++){
                 sh = hs*xi;
@@ -966,6 +967,25 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                 }
                 //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
             }
+        }
+    }
+}
+
+void utils_HDR_multy(int16 *in, uint8 *out, uint32 bits, uint32 w, uint32 h)
+{
+    int x, y, yw, yx, sz = w*h;
+    uint8 *im[4];
+    im[0] = out; im[1] = &im[0][sz]; im[2] = &im[1][sz]; im[3] = &im[2][sz];
+
+    for(y=0; y < h; y++){
+        yw = y*w;
+        for(x=0; x < w; x++){
+            yx = yw + x;
+            im[0][yx] = in[yx] > 255 ? 255 : in[yx];
+            im[1][yx] = (in[yx]>>2) > 255 ? 255 : (in[yx]>>2);
+            im[2][yx] = (in[yx]>>4) > 255 ? 255 : (in[yx]>>4);
+            im[3][yx] = (in[yx]>>3) > 255 ? 255 : (in[yx]>>3);
+
         }
     }
 }
@@ -1665,12 +1685,12 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
                         yxr = yx;// + rgb[i];
                         // exp(-x2) function
                         //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)/bs;
-                        blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
+                        //blm = block_matching_xy(in, w, h, ws, hs, yxr, yxb)>>3;
 
                         //blm  = (ing[yxr+ws+whs] + ing[yxr-ws-whs-w-1] - ing[yxr+ws-whs-w] - ing[yxr-ws+whs-1] - avr)/bs;
                         //blm  = (av[0][yxr] - av[0][yxb] + av[1][yxr] - av[1][yxb])/bs;
 
-                        //blm  = (abs(av[0][yxr] - av[0][yxb]) + abs(in[yxr] - in[yxb]))>>3;
+                        blm  = (abs(av[0][yxr] - av[0][yxb]) + abs(in[yxr] - in[yxb]))>>3;
                         //blm  = abs(av[0][yxr] - av[0][yxb])>>3;
                         //tw = blm*blm;
                         //cf = exp(-(double)tw/(double)hg);

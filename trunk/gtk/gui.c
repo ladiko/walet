@@ -679,7 +679,7 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
 
 void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 {
-    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, size = w*h;
+    uint32 i, j, w = gw->wc.w, h = gw->wc.h, bpp = gw->wc.bpp, sz = w*h;
     clock_t start, end;
     double time=0., tmp;
     struct timeval tv;
@@ -707,19 +707,36 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     */
     utils_wb_bayer(fr->b.pic, fr->d.pic, (int16*)gw->gop.buf, gw->wc.bpp, gw->wc.bg, fr->b.w, fr->b.h);
 
-    new_buffer (gw->orig[1], fr->b.w, fr->b.h);
-    utils_bayer_to_RGB24(fr->d.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, gw->wc.bpp);
-    gtk_widget_queue_draw(gw->drawingarea[1]);
 
 
-    utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    //utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    //new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
+    //utils_bayer_to_RGB24(fr->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
+    //utils_gray16_rgb8(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
+    //gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
+    utils_HDR_multy(fr->d.pic, gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+
     //utils_transorm_to_8bits(fr->d.pic, fr->Y16.pic, gw->gop.buf, 12, 100, fr->Y16.w, fr->Y16.h);
     //utils_ACE_fast(fr->d.pic, fr->Y16.pic, (int16*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    new_buffer (gw->orig[0], fr->b.w, fr->b.h);
+    utils_grey_draw8(gw->gop.buf, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h, 0);
+    gtk_widget_queue_draw(gw->drawingarea[0]);
 
-    new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
-    utils_bayer_to_RGB24(fr->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
-    //utils_gray16_rgb8(fr->V16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
+    new_buffer (gw->orig[1], fr->b.w, fr->b.h);
+    utils_grey_draw8(&gw->gop.buf[sz], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
+    gtk_widget_queue_draw(gw->drawingarea[1]);
+
+    new_buffer (gw->orig[2], fr->b.w, fr->b.h);
+    utils_grey_draw8(&gw->gop.buf[sz*2], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
+    gtk_widget_queue_draw(gw->drawingarea[2]);
+
+    new_buffer (gw->orig[3], fr->b.w, fr->b.h);
+    utils_grey_draw8(&gw->gop.buf[sz*3], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[3]);
+
+
 
 
     /*
