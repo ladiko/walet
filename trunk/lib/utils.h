@@ -24,7 +24,7 @@ void utils_ACE(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32
 void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, uint32 h);
 void utils_ACE_fast_y(int16 *in, int16 *out, int16 *buff, uint32 bg, uint32 bpp, uint32 w, uint32 h);
 void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h);
-void utils_HDR_multy(int16 *in, uint8 *out, uint32 bits, uint32 w, uint32 h);
+void utils_HDR_multy(int16 *in, int16 *out, uint32 bits, uint32 w, uint32 h);
 
 void utils_BM_denoise(int16 *in, int16 *out, uint32 *buff, uint32 bg, uint32 bpp, uint32 w, uint32 h);
 void utils_BM_denoise_local(int16 *in, int16 *out, uint32 *buff, uint32 bg,  uint32 bpp, uint32 sg, uint32 w, uint32 h);

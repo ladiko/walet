@@ -971,21 +971,137 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     }
 }
 
-void utils_HDR_multy(int16 *in, uint8 *out, uint32 bits, uint32 w, uint32 h)
+/**	\brief Fast Automatic Color Enhancement algorithm.
+    \param in	The input 16 bits rgb24 image.
+    \param out	The output 16 bits rgb24 image.
+    \param buff	The temporary buffer.
+    \param bits The image bits per pixel.
+    \param w    The image width.
+    \param h 	The image height.
+*/
+void utils_HDR_multy_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h)
+{
+    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yxi, yw, yw1, hs = 1<<bits;
+    int df, sz = w*h, sz1, tm;
+    //int R, max = 0., min = 0.;
+    double R = 0., max1 = 0., dd;
+    int *hi[2];
+    int b, max[5], min[5], avr[5], sum, ming, maxg, maxi, mini, diff, maxt, hl;
+    int xst = w>>4, yst = h>>4, nx, ny, szs;
+
+    //printf("b = %d\n", b);
+    //Prepare histogram
+    nx = w/xst; //nx = w%xst ? nx+1 : nx;
+    ny = h/yst; //ny = w%yst ? ny+1 : ny;
+    //szs = nx*ny;
+    sz1 = xst*yst;
+    b = (1<<30)/sz1;
+
+    printf("nx = %d ny = %d w = %d h = %d wc = %d hc = %d\n", nx, ny, w, h, nx*xst, ny*yst);
+
+
+    ming = 1<<bits; maxg = 0;
+
+    //Image statictics
+    for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
+        for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
+            yxi = nx*yi + xi;
+
+            for(i=0; i < 5; i++){ avr[i] = 0; max[i] = 0; min[i] = 0; }
+
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    for(i=0; i < 5; i++){
+                        tm = (in[yx]>>i) > 255 ? 255 : (in[yx]>>i);
+                        avr[i] += tm;
+                        if(tm == 255) max[i]++;
+                        else if(tm == 0) min[i]++;
+                    }
+                }
+            }
+            for(i=0; i < 5; i++) avr[i] = avr[i]/sz1;
+        }
+    }
+
+
+
+
+    for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
+        for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
+            sh = hs*xi;
+            memset(&hi[0][sh], 0, sizeof(int)*hs);
+            //printf("Memset\n");
+
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    hi[0][in[yx]+sh]++;
+                }
+            }
+            //printf("Fill histogramm\n");
+            sum = 0;
+            for(i=sh; i < sh+hs; i++) { sum += hi[0][i]; hi[0][i] = sum*b>>22; }
+
+            //Make LUT table ACE algorithm
+            //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
+            //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
+        }
+
+        if(yi && yi < ny-1){
+            for(xb=xst, xi=1; xi < nx-1; xb+=xst, xi++){
+                sh = hs*xi;
+                for(y=yb; y < yb+yst; y++){
+                    yw = y*w;
+                    hl = (xst>>1);
+                    for(x=xb; x < xb+xst; x++){
+                        yx = yw + x;
+                        if(in[yx] > hs-1) in[yx] = hs-1; // The Sony A55 have pixeles more then 4095
+                        if(x < hl+xb) {
+                            out[yx] = (hi[0][in[yx]+sh]*(hl+1+x-xb) + hi[0][in[yx]+sh-hs]*(hl-x+xb))/xst;
+                        } else {
+                            out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
+                        }
+
+                        //out[yx] = hi[0][in[yx]+sh];
+                    }
+                }
+                //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
+            }
+        }
+    }
+}
+
+void utils_HDR_multy(int16 *in, int16 *out, uint32 bits, uint32 w, uint32 h)
 {
     int x, y, yw, yx, sz = w*h;
-    uint8 *im[4];
-    im[0] = out; im[1] = &im[0][sz]; im[2] = &im[1][sz]; im[3] = &im[2][sz];
+    //uint8 *im[5];
+    int i, ex[256], hg = 128*128>>1;
+    int tm, sumi, sumv;
+
+    //im[0] = out; im[1] = &im[0][sz]; im[2] = &im[1][sz]; im[3] = &im[2][sz]; im[4] = &im[3][sz];
+
+    //Make lut table to remove exp
+    for(i=-128; i < 128; i++){
+        //ex[i+128] = (int)(exp(-(double)i*i/(double)hg)*4096);
+        ex[i+128] = 4096;
+        printf("%3d exp = %d\n", i, ex[i+128]);
+    }
+
 
     for(y=0; y < h; y++){
         yw = y*w;
         for(x=0; x < w; x++){
             yx = yw + x;
-            im[0][yx] = in[yx] > 255 ? 255 : in[yx];
-            im[1][yx] = (in[yx]>>2) > 255 ? 255 : (in[yx]>>2);
-            im[2][yx] = (in[yx]>>4) > 255 ? 255 : (in[yx]>>4);
-            im[3][yx] = (in[yx]>>3) > 255 ? 255 : (in[yx]>>3);
-
+            sumi = 0; sumv = 0;
+            for(i=0; i < 5; i++){
+                tm = (in[yx]>>i) > 255 ? 255 : (in[yx]>>i);
+                sumi += ex[tm];
+                sumv += tm*ex[tm];
+            }
+            out[yx] = sumv/sumi;
         }
     }
 }
@@ -995,7 +1111,7 @@ void utils_HDR_multy(int16 *in, uint8 *out, uint32 bits, uint32 w, uint32 h)
     \param out	The output 16 bits rgb24 image.
     \param buff	The temporary buffer.
     \param bg   The Bayer grid pattern
-    \param bpp The image bits per pixel.
+    \param bpp  The image bits per pixel.
     \param w    The image width.
     \param h 	The image height.
 */
@@ -2013,11 +2129,11 @@ int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh)
 
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 bpp)
 {
-    int i, j, dim = h*w*3, sh = 1<<bpp-1, sh1 = bpp - 8 - 2;
+    int i, j, dim = h*w*3, sh = 0, sh1 = bpp - 8 - 2;
     for(i = 0,  j= 0; j < dim; j+=3, i++){
-        rgb[j]     = (img[i] + sh)>>sh1;
-        rgb[j + 1] = (img[i] + sh)>>sh1;
-        rgb[j + 2] = (img[i] + sh)>>sh1;
+        rgb[j]     = img[i];
+        rgb[j + 1] = img[i];
+        rgb[j + 2] = img[i];
     }
     return rgb;
 }
