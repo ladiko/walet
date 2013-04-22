@@ -902,8 +902,9 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                     else if(in[yx] < min[yxi]) min[yxi] = in[yx];
                 }
             }
-            avr[yxi] = sum;
-            printf("yx = %d min = %d max = %d avr = %d\n", yxi, min[yxi], max[yxi], avr[yxi]);
+            avr[yxi] = sum/sz1;
+            printf("x = %4d y = %4d min = %4d max = %4d avr = %4d dif = %4d\n",
+                   xb, yb, min[yxi], max[yxi], avr[yxi], max[yxi]-min[yxi]);
             if(max[yxi] > maxg) { maxg = max[yxi]; maxi = yxi; }
             else if(min[yxi] < ming) { ming = min[yxi]; mini = yxi; }
         }
@@ -979,14 +980,14 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     \param w    The image width.
     \param h 	The image height.
 */
-void utils_HDR_multy_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h)
+void utils_HDR_multy_local(int16 *in, int16 *out, uint32 bits, uint32 w, uint32 h)
 {
     int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yxi, yw, yw1, hs = 1<<bits;
     int df, sz = w*h, sz1, tm;
     //int R, max = 0., min = 0.;
     double R = 0., max1 = 0., dd;
     int *hi[2];
-    int b, max[5], min[5], avr[5], sum, ming, maxg, maxi, mini, diff, maxt, hl;
+    int b, max[5], min[5], avr[5], dif[5], dff[5], sum, mn[5], maxt, maxi, mini, mint, diff, hl;
     int xst = w>>4, yst = h>>4, nx, ny, szs;
 
     //printf("b = %d\n", b);
@@ -1000,15 +1001,17 @@ void utils_HDR_multy_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32
     printf("nx = %d ny = %d w = %d h = %d wc = %d hc = %d\n", nx, ny, w, h, nx*xst, ny*yst);
 
 
-    ming = 1<<bits; maxg = 0;
+    //ming = 1<<bits; maxg = 0;
 
-    //Image statictics
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
         for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
             yxi = nx*yi + xi;
 
-            for(i=0; i < 5; i++){ avr[i] = 0; max[i] = 0; min[i] = 0; }
-
+            //Image statictics
+            for(i=0; i < 5; i++) {
+                avr[i] = 0; max[i] = 0; min[i] = 0; dff[i] = 0;
+                //dif[i] = (in[yb*w+xb]>>i) > 255 ? 255 : (in[yb*w+xb]>>i);
+            }
             for(y=yb; y < yb+yst; y++){
                 yw = y*w;
                 for(x=xb; x < xb+xst; x++){
@@ -1016,59 +1019,46 @@ void utils_HDR_multy_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32
                     for(i=0; i < 5; i++){
                         tm = (in[yx]>>i) > 255 ? 255 : (in[yx]>>i);
                         avr[i] += tm;
+                        //dff[i] += abs(tm-dif[i]);
                         if(tm == 255) max[i]++;
                         else if(tm == 0) min[i]++;
                     }
                 }
             }
             for(i=0; i < 5; i++) avr[i] = avr[i]/sz1;
-        }
-    }
-
-
-
-
-    for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
-        for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
-            sh = hs*xi;
-            memset(&hi[0][sh], 0, sizeof(int)*hs);
-            //printf("Memset\n");
 
             for(y=yb; y < yb+yst; y++){
                 yw = y*w;
                 for(x=xb; x < xb+xst; x++){
                     yx = yw + x;
-                    hi[0][in[yx]+sh]++;
-                }
-            }
-            //printf("Fill histogramm\n");
-            sum = 0;
-            for(i=sh; i < sh+hs; i++) { sum += hi[0][i]; hi[0][i] = sum*b>>22; }
-
-            //Make LUT table ACE algorithm
-            //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
-            //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
-        }
-
-        if(yi && yi < ny-1){
-            for(xb=xst, xi=1; xi < nx-1; xb+=xst, xi++){
-                sh = hs*xi;
-                for(y=yb; y < yb+yst; y++){
-                    yw = y*w;
-                    hl = (xst>>1);
-                    for(x=xb; x < xb+xst; x++){
-                        yx = yw + x;
-                        if(in[yx] > hs-1) in[yx] = hs-1; // The Sony A55 have pixeles more then 4095
-                        if(x < hl+xb) {
-                            out[yx] = (hi[0][in[yx]+sh]*(hl+1+x-xb) + hi[0][in[yx]+sh-hs]*(hl-x+xb))/xst;
-                        } else {
-                            out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
-                        }
-
-                        //out[yx] = hi[0][in[yx]+sh];
+                    for(i=0; i < 5; i++){
+                        tm = (in[yx]>>i) > 255 ? 255 : (in[yx]>>i);
+                        dff[i] += abs(tm-avr[i]);
                     }
                 }
-                //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
+            }
+           for(i=0; i < 5; i++) dff[i] = dff[i]/sz1;
+
+           //Make decision
+            //maxt = 0;
+            //for(i=0; i < 5; i++){
+            //    if(dff[i] > maxt) { maxi = i; maxt = dff[i]; }
+            //}
+
+            mint = sz1;
+            for(i=0; i < 5; i++){
+                if(max[i]+min[i] < mint) { mini = i; mint = max[i]+min[i]; }
+            }
+
+            printf("x = %3d y = %3d\n", xb, yb);
+            for(i=0; i < 5; i++) printf("min = %4d avr = %4d max = %4d min = %3d dff = %3d\n", min[i], avr[i], max[i], mini, dff[i]);
+
+            for(y=yb; y < yb+yst; y++){
+                yw = y*w;
+                for(x=xb; x < xb+xst; x++){
+                    yx = yw + x;
+                    out[yx] = (in[yx]>>mini) > 255 ? 255 : (in[yx]>>mini);
+                }
             }
         }
     }
