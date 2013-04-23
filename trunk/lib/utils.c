@@ -948,8 +948,8 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
             //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
         }
 
-        if(yi && yi < ny-1){
-            for(xb=xst, xi=1; xi < nx-1; xb+=xst, xi++){
+        //if(yi && yi < ny-1){
+            for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
                 sh = hs*xi;
                 for(y=yb; y < yb+yst; y++){
                     yw = y*w;
@@ -957,18 +957,19 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                     for(x=xb; x < xb+xst; x++){
                         yx = yw + x;
                         if(in[yx] > hs-1) in[yx] = hs-1; // The Sony A55 have pixeles more then 4095
-                        if(x < hl+xb) {
-                            out[yx] = (hi[0][in[yx]+sh]*(hl+1+x-xb) + hi[0][in[yx]+sh-hs]*(hl-x+xb))/xst;
-                        } else {
-                            out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
-                        }
 
-                        //out[yx] = hi[0][in[yx]+sh];
+                        //if(x < hl+xb) {
+                        //    out[yx] = (hi[0][in[yx]+sh]*(hl+1+x-xb) + hi[0][in[yx]+sh-hs]*(hl-x+xb))/xst;
+                        //} else {
+                        //    out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
+                        //}
+
+                        out[yx] = log2(in[yx]+2)*256/12;
                     }
                 }
                 //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
             }
-        }
+        //}
     }
 }
 
