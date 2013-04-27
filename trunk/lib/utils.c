@@ -963,8 +963,8 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                         //} else {
                         //    out[yx] = (hi[0][in[yx]+sh]*(hl+x-xb) + hi[0][in[yx]+sh-hs]*(hl+1-x+xb))/xst;
                         //}
-
-                        out[yx] = log2(in[yx]+2)*256/12;
+                        out[yx] = hi[0][in[yx]+sh];
+                        //out[yx] = log2(in[yx]+2)*256/12;
                     }
                 }
                 //printf("xb = %d yb = %d xi = %d yi = %d\n", xb, yb, xi, yi);
