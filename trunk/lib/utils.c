@@ -869,7 +869,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     double R = 0., max1 = 0., dd;
     int *hi[2];
     int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt, hl;
-    int xst = w>>4, yst = h>>4, nx, ny, szs;
+    int xst = w>>4, yst = h>>4, nx, ny, szs, mx;
 
     //printf("b = %d\n", b);
     //Prepare histogram
@@ -940,8 +940,30 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
                 }
             }
             //printf("Fill histogramm\n");
+            /*
+            sum = 0;  mx = sz1>>8;
+
+            for(i=sh; i < sh+hs; i++) {
+                if(hi[0][i] > mx) {
+                    sum += (hi[0][i] - mx);
+                    hi[0][i] = mx;
+                }
+            }
+            b = (1<<30)/(sz1 - sum);
+            if() printf("mx = %d tot = %d new = %d perchan = %d\n", mx, sz1, sz1 - sum, (sz1 - sum)>>8);
+
             sum = 0;
             for(i=sh; i < sh+hs; i++) { sum += hi[0][i]; hi[0][i] = sum*b>>22; }
+            */
+
+            sum = 0; mx = sz1>>8;
+
+            for(i=sh; i < sh+hs; i++) {
+                sum += hi[0][i] > mx ? mx : hi[0][i];
+                hi[0][i] = sum*b>>22;
+            }
+            if(hi[0][i-1]  < 255) printf("mx = %d tot = %d max = %d\n", mx, sz1, hi[0][i-1]);
+
 
             //Make LUT table ACE algorithm
             //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
