@@ -869,7 +869,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     double R = 0., max1 = 0., dd;
     int *hi[2];
     int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt, hl;
-    int xst = w>>4, yst = h>>4, nx, ny, szs, mx;
+    int xst = w, yst = h, nx, ny, szs, mx;
 
     //printf("b = %d\n", b);
     //Prepare histogram
@@ -923,7 +923,6 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
 
     printf("global  %d   %d   min = %d max = %d   min = %d max = %d  %d diff = %d\n",
            mini, maxi, min[mini], max[mini], min[maxi], max[maxi], diff, max[diff]-min[diff]);
-
 
 
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
@@ -1273,6 +1272,42 @@ void utils_integral_bayer(int16 *img, uint32 *in, uint32 w, uint32 h)
     printf("mat1 = %d mat2 = %d mat3 = %d mat4 = %d\n", in[w*h-w-2], in[w*h-w-1], in[w*h-2], in[w*h-1]);
     */
 }
+
+
+void utils_HDR_avr(int16 *in, int16 *out, int16 *dif, uint32 *buff,  uint32 bpp, uint32 w, uint32 h)
+{
+    int x, y, yw, yx;
+    int hs = 2, ws = 2, w2 = w<<1, whs = w*hs, bs;
+    int sh = 1<<(bpp-1);
+
+    //bs = (ws+1)*(hs+1); //
+    bs = ((ws<<1)+1)*((hs<<1)+1)>>2;
+    bs = 7;
+
+    printf("bs = %d\n", bs);
+
+    utils_integral_bayer(in, buff, w, h);
+
+    for(y = hs+2; y < h-hs-2; y++){
+        yw = y*w;
+        for(x = ws+2; x < w-ws-2; x++){
+            yx = yw + x;
+            out[yx] = (buff[yx+ws+whs] + buff[yx-ws-whs-w2-2] - buff[yx+ws-whs-w2] - buff[yx-ws+whs-2])/bs;
+            dif[yx] = in[yx] - out[yx] + sh;
+            if(dif[yx]< 0) dif[yx] = 0;
+            //av[0][yxr] = avr/bs;
+            //ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
+            //av[1][yxr] = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2] - av[0][yxr];
+
+            //av[1][yxr] = avr/bs;
+            //ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
+            //avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
+            //av[2][yxr] = avr/bs;
+
+        }
+    }
+}
+
 
 /**	\brief The Block Matching denoise  algorithm.
     \param in	The input 16 bits rgb24 image.
@@ -1840,7 +1875,6 @@ void utils_NLM_denoise(int16 *in, int16 *out, int16 *buff, uint32 bg,  uint32 bp
             //}
         }
     }
-
 }
 
 
@@ -2142,11 +2176,11 @@ int16* utils_shift16(int16 *img, int16 *rgb, uint32 w, uint32 h, int sh)
 
 uint8* utils_grey_draw(int16 *img, uint8 *rgb, uint32 w, uint32 h, uint32 bpp)
 {
-    int i, j, dim = h*w*3, sh = 0, sh1 = bpp - 8 - 2;
+    int i, j, dim = h*w*3, sh = 0, sh1 = bpp - 8 ;
     for(i = 0,  j= 0; j < dim; j+=3, i++){
-        rgb[j]     = img[i];
-        rgb[j + 1] = img[i];
-        rgb[j + 2] = img[i];
+        rgb[j]     = (img[i]>>sh1);
+        rgb[j + 1] = (img[i]>>sh1);
+        rgb[j + 2] = (img[i]>>sh1);
     }
     return rgb;
 }
