@@ -857,19 +857,19 @@ void utils_ACE_fast(int16 *in, int16 *out, int16 *buff, uint32 bits, uint32 w, u
     \param in	The input 16 bits rgb24 image.
     \param out	The output 16 bits rgb24 image.
     \param buff	The temporary buffer.
-    \param bits The image bits per pixel.
+    \param bpp The image bits per pixel.
     \param w    The image width.
     \param h 	The image height.
 */
-void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 w, uint32 h)
+void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bpp, uint32 bits, uint32 w, uint32 h)
 {
-    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yxi, yw, yw1, hs = 1<<bits;
+    int i, x, xb, xi, y, yb, yi, yx, sh, yx1, yxi, yw, yw1, hs = 1<<bpp;
     int df, sz = w*h, sz1, tm;
     //int R, max = 0., min = 0.;
     double R = 0., max1 = 0., dd;
     int *hi[2];
     int b, *max, *min, *avr, sum, ming, maxg, maxi, mini, *minin, *maxin, diff, maxt, hl;
-    int xst = w, yst = h, nx, ny, szs, mx;
+    int xst = w, yst = h, nx, ny, szs, mx, shb;
 
     //printf("b = %d\n", b);
     //Prepare histogram
@@ -878,6 +878,7 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     //szs = nx*ny;
     sz1 = xst*yst;
     b = (1<<30)/sz1;
+    shb = 30 - bits;
 
     printf("nx = %d ny = %d w = %d h = %d wc = %d hc = %d\n", nx, ny, w, h, nx*xst, ny*yst);
 
@@ -886,13 +887,13 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
     max = &hi[1][hs*nx]; min = &max[nx*ny]; avr = &min[nx*ny];
     minin = &avr[nx*ny]; maxin = &minin[nx*ny]; //diff = &maxin[nx*ny];
 
-    ming = 1<<bits; maxg = 0;
+    ming = 1<<bpp; maxg = 0;
 
     //Image statictics
     for(yb=0, yi=0; yi < ny; yb+=yst, yi++){
         for(xb=0, xi=0; xi < nx; xb+=xst, xi++){
             yxi = nx*yi + xi;
-            sum = 0; min[yxi] = 1<<bits; max[yxi] = 0;
+            sum = 0; min[yxi] = 1<<bpp; max[yxi] = 0;
             for(y=yb; y < yb+yst; y++){
                 yw = y*w;
                 for(x=xb; x < xb+xst; x++){
@@ -958,8 +959,9 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bits, uint32 
             sum = 0; mx = sz1>>8;
 
             for(i=sh; i < sh+hs; i++) {
-                sum += hi[0][i] > mx ? mx : hi[0][i];
-                hi[0][i] = sum*b>>22;
+                //sum += hi[0][i] > mx ? mx : hi[0][i];
+                sum += hi[0][i];
+                hi[0][i] = sum*b>>shb;
             }
             if(hi[0][i-1]  < 255) printf("mx = %d tot = %d max = %d\n", mx, sz1, hi[0][i-1]);
 
@@ -1280,9 +1282,9 @@ void utils_HDR_avr(int16 *in, int16 *out, int16 *dif, uint32 *buff,  uint32 bpp,
     int hs = 2, ws = 2, w2 = w<<1, whs = w*hs, bs;
     int sh = 1<<(bpp-1);
 
-    //bs = (ws+1)*(hs+1); //
-    bs = ((ws<<1)+1)*((hs<<1)+1)>>2;
-    bs = 7;
+    bs = (ws+1)*(hs+1); //
+    //bs = ((ws<<1)+1)*((hs<<1)+1)>>2;
+    //bs = 9;
 
     printf("bs = %d\n", bs);
 
@@ -1293,7 +1295,7 @@ void utils_HDR_avr(int16 *in, int16 *out, int16 *dif, uint32 *buff,  uint32 bpp,
         for(x = ws+2; x < w-ws-2; x++){
             yx = yw + x;
             out[yx] = (buff[yx+ws+whs] + buff[yx-ws-whs-w2-2] - buff[yx+ws-whs-w2] - buff[yx-ws+whs-2])/bs;
-            dif[yx] = in[yx] - out[yx] + sh;
+            dif[yx] = (in[yx]*16>>4) - (out[yx]*8>>3) + sh;
             if(dif[yx]< 0) dif[yx] = 0;
             //av[0][yxr] = avr/bs;
             //ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);

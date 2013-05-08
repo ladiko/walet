@@ -650,14 +650,14 @@ void on_range_dec_button_clicked(GtkObject *object, GtkWalet *gw)
     utils_bayer_to_RGB24(fr->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, gw->wc.bpp);
     gtk_widget_queue_draw(gw->drawingarea[1]);
     */
-    utils_ACE_fast_local(fr->d.pic, fr->b.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->d.pic, fr->b.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
 
     new_buffer (gw->orig[1], fr->Y16.w, fr->Y16.h);
     //utils_gray16_rgb8((int16*)&gw->gop.buf[8*w*h], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 12, 1);
     utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[1]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
     gtk_widget_queue_draw(gw->drawingarea[1]);
 
-    utils_ACE_fast_local(fr->R16.pic, fr->b.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->R16.pic, fr->b.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
 
     new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
     //utils_gray16_rgb8(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), fr->b.w, fr->b.h, 8, 1);
@@ -730,17 +730,19 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     filter_median_bayer_diff(fr->R16.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
 
     for(i=0; i < sz; i++) {
-        fr->B16.pic[i] = fr->R16.pic[i] - (fr->Y16.pic[i]*10>>3) + sh;
+        fr->B16.pic[i] = fr->R16.pic[i] - ((fr->Y16.pic[i])) + sh;
         if(fr->B16.pic[i] < 0) fr->B16.pic[i] = 0;
     }
 
 
-    utils_ACE_fast_local(fr->R16.pic, fr->g.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    utils_ACE_fast_local(fr->Y16.pic, fr->d.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    utils_ACE_fast_local(fr->B16.pic, fr->G16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->R16.pic, fr->g.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->Y16.pic, fr->d.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->B16.pic, fr->G16.pic, (int*)gw->gop.buf, bpp, 6, fr->Y16.w, fr->Y16.h);
 
     for(i=0; i < sz; i++) {
-        fr->b.pic[i] = fr->g.pic[i] + ((fr->G16.pic[i] - 128)>>1);
+        //fr->b.pic[i] = fr->g.pic[i] + ((fr->G16.pic[i] - 32));
+        fr->b.pic[i] = fr->d.pic[i] + ((fr->B16.pic[i]  -sh));
+        fr->b.pic[i] = fr->b.pic[i] < 0 ? 0 : (fr->b.pic[i] > 255 ? 255 : fr->b.pic[i]);
     }
 
     //new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
