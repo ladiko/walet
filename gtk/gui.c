@@ -768,6 +768,11 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     //utils_grey_draw8(&gw->gop.buf[sz], gdk_pixbuf_get_pixels(gw->orig[1]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[3]);
 
+    new_buffer (gw->orig[0], fr->b.w, fr->b.h);
+    //utils_bayer_to_RGB24(fr->b.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
+    utils_grey_draw(fr->G16.pic, gdk_pixbuf_get_pixels(gw->orig[0]->pxb), w, h, 8);
+    gtk_widget_queue_draw(gw->drawingarea[0]);
+
     /*
     new_buffer (gw->orig[2], fr->b.w, fr->b.h);
     utils_grey_draw8(&gw->gop.buf[sz*2], gdk_pixbuf_get_pixels(gw->orig[2]->pxb), w, h, 0);
