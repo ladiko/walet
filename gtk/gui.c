@@ -171,9 +171,9 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
             gw->wc.ccol			= CS420;	/// Color space
             gw->wc.dec			= VECTORIZE;	/// Decorrelation method
 
-            //gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
+            gw->wc.bg = GBRG;		/// Bayer grid pattern For HDR Aptina sensor
             //gw->wc.bg = GRBG;		/// Bayer grid pattern For Sony A100
-            gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
+            //gw->wc.bg = RGGB;		/// Bayer grid pattern For Sony A55
             //gw->wc.bpp			= bpp;		/// Image bits per pixel.
             gw->wc.steps		= 4;  		/// DWT steps.
             gw->wc.gop_size		= 2;		/// GOP size
@@ -199,7 +199,7 @@ void on_open_button_clicked(GtkObject *object, GtkWalet *gw)
         frame_input(&gw->gop, nf, &gw->wc, gw->gop.buf, NULL, NULL);
         f[nf] = &gw->gop.frames[nf];
 
-        //utils_turn_on_180(f[nf]->b.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h);
+        utils_turn_on_180(f[nf]->b.pic, (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h);
 
         new_buffer (gw->orig[nf], f[nf]->b.w, f[nf]->b.h);
         utils_bayer_to_RGB24(f[nf]->b.pic, gdk_pixbuf_get_pixels(gw->orig[nf]->pxb), (int16*)gw->gop.buf, f[nf]->b.w, f[nf]->b.h, gw->wc.bg, gw->wc.bpp);
@@ -725,25 +725,30 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
 
     //utils_ACE_fast_local(fr->d.pic, fr->Y16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
-    //utils_HDR_avr(fr->R16.pic, fr->Y16.pic, fr->B16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
+    utils_HDR_avr(fr->R16.pic, fr->Y16.pic, fr->B16.pic, (int*)gw->gop.buf, bpp, fr->Y16.w, fr->Y16.h);
 
-    filter_median_bayer_diff(fr->R16.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
+    /*filter_median_bayer_diff(fr->R16.pic, fr->Y16.pic, NULL, (int16*)gw->gop.buf, fr->b.w, fr->b.h);
 
     for(i=0; i < sz; i++) {
         fr->B16.pic[i] = fr->R16.pic[i] - ((fr->Y16.pic[i])) + sh;
         if(fr->B16.pic[i] < 0) fr->B16.pic[i] = 0;
     }
-
+    */
 
     utils_ACE_fast_local(fr->R16.pic, fr->g.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
-    utils_ACE_fast_local(fr->Y16.pic, fr->d.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
+    utils_ACE_fast_local(fr->Y16.pic, fr->U16.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
     utils_ACE_fast_local(fr->B16.pic, fr->G16.pic, (int*)gw->gop.buf, bpp, 6, fr->Y16.w, fr->Y16.h);
 
     for(i=0; i < sz; i++) {
-        //fr->b.pic[i] = fr->g.pic[i] + ((fr->G16.pic[i] - 32));
-        fr->b.pic[i] = fr->d.pic[i] + ((fr->B16.pic[i]  -sh));
+        fr->b.pic[i] = fr->g.pic[i] + ((fr->G16.pic[i] - 32));
+        //fr->b.pic[i] = fr->d.pic[i] + ((fr->B16.pic[i]  -sh));
         fr->b.pic[i] = fr->b.pic[i] < 0 ? 0 : (fr->b.pic[i] > 255 ? 255 : fr->b.pic[i]);
+
+        //fr->g.pic[i] = fr->d.pic[i] + 256 + ((fr->B16.pic[i]  -sh));
+        //fr->g.pic[i] = fr->g.pic[i] < 0 ? 0 : fr->g.pic[i];
     }
+
+    //utils_ACE_fast_local(fr->g.pic, fr->b.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
 
     //new_buffer (gw->orig[3], fr->Y16.w, fr->Y16.h);
     //utils_bayer_to_RGB24(fr->Y16.pic, gdk_pixbuf_get_pixels(gw->orig[3]->pxb), (int16*)gw->gop.buf, fr->b.w, fr->b.h, gw->wc.bg, 8);
@@ -784,7 +789,6 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
     utils_grey_draw8(&gw->gop.buf[sz*3], gdk_pixbuf_get_pixels(gw->orig[3]->pxb), w, h, 0);
     gtk_widget_queue_draw(gw->drawingarea[3]);
     */
-
 
 
     /*
