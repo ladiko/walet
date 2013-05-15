@@ -26,9 +26,9 @@ void utils_image_copy_n(uint8 *in, int16 *out, uint32 w, uint32 h, uint32 bpp)
     if(bpp > 8){
         for(i=0; i<size; i++) {
             //For Aptina sensor
-            //out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
+            out[i] = ((in[(i<<1)+1]<<8) | in[(i<<1)]);
             //For Sony sensor
-            out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
+            //out[i] = ((in[(i<<1)]<<8) | in[(i<<1)+1]);
             //img[i] = ((buff[(i<<1)]<<8) | buff[(i<<1)+1]);
             //printf("MSB = %d LSB = %d img = %d shift = %d\n", buff[(i<<1)], buff[(i<<1)+1], ((buff[(i<<1)]) | buff[(i<<1)+1]<<8), shift);
         }
@@ -965,7 +965,6 @@ void utils_ACE_fast_local(int16 *in, int16 *out, int *buff, uint32 bpp, uint32 b
             }
             if(hi[0][i-1]  < 255) printf("mx = %d tot = %d max = %d\n", mx, sz1, hi[0][i-1]);
 
-
             //Make LUT table ACE algorithm
             //for(i=1+sh; i < sh+hs; i++) hi[0][i] = hi[0][i-1] + hi[0][i];
             //for(i=sh; i < sh+hs; i++) hi[0][i] = 128 + (b*((hi[0][i]<<1) - sz1)>>23);
@@ -1295,7 +1294,7 @@ void utils_HDR_avr(int16 *in, int16 *out, int16 *dif, uint32 *buff,  uint32 bpp,
         for(x = ws+2; x < w-ws-2; x++){
             yx = yw + x;
             out[yx] = (buff[yx+ws+whs] + buff[yx-ws-whs-w2-2] - buff[yx+ws-whs-w2] - buff[yx-ws+whs-2])/bs;
-            dif[yx] = (in[yx]*16>>4) - (out[yx]*8>>3) + sh;
+            dif[yx] = (in[yx]*15>>4) - (out[yx]*17>>4) + sh;
             if(dif[yx]< 0) dif[yx] = 0;
             //av[0][yxr] = avr/bs;
             //ws = 2; whs = ws*w; //bs = ((ws<<1)+1)*((ws<<1)+1);
@@ -1305,7 +1304,6 @@ void utils_HDR_avr(int16 *in, int16 *out, int16 *dif, uint32 *buff,  uint32 bpp,
             //ws = 6; whs = ws*w; bs = ((ws<<1)+1)*((ws<<1)+1)>>2;
             //avr  = ing[yxr+ws+whs] + ing[yxr-ws-whs-w2-2] - ing[yxr+ws-whs-w2] - ing[yxr-ws+whs-2];
             //av[2][yxr] = avr/bs;
-
         }
     }
 }
