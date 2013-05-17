@@ -718,7 +718,8 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
 
     gettimeofday(&tv, NULL); start = tv.tv_usec + tv.tv_sec*1000000;
 
-    utils_NLM_denoise(fr->d.pic, fr->R16.pic, (int16*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
+    //utils_NLM_denoise(fr->d.pic, fr->R16.pic, (int16*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
+    for(i=0; i < sz; i++) fr->R16.pic[i] = fr->d.pic[i];
 
     gettimeofday(&tv, NULL); end  = tv.tv_usec + tv.tv_sec*1000000;
     printf("utils_BM_denoise time = %f\n", (double)(end-start)/1000000.);
@@ -747,6 +748,9 @@ void on_compress_button_clicked(GtkObject *object, GtkWalet *gw)
         //fr->g.pic[i] = fr->d.pic[i] + 256 + ((fr->B16.pic[i]  -sh));
         //fr->g.pic[i] = fr->g.pic[i] < 0 ? 0 : fr->g.pic[i];
     }
+
+    utils_NLM_denoise(fr->b.pic, fr->d.pic, (int16*)gw->gop.buf, gw->wc.bg, gw->wc.bpp, sg, fr->Y16.w, fr->Y16.h);
+    for(i=0; i < sz; i++) fr->b.pic[i] = fr->d.pic[i];
 
     //utils_ACE_fast_local(fr->g.pic, fr->b.pic, (int*)gw->gop.buf, bpp, 8, fr->Y16.w, fr->Y16.h);
 
